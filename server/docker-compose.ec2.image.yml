@@ -1,0 +1,12 @@
+# EC2에서 Docker Hub 없이 배포할 때: 로컬에서 빌드한 이미지를 load 한 뒤 이 파일로 기동
+services:
+  aniwhere-server:
+    image: aniwhere-server:latest
+    container_name: aniwhere-server
+    ports:
+      - "61783:8080"
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

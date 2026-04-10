@@ -1,0 +1,4 @@
+.env
+*.pem
+*_accessKeys.csv
+*_credentials.csv

@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+*.md
+.idea
+.vscode
+build
+.gradle
+*.pem
+*_accessKeys.csv
+*_credentials.csv
