@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.aniwhere"
-version = "0.0.1-SNAPSHOT"
+version = findProperty("version")?.toString() ?: error("Set version in gradle.properties")
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(17) }
