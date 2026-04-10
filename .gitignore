@@ -1,0 +1,22 @@
+# Root
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# Node / frontend artifacts
+node_modules
+dist
+dist-ssr
+*.local
+*.log
+client/node_modules
+client/dist
+client/aniwhere-client.ait
+
+# Misc
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
