@@ -13,6 +13,7 @@ dist-ssr
 client/node_modules
 client/dist
 client/aniwhere-client.ait
+client/.vite
 
 # Misc
 *.suo

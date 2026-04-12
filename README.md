@@ -44,3 +44,5 @@ npm run build
 - 기본 브랜치: `main`
 - 작업 브랜치: `codex/...`
 - 기능 단위로 작업 후 `main`에 병합
+- 상세 규칙은 `GIT_CONVENTIONS.md`를 기준으로 따릅니다.
+- 다른 Codex 세션도 작업 전 `AGENTS.md`와 `GIT_CONVENTIONS.md`를 먼저 확인합니다.
