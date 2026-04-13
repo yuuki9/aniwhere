@@ -21,3 +21,6 @@ client/.vite
 *.njsproj
 *.sln
 *.sw?
+
+# Java / Gradle artifacts
+server/.gradle/
