@@ -1,0 +1,13 @@
+# Run on EC2 with an image from ECR (or any registry). Set DEPLOY_IMAGE via
+# `docker compose --env-file .deploy-image.env` or shell env when deploying.
+services:
+  aniwhere-server:
+    image: ${DEPLOY_IMAGE}
+    container_name: aniwhere-server
+    ports:
+      - "61783:8080"
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

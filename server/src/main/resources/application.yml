@@ -21,5 +21,11 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+# Trust X-Forwarded-* from reverse proxy (HTTPS host/scheme).
 server:
   port: 8080
+  forward-headers-strategy: framework
+
+# If set, OpenAPI "Try it out" uses this base URL. Empty = same-origin for local dev.
+app:
+  api-public-url: ${APP_PUBLIC_URL:}

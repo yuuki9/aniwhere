@@ -22,5 +22,4 @@ client/.vite
 *.sln
 *.sw?
 
-# Java / Gradle artifacts
-server/.gradle/
+# Java / Gradle artifacts (server/.gradle tracked intentionally)

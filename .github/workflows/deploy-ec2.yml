@@ -1,0 +1,129 @@
+# Server deploy: build image -> S3 -> private EC2 via Bastion (ProxyJump).
+# Compose: server/docker-compose.ec2.image.yml (image aniwhere-server:latest after docker load).
+#
+# GitHub Actions secrets (names must match):
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET
+#   BASTION_HOST, BASTION_USER
+#   EC2_PRIVATE_IP, EC2_USER, EC2_SSH_KEY   # same PEM for bastion + private EC2
+#   DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD
+#
+# Private EC2 needs outbound HTTPS to S3 (presigned URL) — NAT or VPC endpoint.
+#
+# Triggers: push main when server/** changes; workflow_dispatch.
+
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/deploy-ec2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ec2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: |
+            server/build.gradle.kts
+            server/settings.gradle.kts
+
+      - name: Test
+        working-directory: server
+        run: chmod +x ./gradlew && ./gradlew test --no-daemon
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Build image and upload to S3
+        id: artifact
+        env:
+          BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          docker build -t aniwhere-server:latest server
+          docker save aniwhere-server:latest -o /tmp/aniwhere-image.tar
+          OBJECT_KEY="aniwhere/releases/${GITHUB_SHA}.tar"
+          aws s3 cp /tmp/aniwhere-image.tar "s3://${BUCKET}/${OBJECT_KEY}" --region "${AWS_REGION}"
+          PRESIGN=$(aws s3 presign "s3://${BUCKET}/${OBJECT_KEY}" --expires-in 900 --region "${AWS_REGION}")
+          B64=$(printf '%s' "$PRESIGN" | base64 -w0)
+          echo "presign_b64=$B64" >> "${GITHUB_OUTPUT}"
+
+      - name: Copy compose file to EC2
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.EC2_PRIVATE_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.BASTION_HOST }}
+          proxy_username: ${{ secrets.BASTION_USER }}
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          source: "server/docker-compose.ec2.image.yml"
+          target: "/home/${{ secrets.EC2_USER }}/aniwhere-server/"
+          timeout: 60s
+          command_timeout: 10m
+
+      - name: Deploy on private EC2
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PRESIGN_B64: ${{ steps.artifact.outputs.presign_b64 }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        with:
+          host: ${{ secrets.EC2_PRIVATE_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.BASTION_HOST }}
+          proxy_username: ${{ secrets.BASTION_USER }}
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          envs: PRESIGN_B64,DB_HOST,DB_PORT,DB_NAME,DB_USERNAME,DB_PASSWORD
+          script_stop: true
+          command_timeout: 30m
+          script: |
+            set -euo pipefail
+            REMOTE_DIR="/home/${{ secrets.EC2_USER }}/aniwhere-server"
+            cd "$REMOTE_DIR"
+            URL=$(printf '%s' "$PRESIGN_B64" | base64 -d)
+            curl -fSL "$URL" -o /tmp/aniwhere-image.tar
+            sudo docker load -i /tmp/aniwhere-image.tar
+            rm -f /tmp/aniwhere-image.tar
+            umask 077
+            printf 'DB_HOST=%s\nDB_PORT=%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nAPP_PUBLIC_URL=%s\n' \
+              "$DB_HOST" "$DB_PORT" "$DB_NAME" "$DB_USERNAME" "$DB_PASSWORD" "https://aniwhere.link" > "$REMOTE_DIR/.env"
+            chmod 600 "$REMOTE_DIR/.env" || true
+            compose() {
+              if sudo docker compose version >/dev/null 2>&1; then
+                sudo docker compose "$@"
+              elif command -v docker-compose >/dev/null 2>&1; then
+                sudo docker-compose "$@"
+              else
+                echo "docker compose not found"
+                exit 1
+              fi
+            }
+            compose -f docker-compose.ec2.image.yml down 2>/dev/null || true
+            compose -f docker-compose.ec2.image.yml up -d
+            sudo docker ps -a --filter name=aniwhere-server

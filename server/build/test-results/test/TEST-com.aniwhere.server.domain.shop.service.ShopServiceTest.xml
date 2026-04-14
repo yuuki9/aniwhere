@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.aniwhere.server.domain.shop.service.ShopServiceTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-04-14T07:00:12" hostname="DESKTOP-U9K1AS9" time="0.129">
+  <properties/>
+  <testcase name="updateShop - 샵 수정 성공()" classname="com.aniwhere.server.domain.shop.service.ShopServiceTest" time="0.017"/>
+  <testcase name="createShop - 샵 생성 성공()" classname="com.aniwhere.server.domain.shop.service.ShopServiceTest" time="0.013"/>
+  <testcase name="deleteShop - 샵 삭제 성공()" classname="com.aniwhere.server.domain.shop.service.ShopServiceTest" time="0.041"/>
+  <testcase name="getShop - 존재하지 않는 샵 조회시 예외()" classname="com.aniwhere.server.domain.shop.service.ShopServiceTest" time="0.022"/>
+  <testcase name="getShop - 존재하는 샵 조회 성공()" classname="com.aniwhere.server.domain.shop.service.ShopServiceTest" time="0.014"/>
+  <testcase name="searchShops - 페이징 검색()" classname="com.aniwhere.server.domain.shop.service.ShopServiceTest" time="0.016"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
