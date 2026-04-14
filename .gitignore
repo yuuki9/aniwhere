@@ -23,3 +23,8 @@ client/.vite
 *.sw?
 
 # Java / Gradle artifacts (server/.gradle tracked intentionally)
+.gradle/
+build/
+.project
+.classpath
+.settings/
