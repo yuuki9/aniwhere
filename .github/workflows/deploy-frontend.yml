@@ -77,13 +77,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Apps in Toss (ait build) often emits dist/web/; sync that to bucket root so
+      # CloudFront default root object (index.html) resolves without a /web/ prefix.
       - name: Sync to S3
         env:
           BUCKET: ${{ secrets.AWS_S3_FRONTEND_BUCKET }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           set -euo pipefail
-          aws s3 sync ./dist "s3://${BUCKET}/" --delete --region "${AWS_REGION}"
+          if [ -f ./dist/index.html ]; then
+            SYNC_ROOT=./dist
+          elif [ -f ./dist/web/index.html ]; then
+            SYNC_ROOT=./dist/web
+          else
+            echo "Build output missing index.html under dist/ or dist/web/"
+            ls -laR ./dist || true
+            exit 1
+          fi
+          aws s3 sync "${SYNC_ROOT}" "s3://${BUCKET}/" --delete --region "${AWS_REGION}"
 
       - name: Invalidate CloudFront
         env:
