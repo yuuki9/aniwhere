@@ -9,6 +9,29 @@ export function formatDateTime(value: string) {
   return dateFormatter.format(new Date(value))
 }
 
+export function formatRelativeUpdated(value: string) {
+  const target = new Date(value).getTime()
+  const now = Date.now()
+  const diff = Math.max(0, now - target)
+  const minutes = Math.floor(diff / (1000 * 60))
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (minutes < 60) {
+    return `${Math.max(1, minutes)}분 전 업데이트`
+  }
+
+  if (hours < 24) {
+    return `${hours}시간 전 업데이트`
+  }
+
+  if (days < 30) {
+    return `${days}일 전 업데이트`
+  }
+
+  return formatDateTime(value)
+}
+
 export function statusToLabel(status: ShopStatus) {
   if (status === 'ACTIVE') {
     return '운영 중'

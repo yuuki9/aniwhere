@@ -50,6 +50,8 @@ jobs:
         run: npm run lint
 
       - name: Build static (web deploy artifact)
+        env:
+          VITE_API_BASE_URL: https://api.aniwhere.link
         run: npm run build:static
 
   deploy:
@@ -68,6 +70,8 @@ jobs:
         run: npm ci
 
       - name: Build static (web deploy artifact)
+        env:
+          VITE_API_BASE_URL: https://api.aniwhere.link
         run: npm run build:static
 
       - name: Configure AWS credentials

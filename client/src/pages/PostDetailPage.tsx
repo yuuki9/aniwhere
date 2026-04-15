@@ -49,6 +49,9 @@ export function PostDetailPage() {
     )
   }
 
+  const post = postQuery.data
+  const comments = commentsQuery.data ?? []
+
   return (
     <main className="app-shell">
       <section className="section top-bar">
@@ -57,22 +60,31 @@ export function PostDetailPage() {
         </Link>
       </section>
 
-      {postQuery.data ? (
-        <section className="section detail-card">
-          <span className="section-label">POST</span>
-          <h2>{postQuery.data.title}</h2>
-          <p>{postQuery.data.content}</p>
-          <p>
-            {postQuery.data.authorNickname} · {formatDateTime(postQuery.data.createdAt)} · 조회{' '}
-            {postQuery.data.viewCount}
-          </p>
+      {post ? (
+        <section className="launch-panel post-hero">
+          <div className="launch-copy">
+            <span className="eyebrow">POST DETAIL</span>
+            <h1>{post.title}</h1>
+            <p>{post.content}</p>
+          </div>
+          <div className="hero-stat-card">
+            <span className="section-label">작성 정보</span>
+            <strong>{post.authorNickname}</strong>
+            <p>
+              {formatDateTime(post.createdAt)} · 조회 {post.viewCount}
+            </p>
+          </div>
         </section>
       ) : null}
 
-      <section className="explorer-layout">
-        <article className="section detail-card">
-          <span className="section-label">COMMENT</span>
-          <h2>댓글 작성</h2>
+      <section className="explorer-layout layout-community">
+        <article className="section detail-card composer-panel">
+          <div className="section-header">
+            <div>
+              <span className="section-label">COMMENT</span>
+              <h2>댓글 남기기</h2>
+            </div>
+          </div>
           <form
             className="form-mock"
             onSubmit={(event) => {
@@ -89,14 +101,18 @@ export function PostDetailPage() {
             />
             <textarea
               className="text-input text-area"
-              placeholder="댓글 내용"
+              placeholder="방문 경험이나 추가 정보를 남겨보세요."
               required
               rows={4}
               value={content}
               onChange={(event) => setContent(event.target.value)}
             />
-            <button className="primary-action compact-action" type="submit">
-              댓글 등록
+            <button
+              className="primary-action compact-action"
+              disabled={commentMutation.isPending}
+              type="submit"
+            >
+              {commentMutation.isPending ? '등록 중...' : '댓글 등록'}
             </button>
             {commentMutation.isError ? (
               <p className="error-text">{(commentMutation.error as Error).message}</p>
@@ -105,14 +121,25 @@ export function PostDetailPage() {
         </article>
 
         <article className="section detail-card">
-          <span className="section-label">COMMENTS</span>
-          <h2>댓글 목록</h2>
+          <div className="section-header">
+            <div>
+              <span className="section-label">COMMENTS</span>
+              <h2>대화 흐름</h2>
+            </div>
+            <span className="meta-text">{comments.length}개</span>
+          </div>
+          {commentsQuery.isLoading ? <p>댓글을 불러오는 중입니다.</p> : null}
+          {commentsQuery.isError ? (
+            <p className="error-text">{(commentsQuery.error as Error).message}</p>
+          ) : null}
           <div className="source-list">
-            {commentsQuery.data?.map((item) => (
-              <article className="source-card" key={item.id}>
-                <strong>{item.authorNickname}</strong>
+            {comments.map((item) => (
+              <article className="source-card source-card-rich" key={item.id}>
+                <div className="source-card-header">
+                  <strong>{item.authorNickname}</strong>
+                  <span className="meta-text">{formatDateTime(item.createdAt)}</span>
+                </div>
                 <p>{item.content}</p>
-                <p>{formatDateTime(item.createdAt)}</p>
               </article>
             ))}
           </div>

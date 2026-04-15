@@ -17,7 +17,7 @@
 - 기능: `feature/community-post-api`, `feature/map-store-filter`
 - 릴리스: `release/v1.2.0`, `release/hotfix-payment`
 
-루트 `README.md`에 적힌 `codex/...` 같은 보조 작업 브랜치는 기존대로 두되, **기능 단위 작업은 `feature/*`를 권장**합니다.
+자동화나 보조 작업이 있더라도, 기본 작업 브랜치는 `feature/*`, `fix/*`, `chore/*`로 통일합니다.
 
 ## 커밋 메시지
 

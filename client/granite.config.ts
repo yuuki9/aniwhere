@@ -15,6 +15,17 @@ export default defineConfig({
       build: 'vite build',
     },
   },
-  permissions: [],
+  permissions: [
+    {
+      name: 'geolocation',
+      access: 'access',
+    },
+  ],
+  navigationBar: {
+    withHomeButton: true,
+  },
   outdir: 'dist',
+  webViewProps: {
+    type: 'partner',
+  },
 })

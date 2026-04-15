@@ -32,8 +32,8 @@ export function ShopPage() {
   return (
     <main className="app-shell">
       <section className="section top-bar">
-        <Link className="text-link" to="/">
-          목록으로
+        <Link className="text-link" to="/explore">
+          탐색으로
         </Link>
         <Link className="ghost-action compact-action" to="/community">
           커뮤니티
@@ -47,27 +47,11 @@ export function ShopPage() {
 
       {shop ? (
         <>
-          <section className="launch-panel">
-            <div className="launch-copy">
-              <span className="eyebrow">
-                {shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}
-              </span>
+          <section className="launch-panel shop-hero">
+            <div className="launch-copy shop-hero-copy">
+              <span className="eyebrow">{shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}</span>
               <h1>{shop.name}</h1>
               <p>{shop.address}</p>
-            </div>
-            <div className="launch-actions">
-              <StatusPill status={shop.status} />
-              <span className="secondary-action static-panel">
-                {shop.floor ? `${shop.floor}층` : '층 정보 없음'}
-              </span>
-            </div>
-          </section>
-
-          <section className="detail-grid">
-            <article className="section detail-card">
-              <span className="section-label">소개</span>
-              <h2>샵 설명</h2>
-              <p>{shop.description ?? '설명 정보가 아직 없습니다.'}</p>
               <div className="chip-row">
                 {(shop.categories.length > 0 ? shop.categories : ['미분류']).map((tag) => (
                   <span className="mini-tag" key={tag}>
@@ -75,10 +59,36 @@ export function ShopPage() {
                   </span>
                 ))}
               </div>
+            </div>
+            <div className="shop-hero-side">
+              <StatusPill status={shop.status} />
+              <div className="hero-stat-card">
+                <span className="section-label">방문 전 체크</span>
+                <strong>{shop.floor ? `${shop.floor}층` : '층 정보 없음'}</strong>
+                <p>외부 링크 {shop.links.length}개 · 취급 작품 {shop.works.length}개</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="detail-grid">
+            <article className="section detail-card">
+              <span className="section-label">SUMMARY</span>
+              <h2>이 매장은 어떤 곳인가요?</h2>
+              <p>{shop.description ?? '설명 정보가 아직 없습니다.'}</p>
+              <div className="info-grid">
+                <div className="info-cell">
+                  <span className="meta-text">지역</span>
+                  <strong>{shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}</strong>
+                </div>
+                <div className="info-cell">
+                  <span className="meta-text">상태</span>
+                  <strong>{shop.status}</strong>
+                </div>
+              </div>
             </article>
 
             <article className="section detail-card">
-              <span className="section-label">작품</span>
+              <span className="section-label">WORKS</span>
               <h2>취급 작품</h2>
               <div className="chip-row">
                 {(shop.works.length > 0 ? shop.works : ['작품 정보 없음']).map((work) => (
@@ -90,19 +100,22 @@ export function ShopPage() {
             </article>
 
             <article className="section detail-card">
-              <span className="section-label">외부 링크</span>
-              <h2>원본 출처</h2>
+              <span className="section-label">SOURCE</span>
+              <h2>공식/외부 링크</h2>
               <div className="source-list">
                 {shop.links.length > 0 ? (
                   shop.links.map((item) => (
                     <a
-                      className="source-card"
+                      className="source-card source-card-rich"
                       href={item.url}
                       key={item.id}
                       rel="noreferrer"
                       target="_blank"
                     >
-                      <strong>{linkTypeToLabel(item.type)}</strong>
+                      <div className="source-card-header">
+                        <strong>{linkTypeToLabel(item.type)}</strong>
+                        <span className="meta-text">바로가기</span>
+                      </div>
                       <p>{item.url}</p>
                     </a>
                   ))
@@ -113,10 +126,18 @@ export function ShopPage() {
             </article>
 
             <article className="section detail-card">
-              <span className="section-label">메타데이터</span>
+              <span className="section-label">TIMELINE</span>
               <h2>업데이트 시점</h2>
-              <p>생성: {formatDateTime(shop.createdAt)}</p>
-              <p>수정: {formatDateTime(shop.updatedAt)}</p>
+              <div className="timeline-list">
+                <div className="timeline-item">
+                  <strong>생성</strong>
+                  <p>{formatDateTime(shop.createdAt)}</p>
+                </div>
+                <div className="timeline-item">
+                  <strong>마지막 수정</strong>
+                  <p>{formatDateTime(shop.updatedAt)}</p>
+                </div>
+              </div>
             </article>
           </section>
         </>

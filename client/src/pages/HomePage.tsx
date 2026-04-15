@@ -1,411 +1,214 @@
-import { type FormEvent, useMemo, useState } from 'react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router-dom'
-import { getPosts } from '../shared/api/community'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Link, useNavigate } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
-import { formatDateTime } from '../shared/lib/format'
-import { ShopMap } from '../shared/ui/ShopMap'
+import { formatRelativeUpdated } from '../shared/lib/format'
 import { StatusPill } from '../shared/ui/StatusPill'
 
-const PAGE_SIZE = 20
+const EMPTY_SHOPS = []
+
+type HeroTheme = {
+  id: 'new-shops' | 'hot-keywords' | 'trusted-picks'
+  title: string
+  subtitle: string
+  accent: 'blue' | 'orange' | 'mint'
+  actionLabel: string
+  actionTarget: '/explore' | '/search'
+  spotlight: string
+  markerPrimary: string
+  markerSecondary: string
+  visualLabel: string
+}
+
+const HERO_ROTATE_MS = 5200
 
 export function HomePage() {
-  const [flowStage, setFlowStage] = useState<'explore' | 'map'>('explore')
-  const [showFullList, setShowFullList] = useState(false)
-  const [searchParams, setSearchParams] = useSearchParams()
-  const page = Number(searchParams.get('page') ?? '0')
-  const category = searchParams.get('category') ?? ''
-  const keyword = searchParams.get('keyword') ?? ''
-  const regionId = Number(searchParams.get('regionId') ?? '') || undefined
-  const [keywordInput, setKeywordInput] = useState(keyword)
-  const [activeShopId, setActiveShopId] = useState<number | null>(null)
+  const navigate = useNavigate()
+  const [activeThemeIndex, setActiveThemeIndex] = useState(0)
 
   const shopsQuery = useQuery({
-    queryKey: ['shops', page, category, keyword, regionId],
-    queryFn: () =>
-      getShops({
-        page,
-        size: PAGE_SIZE,
-        category: category || undefined,
-        keyword: keyword || undefined,
-        regionId,
-      }),
-    placeholderData: keepPreviousData,
-  })
-
-  const facetQuery = useQuery({
-    queryKey: ['shops', 'facets'],
+    queryKey: ['shops', 'discover-home'],
     queryFn: () => getShops({ page: 0, size: 200 }),
   })
 
-  const postsQuery = useQuery({
-    queryKey: ['posts', 'preview'],
-    queryFn: () => getPosts({ page: 0, size: 4 }),
-  })
+  const allShops = useMemo(() => shopsQuery.data?.content ?? EMPTY_SHOPS, [shopsQuery.data?.content])
 
-  const shops = shopsQuery.data?.content ?? []
-  const mappableShops = shops.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py))
-  const activeShop =
-    mappableShops.find((shop) => shop.id === activeShopId) ?? mappableShops[0] ?? shops[0] ?? null
-
-  const featuredShops = useMemo(() => {
-    const scored = [...shops].sort((a, b) => {
-      const aScore = (a.status === 'ACTIVE' ? 2 : 0) + a.links.length + a.works.length
-      const bScore = (b.status === 'ACTIVE' ? 2 : 0) + b.links.length + b.works.length
-      return bScore - aScore
-    })
-    return scored.slice(0, 6)
-  }, [shops])
-
-  const categories = useMemo(
+  const newestShops = useMemo(
     () =>
-      Array.from(new Set((facetQuery.data?.content ?? []).flatMap((shop) => shop.categories))),
-    [facetQuery.data?.content],
+      [...allShops]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 3),
+    [allShops],
   )
 
-  const regions = useMemo(() => {
-    const entries = new Map<number, string>()
-    for (const shop of facetQuery.data?.content ?? []) {
-      if (shop.regionId && shop.regionName) {
-        entries.set(shop.regionId, shop.regionName)
+  const trendingKeywords = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    for (const shop of allShops) {
+      for (const work of shop.works) {
+        counts.set(work, (counts.get(work) ?? 0) + 1)
       }
     }
-    return Array.from(entries.entries())
-  }, [facetQuery.data?.content])
 
-  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const next = new URLSearchParams(searchParams)
-    next.set('page', '0')
-    if (keywordInput.trim()) {
-      next.set('keyword', keywordInput.trim())
-    } else {
-      next.delete('keyword')
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+  }, [allShops])
+
+  const rankedShops = useMemo(() => {
+    return [...allShops]
+      .sort((a, b) => {
+        const aScore = (a.status === 'ACTIVE' ? 3 : 0) + a.links.length * 2 + a.works.length
+        const bScore = (b.status === 'ACTIVE' ? 3 : 0) + b.links.length * 2 + b.works.length
+        return bScore - aScore
+      })
+      .slice(0, 6)
+  }, [allShops])
+
+  const heroThemes = useMemo<HeroTheme[]>(() => {
+    const newestRegion = newestShops[0]?.regionName ?? '홍대'
+    const topKeyword = trendingKeywords[0]?.[0] ?? '가챠'
+    const secondKeyword = trendingKeywords[1]?.[0] ?? '피규어'
+    const bestShop = rankedShops[0]?.name ?? '추천 매장'
+
+    return [
+      {
+        id: 'new-shops',
+        title: '이번 주 새로 들어온 매장',
+        subtitle: '방금 반영된 매장을 먼저 둘러보세요.',
+        accent: 'blue',
+        actionLabel: '신규 매장 보기',
+        actionTarget: '/explore',
+        spotlight: newestShops[0]?.name ?? '신규 매장 업데이트',
+        markerPrimary: newestRegion,
+        markerSecondary: newestShops[0] ? formatRelativeUpdated(newestShops[0].updatedAt) : '방금 반영',
+        visualLabel: 'NEW',
+      },
+      {
+        id: 'hot-keywords',
+        title: '지금 많이 찾는 키워드',
+        subtitle: '요즘 많이 찾는 작품 키워드부터 확인해보세요.',
+        accent: 'orange',
+        actionLabel: '키워드 검색',
+        actionTarget: '/search',
+        spotlight: `#${topKeyword} #${secondKeyword}`,
+        markerPrimary: '실시간 인기',
+        markerSecondary: `${trendingKeywords[0]?.[1] ?? 0}개 매장`,
+        visualLabel: 'HOT',
+      },
+      {
+        id: 'trusted-picks',
+        title: '리뷰가 모인 추천 매장',
+        subtitle: '많이 보는 매장부터 빠르게 비교해보세요.',
+        accent: 'mint',
+        actionLabel: '추천 매장 보기',
+        actionTarget: '/explore',
+        spotlight: bestShop,
+        markerPrimary: '인기 큐레이션',
+        markerSecondary: `상위 ${Math.min(rankedShops.length, 6)}곳`,
+        visualLabel: 'TOP',
+      },
+    ]
+  }, [newestShops, rankedShops, trendingKeywords])
+
+  const activeTheme = heroThemes[activeThemeIndex] ?? heroThemes[0]
+
+  useEffect(() => {
+    if (heroThemes.length <= 1) {
+      return
     }
-    setSearchParams(next)
-  }
 
-  const setFilter = (key: 'category' | 'regionId', value?: string) => {
-    const next = new URLSearchParams(searchParams)
-    next.set('page', '0')
-    if (value) {
-      next.set(key, value)
-    } else {
-      next.delete(key)
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return
     }
-    setSearchParams(next)
-  }
 
-  const movePage = (nextPage: number) => {
-    const next = new URLSearchParams(searchParams)
-    next.set('page', String(nextPage))
-    setSearchParams(next)
-  }
+    const timer = window.setInterval(() => {
+      setActiveThemeIndex((current) => (current + 1) % heroThemes.length)
+    }, HERO_ROTATE_MS)
+
+    return () => window.clearInterval(timer)
+  }, [heroThemes.length])
 
   return (
-    <main className="app-shell">
-      <section className="section intro">
-        <div>
-          <span className="eyebrow">DISCOVERY HALL</span>
-          <h1>Curation first, map second</h1>
-          <p>Compress choices with curation signals first, then open the map only for route decisions.</p>
-        </div>
-        <div className="intro-actions">
-          <Link className="secondary-action compact-action" to="/community">
-            Open Community
-          </Link>
-        </div>
-      </section>
-
-      <section className="section impact-banner">
-        <div className="impact-copy">
-          <span className="section-label">THIS WEEK</span>
-          <h2>Most talked-about otaku routes</h2>
-          <p>Ranked by active status, source links, and work coverage from current API responses.</p>
-        </div>
-        <button className="primary-action compact-action" type="button" onClick={() => setFlowStage('map')}>
-          지도 2단계로 이동
+    <main className="app-shell discover-shell">
+      <section className="section discover-search-entry-section">
+        <button className="search-entry-button discover-search-entry" type="button" onClick={() => navigate('/search')}>
+          <span>매장명, 작품명, 지역으로 검색</span>
+          <strong>⌕</strong>
         </button>
       </section>
 
-      <section className="section search-panel">
-        <form className="search-row" onSubmit={submitSearch}>
-          <input
-            aria-label="Shop search keyword"
-            className="search-input"
-            placeholder="Search by shop, district, title, or fandom keyword"
-            value={keywordInput}
-            onChange={(event) => setKeywordInput(event.target.value)}
-          />
-          <button className="primary-action compact-action" type="submit">
-            Search
-          </button>
-        </form>
-        <div className="chip-row">
-          <button
-            className={`filter-chip ${regionId ? '' : 'chip-active'}`}
-            type="button"
-            onClick={() => setFilter('regionId')}
-          >
-            All regions
-          </button>
-          {regions.map(([id, name]) => (
-            <button
-              className={`filter-chip ${regionId === id ? 'chip-active' : ''}`}
-              key={id}
-              type="button"
-              onClick={() => setFilter('regionId', String(id))}
-            >
-              {name}
+      <section className={`section discover-hero discover-hero-${activeTheme.accent}`}>
+        <div className="discover-hero-card">
+          <div className="discover-hero-copy">
+            <h1>{activeTheme.title}</h1>
+            <p>{activeTheme.subtitle}</p>
+            <strong className="discover-hero-spotlight">{activeTheme.spotlight}</strong>
+            <button className="ghost-action compact-action" type="button" onClick={() => navigate(activeTheme.actionTarget)}>
+              {activeTheme.actionLabel}
             </button>
-          ))}
+          </div>
+
+          <div className="discover-hero-visual" aria-hidden="true">
+            <span className="discover-hero-visual-word">{activeTheme.visualLabel}</span>
+            <div className="discover-hero-marker-stack">
+              <span className="discover-hero-marker">{activeTheme.markerPrimary}</span>
+              <span className="discover-hero-marker discover-hero-marker-secondary">{activeTheme.markerSecondary}</span>
+            </div>
+          </div>
         </div>
-        <div className="chip-row">
-          <button
-            className={`filter-chip ${category ? '' : 'chip-active'}`}
-            type="button"
-            onClick={() => setFilter('category')}
-          >
-            All categories
-          </button>
-          {categories.map((item) => (
-            <button
-              className={`filter-chip ${category === item ? 'chip-active' : ''}`}
-              key={item}
-              type="button"
-              onClick={() => setFilter('category', item)}
-            >
-              {item}
-            </button>
-          ))}
+
+        <div className="discover-hero-controls" aria-label="메인 큐레이션 넘기기">
+          <div className="discover-slide-dots">
+            {heroThemes.map((theme, index) => (
+              <button
+                key={theme.id}
+                type="button"
+                className={`discover-slide-dot ${index === activeThemeIndex ? 'discover-slide-dot-active' : ''}`}
+                aria-label={theme.title}
+                onClick={() => setActiveThemeIndex(index)}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
-      {flowStage === 'explore' ? (
-        <>
-          <section className="section hall-section">
-            <div className="section-header">
-              <div>
-                <span className="section-label">CURATED PICKS</span>
-                <h2>Hot picks right now</h2>
-              </div>
-              <button
-                className="primary-action compact-action"
-                type="button"
-                onClick={() => setFlowStage('map')}
-              >
-                지도 보기
-              </button>
-            </div>
-            <div className="hall-grid">
-              {featuredShops.map((shop) => (
-                <article className="hall-card" key={shop.id}>
-                  <div className="shop-item-head">
-                    <strong>{shop.name}</strong>
-                    <StatusPill status={shop.status} />
-                  </div>
-                  <p>{shop.address}</p>
-                  <div className="chip-row">
-                    {(shop.categories.length > 0 ? shop.categories : ['Uncategorized'])
-                      .slice(0, 3)
-                      .map((cat) => (
-                        <span className="mini-tag" key={`${shop.id}-${cat}`}>
-                          {cat}
-                        </span>
-                      ))}
-                  </div>
-                  <div className="shop-row">
-                    <span>Works {shop.works.length} · Links {shop.links.length}</span>
-                    <Link className="text-link" to={`/shops/${shop.id}`}>
-                      Detail
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+      <section className="section discover-ranking-section">
+        <div className="section-header">
+          <div>
+            <h2>지금 많이 보는 매장</h2>
+          </div>
+          <Link className="text-link" to="/explore">
+            전체 보기
+          </Link>
+        </div>
 
-          <section className="section detail-card">
-            <div className="section-header">
-              <div>
-                <span className="section-label">RUMOR FEED</span>
-                <h2>Community buzz preview</h2>
-              </div>
-              <Link className="text-link" to="/community">
-                More
-              </Link>
-            </div>
-            <div className="source-list">
-              {postsQuery.data?.content.map((post) => (
-                <Link className="source-card" key={post.id} to={`/community/${post.id}`}>
-                  <strong>{post.title}</strong>
-                  <p>{post.content}</p>
-                  <p>
-                    {post.authorNickname} · {formatDateTime(post.createdAt)} · Views {post.viewCount}
+        <div className="discover-ranking-viewport" aria-label="인기 매장 가로 목록">
+          <div className="discover-ranking-strip">
+            {rankedShops.map((shop, index) => (
+              <Link className={`discover-rank-card discover-rank-card-${index + 1 > 3 ? 4 : index + 1}`} key={shop.id} to={`/shops/${shop.id}`}>
+                <div className="discover-rank-header">
+                  <div className="discover-rank-badge">
+                    <span>{index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '•'}</span>
+                    <strong>{index + 1}</strong>
+                  </div>
+                  <StatusPill status={shop.status} />
+                </div>
+                <div className="discover-rank-visual" aria-hidden="true">
+                  {shop.name.slice(0, 1)}
+                </div>
+                <div className="discover-rank-copy">
+                  <strong>{shop.name}</strong>
+                  <p>{shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}</p>
+                  <p className="shop-item-meta">
+                    작품 {shop.works.length} · 링크 {shop.links.length} · {formatRelativeUpdated(shop.updatedAt)}
                   </p>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          <section className="section list-card">
-            <div className="section-header">
-              <div>
-                <span className="section-label">EXPLORE LIST</span>
-                <h2>Full results (optional)</h2>
-              </div>
-              <button
-                className="ghost-action compact-action"
-                type="button"
-                onClick={() => setShowFullList((prev) => !prev)}
-              >
-                {showFullList ? '목록 접기' : '전체 목록 보기'}
-              </button>
-            </div>
-            {showFullList ? (
-              <>
-                {shopsQuery.isLoading ? <p>Loading shop data...</p> : null}
-                {shopsQuery.isError ? (
-                  <p className="error-text">{(shopsQuery.error as Error).message}</p>
-                ) : null}
-                <div className="shop-list">
-                  {shops.map((shop) => (
-                    <article className="shop-item" key={shop.id}>
-                      <div className="shop-item-head">
-                        <strong>{shop.name}</strong>
-                        <StatusPill status={shop.status} />
-                      </div>
-                      <p>{shop.address}</p>
-                      <div className="chip-row">
-                        {(shop.categories.length > 0 ? shop.categories : ['Uncategorized'])
-                          .slice(0, 3)
-                          .map((cat) => (
-                            <span className="mini-tag" key={`${shop.id}-${cat}`}>
-                              {cat}
-                            </span>
-                          ))}
-                      </div>
-                      <div className="shop-row">
-                        <span>{shop.regionName ?? `Region ${shop.regionId ?? '-'}`}</span>
-                        <div className="shop-actions-inline">
-                          <button
-                            className="text-link"
-                            type="button"
-                            onClick={() => {
-                              setActiveShopId(shop.id)
-                              setFlowStage('map')
-                            }}
-                          >
-                            지도에서 보기
-                          </button>
-                          <Link className="text-link" to={`/shops/${shop.id}`}>
-                            Detail
-                          </Link>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
                 </div>
-                {shopsQuery.data ? (
-                  <div className="pagination-row">
-                    <button
-                      className="ghost-action compact-action"
-                      disabled={page === 0}
-                      type="button"
-                      onClick={() => movePage(page - 1)}
-                    >
-                      Prev
-                    </button>
-                    <button
-                      className="ghost-action compact-action"
-                      disabled={shopsQuery.data.last}
-                      type="button"
-                      onClick={() => movePage(page + 1)}
-                    >
-                      Next
-                    </button>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <p>Keep the hall focused. Open full list only when you need deeper comparison.</p>
-            )}
-          </section>
-        </>
-      ) : null}
-
-      {flowStage === 'map' ? (
-        <section className="explorer-layout layout-map">
-          <article className="section map-card">
-            <div className="section-header">
-              <div>
-                <span className="section-label">MAP STAGE 2</span>
-                <h2>Route and cluster check</h2>
-              </div>
-              <button
-                className="ghost-action compact-action"
-                type="button"
-                onClick={() => setFlowStage('explore')}
-              >
-                탐색으로 돌아가기
-              </button>
-            </div>
-            <div className="map-surface">
-              <ShopMap
-                shops={mappableShops}
-                activeShopId={activeShop?.id ?? null}
-                onSelectShop={setActiveShopId}
-              />
-            </div>
-            {activeShop ? (
-              <div className="map-focus-card">
-                <div>
-                  <strong>{activeShop.name}</strong>
-                  <p>{activeShop.address}</p>
-                </div>
-                <StatusPill status={activeShop.status} />
-              </div>
-            ) : null}
-          </article>
-
-          <article className="section list-card">
-            <div className="section-header">
-              <div>
-                <span className="section-label">MAP-LINKED LIST</span>
-                <h2>Selected spots</h2>
-              </div>
-              <span className="meta-text">{shopsQuery.data?.totalElements ?? 0} spots</span>
-            </div>
-            <div className="shop-list">
-              {shops.map((shop) => (
-                <article
-                  className={`shop-item ${activeShop?.id === shop.id ? 'shop-item-active' : ''}`}
-                  key={shop.id}
-                >
-                  <div className="shop-item-head">
-                    <button
-                      aria-label={`Highlight ${shop.name} on map`}
-                      className="text-link"
-                      type="button"
-                      onClick={() => setActiveShopId(shop.id)}
-                    >
-                      {shop.name}
-                    </button>
-                    <StatusPill status={shop.status} />
-                  </div>
-                  <p>{shop.address}</p>
-                  <div className="shop-row">
-                    <span>{shop.regionName ?? `Region ${shop.regionId ?? '-'}`}</span>
-                    <Link className="text-link" to={`/shops/${shop.id}`}>
-                      Detail
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
-        </section>
-      ) : null}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
     </main>
   )
 }
