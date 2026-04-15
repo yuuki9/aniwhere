@@ -1,5 +1,4 @@
-# Server only: runs when server/ (or this file) changes. Client/ has no workflow yet;
-# when the frontend is ready, add a separate workflow with paths: client/**
+# Server only: runs when server/ (or this file) changes. Client CI/deploy: deploy-frontend.yml.
 name: CI (server)
 
 on:
