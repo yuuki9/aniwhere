@@ -26,6 +26,6 @@ server:
   port: 8080
   forward-headers-strategy: framework
 
-# If set, OpenAPI "Try it out" uses this base URL. Empty = same-origin for local dev.
+# OpenAPI "Try it out" base URL. Override with APP_PUBLIC_URL (e.g. http://localhost:8080 for local same-origin).
 app:
-  api-public-url: ${APP_PUBLIC_URL:}
+  api-public-url: ${APP_PUBLIC_URL:https://api.aniwhere.link}
