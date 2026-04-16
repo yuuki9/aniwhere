@@ -16,13 +16,62 @@ import { StatusPill } from '../shared/ui/StatusPill'
 const PAGE_SIZE = 10
 const MAP_FETCH_SIZE = 200
 const EMPTY_SHOPS: Shop[] = []
+const DETAIL_MEDIA_TONES = ['blue', 'orange', 'mint', 'violet'] as const
 
 type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
 type ViewMode = 'map' | 'list'
 type SheetMode = 'peek' | 'expanded'
 type SelectionOrigin = 'map' | 'list' | null
+type DetailMediaTone = (typeof DETAIL_MEDIA_TONES)[number]
+type DetailMediaItem = {
+  id: string
+  src: string
+  alt: string
+}
 
 type DetailIconName = 'pin' | 'clock' | 'layers' | 'tag' | 'link'
+
+function buildDescriptionPreview(description: string | null, maxLength = 120) {
+  if (!description) {
+    return null
+  }
+
+  const normalized = description.replace(/\s+/g, ' ').trim()
+
+  if (normalized.length <= maxLength) {
+    return normalized
+  }
+
+  return `${normalized.slice(0, maxLength).trimEnd()}…`
+}
+
+function getDetailMediaTone(shopId: number): DetailMediaTone {
+  return DETAIL_MEDIA_TONES[(Math.max(shopId, 1) - 1) % DETAIL_MEDIA_TONES.length]
+}
+
+function formatFloorLabel(floor: string | null) {
+  if (!floor) {
+    return null
+  }
+
+  const normalized = floor.trim()
+  return normalized.endsWith('층') ? normalized : `${normalized}층`
+}
+
+function buildDetailMediaItems(shop: Shop): DetailMediaItem[] {
+  const seeds = ['hero', 'sub-1', 'sub-2', 'sub-3', 'sub-4']
+
+  return seeds.map((seed, index) => {
+    const size = index === 0 ? 960 : 480
+    const encodedSeed = encodeURIComponent(`aniwhere-${shop.id}-${shop.name}-${seed}`)
+
+    return {
+      id: `${shop.id}-${seed}`,
+      src: `https://picsum.photos/seed/${encodedSeed}/${size}/${size}`,
+      alt: `${shop.name} 미디어 ${index + 1}`,
+    }
+  })
+}
 
 function MapDetailIcon({ name }: { name: DetailIconName }) {
   const commonProps = {
@@ -115,10 +164,17 @@ export function ExplorePage() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
   const [locationState, setLocationState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
+  const [peekDragOffset, setPeekDragOffset] = useState(0)
+  const [isPeekDragging, setIsPeekDragging] = useState(false)
   const listScrollRef = useRef<HTMLDivElement | null>(null)
+  const detailScrollRef = useRef<HTMLDivElement | null>(null)
   const listScrollTopRef = useRef(0)
   const listVisibleCountRef = useRef(PAGE_SIZE)
   const pendingListRestoreRef = useRef(false)
+  const peekPointerIdRef = useRef<number | null>(null)
+  const peekDragStartYRef = useRef<number | null>(null)
+  const peekMovedRef = useRef(false)
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'explore-map-source'],
@@ -254,6 +310,7 @@ export function ExplorePage() {
 
     syncSearchParams(next)
     setSelectionOrigin(origin)
+    setIsDetailHeaderCollapsed(false)
     setSheetMode(nextSheetMode)
     requestMapFocus('shop')
     setViewMode('map')
@@ -321,6 +378,10 @@ export function ExplorePage() {
   const shopsError = shopsQuery.isError ? (shopsQuery.error as Error).message : null
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
   const primaryLink = detailShop?.links[0] ?? null
+  const detailFloorLabel = formatFloorLabel(detailShop?.floor ?? null)
+  const detailDescriptionPreview = buildDescriptionPreview(detailShop?.description ?? null, 104)
+  const detailMediaTone = detailShop ? getDetailMediaTone(detailShop.id) : 'blue'
+  const detailMediaItems = detailShop ? buildDetailMediaItems(detailShop) : []
   const isListSheetOpen = viewMode === 'list' && !detailShop
 
   const handleListScroll = (event: UIEvent<HTMLDivElement>) => {
@@ -344,6 +405,79 @@ export function ExplorePage() {
     })
   }
 
+  const handleDetailBodyScroll = (event: UIEvent<HTMLDivElement>) => {
+    const nextCollapsed = event.currentTarget.scrollTop > 196
+    setIsDetailHeaderCollapsed((current) => (current === nextCollapsed ? current : nextCollapsed))
+  }
+
+  const expandPeekSheet = () => {
+    setIsDetailHeaderCollapsed(false)
+    setPeekDragOffset(0)
+    setIsPeekDragging(false)
+    setSheetMode('expanded')
+  }
+
+  const resetPeekDrag = () => {
+    peekPointerIdRef.current = null
+    peekDragStartYRef.current = null
+    peekMovedRef.current = false
+    setPeekDragOffset(0)
+    setIsPeekDragging(false)
+  }
+
+  const handlePeekPointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    peekPointerIdRef.current = event.pointerId
+    peekDragStartYRef.current = event.clientY
+    peekMovedRef.current = false
+    setIsPeekDragging(true)
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const handlePeekPointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    if (peekPointerIdRef.current !== event.pointerId || peekDragStartYRef.current == null) {
+      return
+    }
+
+    const deltaY = event.clientY - peekDragStartYRef.current
+    const nextOffset = Math.min(0, Math.max(deltaY, -96))
+
+    if (Math.abs(deltaY) > 6) {
+      peekMovedRef.current = true
+    }
+
+    setPeekDragOffset(nextOffset)
+  }
+
+  const handlePeekPointerEnd = (event: React.PointerEvent<HTMLElement>) => {
+    if (peekPointerIdRef.current !== event.pointerId || peekDragStartYRef.current == null) {
+      return
+    }
+
+    const deltaY = event.clientY - peekDragStartYRef.current
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+
+    if (deltaY <= -36) {
+      resetPeekDrag()
+      expandPeekSheet()
+      return
+    }
+
+    resetPeekDrag()
+  }
+
+  const handlePeekPointerCancel = () => {
+    resetPeekDrag()
+  }
+
+  const handlePeekClick = () => {
+    if (peekMovedRef.current) {
+      peekMovedRef.current = false
+      return
+    }
+
+    expandPeekSheet()
+  }
+
   useLayoutEffect(() => {
     if (!isListSheetOpen || !pendingListRestoreRef.current || !listScrollRef.current) {
       return
@@ -352,6 +486,14 @@ export function ExplorePage() {
     listScrollRef.current.scrollTop = listScrollTopRef.current
     pendingListRestoreRef.current = false
   }, [isListSheetOpen, visibleListCount])
+
+  useLayoutEffect(() => {
+    if (sheetMode !== 'expanded' || !detailScrollRef.current) {
+      return
+    }
+
+    detailScrollRef.current.scrollTop = 0
+  }, [detailShop?.id, sheetMode])
 
   const handleMapSelectShop = (shopId: number) => {
     handleSelectShop(shopId, 'map')
@@ -519,15 +661,24 @@ export function ExplorePage() {
               className={[
                 'map-bottom-sheet',
                 'map-bottom-sheet-peek',
+                isPeekDragging ? 'map-bottom-sheet-peek-dragging' : '',
                 selectionOrigin === 'list' ? 'map-bottom-sheet-peek-static' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
               aria-label={`${detailShop.name} 요약 정보`}
+              onClick={handlePeekClick}
+              onPointerCancel={handlePeekPointerCancel}
+              onPointerDown={handlePeekPointerDown}
+              onPointerMove={handlePeekPointerMove}
+              onPointerUp={handlePeekPointerEnd}
+              style={{
+                transform: peekDragOffset !== 0 ? `translateY(${peekDragOffset}px)` : undefined,
+              }}
             >
-              <button className="map-sheet-peek-trigger" type="button" onClick={() => setSheetMode('expanded')}>
+              <div className="map-sheet-peek-trigger" aria-hidden="true">
                 <span className="map-bottom-sheet-handle" />
-              </button>
+              </div>
 
               <div className="map-sheet-peek-summary">
                 <div className="map-sheet-peek-copy">
@@ -547,18 +698,71 @@ export function ExplorePage() {
 
           {detailShop && sheetMode === 'expanded' ? (
             <section className="map-bottom-sheet map-bottom-sheet-expanded" aria-label={`${detailShop.name} 상세 정보`}>
-              <div className="map-sheet-expanded-header">
-                <button className="map-sheet-icon-button" type="button" onClick={handleExpandedBack} aria-label="뒤로 가기">
-                  ←
-                </button>
-                <div className="map-sheet-header-copy">
+              <div className="map-sheet-expanded-body" onScroll={handleDetailBodyScroll} ref={detailScrollRef}>
+                <div
+                  className={[
+                    'map-sheet-sticky-header',
+                    isDetailHeaderCollapsed ? 'map-sheet-sticky-header-visible' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  <button className="map-sheet-icon-button" type="button" onClick={handleExpandedBack} aria-label="뒤로 가기">
+                    ←
+                  </button>
                   <strong>{detailShop.name}</strong>
-                  <span>장소 정보</span>
+                  <button className="map-sheet-icon-button" type="button" onClick={handleClearSelection} aria-label="상세 화면 닫기">
+                    ×
+                  </button>
                 </div>
-              </div>
 
-              <div className="map-sheet-expanded-body">
-                <div className="app-shell map-sheet-shell">
+                <section className={`map-sheet-media map-sheet-media-${detailMediaTone}`}>
+                  <div className="map-sheet-media-topbar">
+                    <button
+                      className="map-sheet-icon-button map-sheet-icon-button-overlay"
+                      type="button"
+                      onClick={handleExpandedBack}
+                      aria-label="뒤로 가기"
+                    >
+                      ←
+                    </button>
+                    <button
+                      className="map-sheet-icon-button map-sheet-icon-button-overlay"
+                      type="button"
+                      onClick={handleClearSelection}
+                      aria-label="상세 화면 닫기"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="map-sheet-media-grid">
+                    {detailMediaItems[0] ? (
+                      <article className="map-sheet-media-main">
+                        <img className="map-sheet-media-image" src={detailMediaItems[0].src} alt={detailMediaItems[0].alt} />
+                        <div className="map-sheet-media-image-overlay">
+                          <span className="map-sheet-media-badge">{detailShop.regionName ?? 'ANIWHERE'}</span>
+                          <strong>{detailShop.categories[0] ?? detailShop.works[0] ?? '매장 큐레이션'}</strong>
+                        </div>
+                      </article>
+                    ) : null}
+
+                    <div className="map-sheet-media-stack">
+                      {detailMediaItems.slice(1).map((item, index) => (
+                        <article className="map-sheet-media-tile" key={item.id}>
+                          <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
+                          {index === detailMediaItems.slice(1).length - 1 ? (
+                            <div className="map-sheet-media-count">
+                              <strong>+{Math.max(detailShop.links.length, detailShop.works.length, 4)}</strong>
+                            </div>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <div className="map-sheet-shell map-sheet-shell-detail">
                   {detailError ? <p className="section error-text">{detailError}</p> : null}
 
                   <section className="section map-sheet-summary-card map-sheet-summary-card-compact">
@@ -566,38 +770,47 @@ export function ExplorePage() {
                       <div className="map-sheet-summary-copy">
                         <span className="eyebrow">{detailShop.regionName ?? `지역 ${detailShop.regionId ?? '-'}`}</span>
                         <h1>{detailShop.name}</h1>
-                        {detailShop.description ? <p>{detailShop.description}</p> : null}
+                        <p>
+                          {detailShop.categories.length > 0
+                            ? detailShop.categories.join(' · ')
+                            : detailShop.works.length > 0
+                              ? detailShop.works.slice(0, 2).join(' · ')
+                              : '카테고리 확인 중'}
+                        </p>
                       </div>
                       <StatusPill status={detailShop.status} />
                     </div>
 
-                    <div className="map-sheet-summary-meta">
-                      <span>{detailShop.floor ? `${detailShop.floor}층` : '층 정보 미등록'}</span>
-                      <span>
-                        {detailShop.categories.length > 0 ? detailShop.categories.join(' · ') : '카테고리 미등록'}
-                      </span>
-                    </div>
-
-                    <div className="map-sheet-action-row">
+                    <div className="map-sheet-primary-actions">
                       {primaryLink ? (
-                        <a className="map-sheet-action-pill" href={primaryLink.url} rel="noreferrer" target="_blank">
+                        <a className="map-sheet-primary-button map-sheet-primary-button-fill" href={primaryLink.url} rel="noreferrer" target="_blank">
                           <MapDetailIcon name="link" />
                           <span>공식 링크</span>
                         </a>
                       ) : null}
-                      <Link className="map-sheet-action-pill" to="/community">
+                      <Link className="map-sheet-primary-button" to="/community">
                         <MapDetailIcon name="tag" />
                         <span>후기 보기</span>
                       </Link>
                     </div>
+
+                    {detailDescriptionPreview ? (
+                      <div className="map-sheet-ai-summary">
+                        <div className="map-sheet-ai-summary-head">
+                          <strong>AI 요약 정보</strong>
+                          <span>수집 링크 기반</span>
+                        </div>
+                        <p>{detailDescriptionPreview}</p>
+                      </div>
+                    ) : null}
                   </section>
 
-                  <section className="section map-sheet-info-list-v2 map-sheet-info-list-v3">
+                  <section className="section map-sheet-info-card map-sheet-info-list-v2 map-sheet-info-list-v3">
                     <MapDetailRow icon="pin" label="주소">
                       {detailShop.address}
                     </MapDetailRow>
                     <MapDetailRow icon="layers" label="운영 정보">
-                      {detailShop.floor ? `${detailShop.floor}층 매장` : '층 정보 확인 필요'} · {statusToLabel(detailShop.status)}
+                      {detailFloorLabel ?? '층 정보 확인 필요'} · {statusToLabel(detailShop.status)}
                     </MapDetailRow>
                     <MapDetailRow icon="tag" label="취급 / 분류">
                       {detailShop.works.length > 0
@@ -612,26 +825,19 @@ export function ExplorePage() {
                     </MapDetailRow>
                   </section>
 
-                  {detailShop.description ? (
-                    <section className="section map-sheet-description-card">
-                      <div className="map-sheet-section-head">
-                        <strong>매장 설명</strong>
-                      </div>
-                      <p className="map-sheet-description-text">{detailShop.description}</p>
-                    </section>
-                  ) : null}
-
                   {detailShop.works.length > 0 ? (
                     <section className="section map-sheet-list-card">
                       <div className="map-sheet-section-head">
                         <strong>취급 작품</strong>
                         <span>{detailShop.works.length}개</span>
                       </div>
-                      <ul className="map-sheet-bullet-list">
+                      <div className="map-sheet-token-cloud">
                         {detailShop.works.slice(0, 8).map((work) => (
-                          <li key={work}>{work}</li>
+                          <span className="map-sheet-token-chip" key={work}>
+                            {work}
+                          </span>
                         ))}
-                      </ul>
+                      </div>
                       {detailShop.works.length > 8 ? (
                         <p className="map-sheet-footnote">외 {detailShop.works.length - 8}개</p>
                       ) : null}
