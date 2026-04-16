@@ -2,8 +2,8 @@ import { type FormEvent, useMemo, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
-import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
 import { formatRelativeUpdated } from '../shared/lib/format'
+import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
 import { StatusPill } from '../shared/ui/StatusPill'
 
 const SEARCH_PAGE_SIZE = 8
@@ -35,31 +35,12 @@ export function SearchPage() {
 
   const allShops = useMemo(() => facetQuery.data?.content ?? [], [facetQuery.data?.content])
 
-  const recommendedKeywords = useMemo(() => {
-    const works = new Map<string, number>()
-
-    for (const shop of allShops) {
-      for (const work of shop.works) {
-        works.set(work, (works.get(work) ?? 0) + 1)
-      }
-    }
-
-    return Array.from(works.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([name]) => name)
-  }, [allShops])
-
-  const popularKeywords = useMemo(() => {
+  const quickKeywords = useMemo(() => {
     const counts = new Map<string, number>()
 
     for (const shop of allShops) {
       for (const categoryName of shop.categories) {
         counts.set(categoryName, (counts.get(categoryName) ?? 0) + 1)
-      }
-
-      if (shop.regionName) {
-        counts.set(shop.regionName, (counts.get(shop.regionName) ?? 0) + 1)
       }
     }
 
@@ -83,6 +64,18 @@ export function SearchPage() {
     setKeyword(trimmed)
   }
 
+  const buildExploreHref = (shopId: number, shopRegionId: number | null) => {
+    const next = new URLSearchParams()
+    next.set('page', '0')
+
+    if (shopRegionId) {
+      next.set('regionId', String(shopRegionId))
+    }
+
+    next.set('shopId', String(shopId))
+    return `/explore?${next.toString()}`
+  }
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     moveToSearch(keyword)
@@ -93,119 +86,76 @@ export function SearchPage() {
   }
 
   return (
-    <main className="app-shell search-focus-shell">
-      <section className="section search-focus-panel">
-        <div className="search-focus-top">
-          <button className="icon-button" type="button" onClick={() => navigate(-1)} aria-label="이전으로">
-            <span aria-hidden="true">←</span>
-          </button>
-          <div className="search-focus-header-copy">
-            <h1>검색</h1>
-            <p className="meta-text">매장명, 작품명, 지역으로 찾아보세요.</p>
-          </div>
+    <main className="search-screen-shell">
+      <section className="search-screen search-screen-v2">
+        <div className="search-screen-top search-screen-top-v2">
+          <form className="search-screen-bar" onSubmit={handleSubmit}>
+            <button className="search-screen-icon" type="button" onClick={() => navigate(-1)} aria-label="뒤로가기">
+              ‹
+            </button>
+
+            <input
+              autoFocus
+              aria-label="검색어 입력"
+              className="search-screen-input"
+              placeholder="장소 검색"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+            />
+
+            <button className="search-screen-icon" type="submit" aria-label="검색 실행">
+              ⌕
+            </button>
+          </form>
         </div>
 
-        <form className="search-focus-form" onSubmit={handleSubmit}>
-          <input
-            autoFocus
-            aria-label="검색어 입력"
-            className="search-focus-input"
-            placeholder="매장명, 작품명, 지역으로 검색"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
-          <button className="icon-button search-submit-button" type="submit" aria-label="검색">
-            <span aria-hidden="true">⌕</span>
-          </button>
-        </form>
+        {!currentKeyword ? (
+          <div className="search-screen-content search-screen-content-v2">
+            <section className="search-history-section">
+              <div className="search-history-head">
+                <strong>최근 검색어</strong>
+              </div>
 
-        <section className="search-focus-section search-focus-section-tight">
-          <div className="section-header search-focus-header-row">
-            <h2>최근</h2>
-            {recentSearches.length > 0 ? (
-              <button className="text-link" type="button" onClick={() => setRecentSearches([])}>
-                숨기기
-              </button>
+              {recentSearches.length > 0 ? (
+                <div className="search-history-list">
+                  {recentSearches.map((item) => (
+                    <button className="search-history-item" key={item} type="button" onClick={() => moveToSearch(item)}>
+                      <span aria-hidden="true">◷</span>
+                      <strong>{item}</strong>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="search-history-empty">
+                  <p>최근 검색 기록이 없습니다.</p>
+                </div>
+              )}
+            </section>
+
+            {quickKeywords.length > 0 ? (
+              <section className="search-history-section">
+                <div className="search-history-head">
+                  <strong>추천 키워드</strong>
+                </div>
+
+                <div className="map-chip-scroll">
+                  {quickKeywords.map((item) => (
+                    <button className="map-chip-filter" key={item} type="button" onClick={() => moveToSearch(item)}>
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </section>
             ) : null}
           </div>
-          {recentSearches.length > 0 ? (
-            <div className="chip-row">
-              {recentSearches.map((item) => (
-                <button className="filter-chip" key={item} type="button" onClick={() => moveToSearch(item)}>
-                  {item}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="search-focus-empty">최근 검색어가 없습니다.</p>
-          )}
-        </section>
-
-        <section className="search-focus-section search-focus-section-tight">
-          <h2>추천</h2>
-          <div className="search-rank-grid">
-            {recommendedKeywords.map((item, index) => (
-              <button className="search-rank-chip" key={item} type="button" onClick={() => moveToSearch(item)}>
-                <span>{index + 1}</span>
-                <strong>{item}</strong>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="search-focus-section search-focus-section-tight">
-          <h2>인기 키워드</h2>
-          <div className="search-inline-ranking">
-            {popularKeywords.map((item, index) => (
-              <button className="search-inline-item" key={item} type="button" onClick={() => moveToSearch(item)}>
-                <span>{index + 1}</span>
-                {item}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {currentKeyword ? (
-          <section className="search-focus-section search-result-section">
-            <div className="section-header">
-              <div>
-                <h2>검색 결과</h2>
-                <p className="meta-text">{resultQuery.data?.totalElements ?? 0}곳</p>
-              </div>
-              <Link className="text-link" to="/explore">
-                지도 탐색
-              </Link>
-            </div>
-
-            {resultQuery.isLoading ? <p>검색 결과를 불러오는 중입니다.</p> : null}
+        ) : (
+          <div className="search-screen-content search-screen-content-v2">
+            {resultQuery.isLoading ? <p className="meta-text">검색 결과를 불러오는 중입니다.</p> : null}
             {resultQuery.isError ? <p className="error-text">{(resultQuery.error as Error).message}</p> : null}
-            {resultQuery.data?.content.length === 0 ? <p className="search-focus-empty">검색 결과가 없습니다.</p> : null}
 
-            <div className="shop-list search-result-list">
-              {(resultQuery.data?.content ?? []).map((shop) => (
-                <article className="shop-item" key={shop.id}>
-                  <div className="shop-item-head">
-                    <strong>{shop.name}</strong>
-                    <StatusPill status={shop.status} />
-                  </div>
-                  <p className="shop-item-summary">
-                    {shop.regionName ?? `지역 ${shop.regionId ?? '-'}`} · 작품 {shop.works.length} · 링크 {shop.links.length}
-                  </p>
-                  <p className="shop-item-meta">{formatRelativeUpdated(shop.updatedAt)}</p>
-                  <div className="shop-action-group">
-                    <Link className="ghost-action compact-action" to={`/explore?page=0&regionId=${shop.regionId ?? ''}`}>
-                      지도 보기
-                    </Link>
-                    <Link className="primary-action compact-action" to={`/shops/${shop.id}`}>
-                      상세 보기
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            {resultQuery.data ? (
-              <div className="pagination-row">
+            <div className="map-list-header map-list-header-v2">
+              <strong>{resultQuery.data?.totalElements ?? 0}곳</strong>
+              <div className="map-sheet-controls">
                 <button
                   className="ghost-action compact-action"
                   disabled={currentPage === 0}
@@ -216,16 +166,53 @@ export function SearchPage() {
                 </button>
                 <button
                   className="ghost-action compact-action"
-                  disabled={resultQuery.data.last}
+                  disabled={resultQuery.data?.last}
                   type="button"
                   onClick={() => movePage(currentPage + 1)}
                 >
                   다음
                 </button>
               </div>
+            </div>
+
+            {resultQuery.data?.content.length === 0 ? (
+              <div className="search-history-empty">
+                <p>검색 결과가 없습니다.</p>
+              </div>
             ) : null}
-          </section>
-        ) : null}
+
+            <div className="map-list-results">
+              {(resultQuery.data?.content ?? []).map((shop) => (
+                <article className="map-list-item map-list-item-v2" key={shop.id}>
+                  <button
+                    className="map-list-select"
+                    type="button"
+                    onClick={() => navigate(buildExploreHref(shop.id, shop.regionId))}
+                  >
+                    <div className="map-list-item-head">
+                      <strong>{shop.name}</strong>
+                      <StatusPill status={shop.status} />
+                    </div>
+                    <p>
+                      {shop.regionName ?? `지역 ${shop.regionId ?? '-'}`} · 작품 {shop.works.length}
+                    </p>
+                    <p className="map-list-item-subtle">{shop.address}</p>
+                    <p className="map-list-item-subtle">{formatRelativeUpdated(shop.updatedAt)}</p>
+                  </button>
+
+                  <div className="shop-action-group">
+                    <Link className="ghost-action compact-action" to={buildExploreHref(shop.id, shop.regionId)}>
+                      지도 보기
+                    </Link>
+                    <Link className="primary-action compact-action" to={`/shops/${shop.id}`}>
+                      상세 보기
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     </main>
   )
