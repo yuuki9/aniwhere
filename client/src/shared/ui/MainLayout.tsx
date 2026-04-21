@@ -1,13 +1,16 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { FloatingTabBar } from './FloatingTabBar'
 
 export function MainLayout() {
+  const location = useLocation()
+  const isMapRoute = location.pathname.startsWith('/explore')
+
   return (
-    <div className="route-shell">
-      <div className="route-content">
+    <div className={`route-shell ${isMapRoute ? 'route-shell-map' : ''}`}>
+      <div className={`route-content ${isMapRoute ? 'route-content-map' : ''}`}>
         <Outlet />
       </div>
-      <FloatingTabBar />
+      {isMapRoute ? null : <FloatingTabBar />}
     </div>
   )
 }
