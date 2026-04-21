@@ -56,10 +56,14 @@ data class ShopRequest(
     val floor: String? = null,
     val regionId: Short? = null,
     val status: String = "UNVERIFIED",
+    val sellsIchibanKuji: Boolean? = null,
+    val visitTip: String? = null,
 ) {
     fun toDomain() = Shop(
         name = name, address = address, px = px, py = py,
         floor = floor, regionId = regionId,
         status = com.aniwhere.server.domain.shop.model.ShopStatus.valueOf(status.uppercase()),
+        sellsIchibanKuji = sellsIchibanKuji,
+        visitTip = visitTip,
     )
 }
