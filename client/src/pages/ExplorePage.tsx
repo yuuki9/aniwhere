@@ -1,8 +1,10 @@
 ﻿import { type ReactNode, type UIEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { getShopPhotos } from '../shared/api/admin'
+import { askMapAssistant } from '../shared/api/llm'
 import { getShop, getShops } from '../shared/api/shops'
-import type { Shop } from '../shared/api/types'
+import type { AdminShopPhoto, MapAssistantRecommendation, Shop } from '../shared/api/types'
 import { formatRelativeUpdated, linkTypeToLabel, statusToLabel } from '../shared/lib/format'
 import {
   calculateDistanceKm,
@@ -10,6 +12,7 @@ import {
   requestCurrentLocation,
   type UserLocation,
 } from '../shared/lib/location'
+import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { ShopMap } from '../shared/ui/ShopMap'
 import { StatusPill } from '../shared/ui/StatusPill'
 
@@ -17,6 +20,8 @@ const PAGE_SIZE = 10
 const MAP_FETCH_SIZE = 200
 const EMPTY_SHOPS: Shop[] = []
 const DETAIL_MEDIA_TONES = ['blue', 'orange', 'mint', 'violet'] as const
+const ASSISTANT_SUGGESTIONS = ['홍대에서 일번쿠지 있는 곳', '피규어 종류가 많은 매장', '초행자에게 추천할 만한 곳']
+const ASSISTANT_RETRY_HINT = '현재 데이터 기준으로 바로 맞는 후보를 찾지 못했어요. 작품명, 지역명, 매장명을 조금 더 구체적으로 입력해보세요.'
 
 type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
 type ViewMode = 'map' | 'list'
@@ -27,6 +32,13 @@ type DetailMediaItem = {
   id: string
   src: string
   alt: string
+}
+
+type AssistantMessage = {
+  id: string
+  role: 'assistant' | 'user'
+  content: string
+  recommendations?: MapAssistantRecommendation[]
 }
 
 type DetailIconName = 'pin' | 'clock' | 'layers' | 'tag' | 'link'
@@ -45,6 +57,22 @@ function buildDescriptionPreview(description: string | null, maxLength = 120) {
   return `${normalized.slice(0, maxLength).trimEnd()}…`
 }
 
+function shouldShowAssistantSuggestions(messages: AssistantMessage[]) {
+  const userMessageCount = messages.filter((message) => message.role === 'user').length
+
+  if (userMessageCount === 0) {
+    return true
+  }
+
+  const lastAssistantMessage = [...messages].reverse().find((message) => message.role === 'assistant')
+
+  if (!lastAssistantMessage) {
+    return false
+  }
+
+  return lastAssistantMessage.content.includes('조금 더 구체적으로') || lastAssistantMessage.content.includes('찾지 못했어요')
+}
+
 function getDetailMediaTone(shopId: number): DetailMediaTone {
   return DETAIL_MEDIA_TONES[(Math.max(shopId, 1) - 1) % DETAIL_MEDIA_TONES.length]
 }
@@ -58,7 +86,15 @@ function formatFloorLabel(floor: string | null) {
   return normalized.endsWith('층') ? normalized : `${normalized}층`
 }
 
-function buildDetailMediaItems(shop: Shop): DetailMediaItem[] {
+function buildDetailMediaItems(shop: Shop, uploadedPhotos: AdminShopPhoto[] = []): DetailMediaItem[] {
+  if (uploadedPhotos.length > 0) {
+    return uploadedPhotos.slice(0, 5).map((photo, index) => ({
+      id: photo.id,
+      src: photo.dataUrl,
+      alt: `${shop.name} 실제 사진 ${index + 1}`,
+    }))
+  }
+
   const seeds = ['hero', 'sub-1', 'sub-2', 'sub-3', 'sub-4']
 
   return seeds.map((seed, index) => {
@@ -149,6 +185,23 @@ function MapDetailRow({
   )
 }
 
+function MapAssistantIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <rect x="5.25" y="7" width="13.5" height="10.5" rx="5.25" fill="currentColor" opacity="0.18" />
+      <path
+        d="M9 19.5v-1.6m6 1.6v-1.6m-3-14v2.1m-5.4 3.5h10.8A2.6 2.6 0 0 1 20 12.1v3.4a2.6 2.6 0 0 1-2.6 2.6H9.7L6 20v-1.9a2.6 2.6 0 0 1-2-2.6v-3.4A2.6 2.6 0 0 1 6.6 9.5Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <circle cx="9.5" cy="13.5" r="1" fill="currentColor" />
+      <circle cx="14.5" cy="13.5" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
 export function ExplorePage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -167,8 +220,19 @@ export function ExplorePage() {
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
   const [peekDragOffset, setPeekDragOffset] = useState(0)
   const [isPeekDragging, setIsPeekDragging] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
+  const [assistantOpen, setAssistantOpen] = useState(false)
+  const [assistantInput, setAssistantInput] = useState('')
+  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([
+    {
+      id: 'assistant-welcome',
+      role: 'assistant',
+      content: '작품명, 지역명, 일번쿠지 여부를 물어보면 지금 보이는 매장 기준으로 바로 추려드릴게요.',
+    },
+  ])
   const listScrollRef = useRef<HTMLDivElement | null>(null)
   const detailScrollRef = useRef<HTMLDivElement | null>(null)
+  const assistantMessagesRef = useRef<HTMLDivElement | null>(null)
   const listScrollTopRef = useRef(0)
   const listVisibleCountRef = useRef(PAGE_SIZE)
   const pendingListRestoreRef = useRef(false)
@@ -191,6 +255,13 @@ export function ExplorePage() {
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  })
+
+  const detailPhotosQuery = useQuery({
+    queryKey: ['admin-shop-photos', selectedShopId],
+    queryFn: () => getShopPhotos(selectedShopId as number),
+    enabled: selectedShopId != null,
+    staleTime: Infinity,
   })
 
   const allShops = useMemo(() => shopsQuery.data?.content ?? EMPTY_SHOPS, [shopsQuery.data?.content])
@@ -275,8 +346,62 @@ export function ExplorePage() {
       .map((item) => item.shop)
   }, [allShops, detailShop])
 
+  const assistantMutation = useMutation({
+    mutationFn: async (question: string) =>
+      askMapAssistant({
+        question,
+        shops: shopsWithDistance,
+        selectedShop: detailShop,
+      }),
+    onSuccess: (reply) => {
+      const summary =
+        reply.recommendations.length === 0 && !reply.summary.includes('구체적으로')
+          ? `${reply.summary} ${ASSISTANT_RETRY_HINT}`
+          : reply.summary
+
+      setAssistantMessages((current) => [
+        ...current,
+        {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: summary,
+          recommendations: reply.recommendations,
+        },
+      ])
+    },
+    onError: (error) => {
+      setAssistantMessages((current) => [
+        ...current,
+        {
+          id: `assistant-error-${Date.now()}`,
+          role: 'assistant',
+          content: error instanceof Error ? error.message : 'AI 탐색 응답을 불러오지 못했습니다.',
+        },
+      ])
+    },
+  })
+
   const syncSearchParams = (next: URLSearchParams) => {
     setSearchParams(next, { replace: true })
+  }
+
+  const submitAssistantQuestion = (question: string) => {
+    const normalizedQuestion = question.trim()
+
+    if (!normalizedQuestion) {
+      return
+    }
+
+    setAssistantMessages((current) => [
+      ...current,
+      {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: normalizedQuestion,
+      },
+    ])
+    setAssistantInput('')
+    assistantMutation.mutate(normalizedQuestion)
   }
 
   const requestMapFocus = (mode: FocusMode) => {
@@ -312,6 +437,7 @@ export function ExplorePage() {
     setSelectionOrigin(origin)
     setIsDetailHeaderCollapsed(false)
     setSheetMode(nextSheetMode)
+    setAssistantOpen(false)
     requestMapFocus('shop')
     setViewMode('map')
   }
@@ -323,6 +449,7 @@ export function ExplorePage() {
     pendingListRestoreRef.current = true
     setVisibleListCount(Math.max(PAGE_SIZE, listVisibleCountRef.current))
     setSheetMode('peek')
+    setAssistantOpen(false)
     requestMapFocus('shops')
     setViewMode('list')
     setSelectionOrigin(null)
@@ -342,6 +469,7 @@ export function ExplorePage() {
     next.delete('shopId')
     syncSearchParams(next)
     setSheetMode('peek')
+    setAssistantOpen(false)
     setFocusMode('idle')
     setViewMode('map')
     setSelectionOrigin(null)
@@ -351,6 +479,10 @@ export function ExplorePage() {
     if (nextView === 'map' && isListSheetOpen) {
       listScrollTopRef.current = listScrollRef.current?.scrollTop ?? 0
       listVisibleCountRef.current = visibleListCount
+    }
+
+    if (nextView === 'list') {
+      setAssistantOpen(false)
     }
 
     setViewMode(nextView)
@@ -379,10 +511,13 @@ export function ExplorePage() {
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
   const primaryLink = detailShop?.links[0] ?? null
   const detailFloorLabel = formatFloorLabel(detailShop?.floor ?? null)
-  const detailDescriptionPreview = buildDescriptionPreview(detailShop?.description ?? null, 104)
+  const detailDescriptionPreview = buildDescriptionPreview(detailShop?.description ?? detailShop?.visitTip ?? null, 104)
   const detailMediaTone = detailShop ? getDetailMediaTone(detailShop.id) : 'blue'
-  const detailMediaItems = detailShop ? buildDetailMediaItems(detailShop) : []
+  const detailMediaItems = detailShop ? buildDetailMediaItems(detailShop, detailPhotosQuery.data ?? []) : []
   const isListSheetOpen = viewMode === 'list' && !detailShop
+  const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
+  const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
+  const showAssistantReturn = !assistantOpen && assistantHasConversation && !isListSheetOpen && sheetMode !== 'expanded'
 
   const handleListScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget
@@ -414,6 +549,7 @@ export function ExplorePage() {
     setIsDetailHeaderCollapsed(false)
     setPeekDragOffset(0)
     setIsPeekDragging(false)
+    setAssistantOpen(false)
     setSheetMode('expanded')
   }
 
@@ -495,6 +631,15 @@ export function ExplorePage() {
     detailScrollRef.current.scrollTop = 0
   }, [detailShop?.id, sheetMode])
 
+  useLayoutEffect(() => {
+    if (!assistantOpen || !assistantMessagesRef.current) {
+      return
+    }
+
+    const container = assistantMessagesRef.current
+    container.scrollTop = container.scrollHeight
+  }, [assistantMessages, assistantOpen, assistantMutation.isPending])
+
   const handleMapSelectShop = (shopId: number) => {
     handleSelectShop(shopId, 'map')
   }
@@ -515,10 +660,13 @@ export function ExplorePage() {
   }
 
   const topSearch = (
-    <button className="map-search-field" type="button" onClick={() => navigate('/search')}>
-      <span className="map-search-field-copy">매장, 작품, 지역 검색</span>
-      <strong aria-hidden="true">⌕</strong>
-    </button>
+    <div className="map-search-row">
+      <button className="map-search-field" type="button" onClick={() => navigate('/search')}>
+        <span className="map-search-field-copy">매장, 작품, 지역 검색</span>
+        <strong aria-hidden="true">⌕</strong>
+      </button>
+      <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-map" />
+    </div>
   )
 
   const chipToolbar = (
@@ -585,6 +733,7 @@ export function ExplorePage() {
               activeShopId={detailShop?.id ?? null}
               onSelectShop={handleMapSelectShop}
               onClearSelection={handleClearSelection}
+              onReady={() => setMapReady(true)}
               userLocation={userLocation}
               focusMode={focusMode}
               focusRequestId={focusRequestId}
@@ -610,6 +759,146 @@ export function ExplorePage() {
             >
               {isListSheetOpen ? '지도 보기' : '목록 보기'}
             </button>
+          ) : null}
+
+          {!isListSheetOpen && sheetMode !== 'expanded' && mapReady ? (
+            <>
+              <button
+                aria-expanded={assistantOpen}
+                aria-label="AI 탐색 열기"
+                className="map-llm-fab"
+                type="button"
+                onClick={() => setAssistantOpen((current) => !current)}
+              >
+                <MapAssistantIcon />
+              </button>
+
+              {showAssistantReturn ? (
+                <button
+                  className="map-llm-return"
+                  type="button"
+                  onClick={() => setAssistantOpen(true)}
+                >
+                  AI로 돌아가기
+                </button>
+              ) : null}
+
+              {assistantOpen ? (
+                <aside className="map-llm-panel" aria-label="AI 탐색 대화창">
+                  <div className="map-llm-panel-head">
+                    <strong>AI 챗봇</strong>
+                    <button className="map-llm-close" type="button" onClick={() => setAssistantOpen(false)}>
+                      ×
+                    </button>
+                  </div>
+
+                  {!assistantHasConversation ? (
+                    <div className="map-llm-start-screen">
+                      <div className="map-llm-start-copy">
+                        <span className="map-llm-start-badge">
+                          <MapAssistantIcon />
+                          AI 탐색
+                        </span>
+                        <strong>궁금한 것이 있으신가요?</strong>
+                        <p>AI에게 질문해 보세요.</p>
+                      </div>
+
+                      <div className="map-llm-start-list">
+                        {ASSISTANT_SUGGESTIONS.map((suggestion, index) => (
+                          <button
+                            className="map-llm-start-card"
+                            key={suggestion}
+                            type="button"
+                            onClick={() => submitAssistantQuestion(suggestion)}
+                          >
+                            <span>{index === 0 ? '추천 질문' : index === 1 ? '많이 찾는 질문' : '처음 시작 질문'}</span>
+                            <strong>{suggestion}</strong>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="map-llm-message-list" ref={assistantMessagesRef}>
+                      {assistantMessages.map((message) => (
+                        <article
+                          className={`map-llm-message map-llm-message-${message.role}`}
+                          key={message.id}
+                        >
+                          <p>{message.content}</p>
+                          {message.recommendations && message.recommendations.length > 0 ? (
+                            <div className="map-llm-recommend-list">
+                              {message.recommendations.map((recommendation) => {
+                                const recommendedShop = shopsWithDistance.find((shop) => shop.id === recommendation.shopId)
+
+                                if (!recommendedShop) {
+                                  return null
+                                }
+
+                                return (
+                                  <button
+                                    className="map-llm-recommend-card"
+                                    key={`${message.id}-${recommendation.shopId}`}
+                                    type="button"
+                                    onClick={() => {
+                                      handleSelectShop(recommendedShop.id, 'map')
+                                    }}
+                                  >
+                                    <strong>{recommendedShop.name}</strong>
+                                    <span>{recommendation.reason}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          ) : null}
+                        </article>
+                      ))}
+
+                      {assistantMutation.isPending ? (
+                        <article className="map-llm-message map-llm-message-assistant">
+                          <p>조건에 맞는 매장을 정리하는 중입니다...</p>
+                        </article>
+                      ) : null}
+
+                      {showAssistantSuggestions ? (
+                        <article className="map-llm-message map-llm-message-suggestion">
+                          <strong>이런 질문으로 다시 이어가보세요</strong>
+                          <div className="map-llm-suggestion-row">
+                            {ASSISTANT_SUGGESTIONS.map((suggestion) => (
+                              <button
+                                className="map-llm-suggestion"
+                                key={suggestion}
+                                type="button"
+                                onClick={() => submitAssistantQuestion(suggestion)}
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        </article>
+                      ) : null}
+                    </div>
+                  )}
+
+                  <form
+                    className="map-llm-input-row"
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      submitAssistantQuestion(assistantInput)
+                    }}
+                  >
+                    <input
+                      className="map-llm-input"
+                      placeholder="작품명, 지역, 운영 상태를 물어보세요"
+                      value={assistantInput}
+                      onChange={(event) => setAssistantInput(event.target.value)}
+                    />
+                    <button className="map-llm-send" type="submit">
+                      전송
+                    </button>
+                  </form>
+                </aside>
+              ) : null}
+            </>
           ) : null}
 
           {isListSheetOpen ? (
@@ -707,9 +996,12 @@ export function ExplorePage() {
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  <button className="map-sheet-icon-button" type="button" onClick={handleExpandedBack} aria-label="뒤로 가기">
-                    ←
-                  </button>
+                  <div className="map-sheet-sticky-actions">
+                    <button className="map-sheet-icon-button" type="button" onClick={handleExpandedBack} aria-label="뒤로 가기">
+                      ←
+                    </button>
+                    <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
+                  </div>
                   <strong>{detailShop.name}</strong>
                   <button className="map-sheet-icon-button" type="button" onClick={handleClearSelection} aria-label="상세 화면 닫기">
                     ×
@@ -718,22 +1010,27 @@ export function ExplorePage() {
 
                 <section className={`map-sheet-media map-sheet-media-${detailMediaTone}`}>
                   <div className="map-sheet-media-topbar">
-                    <button
-                      className="map-sheet-icon-button map-sheet-icon-button-overlay"
-                      type="button"
-                      onClick={handleExpandedBack}
-                      aria-label="뒤로 가기"
-                    >
-                      ←
-                    </button>
-                    <button
-                      className="map-sheet-icon-button map-sheet-icon-button-overlay"
-                      type="button"
-                      onClick={handleClearSelection}
-                      aria-label="상세 화면 닫기"
-                    >
-                      ×
-                    </button>
+                    <div className="map-sheet-topbar-actions">
+                      <button
+                        className="map-sheet-icon-button map-sheet-icon-button-overlay"
+                        type="button"
+                        onClick={handleExpandedBack}
+                        aria-label="뒤로 가기"
+                      >
+                        ←
+                      </button>
+                      <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
+                    </div>
+                    <div className="map-sheet-topbar-actions">
+                      <button
+                        className="map-sheet-icon-button map-sheet-icon-button-overlay"
+                        type="button"
+                        onClick={handleClearSelection}
+                        aria-label="상세 화면 닫기"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
 
                   <div className="map-sheet-media-grid">
@@ -753,7 +1050,7 @@ export function ExplorePage() {
                           <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
                           {index === detailMediaItems.slice(1).length - 1 ? (
                             <div className="map-sheet-media-count">
-                              <strong>+{Math.max(detailShop.links.length, detailShop.works.length, 4)}</strong>
+                              <strong>+{Math.max(detailMediaItems.length, detailShop.links.length, detailShop.works.length, 4)}</strong>
                             </div>
                           ) : null}
                         </article>
@@ -811,6 +1108,7 @@ export function ExplorePage() {
                     </MapDetailRow>
                     <MapDetailRow icon="layers" label="운영 정보">
                       {detailFloorLabel ?? '층 정보 확인 필요'} · {statusToLabel(detailShop.status)}
+                      {detailShop.sellsIchibanKuji ? ' · 일번쿠지 취급' : ''}
                     </MapDetailRow>
                     <MapDetailRow icon="tag" label="취급 / 분류">
                       {detailShop.works.length > 0
@@ -819,6 +1117,11 @@ export function ExplorePage() {
                           ? detailShop.categories.join(' · ')
                           : '등록된 작품 정보 없음'}
                     </MapDetailRow>
+                    {detailShop.visitTip ? (
+                      <MapDetailRow icon="tag" label="방문 팁">
+                        {detailShop.visitTip}
+                      </MapDetailRow>
+                    ) : null}
                     <MapDetailRow icon="clock" label="업데이트">
                       {formatRelativeUpdated(detailShop.updatedAt)}
                       {activeShop?.distanceLabel ? ` · ${activeShop.distanceLabel}` : ''}

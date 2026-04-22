@@ -14,6 +14,7 @@ type ShopMapProps = {
   focusMode?: FocusMode
   focusRequestId?: number
   selectionOrigin?: 'map' | 'list' | null
+  onReady?: () => void
 }
 
 function MapBackgroundClick({ onClearSelection }: { onClearSelection?: () => void }) {
@@ -98,11 +99,22 @@ export function ShopMap({
   focusMode = 'shops',
   focusRequestId = 0,
   selectionOrigin = null,
+  onReady,
 }: ShopMapProps) {
+  const readyNotifiedRef = useRef(false)
   const validShops = useMemo(
     () => shops.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
     [shops],
   )
+
+  const notifyReady = () => {
+    if (readyNotifiedRef.current) {
+      return
+    }
+
+    readyNotifiedRef.current = true
+    onReady?.()
+  }
 
   const center = useMemo<[number, number]>(() => {
     if (userLocation) {
@@ -133,10 +145,19 @@ export function ShopMap({
   }
 
   return (
-    <MapContainer center={center} zoom={14} className="map-leaflet" scrollWheelZoom zoomControl={false}>
+    <MapContainer
+      center={center}
+      zoom={14}
+      className="map-leaflet"
+      scrollWheelZoom
+      zoomControl={false}
+    >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        eventHandlers={{
+          load: notifyReady,
+        }}
       />
       <ZoomControl position="bottomright" />
 

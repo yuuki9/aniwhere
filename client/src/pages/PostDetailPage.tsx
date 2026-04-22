@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { createComment, getComments, getPost } from '../shared/api/community'
 import { formatDateTime } from '../shared/lib/format'
+import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 
 export function PostDetailPage() {
   const { postId } = useParams()
@@ -58,6 +59,7 @@ export function PostDetailPage() {
         <Link className="text-link" to="/community">
           목록으로
         </Link>
+        <GlobalNavigationMenu />
       </section>
 
       {post ? (
@@ -85,6 +87,7 @@ export function PostDetailPage() {
               <h2>댓글 남기기</h2>
             </div>
           </div>
+
           <form
             className="form-mock"
             onSubmit={(event) => {
@@ -107,16 +110,10 @@ export function PostDetailPage() {
               value={content}
               onChange={(event) => setContent(event.target.value)}
             />
-            <button
-              className="primary-action compact-action"
-              disabled={commentMutation.isPending}
-              type="submit"
-            >
+            <button className="primary-action compact-action" disabled={commentMutation.isPending} type="submit">
               {commentMutation.isPending ? '등록 중...' : '댓글 등록'}
             </button>
-            {commentMutation.isError ? (
-              <p className="error-text">{(commentMutation.error as Error).message}</p>
-            ) : null}
+            {commentMutation.isError ? <p className="error-text">{(commentMutation.error as Error).message}</p> : null}
           </form>
         </article>
 
@@ -129,9 +126,7 @@ export function PostDetailPage() {
             <span className="meta-text">{comments.length}개</span>
           </div>
           {commentsQuery.isLoading ? <p>댓글을 불러오는 중입니다.</p> : null}
-          {commentsQuery.isError ? (
-            <p className="error-text">{(commentsQuery.error as Error).message}</p>
-          ) : null}
+          {commentsQuery.isError ? <p className="error-text">{(commentsQuery.error as Error).message}</p> : null}
           <div className="source-list">
             {comments.map((item) => (
               <article className="source-card source-card-rich" key={item.id}>

@@ -1,5 +1,4 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { FloatingTabBar } from './FloatingTabBar'
 
 export function MainLayout() {
   const location = useLocation()
@@ -10,7 +9,6 @@ export function MainLayout() {
       <div className={`route-content ${isMapRoute ? 'route-content-map' : ''}`}>
         <Outlet />
       </div>
-      {isMapRoute ? null : <FloatingTabBar />}
     </div>
   )
 }

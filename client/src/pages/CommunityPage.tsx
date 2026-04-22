@@ -5,11 +5,13 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { createPost, getPosts } from '../shared/api/community'
 import { formatDateTime } from '../shared/lib/format'
+import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 
 export function CommunityPage() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Number(searchParams.get('page') ?? '0')
@@ -64,6 +66,16 @@ export function CommunityPage() {
 
   return (
     <main className="app-shell">
+      <section className="section discover-search-entry-section">
+        <div className="map-search-row">
+          <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
+          <button className="map-search-field" type="button" onClick={() => navigate('/search')}>
+            <span className="map-search-field-copy">매장명, 작품명, 지역으로 검색</span>
+            <strong aria-hidden="true">⌕</strong>
+          </button>
+        </div>
+      </section>
+
       <section className="section editorial-hero">
         <div className="hero-copy">
           <span className="eyebrow">COMMUNITY</span>

@@ -1,3 +1,4 @@
+import { AdminPage } from '../pages/AdminPage'
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { CommunityPage } from '../pages/CommunityPage'
 import { ExplorePage } from '../pages/ExplorePage'
@@ -46,6 +47,10 @@ export const router = createBrowserRouter([
   {
     path: '/community/:postId',
     element: <PostDetailPage />,
+  },
+  {
+    path: '/admin',
+    element: <AdminPage />,
   },
   {
     path: '/reports/new',

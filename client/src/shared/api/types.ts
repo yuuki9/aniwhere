@@ -54,6 +54,8 @@ export type Shop = {
   regionId: number | null
   regionName: string | null
   status: ShopStatus
+  sellsIchibanKuji: boolean | null
+  visitTip: string | null
   categories: string[]
   works: string[]
   links: ShopLink[]
@@ -70,6 +72,49 @@ export type ShopRequest = {
   floor?: string | null
   regionId?: number | null
   status: ShopStatus
+  sellsIchibanKuji?: boolean | null
+  visitTip?: string | null
+}
+
+export type AdminShopPhoto = {
+  id: string
+  shopId: number
+  name: string
+  dataUrl: string
+  createdAt: string
+}
+
+export type PointGrantStatus = 'QUEUED' | 'SENT' | 'FAILED'
+
+export type PointGrantRequest = {
+  id: string
+  recipientLabel: string
+  recipientUserKey: string
+  amount: number
+  reason: string
+  promotionCode: string
+  status: PointGrantStatus
+  channel: 'SERVER_QUEUE' | 'SDK_SELF_TEST'
+  resultMessage: string | null
+  createdAt: string
+}
+
+export type CreatePointGrantRequest = {
+  recipientLabel: string
+  recipientUserKey: string
+  amount: number
+  reason: string
+  promotionCode: string
+}
+
+export type MapAssistantRecommendation = {
+  shopId: number
+  reason: string
+}
+
+export type MapAssistantReply = {
+  summary: string
+  recommendations: MapAssistantRecommendation[]
 }
 
 export type Post = {

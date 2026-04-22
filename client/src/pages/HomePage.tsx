@@ -1,30 +1,33 @@
-import { useEffect, useMemo, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
 import { formatRelativeUpdated } from '../shared/lib/format'
+import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { StatusPill } from '../shared/ui/StatusPill'
 
 const EMPTY_SHOPS = []
+const HERO_ROTATE_MS = 5200
 
 type HeroTheme = {
   id: 'new-shops' | 'hot-keywords' | 'trusted-picks'
   title: string
   subtitle: string
   accent: 'blue' | 'orange' | 'mint'
-  actionLabel: string
-  actionTarget: '/explore' | '/search'
   spotlight: string
   markerPrimary: string
   markerSecondary: string
   visualLabel: string
 }
 
-const HERO_ROTATE_MS = 5200
-
 export function HomePage() {
   const navigate = useNavigate()
   const [activeThemeIndex, setActiveThemeIndex] = useState(0)
+  const [heroDragOffset, setHeroDragOffset] = useState(0)
+  const [isHeroDragging, setIsHeroDragging] = useState(false)
+  const heroViewportRef = useRef<HTMLDivElement | null>(null)
+  const heroPointerIdRef = useRef<number | null>(null)
+  const heroDragStartXRef = useRef<number | null>(null)
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'discover-home'],
@@ -66,7 +69,7 @@ export function HomePage() {
   }, [allShops])
 
   const heroThemes = useMemo<HeroTheme[]>(() => {
-    const newestRegion = newestShops[0]?.regionName ?? '홍대'
+    const newestRegion = newestShops[0]?.regionName ?? '업데이트 지역'
     const topKeyword = trendingKeywords[0]?.[0] ?? '가챠'
     const secondKeyword = trendingKeywords[1]?.[0] ?? '피규어'
     const bestShop = rankedShops[0]?.name ?? '추천 매장'
@@ -77,8 +80,6 @@ export function HomePage() {
         title: '이번 주 새로 들어온 매장',
         subtitle: '방금 반영된 매장을 먼저 둘러보세요.',
         accent: 'blue',
-        actionLabel: '신규 매장 보기',
-        actionTarget: '/explore',
         spotlight: newestShops[0]?.name ?? '신규 매장 업데이트',
         markerPrimary: newestRegion,
         markerSecondary: newestShops[0] ? formatRelativeUpdated(newestShops[0].updatedAt) : '방금 반영',
@@ -87,13 +88,11 @@ export function HomePage() {
       {
         id: 'hot-keywords',
         title: '지금 많이 찾는 키워드',
-        subtitle: '요즘 많이 찾는 작품 키워드부터 확인해보세요.',
+        subtitle: '요즘 많이 찾는 작품 키워드를 빠르게 확인해보세요.',
         accent: 'orange',
-        actionLabel: '키워드 검색',
-        actionTarget: '/search',
         spotlight: `#${topKeyword} #${secondKeyword}`,
-        markerPrimary: '실시간 인기',
-        markerSecondary: `${trendingKeywords[0]?.[1] ?? 0}개 매장`,
+        markerPrimary: '실시간 관심',
+        markerSecondary: `${trendingKeywords[0]?.[1] ?? 0}곳 반영`,
         visualLabel: 'HOT',
       },
       {
@@ -101,17 +100,13 @@ export function HomePage() {
         title: '리뷰가 모인 추천 매장',
         subtitle: '많이 보는 매장부터 빠르게 비교해보세요.',
         accent: 'mint',
-        actionLabel: '추천 매장 보기',
-        actionTarget: '/explore',
         spotlight: bestShop,
-        markerPrimary: '인기 큐레이션',
+        markerPrimary: '믿고 보는 큐레이션',
         markerSecondary: `상위 ${Math.min(rankedShops.length, 6)}곳`,
         visualLabel: 'TOP',
       },
     ]
   }, [newestShops, rankedShops, trendingKeywords])
-
-  const activeTheme = heroThemes[activeThemeIndex] ?? heroThemes[0]
 
   useEffect(() => {
     if (heroThemes.length <= 1) {
@@ -129,32 +124,112 @@ export function HomePage() {
     return () => window.clearInterval(timer)
   }, [heroThemes.length])
 
+  const resetHeroDrag = () => {
+    heroPointerIdRef.current = null
+    heroDragStartXRef.current = null
+    setHeroDragOffset(0)
+    setIsHeroDragging(false)
+  }
+
+  const handleHeroPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (heroThemes.length <= 1) {
+      return
+    }
+
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return
+    }
+
+    heroPointerIdRef.current = event.pointerId
+    heroDragStartXRef.current = event.clientX
+    setIsHeroDragging(true)
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const handleHeroPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (heroPointerIdRef.current !== event.pointerId || heroDragStartXRef.current == null) {
+      return
+    }
+
+    const deltaX = event.clientX - heroDragStartXRef.current
+    const width = heroViewportRef.current?.clientWidth ?? 0
+    const limit = Math.max(width * 0.24, 72)
+    setHeroDragOffset(Math.max(-limit, Math.min(limit, deltaX)))
+  }
+
+  const handleHeroPointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (heroPointerIdRef.current !== event.pointerId || heroDragStartXRef.current == null) {
+      return
+    }
+
+    const deltaX = event.clientX - heroDragStartXRef.current
+    const width = heroViewportRef.current?.clientWidth ?? 0
+    const threshold = Math.max(width * 0.14, 56)
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+
+    if (deltaX <= -threshold) {
+      setActiveThemeIndex((current) => (current + 1) % heroThemes.length)
+      resetHeroDrag()
+      return
+    }
+
+    if (deltaX >= threshold) {
+      setActiveThemeIndex((current) => (current - 1 + heroThemes.length) % heroThemes.length)
+      resetHeroDrag()
+      return
+    }
+
+    resetHeroDrag()
+  }
+
   return (
     <main className="app-shell discover-shell">
       <section className="section discover-search-entry-section">
-        <button className="search-entry-button discover-search-entry" type="button" onClick={() => navigate('/search')}>
-          <span>매장명, 작품명, 지역으로 검색</span>
-          <strong>⌕</strong>
-        </button>
+        <div className="map-search-row">
+          <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
+          <button className="map-search-field" type="button" onClick={() => navigate('/search')}>
+            <span className="map-search-field-copy">매장명, 작품명, 지역으로 검색</span>
+            <strong aria-hidden="true">⌕</strong>
+          </button>
+        </div>
       </section>
 
-      <section className={`section discover-hero discover-hero-${activeTheme.accent}`}>
-        <div className="discover-hero-card">
-          <div className="discover-hero-copy">
-            <h1>{activeTheme.title}</h1>
-            <p>{activeTheme.subtitle}</p>
-            <strong className="discover-hero-spotlight">{activeTheme.spotlight}</strong>
-            <button className="ghost-action compact-action" type="button" onClick={() => navigate(activeTheme.actionTarget)}>
-              {activeTheme.actionLabel}
-            </button>
-          </div>
+      <section className="section discover-hero">
+        <div
+          ref={heroViewportRef}
+          className={`discover-hero-viewport ${isHeroDragging ? 'discover-hero-viewport-dragging' : ''}`}
+          onPointerDown={handleHeroPointerDown}
+          onPointerMove={handleHeroPointerMove}
+          onPointerUp={handleHeroPointerEnd}
+          onPointerCancel={resetHeroDrag}
+          onLostPointerCapture={resetHeroDrag}
+        >
+          <div
+            className="discover-hero-track"
+            style={{
+              transform: `translate3d(calc(${-activeThemeIndex * 100}% + ${heroDragOffset}px), 0, 0)`,
+              transition: isHeroDragging ? 'none' : undefined,
+            }}
+          >
+            {heroThemes.map((theme) => (
+              <article key={theme.id} className={`discover-hero-slide discover-hero-${theme.accent}`}>
+                <div className="discover-hero-card">
+                  <div className="discover-hero-copy">
+                    <h1>{theme.title}</h1>
+                    <p>{theme.subtitle}</p>
+                    <strong className="discover-hero-spotlight">{theme.spotlight}</strong>
+                  </div>
 
-          <div className="discover-hero-visual" aria-hidden="true">
-            <span className="discover-hero-visual-word">{activeTheme.visualLabel}</span>
-            <div className="discover-hero-marker-stack">
-              <span className="discover-hero-marker">{activeTheme.markerPrimary}</span>
-              <span className="discover-hero-marker discover-hero-marker-secondary">{activeTheme.markerSecondary}</span>
-            </div>
+                  <div className="discover-hero-visual" aria-hidden="true">
+                    <span className="discover-hero-visual-word">{theme.visualLabel}</span>
+                    <div className="discover-hero-marker-stack">
+                      <span className="discover-hero-marker">{theme.markerPrimary}</span>
+                      <span className="discover-hero-marker discover-hero-marker-secondary">{theme.markerSecondary}</span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
 
@@ -201,7 +276,7 @@ export function HomePage() {
                   <strong>{shop.name}</strong>
                   <p>{shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}</p>
                   <p className="shop-item-meta">
-                    작품 {shop.works.length} · 링크 {shop.links.length} · {formatRelativeUpdated(shop.updatedAt)}
+                    작품 {shop.works.length}개 링크 {shop.links.length}개 {formatRelativeUpdated(shop.updatedAt)}
                   </p>
                 </div>
               </Link>

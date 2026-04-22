@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { TAB_NAV_ITEMS } from './appNavigation'
 
 function HomeIcon() {
   return (
@@ -46,34 +47,22 @@ function CommunityIcon() {
   )
 }
 
-const tabs = [
-  {
-    to: '/discover',
-    label: '홈',
-    icon: <HomeIcon />,
-  },
-  {
-    to: '/explore',
-    label: '탐색',
-    icon: <ExploreIcon />,
-  },
-  {
-    to: '/community',
-    label: '커뮤니티',
-    icon: <CommunityIcon />,
-  },
-]
+const icons = {
+  discover: <HomeIcon />,
+  explore: <ExploreIcon />,
+  community: <CommunityIcon />,
+}
 
 export function FloatingTabBar() {
   return (
     <nav aria-label="주요 화면 이동" className="floating-tabbar">
-      {tabs.map((tab) => (
+      {TAB_NAV_ITEMS.map((tab) => (
         <NavLink
           className={({ isActive }) => `tabbar-item ${isActive ? 'tabbar-item-active' : ''}`}
           key={tab.to}
           to={tab.to}
         >
-          {tab.icon}
+          {icons[tab.key]}
           <span>{tab.label}</span>
         </NavLink>
       ))}

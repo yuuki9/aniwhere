@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
 import { formatRelativeUpdated } from '../shared/lib/format'
 import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
+import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { StatusPill } from '../shared/ui/StatusPill'
 
 const SEARCH_PAGE_SIZE = 8
@@ -89,6 +90,7 @@ export function SearchPage() {
     <main className="search-screen-shell">
       <section className="search-screen search-screen-v2">
         <div className="search-screen-top search-screen-top-v2">
+          <div className="search-screen-topbar-row">
           <form className="search-screen-bar" onSubmit={handleSubmit}>
             <button className="search-screen-icon" type="button" onClick={() => navigate(-1)} aria-label="뒤로가기">
               ‹
@@ -107,6 +109,8 @@ export function SearchPage() {
               ⌕
             </button>
           </form>
+            <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
+          </div>
         </div>
 
         {!currentKeyword ? (
