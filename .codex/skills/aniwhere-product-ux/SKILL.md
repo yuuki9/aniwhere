@@ -9,8 +9,9 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 
 1. Read `docs/product-decisions.md` before changing product scope.
 2. Read `docs/ux-mobile-research.md` before changing layout, navigation, or copy.
-3. Preserve product decisions unless the task explicitly updates the decision document first.
-4. Optimize for Apps in Toss mobile WebView use, not desktop landing-page behavior.
+3. Read `docs/design-tokens.md` before changing client CSS or UI styling.
+4. Preserve product decisions unless the task explicitly updates the decision document first.
+5. Optimize for Apps in Toss mobile WebView use, not desktop landing-page behavior.
 
 ## Product Boundaries
 
@@ -30,6 +31,7 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 - Use direct, user-centered copy.
 - Avoid admin-table feel in user-facing screens.
 - Keep CTA count low: one primary CTA, two at most when genuinely needed.
+- Use `client/src/styles/tokens.css` tokens for color, spacing, radius, typography, shadow, and repeated component sizing.
 
 ## Screen Guidance
 

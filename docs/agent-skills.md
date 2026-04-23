@@ -8,6 +8,8 @@ This repository carries project-local Codex skills under `.codex/skills`.
 - `aniwhere-product-ux`: product decisions, mobile UX, screen scope, permission timing, and Toss-style information exploration.
 - `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
 
+For UI styling work, read `docs/design-tokens.md` and use `client/src/styles/tokens.css` before adding new raw CSS values.
+
 ## Use On Another Machine
 
 After pulling this branch, copy the project skills into the Codex skills directory if the app does not auto-discover repo-local skills:

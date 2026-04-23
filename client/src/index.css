@@ -1,27 +1,15 @@
+@import './styles/tokens.css';
+
 :root {
-  font-family:
-    'Pretendard Variable',
-    'Pretendard',
-    'Noto Sans KR',
-    system-ui,
-    sans-serif;
+  font-family: var(--ait-font-family);
   line-height: 1.5;
   font-weight: 400;
-  color: #191f28;
-  background:
-    linear-gradient(180deg, #eef5ff 0%, #f7f9fc 28%, #f4f6f8 100%);
+  color: var(--ait-color-text-primary);
+  background: var(--ait-gradient-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  --brand: #3182f6;
-  --surface: rgba(255, 255, 255, 0.95);
-  --surface-soft: #f4f7fb;
-  --text-strong: #191f28;
-  --text-subtle: #4e5968;
-  --border: rgba(229, 234, 240, 0.9);
-  --shadow: 0 16px 34px rgba(17, 29, 44, 0.08);
 }
 
 * {
@@ -36,10 +24,8 @@ body,
 
 body {
   margin: 0;
-  min-width: 320px;
-  background:
-    radial-gradient(circle at 8% 4%, rgba(49, 130, 246, 0.14), transparent 26%),
-    linear-gradient(180deg, #f4f8ff 0%, #f8fafd 40%, #f4f6f8 100%);
+  min-width: var(--ait-size-screen-min);
+  background: var(--ait-gradient-app-background);
 }
 
 button {
