@@ -1,15 +1,36 @@
 # Webinar Launch Skill Note
 
-Source PDF: `C:/Users/jdhn2/Downloads/앱인토스 웨비나 _ 미니앱 최종 검수 스킬 공유.pdf`
+Sources:
 
-The PDF does not include the private checklist implementation itself. It says the webinar showed a personal Claude Code skill made from 20+ miniapp launches and rejection cases. It describes the skill as an 11-step Apps in Toss final review process based on official developer-center review guidance and personal launch experience.
+- PDF: `C:/Users/jdhn2/Downloads/앱인토스 웨비나 _ 미니앱 최종 검수 스킬 공유.pdf`
+- Skill folder supplied later: `C:/Users/jdhn2/Downloads/appsintoss-nongame-launch-checklist-by-robin`
 
-Recoverable PDF points:
+The PDF itself only explained Robin's private final-review skill, its installation/call pattern, and its purpose. It did not include the full 11-step checklist body.
 
-- The skill name shown in the PDF is `appintoss-nongame-launch-checklist`.
-- It is not an official Apps in Toss team skill.
-- It was optimized for Claude Code.
-- It was meant to be installed under `~/.claude/skills`.
-- It should be called before launch to reduce rejection risk.
+The later supplied skill folder did include the checklist body and two references. Aniwhere imports that structure as `aniwhere-launch-checklist`, with repository-specific adjustments for:
 
-Aniwhere adapts the concept as `aniwhere-launch-checklist`, grounded in official Apps in Toss non-game launch criteria and this repository's product/UX rules.
+- Apps in Toss WebView under `client/`.
+- `client/granite.config.ts` as the miniapp config file.
+- TDS/design-token work through `client/src/styles/tokens.css`.
+- Aniwhere product scope from `docs/product-decisions.md`.
+- Codex project skill layout under `.codex/skills/`.
+
+Robin's original checklist categories:
+
+1. Access and registered app functions.
+2. Navigation bar.
+3. Login/auth/permissions.
+4. Guides/routing.
+5. UI/UX.
+6. Text/brand.
+7. Payments.
+8. In-app ads.
+9. External link and app-install policy.
+10. TDS design system.
+11. Sharing rewards.
+
+Final rule from the source skill:
+
+- Steps 1-6 and 9 are required launch-review areas.
+- Step 10 is recommended.
+- Steps 7, 8, and 11 are required only when those features are used.
