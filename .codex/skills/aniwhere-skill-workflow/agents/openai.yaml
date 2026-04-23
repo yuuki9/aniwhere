@@ -1,0 +1,6 @@
+interface:
+  display_name: "Aniwhere Skill Workflow"
+  short_description: "Create and use Aniwhere project skills with Superpowers practices."
+  default_prompt: "Use $aniwhere-skill-workflow to create or refine an Aniwhere project skill."
+policy:
+  allow_implicit_invocation: true

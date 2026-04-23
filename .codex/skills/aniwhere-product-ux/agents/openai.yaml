@@ -1,0 +1,6 @@
+interface:
+  display_name: "Aniwhere Product UX"
+  short_description: "Apply Aniwhere product scope and Toss-style mobile UX rules."
+  default_prompt: "Use $aniwhere-product-ux to review or improve an Aniwhere user-facing flow."
+policy:
+  allow_implicit_invocation: true

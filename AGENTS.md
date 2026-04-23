@@ -23,3 +23,8 @@
 - `server/`: 백엔드 및 데이터 수집 영역
 - `docs/`: 기획 및 운영 문서
 
+## Project Skills
+
+- 프로젝트 전용 Codex 스킬은 `.codex/skills/`에 둡니다.
+- 스킬 사용/설치 방법은 `docs/agent-skills.md`를 기준으로 확인합니다.
+- Apps in Toss WebView, 제품 UX, 스킬 제작 워크플로우는 가능한 경우 프로젝트 전용 스킬을 우선 참고합니다.

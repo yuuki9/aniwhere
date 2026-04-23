@@ -1,0 +1,40 @@
+# Aniwhere Agent Skills
+
+This repository carries project-local Codex skills under `.codex/skills`.
+
+## Skills
+
+- `aniwhere-toss-webview`: Apps in Toss WebView, SDK, `granite.config.ts`, permissions, login, ads, promotions, sandbox, and launch checks.
+- `aniwhere-product-ux`: product decisions, mobile UX, screen scope, permission timing, and Toss-style information exploration.
+- `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
+
+## Use On Another Machine
+
+After pulling this branch, copy the project skills into the Codex skills directory if the app does not auto-discover repo-local skills:
+
+```powershell
+Copy-Item -Recurse -Force .codex\skills\* "$env:USERPROFILE\.codex\skills\"
+```
+
+Then restart Codex so the new skills are loaded.
+
+## Recommended Superpowers Skills
+
+Use the installed Superpowers skills as process helpers:
+
+- `writing-skills` for new Apps in Toss implementation skills.
+- `writing-plans` for multi-step login, TDS, admin, reward, or launch work.
+- `executing-plans` or `subagent-driven-development` for approved implementation plans.
+- `systematic-debugging` for login, callback, permission, ad, reward, or sandbox failures.
+- `verification-before-completion` before claiming a build, fix, or launch check is complete.
+- `requesting-code-review` before risky auth, reward, WebView, or launch changes.
+
+## Source
+
+The skill split is based on:
+
+- `AGENTS.md`
+- `guard.md`
+- `docs/product-decisions.md`
+- `docs/ux-mobile-research.md`
+- Apps in Toss webinar PDF: `[가이드] 앱인토스 웨비나 _ 바이브코딩으로 만든 앱, 앱인토스에 출시하기.pdf`
