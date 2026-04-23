@@ -1,0 +1,6 @@
+interface:
+  display_name: "Aniwhere Launch Checklist"
+  short_description: "Review Aniwhere against Apps in Toss non-game launch criteria."
+  default_prompt: "Use $aniwhere-launch-checklist to run the Apps in Toss launch review for Aniwhere."
+policy:
+  allow_implicit_invocation: true

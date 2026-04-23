@@ -61,6 +61,11 @@ description: Work on Aniwhere as an Apps in Toss non-game WebView miniapp. Use f
 - Preserve Toss-style information exploration UX.
 - Verify at narrow mobile widths and in Apps in Toss sandbox where possible.
 
+### Launch Review
+
+- Use `$aniwhere-launch-checklist` before submission, deployment review, or any release candidate.
+- Do not mark SDK-dependent items passed unless they were checked in Apps in Toss sandbox or on a real mobile device.
+
 ## Official Links
 
 - WebView: https://developers-apps-in-toss.toss.im/tutorials/webview.html

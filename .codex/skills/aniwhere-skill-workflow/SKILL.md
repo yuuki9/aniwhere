@@ -50,3 +50,7 @@ The Apps in Toss webinar suggests this sequence:
 7. Verify with a mobile device through Apps in Toss sandbox/console.
 
 Adapt this for Aniwhere by preserving existing product scope and adding only the skills that reduce repeated work.
+
+## Launch Skill Source
+
+The second webinar PDF about "미니앱 최종 검수 스킬" does not include the private skill contents, only installation and invocation guidance. For Aniwhere, use `aniwhere-launch-checklist` as the local adaptation based on official Apps in Toss non-game launch criteria.

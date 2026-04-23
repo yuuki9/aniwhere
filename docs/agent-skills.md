@@ -7,6 +7,7 @@ This repository carries project-local Codex skills under `.codex/skills`.
 - `aniwhere-toss-webview`: Apps in Toss WebView, SDK, `granite.config.ts`, permissions, login, ads, promotions, sandbox, and launch checks.
 - `aniwhere-product-ux`: product decisions, mobile UX, screen scope, permission timing, and Toss-style information exploration.
 - `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
+- `aniwhere-launch-checklist`: final Apps in Toss non-game launch review for config, navigation, UX, permissions, login, ads, rewards, sharing, and sandbox evidence.
 
 For UI styling work, read `docs/design-tokens.md` and use `client/src/styles/tokens.css` before adding new raw CSS values.
 
@@ -39,4 +40,5 @@ The skill split is based on:
 - `guard.md`
 - `docs/product-decisions.md`
 - `docs/ux-mobile-research.md`
+- Apps in Toss final review skill PDF: `앱인토스 웨비나 _ 미니앱 최종 검수 스킬 공유.pdf`
 - Apps in Toss webinar PDF: `[가이드] 앱인토스 웨비나 _ 바이브코딩으로 만든 앱, 앱인토스에 출시하기.pdf`
