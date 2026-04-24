@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button, ListRow, Top } from '@toss/tds-mobile'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
 import { startServiceEntry } from '../shared/lib/auth'
 
@@ -62,41 +61,35 @@ export function IntroPage() {
   return (
     <main className="app-shell intro-mobile-shell">
       <section className="section intro-mobile-panel">
-        <Top
-          className="intro-top"
-          upper={
-            <div className="intro-brand-lockup">
-              <img className="intro-brand-logo" src={aniwhereIcon} alt="" />
-              <span>Aniwhere</span>
-            </div>
-          }
-          title={<Top.TitleParagraph>가챠샵, 피규어샵, 굿즈샵을 한 번에 찾아보세요</Top.TitleParagraph>}
-          subtitleBottom={
-            <Top.SubtitleParagraph>
-              흩어진 매장 정보를 모아 지도에서 빠르게 탐색하고, 지금 가볼 만한 곳부터 바로 확인할 수 있어요.
-            </Top.SubtitleParagraph>
-          }
-        />
+        <div className="intro-top">
+          <div className="intro-brand-lockup">
+            <img className="intro-brand-logo" src={aniwhereIcon} alt="" />
+            <span>Aniwhere</span>
+          </div>
+          <div className="intro-mobile-copy">
+            <h1>가챠샵, 피규어샵, 굿즈샵을 한 번에 찾아보세요</h1>
+            <p>흩어진 매장 정보를 모아 지도에서 빠르게 탐색하고, 지금 가볼 만한 곳부터 바로 확인할 수 있어요.</p>
+          </div>
+        </div>
 
         <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
           {featureItems.map((item, index) => (
-            <ListRow
-              className="intro-feature-row"
-              key={item.title}
-              border={index === 0 ? 'none' : 'indented'}
-              verticalPadding="medium"
-              left={<span className={`intro-feature-asset intro-feature-asset-${item.icon}`} aria-hidden="true" />}
-              contents={<ListRow.Texts type="2RowTypeA" top={item.title} bottom={item.body} />}
-            />
+            <li className="intro-feature-row" key={item.title} data-border={index === 0 ? 'none' : 'indented'}>
+              <span className={`intro-feature-asset intro-feature-asset-${item.icon}`} aria-hidden="true" />
+              <span className="intro-feature-copy">
+                <strong>{item.title}</strong>
+                <span>{item.body}</span>
+              </span>
+            </li>
           ))}
         </ul>
 
         {startError ? <p className="error-text">{startError}</p> : null}
 
         <div className="intro-mobile-actions">
-          <Button type="button" display="full" size="large" onClick={handleStart} loading={isStarting} disabled={isStarting}>
-            시작하기
-          </Button>
+          <button className="primary-action intro-primary-action" type="button" onClick={handleStart} disabled={isStarting}>
+            {isStarting ? '시작 준비 중' : '시작하기'}
+          </button>
           <Link className="text-link intro-secondary-link" to="/explore">
             매장 먼저 둘러보기
           </Link>

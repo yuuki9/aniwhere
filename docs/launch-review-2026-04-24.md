@@ -19,9 +19,8 @@ This review follows `.codex/skills/aniwhere-launch-checklist/SKILL.md`, `docs/ag
 
 ## Passed
 
-- TDS packages are installed: `@toss/tds-mobile`, `@toss/tds-mobile-ait`.
-- App root is wrapped with `TDSMobileAITProvider`.
-- First entry page uses TDS `Top`, `ListRow`, and `Button` patterns.
+- First entry page follows TDS `Top`, `ListRow`, and `Button` structure using local `--ait-*` tokens.
+- Runtime imports from `@toss/tds-mobile` are intentionally avoided because the package throws outside approved Apps in Toss domains such as the public `aniwhere.link` deployment.
 - Intro copy keeps one primary CTA and one secondary route, matching the one-purpose mobile UX rule.
 - UI styling for custom surrounding layout is routed through `client/src/styles/tokens.css`.
 - Brand title in `client/index.html` is `Aniwhere`, matching `brand.displayName`.
@@ -51,14 +50,15 @@ This review follows `.codex/skills/aniwhere-launch-checklist/SKILL.md`, `docs/ag
 
 ## Risks
 
-- TDS Mobile increases the JavaScript bundle size; current build warns that the main chunk is larger than 500 kB.
+- Current build warns that the main chunk is larger than 500 kB.
 - Local code inspection cannot prove launch readiness for navigation, permissions, and guide URLs.
 - The generated logo satisfies upload dimensions and transparency rules, but final brand approval still depends on console review.
 
 ## Commands Run
 
-- `npm.cmd install @toss/tds-mobile @toss/tds-mobile-ait`
+- `npm.cmd uninstall @toss/tds-mobile @toss/tds-mobile-ait`
 - `npm.cmd run build`
+- `npm.cmd run build:static`
 
 Key build output:
 

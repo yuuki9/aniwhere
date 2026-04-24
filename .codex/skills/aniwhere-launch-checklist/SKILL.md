@@ -142,7 +142,7 @@ TDS usage is recommended rather than an automatic rejection rule, but Aniwhere s
 
 - Prefer TDS components where practical.
 - When TDS packages are not used, app-owned UI should visually fit Toss-style mobile UX.
-- Use `@toss/tds-mobile` for modern Web projects using `@apps-in-toss/web-framework` 1.0.0 or later; older Web projects used `@toss-design-system/mobile`.
+- Use `@toss/tds-mobile` only when the deployed runtime is an approved Apps in Toss environment. For public web domains such as `aniwhere.link`, avoid runtime imports from that package and match TDS structure with local tokens instead.
 - Keep colors, radii, spacing, typography, and shadows routed through Aniwhere tokens.
 - Do not add a new visual system for one screen.
 
