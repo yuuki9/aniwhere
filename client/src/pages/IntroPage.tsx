@@ -1,24 +1,26 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Button, ListRow, Top } from '@toss/tds-mobile'
+import aniwhereIcon from '../assets/aniwhere_icon.png'
 import { startServiceEntry } from '../shared/lib/auth'
 
 const featureItems = [
   {
-    icon: '📍',
-    title: '근처 매장과 인기 매장을 빠르게 찾기',
-    body: '지금 가볼 만한 매장을 바로 확인할 수 있어요.',
+    icon: 'map',
+    title: '굿즈샵과 피규어샵을 빠르게 찾기',
+    body: '지금 가볼 만한 매장을 지역 기준으로 바로 확인해보세요.',
   },
   {
-    icon: '🔗',
-    title: '영업 상태와 공식 링크를 함께 확인',
-    body: '가기 전에 꼭 필요한 정보부터 먼저 보여드려요.',
+    icon: 'time',
+    title: '운영 상태와 방문 팁 한눈에 보기',
+    body: '헛걸음하지 않도록 영업 정보와 최신 제보를 함께 보여드려요.',
   },
   {
-    icon: '✍️',
+    icon: 'spark',
     title: '후기와 제보로 정보를 더 정확하게',
-    body: '새로운 정보는 검수 후 서비스에 반영돼요.',
+    body: '커뮤니티에서 쌓인 현장 정보를 지도 탐색에 바로 반영합니다.',
   },
-]
+] as const
 
 type EntryRouteState =
   | {
@@ -51,9 +53,7 @@ export function IntroPage() {
 
       navigate('/discover', { state })
     } catch (error) {
-      setStartError(
-        error instanceof Error ? error.message : '시작하는 중 문제가 생겼습니다. 잠시 후 다시 시도해주세요.',
-      )
+      setStartError(error instanceof Error ? error.message : '시작하는 중 문제가 생겼습니다. 잠시 뒤 다시 시도해주세요.')
     } finally {
       setIsStarting(false)
     }
@@ -62,44 +62,41 @@ export function IntroPage() {
   return (
     <main className="app-shell intro-mobile-shell">
       <section className="section intro-mobile-panel">
-        <div className="intro-mobile-header">
-          <div className="intro-service-badge">
-            <span className="intro-service-icon">📍</span>
-            <strong>Aniwhere</strong>
-          </div>
-        </div>
+        <Top
+          className="intro-top"
+          upper={
+            <div className="intro-brand-lockup">
+              <img className="intro-brand-logo" src={aniwhereIcon} alt="" />
+              <span>Aniwhere</span>
+            </div>
+          }
+          title={<Top.TitleParagraph>가챠샵, 피규어샵, 굿즈샵을 한 번에 찾아보세요</Top.TitleParagraph>}
+          subtitleBottom={
+            <Top.SubtitleParagraph>
+              흩어진 매장 정보를 모아 지도에서 빠르게 탐색하고, 지금 가볼 만한 곳부터 바로 확인할 수 있어요.
+            </Top.SubtitleParagraph>
+          }
+        />
 
-        <div className="intro-mobile-copy">
-          <h1>가챠샵, 피규어샵, 굿즈샵을 한 번에 찾아보세요</h1>
-          <p>흩어진 매장 정보를 모아 지금 가볼 곳부터 빠르게 보여드려요.</p>
-        </div>
-
-        <div className="intro-visual-card" aria-hidden="true">
-          <div className="intro-visual-orb" />
-          <div className="intro-visual-pin">📍</div>
-        </div>
-
-        <div className="intro-feature-list">
+        <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
           {featureItems.map((item, index) => (
-            <article className="intro-feature-item" key={item.title}>
-              <div className="intro-feature-marker">
-                <span>{item.icon}</span>
-                {index < featureItems.length - 1 ? <i /> : null}
-              </div>
-              <div className="intro-feature-copy">
-                <strong>{item.title}</strong>
-                <p>{item.body}</p>
-              </div>
-            </article>
+            <ListRow
+              className="intro-feature-row"
+              key={item.title}
+              border={index === 0 ? 'none' : 'indented'}
+              verticalPadding="medium"
+              left={<span className={`intro-feature-asset intro-feature-asset-${item.icon}`} aria-hidden="true" />}
+              contents={<ListRow.Texts type="2RowTypeA" top={item.title} bottom={item.body} />}
+            />
           ))}
-        </div>
+        </ul>
 
         {startError ? <p className="error-text">{startError}</p> : null}
 
         <div className="intro-mobile-actions">
-          <button className="primary-action intro-primary-action" type="button" onClick={handleStart} disabled={isStarting}>
-            {isStarting ? '시작 준비 중…' : '시작하기'}
-          </button>
+          <Button type="button" display="full" size="large" onClick={handleStart} loading={isStarting} disabled={isStarting}>
+            시작하기
+          </Button>
           <Link className="text-link intro-secondary-link" to="/explore">
             매장 먼저 둘러보기
           </Link>

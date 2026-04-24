@@ -43,6 +43,17 @@
   --ait-color-border: rgba(229, 234, 240, 0.9);
   --ait-color-border-strong: var(--ait-color-gray-200);
   --ait-color-backdrop: rgba(15, 23, 42, 0.48);
+  --ait-color-impact-overlay-warm: rgba(255, 138, 76, 0.18);
+  --ait-color-impact-banner-start: #fff8f3;
+  --ait-color-impact-banner-end: #fffdfa;
+  --ait-color-intro-overlay-warm: rgba(255, 138, 76, 0.12);
+  --ait-color-intro-overlay-warm-strong: rgba(255, 138, 76, 0.14);
+  --ait-color-intro-overlay-cool: rgba(49, 130, 246, 0.08);
+  --ait-color-intro-panel-end: #fffdfb;
+  --ait-color-intro-brand-surface: #fff4ec;
+  --ait-color-intro-feature-map: #ff6b35;
+  --ait-color-intro-feature-time: #3182f6;
+  --ait-color-intro-feature-spark: #fbbf24;
 
   --ait-gradient-page:
     linear-gradient(
@@ -123,6 +134,11 @@
   --ait-component-sheet-radius: var(--ait-radius-4xl);
   --ait-component-list-row-min-height: 60px;
   --ait-component-floating-tabbar-radius: var(--ait-radius-full);
+  --ait-component-intro-panel-gap: 22px;
+  --ait-component-intro-panel-padding: 22px 20px 20px;
+  --ait-component-intro-panel-padding-compact: 18px 16px 16px;
+  --ait-component-intro-logo-size: 44px;
+  --ait-component-intro-feature-asset-size: 40px;
 
   --ait-z-navigation: 1100;
   --ait-z-overlay: 2200;
