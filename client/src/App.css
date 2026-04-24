@@ -787,10 +787,13 @@ p {
 }
 
 .intro-top {
+  padding: 0;
+}
+
+.ait-top {
   display: flex;
   flex-direction: column;
   gap: var(--ait-space-10);
-  padding: 0;
 }
 
 .intro-brand-lockup {
@@ -824,20 +827,20 @@ p {
   justify-content: center;
 }
 
-.intro-mobile-copy {
+.ait-top-copy {
   display: flex;
   flex-direction: column;
   gap: var(--ait-space-5);
 }
 
-.intro-mobile-copy h1 {
+.ait-top-copy h1 {
   margin: 0;
   color: var(--ait-color-text-primary);
   font-size: var(--ait-font-size-display-sm);
   line-height: var(--ait-line-height-tight);
 }
 
-.intro-mobile-copy p {
+.ait-top-copy p {
   color: var(--ait-color-text-secondary);
   font-size: var(--ait-font-size-body-md);
   line-height: var(--ait-line-height-body);
@@ -852,7 +855,7 @@ p {
   list-style: none;
 }
 
-.intro-feature-row {
+.ait-list-row {
   display: flex;
   align-items: center;
   gap: var(--ait-space-8);
@@ -861,8 +864,13 @@ p {
   border-radius: var(--ait-radius-lg);
 }
 
-.intro-feature-row[data-border='indented'] {
+.ait-list-row[data-border='indented'] {
   border-top: 1px solid var(--ait-color-border);
+}
+
+.ait-list-row-asset {
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 .intro-feature-asset {
@@ -921,7 +929,7 @@ p {
   transform: rotate(45deg) scaleX(0.72);
 }
 
-.intro-feature-copy {
+.ait-list-row-copy {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -929,16 +937,44 @@ p {
   min-width: 0;
 }
 
-.intro-feature-copy strong {
+.ait-list-row-copy strong {
   color: var(--ait-color-text-primary);
   font-size: var(--ait-font-size-body-lg);
   line-height: var(--ait-line-height-title);
 }
 
-.intro-feature-copy span {
+.ait-list-row-copy span {
   color: var(--ait-color-text-secondary);
   font-size: var(--ait-font-size-body-sm);
   line-height: var(--ait-line-height-body);
+}
+
+.ait-button {
+  display: inline-flex;
+  min-height: var(--ait-component-button-height);
+  align-items: center;
+  justify-content: center;
+  padding: var(--ait-space-0) var(--ait-space-8);
+  border: 0;
+  border-radius: var(--ait-component-button-radius);
+  background: var(--ait-color-brand);
+  color: var(--ait-color-text-inverse);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.ait-button:active {
+  background: var(--ait-color-brand-pressed);
+}
+
+.ait-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.ait-button-full {
+  width: 100%;
 }
 
 .intro-start-note {

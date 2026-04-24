@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
 import { startServiceEntry } from '../shared/lib/auth'
+import { AitButton, AitListRow, AitTop } from '../shared/ui/ait'
 
 const featureItems = [
   {
@@ -61,35 +62,36 @@ export function IntroPage() {
   return (
     <main className="app-shell intro-mobile-shell">
       <section className="section intro-mobile-panel">
-        <div className="intro-top">
-          <div className="intro-brand-lockup">
-            <img className="intro-brand-logo" src={aniwhereIcon} alt="" />
-            <span>Aniwhere</span>
-          </div>
-          <div className="intro-mobile-copy">
-            <h1>가챠샵, 피규어샵, 굿즈샵을 한 번에 찾아보세요</h1>
-            <p>흩어진 매장 정보를 모아 지도에서 빠르게 탐색하고, 지금 가볼 만한 곳부터 바로 확인할 수 있어요.</p>
-          </div>
-        </div>
+        <AitTop
+          className="intro-top"
+          brand={
+            <div className="intro-brand-lockup">
+              <img className="intro-brand-logo" src={aniwhereIcon} alt="" />
+              <span>Aniwhere</span>
+            </div>
+          }
+          title="가챠샵, 피규어샵, 굿즈샵을 한 번에 찾아보세요"
+          subtitle="흩어진 매장 정보를 모아 지도에서 빠르게 탐색하고, 지금 가볼 만한 곳부터 바로 확인할 수 있어요."
+        />
 
         <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
           {featureItems.map((item, index) => (
-            <li className="intro-feature-row" key={item.title} data-border={index === 0 ? 'none' : 'indented'}>
-              <span className={`intro-feature-asset intro-feature-asset-${item.icon}`} aria-hidden="true" />
-              <span className="intro-feature-copy">
-                <strong>{item.title}</strong>
-                <span>{item.body}</span>
-              </span>
-            </li>
+            <AitListRow
+              asset={<span className={`intro-feature-asset intro-feature-asset-${item.icon}`} aria-hidden="true" />}
+              border={index === 0 ? 'none' : 'indented'}
+              description={item.body}
+              key={item.title}
+              title={item.title}
+            />
           ))}
         </ul>
 
         {startError ? <p className="error-text">{startError}</p> : null}
 
         <div className="intro-mobile-actions">
-          <button className="primary-action intro-primary-action" type="button" onClick={handleStart} disabled={isStarting}>
+          <AitButton className="intro-primary-action" display="full" onClick={handleStart} disabled={isStarting}>
             {isStarting ? '시작 준비 중' : '시작하기'}
-          </button>
+          </AitButton>
           <Link className="text-link intro-secondary-link" to="/explore">
             매장 먼저 둘러보기
           </Link>
