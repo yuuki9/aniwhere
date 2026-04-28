@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
@@ -165,7 +165,7 @@ export function HomePage() {
       <section aria-labelledby="discover-ranking-title" className="section discover-ranking-section">
         <div className="section-header">
           <div>
-            <span className="section-label">핫 아이템</span>
+            <span className="section-label">추천 픽</span>
             <h2 id="discover-ranking-title">지금 추천하는 매장</h2>
           </div>
           <Link className="text-link" to="/explore">
@@ -184,7 +184,7 @@ export function HomePage() {
         ) : rankedShops.length === 0 ? (
           <p className="discover-state-text">아직 보여줄 매장이 없어요. 검색 화면에서 직접 찾아볼 수 있어요.</p>
         ) : (
-          <ol aria-label="인기 매장 목록" className="discover-ranking-list">
+          <ol aria-label="추천 매장 목록" className="discover-ranking-list">
             {rankedShops.map((shop, index) => (
               <li key={shop.id}>
                 <Link className="discover-rank-row" to={`/shops/${shop.id}`}>

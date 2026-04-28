@@ -41,6 +41,7 @@ export function loadNaverMaps() {
     const rejectLoad = (error: Error) => {
       naverMapLoadPromise = null
       window[NAVER_MAP_CALLBACK_NAME] = undefined
+      document.getElementById(NAVER_MAP_SCRIPT_ID)?.remove()
       reject(error)
     }
 
@@ -57,10 +58,7 @@ export function loadNaverMaps() {
     }
 
     if (existingScript) {
-      existingScript.addEventListener('error', () => {
-        rejectLoad(new Error('네이버 지도 SDK를 불러오지 못했습니다.'))
-      }, { once: true })
-      return
+      existingScript.remove()
     }
 
     const script = document.createElement('script')
