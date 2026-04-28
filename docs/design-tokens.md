@@ -36,3 +36,15 @@ Legacy aliases remain available while the large existing stylesheet is migrated:
 - `--shadow`
 
 New code should prefer the `--ait-*` tokens directly.
+
+## TDS-Compatible Local UI
+
+Aniwhere uses `client/src/shared/ui/ait` for local UI components that mirror common TDS structures without importing `@toss/tds-mobile` at runtime.
+
+Use these components before adding one-off screen markup:
+
+- `AitTop`
+- `AitListRow`
+- `AitButton`
+
+See `docs/tds-compatible-ui-layer.md` for the full rule.

@@ -9,7 +9,7 @@ This repository carries project-local Codex skills under `.codex/skills`.
 - `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
 - `aniwhere-launch-checklist`: final Apps in Toss non-game launch review for access/functions, navigation, login/auth/permissions, guide routing, UI/UX, brand text, payments, ads, external links, TDS, sharing rewards, and sandbox evidence.
 
-For UI styling work, read `docs/design-tokens.md` and use `client/src/styles/tokens.css` before adding new raw CSS values.
+For UI styling work, read `docs/design-tokens.md` and `docs/tds-compatible-ui-layer.md`, then use `client/src/shared/ui/ait` and `client/src/styles/tokens.css` before adding new raw CSS values.
 
 ## Use On Another Machine
 

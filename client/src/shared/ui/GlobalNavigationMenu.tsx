@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { APP_NAV_ITEMS, isNavigationItemActive } from './appNavigation'
 
@@ -24,11 +24,19 @@ function MenuIcon() {
 
 export function GlobalNavigationMenu({
   triggerClassName = 'global-nav-trigger',
-  triggerLabel = '메뉴',
+  triggerLabel = '메뉴 열기',
 }: GlobalNavigationMenuProps) {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const closeRef = useRef<HTMLButtonElement | null>(null)
+  const drawerRef = useRef<HTMLElement | null>(null)
+
+  const close = useCallback(() => {
+    setOpen(false)
+    window.setTimeout(() => triggerRef.current?.focus(), 0)
+  }, [])
 
   useEffect(() => {
     if (!open) {
@@ -39,20 +47,42 @@ export function GlobalNavigationMenu({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setOpen(false)
+        close()
+        return
+      }
+
+      if (event.key !== 'Tab') {
+        return
+      }
+
+      const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      const first = focusable?.[0]
+      const last = focusable?.[focusable.length - 1]
+
+      if (!first || !last) {
+        return
+      }
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
       }
     }
 
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', handleKeyDown)
+    window.requestAnimationFrame(() => closeRef.current?.focus())
 
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [open])
-
-  const close = () => setOpen(false)
+  }, [close, open])
 
   const move = (to: string) => {
     close()
@@ -71,6 +101,7 @@ export function GlobalNavigationMenu({
         aria-haspopup="dialog"
         aria-label={triggerLabel}
         className={triggerClassName}
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
       >
@@ -81,10 +112,10 @@ export function GlobalNavigationMenu({
         <div className="global-nav-layer" role="presentation">
           <button aria-label="메뉴 닫기" className="global-nav-backdrop" type="button" onClick={close} />
 
-          <aside aria-label="전역 메뉴" aria-modal="true" className="global-nav-drawer" role="dialog">
+          <aside aria-label="전체 메뉴" aria-modal="true" className="global-nav-drawer" ref={drawerRef} role="dialog">
             <div className="global-nav-drawer-head">
               <strong>Aniwhere</strong>
-              <button aria-label="메뉴 닫기" className="global-nav-close" type="button" onClick={close}>
+              <button aria-label="메뉴 닫기" className="global-nav-close" ref={closeRef} type="button" onClick={close}>
                 ×
               </button>
             </div>
@@ -95,6 +126,7 @@ export function GlobalNavigationMenu({
 
                 return (
                   <button
+                    aria-current={active ? 'page' : undefined}
                     className={`global-nav-item ${active ? 'global-nav-item-active' : ''}`}
                     key={item.key}
                     type="button"

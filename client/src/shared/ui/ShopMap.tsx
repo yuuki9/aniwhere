@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { CircleMarker, MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Shop } from '../api/types'
 import type { UserLocation } from '../lib/location'
+import { loadNaverMaps } from '../lib/naverMapLoader'
 
 type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
 
@@ -17,77 +17,26 @@ type ShopMapProps = {
   onReady?: () => void
 }
 
-function MapBackgroundClick({ onClearSelection }: { onClearSelection?: () => void }) {
-  useMapEvents({
-    click: () => {
-      onClearSelection?.()
-    },
-  })
-
-  return null
+type MarkerWithListeners = {
+  marker: naver.maps.Marker
+  listeners: naver.maps.MapEventListener[]
 }
 
-function FitToTargets({
-  shops,
-  activeShopId,
-  userLocation,
-  focusMode = 'shops',
-  focusRequestId = 0,
-  selectionOrigin = null,
-}: {
-  shops: Shop[]
-  activeShopId: number | null
-  userLocation?: UserLocation | null
-  focusMode?: FocusMode
-  focusRequestId?: number
-  selectionOrigin?: 'map' | 'list' | null
-}) {
-  const map = useMap()
-  const lastAppliedFocusRef = useRef<number | null>(null)
+function createMarkerIcon(className: string, label: string, size: number) {
+  return {
+    content: `<span class="${className}" aria-hidden="true">${label}</span>`,
+    size: new naver.maps.Size(size, size),
+    anchor: new naver.maps.Point(size / 2, size / 2),
+  }
+}
 
-  useEffect(() => {
-    if (focusMode === 'idle' || lastAppliedFocusRef.current === focusRequestId) {
-      return
-    }
+function toLatLng(latitude: number, longitude: number) {
+  return new naver.maps.LatLng(latitude, longitude)
+}
 
-    if (focusMode === 'user' && userLocation) {
-      map.setView([userLocation.latitude, userLocation.longitude], 15, { animate: true })
-      lastAppliedFocusRef.current = focusRequestId
-      return
-    }
-
-    if (shops.length === 0) {
-      return
-    }
-
-    if (focusMode === 'shop' && activeShopId) {
-      const active = shops.find((shop) => shop.id === activeShopId)
-      if (active) {
-        map.setView([active.py, active.px], Math.max(map.getZoom(), 16), {
-          animate: selectionOrigin !== 'list',
-        })
-        lastAppliedFocusRef.current = focusRequestId
-        return
-      }
-    }
-
-    if (shops.length === 1) {
-      const only = shops[0]
-      map.setView([only.py, only.px], 16, { animate: false })
-      lastAppliedFocusRef.current = focusRequestId
-      return
-    }
-
-    const bounds = shops.map((shop) => [shop.py, shop.px] as [number, number])
-    map.fitBounds(bounds, {
-      paddingTopLeft: [24, 120],
-      paddingBottomRight: [24, 160],
-      maxZoom: 16,
-    })
-    lastAppliedFocusRef.current = focusRequestId
-  }, [activeShopId, focusMode, focusRequestId, map, selectionOrigin, shops, userLocation])
-
-  return null
+function removeMarker(markerWithListeners: MarkerWithListeners) {
+  naver.maps.Event.removeListener(markerWithListeners.listeners)
+  markerWithListeners.marker.setMap(null)
 }
 
 export function ShopMap({
@@ -101,40 +50,261 @@ export function ShopMap({
   selectionOrigin = null,
   onReady,
 }: ShopMapProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<naver.maps.Map | null>(null)
+  const mapClickListenerRef = useRef<naver.maps.MapEventListener | null>(null)
+  const shopMarkersRef = useRef<MarkerWithListeners[]>([])
+  const userMarkerRef = useRef<MarkerWithListeners | null>(null)
+  const lastAppliedFocusRef = useRef<number | null>(null)
   const readyNotifiedRef = useRef(false)
+  const onClearSelectionRef = useRef(onClearSelection)
+  const onReadyRef = useRef(onReady)
+  const onSelectShopRef = useRef(onSelectShop)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const validShops = useMemo(
     () => shops.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
     [shops],
   )
 
-  const notifyReady = () => {
-    if (readyNotifiedRef.current) {
-      return
-    }
-
-    readyNotifiedRef.current = true
-    onReady?.()
-  }
-
-  const center = useMemo<[number, number]>(() => {
+  const center = useMemo(() => {
     if (userLocation) {
-      return [userLocation.latitude, userLocation.longitude]
+      return {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+      }
     }
 
     if (validShops.length === 0) {
-      return [37.5665, 126.978]
+      return {
+        latitude: 37.5665,
+        longitude: 126.978,
+      }
     }
 
     const total = validShops.reduce(
       (acc, shop) => ({
-        lat: acc.lat + shop.py,
-        lng: acc.lng + shop.px,
+        latitude: acc.latitude + shop.py,
+        longitude: acc.longitude + shop.px,
       }),
-      { lat: 0, lng: 0 },
+      { latitude: 0, longitude: 0 },
     )
 
-    return [total.lat / validShops.length, total.lng / validShops.length]
+    return {
+      latitude: total.latitude / validShops.length,
+      longitude: total.longitude / validShops.length,
+    }
   }, [userLocation, validShops])
+  const initialCenterRef = useRef(center)
+
+  useEffect(() => {
+    onClearSelectionRef.current = onClearSelection
+    onReadyRef.current = onReady
+    onSelectShopRef.current = onSelectShop
+  }, [onClearSelection, onReady, onSelectShop])
+
+  useEffect(() => {
+    let cancelled = false
+    const initialCenter = initialCenterRef.current
+
+    loadNaverMaps()
+      .then((maps) => {
+        if (cancelled || !containerRef.current || mapRef.current) {
+          return
+        }
+
+        const map = new maps.Map(containerRef.current, {
+          center: new maps.LatLng(initialCenter.latitude, initialCenter.longitude),
+          zoom: 14,
+          minZoom: 7,
+          maxZoom: 19,
+          scrollWheel: true,
+          pinchZoom: true,
+          logoControl: true,
+          logoControlOptions: {
+            position: maps.Position.BOTTOM_LEFT,
+          },
+          mapDataControl: true,
+          mapDataControlOptions: {
+            position: maps.Position.BOTTOM_LEFT,
+          },
+          scaleControl: false,
+          zoomControl: true,
+          zoomControlOptions: {
+            position: maps.Position.BOTTOM_RIGHT,
+          },
+        })
+
+        mapRef.current = map
+        mapClickListenerRef.current = maps.Event.addListener(map, 'click', () => {
+          onClearSelectionRef.current?.()
+        })
+
+        maps.Event.once(map, 'idle', () => {
+          if (!readyNotifiedRef.current) {
+            readyNotifiedRef.current = true
+            onReadyRef.current?.()
+          }
+        })
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setLoadError(error instanceof Error ? error.message : '네이버 지도를 불러오지 못했습니다.')
+        }
+      })
+
+    return () => {
+      cancelled = true
+      shopMarkersRef.current.forEach(removeMarker)
+      shopMarkersRef.current = []
+
+      if (userMarkerRef.current) {
+        removeMarker(userMarkerRef.current)
+        userMarkerRef.current = null
+      }
+
+      if (mapClickListenerRef.current) {
+        naver.maps.Event.removeListener(mapClickListenerRef.current)
+        mapClickListenerRef.current = null
+      }
+
+      mapRef.current?.destroy()
+      mapRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+
+    if (!map) {
+      return
+    }
+
+    shopMarkersRef.current.forEach(removeMarker)
+    shopMarkersRef.current = validShops.map((shop) => {
+      const isActive = activeShopId === shop.id
+      const marker = new naver.maps.Marker({
+        map,
+        position: toLatLng(shop.py, shop.px),
+        title: shop.name,
+        clickable: true,
+        zIndex: isActive ? 20 : 10,
+        icon: createMarkerIcon(
+          `map-naver-marker ${isActive ? 'map-naver-marker-active' : ''}`,
+          '',
+          isActive ? 34 : 28,
+        ),
+      })
+      const listener = naver.maps.Event.addListener(marker, 'click', () => {
+        onSelectShopRef.current(shop.id)
+      })
+
+      return {
+        marker,
+        listeners: [listener],
+      }
+    })
+  }, [activeShopId, validShops])
+
+  useEffect(() => {
+    const map = mapRef.current
+
+    if (!map) {
+      return
+    }
+
+    if (userMarkerRef.current) {
+      removeMarker(userMarkerRef.current)
+      userMarkerRef.current = null
+    }
+
+    if (!userLocation) {
+      return
+    }
+
+    const marker = new naver.maps.Marker({
+      map,
+      position: toLatLng(userLocation.latitude, userLocation.longitude),
+      title: '현재 위치',
+      clickable: false,
+      zIndex: 30,
+      icon: createMarkerIcon('map-naver-user-marker', '', 28),
+    })
+
+    userMarkerRef.current = {
+      marker,
+      listeners: [],
+    }
+  }, [userLocation])
+
+  useEffect(() => {
+    const map = mapRef.current
+
+    if (!map || focusMode === 'idle' || lastAppliedFocusRef.current === focusRequestId) {
+      return
+    }
+
+    if (focusMode === 'user' && userLocation) {
+      map.morph(toLatLng(userLocation.latitude, userLocation.longitude), 15)
+      lastAppliedFocusRef.current = focusRequestId
+      return
+    }
+
+    if (validShops.length === 0) {
+      return
+    }
+
+    if (focusMode === 'shop' && activeShopId) {
+      const active = validShops.find((shop) => shop.id === activeShopId)
+
+      if (active) {
+        const nextZoom = Math.max(map.getZoom(), 16)
+
+        if (selectionOrigin === 'list') {
+          map.setCenter(toLatLng(active.py, active.px))
+          map.setZoom(nextZoom)
+        } else {
+          map.morph(toLatLng(active.py, active.px), nextZoom)
+        }
+
+        lastAppliedFocusRef.current = focusRequestId
+        return
+      }
+    }
+
+    if (validShops.length === 1) {
+      const [only] = validShops
+      map.setCenter(toLatLng(only.py, only.px))
+      map.setZoom(16)
+      lastAppliedFocusRef.current = focusRequestId
+      return
+    }
+
+    map.fitBounds(
+      validShops.map((shop) => toLatLng(shop.py, shop.px)),
+      {
+        top: 120,
+        right: 24,
+        bottom: 160,
+        left: 24,
+      },
+    )
+
+    window.setTimeout(() => {
+      if (map.getZoom() > 16) {
+        map.setZoom(16)
+      }
+    }, 0)
+    lastAppliedFocusRef.current = focusRequestId
+  }, [activeShopId, focusMode, focusRequestId, selectionOrigin, userLocation, validShops])
+
+  if (loadError) {
+    return (
+      <div className="map-empty">
+        <p>{loadError}</p>
+      </div>
+    )
+  }
 
   if (validShops.length === 0 && !userLocation) {
     return (
@@ -144,67 +314,5 @@ export function ShopMap({
     )
   }
 
-  return (
-    <MapContainer
-      center={center}
-      zoom={14}
-      className="map-leaflet"
-      scrollWheelZoom
-      zoomControl={false}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        eventHandlers={{
-          load: notifyReady,
-        }}
-      />
-      <ZoomControl position="bottomright" />
-
-      {userLocation ? (
-        <CircleMarker
-          center={[userLocation.latitude, userLocation.longitude]}
-          radius={9}
-          pathOptions={{
-            color: '#ffffff',
-            fillColor: '#1b5cff',
-            fillOpacity: 1,
-            weight: 3,
-          }}
-        />
-      ) : null}
-
-      {validShops.map((shop) => {
-        const isActive = activeShopId === shop.id
-
-        return (
-          <CircleMarker
-            bubblingMouseEvents={false}
-            key={shop.id}
-            center={[shop.py, shop.px]}
-            radius={isActive ? 11 : 8}
-            pathOptions={{
-              color: isActive ? '#1b5cff' : '#ffffff',
-              fillColor: isActive ? '#1b5cff' : '#ff7a00',
-              fillOpacity: 1,
-              weight: isActive ? 3 : 2,
-            }}
-            eventHandlers={{
-              click: () => onSelectShop(shop.id),
-            }}
-          />
-        )
-      })}
-
-      <FitToTargets
-        shops={validShops}
-        activeShopId={activeShopId}
-        userLocation={userLocation}
-        focusMode={focusMode}
-        focusRequestId={focusRequestId}
-        selectionOrigin={selectionOrigin}
-      />
-      <MapBackgroundClick onClearSelection={onClearSelection} />
-    </MapContainer>
-  )
+  return <div className="map-naver" ref={containerRef} />
 }

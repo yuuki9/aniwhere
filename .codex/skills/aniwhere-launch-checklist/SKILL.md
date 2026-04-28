@@ -10,7 +10,7 @@ Run this as Aniwhere's final Apps in Toss non-game review. It adapts Robin's 11-
 ## Start
 
 1. Read `GIT_CONVENTIONS.md`, `guard.md`, `README.md`, and `docs/product-decisions.md`.
-2. Read `docs/agent-skills.md`, `docs/design-tokens.md`, and `docs/ux-mobile-research.md` when UI is in scope.
+2. Read `docs/agent-skills.md`, `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, and `docs/ux-mobile-research.md` when UI is in scope.
 3. Inspect `client/granite.config.ts`, `client/package.json`, `client/index.html`, and touched client files.
 4. Prefer official Apps in Toss docs when any checklist item is ambiguous or may have changed.
 
@@ -144,6 +144,7 @@ TDS usage is recommended rather than an automatic rejection rule, but Aniwhere s
 - When TDS packages are not used, app-owned UI should visually fit Toss-style mobile UX.
 - Use `@toss/tds-mobile` only when the deployed runtime is an approved Apps in Toss environment. For public web domains such as `aniwhere.link`, avoid runtime imports from that package and match TDS structure with local tokens instead.
 - Keep colors, radii, spacing, typography, and shadows routed through Aniwhere tokens.
+- Prefer `client/src/shared/ui/ait` components for local TDS-compatible Top, ListRow, and Button patterns.
 - Do not add a new visual system for one screen.
 
 ### 11. Sharing Rewards
