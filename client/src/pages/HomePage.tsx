@@ -82,7 +82,7 @@ export function HomePage() {
 
     addCard(newestShops[0], 'NEW', '방금 올라온 매장', 'blue')
     addCard(allShops.find((shop) => shop.sellsIchibanKuji), 'HOT', '이치방쿠지 체크', 'orange')
-    addCard(rankedShops[0], 'PICK', '많이 보는 매장', 'green')
+    addCard(rankedShops[0], 'PICK', '추천 매장', 'green')
 
     for (const shop of newestShops) {
       addCard(shop, 'NEW', '새로 업데이트', 'blue')
@@ -166,7 +166,7 @@ export function HomePage() {
         <div className="section-header">
           <div>
             <span className="section-label">핫 아이템</span>
-            <h2 id="discover-ranking-title">지금 많이 보는 매장</h2>
+            <h2 id="discover-ranking-title">지금 추천하는 매장</h2>
           </div>
           <Link className="text-link" to="/explore">
             전체 보기

@@ -38,21 +38,28 @@ export function loadNaverMaps() {
   naverMapLoadPromise = new Promise<NaverMapNamespace>((resolve, reject) => {
     const existingScript = document.getElementById(NAVER_MAP_SCRIPT_ID) as HTMLScriptElement | null
 
+    const rejectLoad = (error: Error) => {
+      naverMapLoadPromise = null
+      window[NAVER_MAP_CALLBACK_NAME] = undefined
+      reject(error)
+    }
+
     window[NAVER_MAP_CALLBACK_NAME] = () => {
       const maps = getLoadedNaverMaps()
 
       if (!maps) {
-        reject(new Error('네이버 지도 SDK를 초기화하지 못했습니다.'))
+        rejectLoad(new Error('네이버 지도 SDK를 초기화하지 못했습니다.'))
         return
       }
 
+      window[NAVER_MAP_CALLBACK_NAME] = undefined
       resolve(maps)
     }
 
     if (existingScript) {
       existingScript.addEventListener('error', () => {
-        reject(new Error('네이버 지도 SDK를 불러오지 못했습니다.'))
-      })
+        rejectLoad(new Error('네이버 지도 SDK를 불러오지 못했습니다.'))
+      }, { once: true })
       return
     }
 
@@ -64,8 +71,7 @@ export function loadNaverMaps() {
       keyId,
     )}&callback=${NAVER_MAP_CALLBACK_NAME}`
     script.onerror = () => {
-      naverMapLoadPromise = null
-      reject(new Error('네이버 지도 SDK를 불러오지 못했습니다.'))
+      rejectLoad(new Error('네이버 지도 SDK를 불러오지 못했습니다.'))
     }
 
     document.head.appendChild(script)

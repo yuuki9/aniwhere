@@ -36,6 +36,6 @@ Before merging UI work that touches this layer:
 - The screen still works on `aniwhere.link` without `@toss/tds-mobile` in the bundle.
 - The layout follows the latest official TDS component structure as closely as local implementation allows.
 - The 375px mobile viewport is usable with no horizontal scroll or text overlap.
-- `npm.cmd run lint`, `npm.cmd run build`, and when public deployment is affected, `npm.cmd run build:static` pass.
+- `npm run lint`, `npm run build`, and when public deployment is affected, `npm run build:static` pass.
 - The launch checklist records anything that still needs Apps in Toss sandbox or console verification.
 

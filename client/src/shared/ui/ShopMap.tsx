@@ -61,6 +61,7 @@ export function ShopMap({
   const onReadyRef = useRef(onReady)
   const onSelectShopRef = useRef(onSelectShop)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [mapInitialized, setMapInitialized] = useState(false)
 
   const validShops = useMemo(
     () => shops.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
@@ -136,6 +137,7 @@ export function ShopMap({
         })
 
         mapRef.current = map
+        setMapInitialized(true)
         mapClickListenerRef.current = maps.Event.addListener(map, 'click', () => {
           onClearSelectionRef.current?.()
         })
@@ -176,7 +178,7 @@ export function ShopMap({
   useEffect(() => {
     const map = mapRef.current
 
-    if (!map) {
+    if (!mapInitialized || !map) {
       return
     }
 
@@ -204,12 +206,12 @@ export function ShopMap({
         listeners: [listener],
       }
     })
-  }, [activeShopId, validShops])
+  }, [activeShopId, mapInitialized, validShops])
 
   useEffect(() => {
     const map = mapRef.current
 
-    if (!map) {
+    if (!mapInitialized || !map) {
       return
     }
 
@@ -235,12 +237,12 @@ export function ShopMap({
       marker,
       listeners: [],
     }
-  }, [userLocation])
+  }, [mapInitialized, userLocation])
 
   useEffect(() => {
     const map = mapRef.current
 
-    if (!map || focusMode === 'idle' || lastAppliedFocusRef.current === focusRequestId) {
+    if (!mapInitialized || !map || focusMode === 'idle' || lastAppliedFocusRef.current === focusRequestId) {
       return
     }
 
@@ -296,7 +298,7 @@ export function ShopMap({
       }
     }, 0)
     lastAppliedFocusRef.current = focusRequestId
-  }, [activeShopId, focusMode, focusRequestId, selectionOrigin, userLocation, validShops])
+  }, [activeShopId, focusMode, focusRequestId, mapInitialized, selectionOrigin, userLocation, validShops])
 
   if (loadError) {
     return (

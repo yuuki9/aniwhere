@@ -30,6 +30,6 @@
 ## Output Preference
 
 - 기록은 `docs/` 하위 Markdown으로 남깁니다.
-- 커밋이 필요한 경우 `type(scope): description` 형식을 지킵니다.
+- 커밋이 필요한 경우 `type(scope): 한글 설명` 형식을 지킵니다.
 - 의미 없는 cosmetic 변경보다 서비스 명확성, 신뢰도, 탐색 효율을 높이는 변경을 우선합니다.
 
