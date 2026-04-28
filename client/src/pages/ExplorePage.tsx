@@ -1,4 +1,4 @@
-﻿import { type ReactNode, type UIEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, type UIEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
@@ -12,6 +12,11 @@ import {
   requestCurrentLocation,
   type UserLocation,
 } from '../shared/lib/location'
+import {
+  buildNaverMapSearchUrl,
+  buildNaverWebDirectionUrl,
+  canBuildNaverWebDirectionUrl,
+} from '../shared/lib/naverDirections'
 import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { ShopMap } from '../shared/ui/ShopMap'
 import { StatusPill } from '../shared/ui/StatusPill'
@@ -438,7 +443,11 @@ export function ExplorePage() {
     setIsDetailHeaderCollapsed(false)
     setSheetMode(nextSheetMode)
     setAssistantOpen(false)
-    requestMapFocus('shop')
+    if (origin === 'list') {
+      requestMapFocus('shop')
+    } else {
+      setFocusMode('idle')
+    }
     setViewMode('map')
   }
 
@@ -488,6 +497,15 @@ export function ExplorePage() {
     setViewMode(nextView)
   }
 
+  const handleListFabClick = () => {
+    if (detailShop) {
+      restoreListView()
+      return
+    }
+
+    handleSwitchView(isListSheetOpen ? 'map' : 'list')
+  }
+
   const handleRequestLocation = async () => {
     if (locationState === 'loading') {
       return
@@ -514,6 +532,18 @@ export function ExplorePage() {
   const detailDescriptionPreview = buildDescriptionPreview(detailShop?.description ?? detailShop?.visitTip ?? null, 104)
   const detailMediaTone = detailShop ? getDetailMediaTone(detailShop.id) : 'blue'
   const detailMediaItems = detailShop ? buildDetailMediaItems(detailShop, detailPhotosQuery.data ?? []) : []
+  const detailHeroImage = detailMediaItems[0] ?? null
+  const naverDirectionTarget = detailShop
+    ? {
+        latitude: detailShop.py,
+        longitude: detailShop.px,
+        name: detailShop.name,
+      }
+    : null
+  const naverDirectionUrl = naverDirectionTarget && canBuildNaverWebDirectionUrl(naverDirectionTarget)
+    ? buildNaverWebDirectionUrl(naverDirectionTarget, userLocation ? { ...userLocation, name: '현재 위치' } : null)
+    : null
+  const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
   const isListSheetOpen = viewMode === 'list' && !detailShop
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
@@ -659,6 +689,38 @@ export function ExplorePage() {
     setSheetMode('peek')
   }
 
+  const openNaverDirections = (event?: { stopPropagation: () => void }) => {
+    event?.stopPropagation()
+
+    if (naverDirectionUrl) {
+      window.open(naverDirectionUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    if (naverSearchUrl) {
+      window.open(naverSearchUrl, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  const handleShareShop = async () => {
+    if (!detailShop) {
+      return
+    }
+
+    const shareData = {
+      title: detailShop.name,
+      text: `${detailShop.name} - ${detailShop.address}`,
+      url: window.location.href,
+    }
+
+    if (navigator.share) {
+      await navigator.share(shareData)
+      return
+    }
+
+    await navigator.clipboard?.writeText(shareData.url)
+  }
+
   const topSearch = (
     <div className="map-search-row">
       <button className="map-search-field" type="button" onClick={() => navigate('/search')}>
@@ -751,13 +813,28 @@ export function ExplorePage() {
             {shopsError ? <p className="error-text map-inline-error map-inline-error-overlay">{shopsError}</p> : null}
           </div>
 
-          {!detailShop ? (
+          {sheetMode !== 'expanded' ? (
             <button
-              className="map-list-fab"
+              aria-label={isListSheetOpen ? '지도 보기' : '목록 보기'}
+              className={`map-list-fab ${isListSheetOpen ? 'map-list-fab-map' : ''}`}
               type="button"
-              onClick={() => handleSwitchView(isListSheetOpen ? 'map' : 'list')}
+              onClick={handleListFabClick}
             >
-              {isListSheetOpen ? '지도 보기' : '목록 보기'}
+              <span className="map-list-fab-icon" aria-hidden="true">
+                {isListSheetOpen ? (
+                  <svg className="map-list-fab-map-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                    <path d="m4 5 5-2 6 2 5-2v16l-5 2-6-2-5 2V5Z" />
+                    <path d="M9 3v16" />
+                    <path d="M15 5v16" />
+                  </svg>
+                ) : (
+                  <>
+                    <span />
+                    <span />
+                    <span />
+                  </>
+                )}
+              </span>
             </button>
           ) : null}
 
@@ -981,6 +1058,19 @@ export function ExplorePage() {
                   </p>
                   <p className="map-sheet-peek-meta">{detailShop.address}</p>
                 </div>
+                <button
+                  className="map-sheet-peek-route"
+                  type="button"
+                  onClick={openNaverDirections}
+                  aria-label={`${detailShop.name} 네이버 지도 웹 길찾기 열기`}
+                >
+                  {detailHeroImage ? (
+                    <img src={detailHeroImage.src} alt="" aria-hidden="true" />
+                  ) : (
+                    <span aria-hidden="true">{detailShop.name.slice(0, 1)}</span>
+                  )}
+                  <strong aria-hidden="true">↱</strong>
+                </button>
               </div>
             </section>
           ) : null}
@@ -1062,7 +1152,7 @@ export function ExplorePage() {
                 <div className="map-sheet-shell map-sheet-shell-detail">
                   {detailError ? <p className="section error-text">{detailError}</p> : null}
 
-                  <section className="section map-sheet-summary-card map-sheet-summary-card-compact">
+                  <section className="section map-sheet-summary-card map-sheet-summary-card-compact" id="map-place-home">
                     <div className="map-sheet-summary-head map-sheet-summary-head-compact">
                       <div className="map-sheet-summary-copy">
                         <span className="eyebrow">{detailShop.regionName ?? `지역 ${detailShop.regionId ?? '-'}`}</span>
@@ -1091,6 +1181,37 @@ export function ExplorePage() {
                       </Link>
                     </div>
 
+                    <div className="map-place-action-grid" aria-label="매장 주요 액션">
+                      <a
+                        className="map-place-action"
+                        href={primaryLink?.url ?? naverSearchUrl ?? '#'}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        <MapDetailIcon name="link" />
+                        <span>전화/링크</span>
+                      </a>
+                      <button className="map-place-action" type="button" onClick={handleShareShop}>
+                        <MapDetailIcon name="tag" />
+                        <span>공유</span>
+                      </button>
+                      <button className="map-place-action map-place-action-primary" type="button" onClick={openNaverDirections}>
+                        <MapDetailIcon name="pin" />
+                        <span>경로 확인</span>
+                      </button>
+                      <Link className="map-place-action" to={`/community?shopId=${detailShop.id}`}>
+                        <MapDetailIcon name="clock" />
+                        <span>리뷰</span>
+                      </Link>
+                    </div>
+
+                    <nav className="map-place-tabs" aria-label="상세 정보 바로가기">
+                      <a href="#map-place-home">홈</a>
+                      <a href="#map-place-review">리뷰</a>
+                      <a href="#map-place-info">지도</a>
+                      <a href="#map-place-info">정보</a>
+                    </nav>
+
                     {detailDescriptionPreview ? (
                       <div className="map-sheet-ai-summary">
                         <div className="map-sheet-ai-summary-head">
@@ -1102,9 +1223,12 @@ export function ExplorePage() {
                     ) : null}
                   </section>
 
-                  <section className="section map-sheet-info-card map-sheet-info-list-v2 map-sheet-info-list-v3">
+                  <section className="section map-sheet-info-card map-sheet-info-list-v2 map-sheet-info-list-v3" id="map-place-info">
                     <MapDetailRow icon="pin" label="주소">
-                      {detailShop.address}
+                      <button className="map-place-address-button" type="button" onClick={openNaverDirections}>
+                        {detailShop.address}
+                        <span>네이버 지도 웹</span>
+                      </button>
                     </MapDetailRow>
                     <MapDetailRow icon="layers" label="운영 정보">
                       {detailFloorLabel ?? '층 정보 확인 필요'} · {statusToLabel(detailShop.status)}
@@ -1126,6 +1250,17 @@ export function ExplorePage() {
                       {formatRelativeUpdated(detailShop.updatedAt)}
                       {activeShop?.distanceLabel ? ` · ${activeShop.distanceLabel}` : ''}
                     </MapDetailRow>
+                  </section>
+
+                  <section className="section map-place-review-card" id="map-place-review">
+                    <div className="map-place-review-copy">
+                      <strong>{detailShop.name}</strong>
+                      <span>다녀오셨나요?</span>
+                      <p>방문 팁과 굿즈 정보를 리뷰로 남겨주세요.</p>
+                    </div>
+                    <Link className="map-place-review-button" to={`/community?shopId=${detailShop.id}`}>
+                      ✎ 리뷰 쓰기
+                    </Link>
                   </section>
 
                   {detailShop.works.length > 0 ? (

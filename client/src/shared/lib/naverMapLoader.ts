@@ -1,5 +1,7 @@
 const NAVER_MAP_CALLBACK_NAME = '__aniwhereNaverMapReady'
 const NAVER_MAP_SCRIPT_ID = 'aniwhere-naver-map-sdk'
+const NAVER_MAP_READY_RETRY_LIMIT = 20
+const NAVER_MAP_READY_RETRY_DELAY_MS = 50
 
 type NaverMapNamespace = typeof naver.maps
 
@@ -45,16 +47,27 @@ export function loadNaverMaps() {
       reject(error)
     }
 
-    window[NAVER_MAP_CALLBACK_NAME] = () => {
+    const resolveWhenReady = (attempt = 0) => {
       const maps = getLoadedNaverMaps()
 
-      if (!maps) {
+      if (maps) {
+        window[NAVER_MAP_CALLBACK_NAME] = undefined
+        resolve(maps)
+        return
+      }
+
+      if (attempt >= NAVER_MAP_READY_RETRY_LIMIT) {
         rejectLoad(new Error('네이버 지도 SDK를 초기화하지 못했습니다.'))
         return
       }
 
-      window[NAVER_MAP_CALLBACK_NAME] = undefined
-      resolve(maps)
+      window.setTimeout(() => {
+        resolveWhenReady(attempt + 1)
+      }, NAVER_MAP_READY_RETRY_DELAY_MS)
+    }
+
+    window[NAVER_MAP_CALLBACK_NAME] = () => {
+      resolveWhenReady()
     }
 
     if (existingScript) {
