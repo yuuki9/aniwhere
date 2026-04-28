@@ -21,6 +21,11 @@
 
 ## 커밋 메시지
 
+### 언어
+
+- **커밋 로그(제목·본문)는 반드시 한글로 작성합니다.** PR·MR 설명도 동일 원칙을 따르는 것을 권장합니다.
+- `type`, `scope` 같은 접두 형식은 아래 형식을 유지하고, 콜론 뒤 설명은 한글로 씁니다.
+
 ### 형식
 
 ```
@@ -32,8 +37,8 @@ type(scope): 짧은 설명 (한 줄, 명령형 또는 현재형)
 
 ### 실제 로그 예시
 
-- `feat(client): build apps in toss shop and community frontend`
-- `chore(server): manage version 1.0.0 via gradle.properties`
+- `feat(client): 토스 쇼핑·커뮤니티 웹 프론트 빌드 추가`
+- `chore(server): gradle.properties로 버전 1.0.0 관리`
 
 ### type
 
@@ -64,4 +69,4 @@ type(scope): 짧은 설명 (한 줄, 명령형 또는 현재형)
 ## 참고
 
 - GitHub Pull Request / GitLab Merge Request 템플릿 활용 권장  
-- 커밋은 “무엇을·왜” 한 줄에 드러나게 작성  
+- 커밋은 “무엇을·왜” 한 줄에 드러나게 작성(위 언어 규칙 준수)
