@@ -42,7 +42,7 @@ const CLUSTER_BREAK_ZOOM = 16
 
 function createMarkerIcon(className: string, label: string, size: number) {
   return {
-    content: `<span class="${className}" aria-hidden="true">${label}</span>`,
+    content: `<span class="${className}" style="width:${size}px;height:${size}px" aria-hidden="true">${label}</span>`,
     size: new naver.maps.Size(size, size),
     anchor: new naver.maps.Point(size / 2, size / 2),
   }

@@ -2274,6 +2274,8 @@ p {
 .discover-secondary-link:focus-visible,
 .discover-rank-row:focus-visible,
 .map-search-field:focus-visible,
+.map-zoom-button:focus-visible,
+.map-list-fab:focus-visible,
 .text-link:focus-visible {
   outline: 3px solid rgba(49, 130, 246, 0.34);
   outline-offset: 3px;
@@ -3386,7 +3388,7 @@ p {
 }
 
 .map-chip-gps-icon {
-  border: 2px solid currentColor;
+  border: 2px solid currentcolor;
   border-radius: var(--ait-radius-full);
 }
 
@@ -3394,7 +3396,7 @@ p {
   position: absolute;
   width: 8px;
   height: 8px;
-  border: 2px solid currentColor;
+  border: 2px solid currentcolor;
   border-radius: var(--ait-radius-full);
 }
 
@@ -3404,7 +3406,7 @@ p {
 .map-chip-gps-crosshair::after {
   content: '';
   position: absolute;
-  background: currentColor;
+  background: currentcolor;
   border-radius: var(--ait-radius-full);
 }
 
@@ -3442,7 +3444,7 @@ p {
 
 .map-chip-gps-spinner {
   border: 2px solid rgba(75, 91, 114, 0.18);
-  border-top-color: currentColor;
+  border-top-color: currentcolor;
   border-radius: var(--ait-radius-full);
   animation: map-chip-gps-spin 0.7s linear infinite;
 }
@@ -3532,7 +3534,7 @@ p {
   display: block;
   height: 2px;
   border-radius: var(--ait-radius-full);
-  background: currentColor;
+  background: currentcolor;
 }
 
 .map-list-fab-map {
@@ -3545,7 +3547,7 @@ p {
   width: 22px;
   height: 22px !important;
   align-self: center;
-  stroke: currentColor;
+  stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
@@ -4779,9 +4781,27 @@ p {
   color: #5f6b7a;
 }
 
+.map-place-action:disabled,
+.map-place-action[aria-disabled='true'] {
+  color: var(--ait-color-gray-400);
+  cursor: default;
+}
+
+.map-place-action:disabled svg,
+.map-place-action[aria-disabled='true'] svg {
+  color: var(--ait-color-gray-400);
+}
+
 .map-place-action-primary,
 .map-place-action-primary svg {
   color: var(--brand);
+}
+
+.map-place-feedback {
+  margin: var(--ait-space-2) 0 0;
+  color: var(--ait-color-gray-600);
+  font-size: var(--ait-font-size-caption);
+  text-align: center;
 }
 
 .map-place-tabs {

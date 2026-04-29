@@ -222,6 +222,7 @@ export function ExplorePage() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
   const [locationState, setLocationState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
   const [peekDragOffset, setPeekDragOffset] = useState(0)
   const [isPeekDragging, setIsPeekDragging] = useState(false)
@@ -544,6 +545,7 @@ export function ExplorePage() {
     ? buildNaverWebDirectionUrl(naverDirectionTarget, userLocation ? { ...userLocation, name: '현재 위치' } : null)
     : null
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
+  const detailActionLinkUrl = primaryLink?.url ?? naverSearchUrl
   const isListSheetOpen = viewMode === 'list' && !detailShop
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
@@ -707,6 +709,8 @@ export function ExplorePage() {
       return
     }
 
+    setShareFeedback(null)
+
     const shareData = {
       title: detailShop.name,
       text: `${detailShop.name} - ${detailShop.address}`,
@@ -714,11 +718,30 @@ export function ExplorePage() {
     }
 
     if (navigator.share) {
-      await navigator.share(shareData)
+      try {
+        await navigator.share(shareData)
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
+
+        setShareFeedback('공유를 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+      }
+
       return
     }
 
-    await navigator.clipboard?.writeText(shareData.url)
+    try {
+      if (!navigator.clipboard?.writeText) {
+        setShareFeedback('이 환경에서는 공유 링크를 복사할 수 없습니다.')
+        return
+      }
+
+      await navigator.clipboard.writeText(shareData.url)
+      setShareFeedback('공유 링크를 복사했습니다.')
+    } catch {
+      setShareFeedback('공유 링크를 복사하지 못했습니다.')
+    }
   }
 
   const topSearch = (
@@ -1182,15 +1205,22 @@ export function ExplorePage() {
                     </div>
 
                     <div className="map-place-action-grid" aria-label="매장 주요 액션">
-                      <a
-                        className="map-place-action"
-                        href={primaryLink?.url ?? naverSearchUrl ?? '#'}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        <MapDetailIcon name="link" />
-                        <span>전화/링크</span>
-                      </a>
+                      {detailActionLinkUrl ? (
+                        <a
+                          className="map-place-action"
+                          href={detailActionLinkUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <MapDetailIcon name="link" />
+                          <span>전화/링크</span>
+                        </a>
+                      ) : (
+                        <button className="map-place-action" type="button" disabled aria-disabled="true">
+                          <MapDetailIcon name="link" />
+                          <span>전화/링크</span>
+                        </button>
+                      )}
                       <button className="map-place-action" type="button" onClick={handleShareShop}>
                         <MapDetailIcon name="tag" />
                         <span>공유</span>
@@ -1204,6 +1234,11 @@ export function ExplorePage() {
                         <span>리뷰</span>
                       </Link>
                     </div>
+                    {shareFeedback ? (
+                      <p className="map-place-feedback" role="status" aria-live="polite">
+                        {shareFeedback}
+                      </p>
+                    ) : null}
 
                     <nav className="map-place-tabs" aria-label="상세 정보 바로가기">
                       <a href="#map-place-home">홈</a>
