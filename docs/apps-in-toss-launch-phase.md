@@ -68,7 +68,7 @@
 ### Phase 1. 문서와 기준 정렬
 
 - 이 문서로 출시 재정렬의 기준을 고정한다.
-- `Passed / Needs console value / Needs sandbox / Risk` 판정을 PR description에 그대로 옮길 수 있게 유지한다.
+- `Passed / Needs console value / Needs sandbox / Risks` 판정을 PR description에 그대로 옮길 수 있게 유지한다.
 - 코드 변경 없이 문서 PR로 먼저 리뷰받는다.
 
 ### Phase 2. 콘솔 설정 정렬
