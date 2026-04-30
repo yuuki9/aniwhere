@@ -6,8 +6,8 @@ import { HomePage } from '../pages/HomePage'
 import { IntroPage } from '../pages/IntroPage'
 import { PostDetailPage } from '../pages/PostDetailPage'
 import { SearchPage } from '../pages/SearchPage'
-import { ShopPage } from '../pages/ShopPage'
 import { MainLayout } from '../shared/ui/MainLayout'
+import { ShopRouteRedirect } from './ShopRouteRedirect'
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +20,10 @@ export const router = createBrowserRouter([
     children: [
       {
         path: 'discover',
+        element: <Navigate replace to="/home" />,
+      },
+      {
+        path: 'home',
         element: <HomePage />,
       },
       {
@@ -38,7 +42,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/shops/:shopId',
-    element: <ShopPage />,
+    element: <ShopRouteRedirect />,
   },
   {
     path: '/search',

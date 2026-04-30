@@ -114,7 +114,7 @@ export function GlobalNavigationMenu({
 
           <aside aria-label="전체 메뉴" aria-modal="true" className="global-nav-drawer" ref={drawerRef} role="dialog">
             <div className="global-nav-drawer-head">
-              <strong>Aniwhere</strong>
+              <strong>애니웨어</strong>
               <button aria-label="메뉴 닫기" className="global-nav-close" ref={closeRef} type="button" onClick={close}>
                 ×
               </button>

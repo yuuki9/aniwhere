@@ -85,7 +85,7 @@ export function CommunityPage() {
             남길 수 있도록 구성합니다.
           </p>
           <div className="hero-action-row">
-            <Link className="primary-action" to="/discover">
+            <Link className="primary-action" to="/home">
               샵 탐색으로 돌아가기
             </Link>
             <a className="secondary-action" href="#post-composer">

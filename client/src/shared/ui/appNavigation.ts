@@ -9,9 +9,9 @@ export type AppNavigationItem = {
 export const APP_NAV_ITEMS: AppNavigationItem[] = [
   {
     key: 'discover',
-    to: '/discover',
+    to: '/home',
     label: '홈',
-    match: (pathname) => pathname === '/discover',
+    match: (pathname) => pathname === '/home' || pathname === '/discover',
   },
   {
     key: 'explore',
