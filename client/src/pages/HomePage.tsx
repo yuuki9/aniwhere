@@ -20,6 +20,10 @@ const getShopArea = (shop: Shop) => {
   return shop.regionName ?? `지역 ${shop.regionId ?? '-'}`
 }
 
+const buildExploreDetailHref = (shopId: number) => `/explore?shopId=${shopId}`
+
+const buildSearchHref = (keyword: string) => `/search?keyword=${encodeURIComponent(keyword)}&page=0`
+
 type SpotlightCard = {
   accent: 'blue' | 'orange' | 'green'
   eyebrow: string
@@ -94,8 +98,12 @@ export function HomePage() {
   const shortcutItems = [
     { label: '새로 올라온 매장', to: '/explore', tone: 'blue' },
     { label: '내 주변 보기', to: '/explore', tone: 'green' },
-    { label: '이치방쿠지', to: '/search?q=이치방쿠지', tone: 'orange' },
-    { label: trendingKeywords[0]?.[0] ? `#${trendingKeywords[0][0]}` : '인기 키워드', to: '/search', tone: 'gray' },
+    { label: '이치방쿠지', to: buildSearchHref('이치방쿠지'), tone: 'orange' },
+    {
+      label: trendingKeywords[0]?.[0] ? `#${trendingKeywords[0][0]}` : '인기 키워드',
+      to: trendingKeywords[0]?.[0] ? buildSearchHref(trendingKeywords[0][0]) : '/search',
+      tone: 'gray',
+    },
   ] as const
 
   return (
@@ -140,7 +148,7 @@ export function HomePage() {
               <Link
                 className={`discover-spotlight-card discover-spotlight-card-${card.accent}`}
                 key={`${card.eyebrow}-${card.shop.id}`}
-                to={`/shops/${card.shop.id}`}
+                to={buildExploreDetailHref(card.shop.id)}
               >
                 <span className="discover-spotlight-eyebrow">{card.eyebrow}</span>
                 <strong>{card.shop.name}</strong>
@@ -187,7 +195,7 @@ export function HomePage() {
           <ol aria-label="추천 매장 목록" className="discover-ranking-list">
             {rankedShops.map((shop, index) => (
               <li key={shop.id}>
-                <Link className="discover-rank-row" to={`/shops/${shop.id}`}>
+                <Link className="discover-rank-row" to={buildExploreDetailHref(shop.id)}>
                   <span className="discover-rank-order" aria-label={`${index + 1}위`}>
                     {index + 1}
                   </span>

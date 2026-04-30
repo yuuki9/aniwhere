@@ -51,7 +51,7 @@ export function IntroPage() {
           ? { entryMode: 'preview' }
           : { entryMode: 'toss', referrer: result.referrer }
 
-      navigate('/discover', { state })
+      navigate('/home', { state })
     } catch (error) {
       setStartError(error instanceof Error ? error.message : '시작하는 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.')
     } finally {
@@ -67,7 +67,7 @@ export function IntroPage() {
           brand={
             <div className="intro-brand-lockup">
               <img className="intro-brand-logo" src={aniwhereIcon} alt="" />
-              <span>Aniwhere</span>
+              <span>애니웨어</span>
             </div>
           }
           title="가챠샵, 애니메이션샵, 굿즈샵을 한 번에 찾아보세요"

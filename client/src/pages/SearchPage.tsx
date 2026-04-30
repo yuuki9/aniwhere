@@ -208,7 +208,7 @@ export function SearchPage() {
                     <Link className="ghost-action compact-action" to={buildExploreHref(shop.id, shop.regionId)}>
                       지도 보기
                     </Link>
-                    <Link className="primary-action compact-action" to={`/shops/${shop.id}`}>
+                    <Link className="primary-action compact-action" to={buildExploreHref(shop.id, shop.regionId)}>
                       상세 보기
                     </Link>
                   </div>
