@@ -1,26 +1,69 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
+import introStoreGuide from '../assets/intro-store-guide.webp'
 import { startServiceEntry } from '../shared/lib/auth'
 import { AitButton, AitListRow, AitTop } from '../shared/ui/ait'
 
+type IntroFeatureIconType = 'search' | 'write' | 'approve' | 'point'
+
 const featureItems = [
   {
-    icon: 'map',
-    title: '굿즈샵과 이치방쿠지를 빠르게 찾기',
-    body: '지금 가볼 만한 매장을 지역 기준으로 바로 확인해요.',
+    icon: 'search',
+    title: '매장 찾기',
+    body: '피규어·가챠샵을 키워드와 지역으로 찾아요.',
   },
   {
-    icon: 'time',
-    title: '운영 상태와 최근 업데이트 보기',
-    body: '헛걸음하지 않도록 영업 정보와 최신 수정 시점을 함께 보여줘요.',
+    icon: 'write',
+    title: '후기 작성',
+    body: '방문한 매장의 경험을 간단히 남겨요.',
   },
   {
-    icon: 'spark',
-    title: '작품과 매장 정보를 한눈에 비교',
-    body: '관심 작품, 공식 링크, 방문 팁을 방문 판단에 필요한 만큼만 정리해요.',
+    icon: 'approve',
+    title: '검토 승인',
+    body: '운영팀 검토 후 승인 상태를 확인해요.',
+  },
+  {
+    icon: 'point',
+    title: '포인트 적립',
+    body: '승인된 후기는 포인트로 이어져요.',
   },
 ] as const
+
+function IntroFeatureIcon({ type }: { type: IntroFeatureIconType }) {
+  return (
+    <span className={`intro-feature-icon intro-feature-icon-${type}`} aria-hidden="true">
+      <svg className="intro-feature-icon-svg" viewBox="0 0 24 24" focusable="false">
+        {type === 'search' ? (
+          <>
+            <circle cx="10.5" cy="10.5" r="5.5" />
+            <path d="M15 15l4.5 4.5" />
+          </>
+        ) : null}
+        {type === 'write' ? (
+          <>
+            <path d="M5 18.5l4.2-1 8.9-8.9a2.1 2.1 0 0 0-3-3L6.2 14.5 5 18.5z" />
+            <path d="M13.8 6.8l3.4 3.4" />
+          </>
+        ) : null}
+        {type === 'approve' ? (
+          <>
+            <circle cx="12" cy="12" r="8" />
+            <path d="M8.5 12.2l2.2 2.2 4.8-5" />
+          </>
+        ) : null}
+        {type === 'point' ? (
+          <>
+            <circle cx="12" cy="12" r="8" />
+            <text x="12" y="12" textAnchor="middle">
+              P
+            </text>
+          </>
+        ) : null}
+      </svg>
+    </span>
+  )
+}
 
 type EntryRouteState =
   | {
@@ -70,15 +113,29 @@ export function IntroPage() {
               <span>애니웨어</span>
             </div>
           }
-          title="가챠샵, 애니메이션샵, 굿즈샵을 한 번에 찾아보세요"
-          subtitle="흩어진 매장 정보를 모아 지역과 작품 기준으로 빠르게 탐색하고, 지금 가볼 만한 곳을 바로 확인할 수 있어요."
+          title={
+            <>
+              피규어·가챠샵을 찾고,
+              <br />
+              후기로 포인트까지
+            </>
+          }
         />
 
+        <figure className="intro-guide-figure">
+          <img
+            alt="지도 위 굿즈샵과 가챠 머신을 안내하는 애니웨어 마스코트"
+            className="intro-guide-image"
+            src={introStoreGuide}
+          />
+        </figure>
+
         <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
-          {featureItems.map((item, index) => (
+          {featureItems.map((item) => (
             <AitListRow
-              asset={<span className={`intro-feature-asset intro-feature-asset-${item.icon}`} aria-hidden="true" />}
-              border={index === 0 ? 'none' : 'indented'}
+              asset={<IntroFeatureIcon type={item.icon} />}
+              border="none"
+              className="intro-chain-row"
               description={item.body}
               key={item.title}
               title={item.title}
@@ -100,10 +157,10 @@ export function IntroPage() {
             display="full"
             onClick={handleStart}
           >
-            {isStarting ? '시작 준비 중' : '시작하기'}
+            {isStarting ? '로그인 준비 중' : '토스로 로그인하기'}
           </AitButton>
-          <Link className="text-link intro-secondary-link" to="/explore">
-            매장 먼저 둘러보기
+          <Link className="ait-button ait-button-full intro-secondary-action" to="/explore">
+            로그인 없이 둘러보기
           </Link>
         </div>
       </section>

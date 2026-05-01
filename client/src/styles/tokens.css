@@ -138,7 +138,15 @@
   --ait-component-intro-panel-padding: 22px 20px 20px;
   --ait-component-intro-panel-padding-compact: 18px 16px 16px;
   --ait-component-intro-logo-size: 44px;
+  --ait-component-intro-logo-size-compact: 36px;
   --ait-component-intro-feature-asset-size: 40px;
+  --ait-component-intro-feature-asset-size-compact: 34px;
+  --ait-component-intro-figure-height: 204px;
+  --ait-component-intro-figure-height-compact: 168px;
+  --ait-component-intro-shell-top-space: 42px;
+  --ait-component-intro-list-row-min-height: 56px;
+  --ait-component-intro-title-size: 28px;
+  --ait-component-intro-title-size-compact: 26px;
   --ait-component-intro-action-height: 56px;
 
   --ait-z-navigation: 1100;

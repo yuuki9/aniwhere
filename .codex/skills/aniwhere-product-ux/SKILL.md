@@ -41,6 +41,17 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 - Explore: results summary, lightweight filters, list/map comparison.
 - Detail: visit decision support, open status, latest update, official links, reviews/reports.
 
+## Image And Illustration Guidance
+
+- Use generated or custom illustrations only when they clarify the screen purpose.
+- Prefer clean Toss-style 3D or simple object illustrations with bright, organized composition.
+- Avoid copyrighted anime/game character resemblance, existing brand logos, text inside images, manga-like styles, and overly decorative effects.
+- Aniwhere's mascot may appear as a small guide, but the main subject should stay tied to store discovery: map pins, storefronts, gachapon machines, goods boxes, or location cues.
+- Intro can use one optimized bundled image when it improves first-screen comprehension.
+- Home curation should use images sparingly; mascot usage should be a small brand marker, not the content itself.
+- For multiple or heavy images, prefer managed CDN/static URLs over increasing the `.ait` bundle.
+- Before generating an image, propose the prompt and explain why the image helps the current screen.
+
 ## Review Checklist
 
 1. Can the screen's main purpose be described in one sentence?
