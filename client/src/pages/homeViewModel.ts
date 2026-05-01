@@ -61,6 +61,13 @@ const getUpdatedDate = (value: string) => {
   return value.slice(0, 10)
 }
 
+const getUpdatedTime = (value: string) => {
+  const numericValue = Number(value)
+  const timestamp = Number.isFinite(numericValue) ? numericValue : Date.parse(value)
+
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
 const getShopDetail = (shop: Shop) => {
   return [shop.address, shop.floor].filter(Boolean).join(' · ')
 }
@@ -97,7 +104,7 @@ const getTopWorks = (shops: Shop[]) => {
 const selectWorkStores = (shops: Shop[], keyword: string, limit = 3) => {
   return shops
     .filter((shop) => shop.works.some((work) => work.trim() === keyword))
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .sort((a, b) => getUpdatedTime(b.updatedAt) - getUpdatedTime(a.updatedAt))
     .slice(0, limit)
     .map(buildShopSummary)
 }

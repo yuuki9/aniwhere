@@ -197,7 +197,7 @@ function HomeQuickMenuSection({ menus }: { menus: HomeQuickMenu[] }) {
 
 function HomeIssueSection({ cards }: { cards: HomeIssueCard[] }) {
   const railRef = useRef<HTMLDivElement>(null)
-  const [selectedCardId, setSelectedCardId] = useState<string | undefined>(cards[0]?.id)
+  const [selectedCardId, setSelectedCardId] = useState<string | undefined>()
   const selectedCard = cards.find((card) => card.id === selectedCardId) ?? cards[0]
 
   useEffect(() => {
@@ -228,7 +228,7 @@ function HomeIssueSection({ cards }: { cards: HomeIssueCard[] }) {
     return () => {
       rail.removeEventListener('wheel', handleRailWheel)
     }
-  }, [selectedCard?.id])
+  }, [])
 
   const scrollRail = (direction: 'prev' | 'next') => {
     const rail = railRef.current
@@ -301,7 +301,11 @@ function HomeIssueSection({ cards }: { cards: HomeIssueCard[] }) {
               </Link>
             ) : null}
           </>
-        ) : null}
+        ) : (
+          <div className="home-work-store-empty" role="status" aria-live="polite">
+            취급 매장이 없습니다
+          </div>
+        )}
       </article>
     </section>
   )
@@ -338,10 +342,14 @@ export function HomePage() {
       <HomeHeader onSearch={() => navigate('/search')} />
       <HomeQuickMenuSection menus={quickMenus} />
 
-      <HomeIssueSection cards={issueCards} />
+      {shopsQuery.isLoading ? (
+        <HomeShopStatus isLoading>매장 정보를 불러오는 중입니다.</HomeShopStatus>
+      ) : shopsQuery.isError ? (
+        <HomeShopStatus isError>매장 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</HomeShopStatus>
+      ) : (
+        <HomeIssueSection cards={issueCards} />
+      )}
 
-      {shopsQuery.isLoading ? <HomeShopStatus isLoading>매장 정보를 불러오는 중입니다.</HomeShopStatus> : null}
-      {shopsQuery.isError ? <HomeShopStatus isError>매장 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</HomeShopStatus> : null}
       {!shopsQuery.isLoading && !shopsQuery.isError ? <HomeReviewPreviewSection /> : null}
     </main>
   )
