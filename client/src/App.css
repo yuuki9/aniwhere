@@ -477,7 +477,6 @@
   padding: max(var(--ait-component-intro-shell-top-space), calc(env(safe-area-inset-top) + var(--ait-space-8)))
     var(--ait-space-8)
     max(var(--ait-space-7), calc(env(safe-area-inset-bottom) + var(--ait-space-4)));
-  padding-top: var(--ait-component-intro-shell-top-space);
   background: var(--ait-color-gray-0);
 }
 
@@ -679,8 +678,7 @@ p {
   flex-direction: column;
   gap: var(--ait-space-8);
   min-height: calc(
-    100dvh - max(var(--ait-component-intro-shell-top-space), calc(env(safe-area-inset-top) + var(--ait-space-8))) -
-      max(var(--ait-space-7), calc(env(safe-area-inset-bottom) + var(--ait-space-4)))
+    100dvh - max(var(--ait-component-intro-shell-top-space), calc(env(safe-area-inset-top) + var(--ait-space-8))) - max(var(--ait-space-7), calc(env(safe-area-inset-bottom) + var(--ait-space-4)))
   );
   padding: var(--ait-space-0);
   border: 0;
@@ -955,11 +953,11 @@ p {
 }
 
 .intro-secondary-action {
-  min-height: 50px;
+  min-height: var(--ait-component-intro-action-height);
   border: 1px solid var(--ait-color-border);
   background: var(--ait-color-surface-soft);
   color: var(--ait-color-brand);
-  font-size: var(--ait-font-size-body-md);
+  font-size: var(--ait-font-size-title-sm);
 }
 
 .intro-secondary-action:active {
@@ -2686,7 +2684,8 @@ p {
     width: 100%;
     max-width: var(--ait-size-screen-design);
     margin: 0 auto;
-    padding: var(--ait-component-intro-shell-top-space) var(--ait-space-8)
+    padding: max(var(--ait-component-intro-shell-top-space), calc(env(safe-area-inset-top) + var(--ait-space-8)))
+      var(--ait-space-8)
       max(var(--ait-space-7), calc(env(safe-area-inset-bottom) + var(--ait-space-4)));
   }
 
