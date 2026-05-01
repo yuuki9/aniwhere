@@ -13,6 +13,7 @@ import {
 
 const EMPTY_SHOPS: Shop[] = []
 const HOME_SHOP_PAGE_SIZE = 200
+const HOME_SHOP_FETCH_CONCURRENCY = 4
 
 async function getHomeShops() {
   const firstPage = await getShops({ page: 0, size: HOME_SHOP_PAGE_SIZE })
@@ -21,11 +22,18 @@ async function getHomeShops() {
     return firstPage.content
   }
 
-  const remainingPages = await Promise.all(
-    Array.from({ length: firstPage.totalPages - 1 }, (_, index) =>
-      getShops({ page: index + 1, size: HOME_SHOP_PAGE_SIZE }),
-    ),
-  )
+  const remainingPages: Awaited<ReturnType<typeof getShops>>[] = []
+
+  for (let page = 1; page < firstPage.totalPages; page += HOME_SHOP_FETCH_CONCURRENCY) {
+    const batch = await Promise.all(
+      Array.from(
+        { length: Math.min(HOME_SHOP_FETCH_CONCURRENCY, firstPage.totalPages - page) },
+        (_, index) => getShops({ page: page + index, size: HOME_SHOP_PAGE_SIZE }),
+      ),
+    )
+
+    remainingPages.push(...batch)
+  }
 
   return [firstPage, ...remainingPages].flatMap((page) => page.content)
 }
@@ -354,7 +362,7 @@ export function HomePage() {
         <HomeIssueSection cards={issueCards} />
       )}
 
-      {!shopsQuery.isLoading && !shopsQuery.isError ? <HomeReviewPreviewSection /> : null}
+      <HomeReviewPreviewSection />
     </main>
   )
 }
