@@ -16,14 +16,18 @@ const HOME_SHOP_PAGE_SIZE = 200
 
 async function getHomeShops() {
   const firstPage = await getShops({ page: 0, size: HOME_SHOP_PAGE_SIZE })
-  const shops = [...firstPage.content]
 
-  for (let page = 1; page < firstPage.totalPages; page += 1) {
-    const nextPage = await getShops({ page, size: HOME_SHOP_PAGE_SIZE })
-    shops.push(...nextPage.content)
+  if (firstPage.totalPages <= 1) {
+    return firstPage.content
   }
 
-  return shops
+  const remainingPages = await Promise.all(
+    Array.from({ length: firstPage.totalPages - 1 }, (_, index) =>
+      getShops({ page: index + 1, size: HOME_SHOP_PAGE_SIZE }),
+    ),
+  )
+
+  return [firstPage, ...remainingPages].flatMap((page) => page.content)
 }
 
 function SearchIcon() {

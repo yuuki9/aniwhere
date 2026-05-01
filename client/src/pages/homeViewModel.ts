@@ -1,4 +1,5 @@
 import type { Shop } from '../shared/api/types.ts'
+import { formatDateTime } from '../shared/lib/format.ts'
 
 export type HomeShopSummary = {
   id: number
@@ -58,7 +59,7 @@ export const buildHomeQuickMenus = (): HomeQuickMenu[] => [
 ]
 
 const getUpdatedDate = (value: string) => {
-  return value.slice(0, 10)
+  return formatDateTime(value)
 }
 
 const getUpdatedTime = (value: string) => {

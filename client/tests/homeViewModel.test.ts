@@ -6,6 +6,7 @@ import {
   buildShopSummary,
 } from '../src/pages/homeViewModel.ts'
 import type { Shop } from '../src/shared/api/types.ts'
+import { formatDateTime } from '../src/shared/lib/format.ts'
 
 const baseShop: Shop = {
   id: 1,
@@ -35,7 +36,7 @@ test('buildShopSummary centralizes home shop display copy', () => {
     name: '애니굿즈샵',
     href: '/explore?shopId=1',
     meta: '홍대 · 굿즈샵',
-    freshness: '2026-04-30 업데이트',
+    freshness: `${formatDateTime(baseShop.updatedAt)} 업데이트`,
     detail: '서울시 마포구',
   })
 })
