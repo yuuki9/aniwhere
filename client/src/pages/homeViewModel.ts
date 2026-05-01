@@ -82,12 +82,10 @@ const getTopWorks = (shops: Shop[]) => {
   const counts = new Map<string, number>()
 
   for (const shop of shops) {
-    for (const work of shop.works) {
-      const normalized = work.trim()
+    const uniqueWorks = new Set(shop.works.map((work) => work.trim()).filter(Boolean))
 
-      if (normalized) {
-        counts.set(normalized, (counts.get(normalized) ?? 0) + 1)
-      }
+    for (const normalized of uniqueWorks) {
+      counts.set(normalized, (counts.get(normalized) ?? 0) + 1)
     }
   }
 

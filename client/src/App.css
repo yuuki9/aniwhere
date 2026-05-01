@@ -1220,8 +1220,8 @@ p {
 }
 
 .home-work-chip[aria-pressed='true'] .home-issue-visual {
-  border-color: currentColor;
-  box-shadow: inset 0 0 0 2px currentColor;
+  border-color: currentcolor;
+  box-shadow: inset 0 0 0 2px currentcolor;
 }
 
 .home-work-chip[aria-pressed='true']::after {
@@ -1232,7 +1232,7 @@ p {
   height: 0;
   border-right: 5px solid transparent;
   border-left: 5px solid transparent;
-  border-top: 7px solid currentColor;
+  border-top: 7px solid currentcolor;
   content: '';
   transform: translateX(-50%);
 }
@@ -1284,7 +1284,7 @@ p {
 .home-work-chip-logo-text {
   display: -webkit-box;
   max-width: 58px;
-  color: currentColor;
+  color: currentcolor;
   font-size: var(--ait-font-size-label);
   font-weight: 900;
   line-height: 1.15;
@@ -1307,7 +1307,7 @@ p {
 }
 
 .home-issue-visual-fill {
-  fill: currentColor;
+  fill: currentcolor;
   opacity: 0.18;
 }
 
@@ -1318,7 +1318,7 @@ p {
 
 .home-issue-visual-line {
   fill: none;
-  stroke: currentColor;
+  stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 6;
@@ -1326,7 +1326,7 @@ p {
 }
 
 .home-issue-visual-dot {
-  fill: currentColor;
+  fill: currentcolor;
   opacity: 0.52;
 }
 
@@ -1443,7 +1443,7 @@ p {
   bottom: 22px;
   height: 16px;
   border-radius: 4px;
-  background: currentColor;
+  background: currentcolor;
   opacity: 0.22;
 }
 

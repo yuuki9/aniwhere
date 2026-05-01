@@ -12,6 +12,19 @@ import {
 } from './homeViewModel'
 
 const EMPTY_SHOPS: Shop[] = []
+const HOME_SHOP_PAGE_SIZE = 200
+
+async function getHomeShops() {
+  const firstPage = await getShops({ page: 0, size: HOME_SHOP_PAGE_SIZE })
+  const shops = [...firstPage.content]
+
+  for (let page = 1; page < firstPage.totalPages; page += 1) {
+    const nextPage = await getShops({ page, size: HOME_SHOP_PAGE_SIZE })
+    shops.push(...nextPage.content)
+  }
+
+  return shops
+}
 
 function SearchIcon() {
   return (
@@ -169,7 +182,7 @@ function HomeHeader({ onSearch }: { onSearch: () => void }) {
 
 function HomeQuickMenuSection({ menus }: { menus: HomeQuickMenu[] }) {
   return (
-    <nav className="home-quick-menu" aria-label="매장 바로가기">
+    <nav className="home-quick-menu" aria-label="홈 빠른 메뉴">
       {menus.map((menu) => (
         <Link className="home-quick-menu-item" key={menu.id} to={menu.href}>
           <span className="home-quick-icon">
@@ -313,10 +326,10 @@ export function HomePage() {
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'discover-home'],
-    queryFn: () => getShops({ page: 0, size: 200 }),
+    queryFn: getHomeShops,
   })
 
-  const allShops = useMemo(() => shopsQuery.data?.content ?? EMPTY_SHOPS, [shopsQuery.data?.content])
+  const allShops = useMemo(() => shopsQuery.data ?? EMPTY_SHOPS, [shopsQuery.data])
   const quickMenus = useMemo(() => buildHomeQuickMenus(), [])
   const issueCards = useMemo(() => buildHomeIssueCards(allShops), [allShops])
 

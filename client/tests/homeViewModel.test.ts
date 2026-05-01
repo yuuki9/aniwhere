@@ -138,6 +138,18 @@ test('buildHomeIssueCards exposes remaining store count for discover link', () =
   assert.equal(cards[0].href, '/search?keyword=%ED%95%98%EC%9D%B4%ED%81%90&page=0')
 })
 
+test('buildHomeIssueCards counts duplicate works in the same shop once', () => {
+  const cards = buildHomeIssueCards([
+    { ...baseShop, id: 1, works: ['하이큐', '하이큐'], updatedAt: '2026-05-01T00:00:00.000Z' },
+    { ...baseShop, id: 2, works: ['하이큐'], updatedAt: '2026-05-02T00:00:00.000Z' },
+  ])
+
+  assert.equal(cards[0].keyword, '하이큐')
+  assert.equal(cards[0].description, '등록 매장 2곳')
+  assert.equal(cards[0].displayedStoreCount, 2)
+  assert.equal(cards[0].remainingStoreCount, 0)
+})
+
 test('buildHomeIssueCards returns no fallback works when API works are empty', () => {
   const cards = buildHomeIssueCards([{ ...baseShop, works: [] }])
 

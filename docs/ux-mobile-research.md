@@ -174,7 +174,7 @@ Aniwhere 홈 권장 레이아웃:
    - 홈에서 Near You, Hot Picks, Region Picks를 모두 강하게 노출
    - 지도, 검색, 큐레이션을 모두 같은 우선순위로 경쟁시키기
 
-2026-05-02 Home 구현 결정:
+2026-05-02 Home 구현 결정 (KST 기준):
 
 - `/home`의 작품/매장 섹션은 Swagger/API가 제공하는 필드만 사용합니다.
 - API에 없는 판단형 카피, 추천 사유, 임의 fallback 라벨은 프론트에서 만들지 않습니다.
