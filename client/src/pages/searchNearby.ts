@@ -1,6 +1,7 @@
 import type { UserLocation } from '../shared/lib/location'
 
 export const NEARBY_RADIUS_KM = 5
+export const NEARBY_MAX_RADIUS_KM = 20
 
 type NearbyExploreParams = {
   location: UserLocation
@@ -14,6 +15,18 @@ function readFiniteNumber(value: string | null) {
 
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function isValidLatitude(value: number | null): value is number {
+  return value != null && value >= -90 && value <= 90
+}
+
+function isValidLongitude(value: number | null): value is number {
+  return value != null && value >= -180 && value <= 180
+}
+
+function isValidRadiusKm(value: number) {
+  return value > 0 && value <= NEARBY_MAX_RADIUS_KM
 }
 
 export function buildNearbyExploreHref(location: UserLocation, radiusKm = NEARBY_RADIUS_KM) {
@@ -35,7 +48,7 @@ export function readNearbyExploreParams(searchParams: URLSearchParams): NearbyEx
   const longitude = readFiniteNumber(searchParams.get('lng'))
   const radiusKm = readFiniteNumber(searchParams.get('radiusKm')) ?? NEARBY_RADIUS_KM
 
-  if (latitude == null || longitude == null || radiusKm <= 0) {
+  if (!isValidLatitude(latitude) || !isValidLongitude(longitude) || !isValidRadiusKm(radiusKm)) {
     return null
   }
 

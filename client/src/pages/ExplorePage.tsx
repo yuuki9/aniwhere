@@ -249,7 +249,7 @@ export function ExplorePage() {
   const peekPointerIdRef = useRef<number | null>(null)
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
-  const effectiveUserLocation = nearbyRequest?.location ?? userLocation
+  const effectiveUserLocation = userLocation ?? nearbyRequest?.location ?? null
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'explore-map-source'],

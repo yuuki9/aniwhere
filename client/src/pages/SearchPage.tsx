@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
@@ -41,7 +41,80 @@ export function SearchPage() {
   const [nearbyState, setNearbyState] = useState<'idle' | 'loading' | 'error'>('idle')
   const [nearbyError, setNearbyError] = useState<string | null>(null)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
+  const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const filterSheetRef = useRef<HTMLElement | null>(null)
+  const filterCloseButtonRef = useRef<HTMLButtonElement | null>(null)
   const appliedFilterCount = 0
+
+  const closeFilterSheet = useCallback(() => {
+    setIsFilterSheetOpen(false)
+  }, [])
+
+  useEffect(() => {
+    if (!isFilterSheetOpen) {
+      return
+    }
+
+    const previousBodyOverflow = document.body.style.overflow
+    const filterTriggerElement = filterTriggerRef.current
+    const focusableSelector = [
+      'button:not([disabled])',
+      '[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(', ')
+
+    const focusFirstControl = () => {
+      filterCloseButtonRef.current?.focus()
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeFilterSheet()
+        return
+      }
+
+      if (event.key !== 'Tab') {
+        return
+      }
+
+      const focusableControls = Array.from(
+        filterSheetRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
+      )
+
+      if (focusableControls.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const firstControl = focusableControls[0]
+      const lastControl = focusableControls[focusableControls.length - 1]
+
+      if (event.shiftKey && document.activeElement === firstControl) {
+        event.preventDefault()
+        lastControl.focus()
+        return
+      }
+
+      if (!event.shiftKey && document.activeElement === lastControl) {
+        event.preventDefault()
+        firstControl.focus()
+      }
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    window.requestAnimationFrame(focusFirstControl)
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+      window.setTimeout(() => filterTriggerElement?.focus(), 0)
+    }
+  }, [closeFilterSheet, isFilterSheetOpen])
 
   const resultQuery = useQuery({
     queryKey: ['shops', 'search-page-results', currentKeyword, currentPage],
@@ -141,7 +214,10 @@ export function SearchPage() {
             <button
               className="search-filter-button"
               type="button"
+              ref={filterTriggerRef}
               onClick={() => setIsFilterSheetOpen(true)}
+              aria-controls="search-filter-sheet"
+              aria-expanded={isFilterSheetOpen}
               aria-label={appliedFilterCount > 0 ? `필터 ${appliedFilterCount}개 적용됨` : '필터 열기'}
             >
               <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
@@ -158,17 +234,20 @@ export function SearchPage() {
         </header>
 
         {isFilterSheetOpen ? (
-          <div className="search-filter-layer" role="presentation" onClick={() => setIsFilterSheetOpen(false)}>
+          <div className="search-filter-layer" role="presentation" onClick={closeFilterSheet}>
             <section
+              id="search-filter-sheet"
               className="search-filter-sheet"
               role="dialog"
               aria-modal="true"
               aria-labelledby="search-filter-title"
+              ref={filterSheetRef}
+              tabIndex={-1}
               onClick={(event) => event.stopPropagation()}
             >
               <div className="search-filter-sheet-head">
                 <strong id="search-filter-title">매장 필터</strong>
-                <button type="button" onClick={() => setIsFilterSheetOpen(false)} aria-label="필터 닫기">
+                <button type="button" ref={filterCloseButtonRef} onClick={closeFilterSheet} aria-label="필터 닫기">
                   ×
                 </button>
               </div>

@@ -2,6 +2,7 @@
 # Secrets (align with server deploy where applicable):
 #   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
 #   AWS_S3_FRONTEND_BUCKET, CLOUDFRONT_DISTRIBUTION_ID
+#   VITE_NAVER_MAP_NCP_KEY_ID
 #
 # Triggers: push main when client/** changes; workflow_dispatch; PR verifies only.
 
@@ -52,6 +53,7 @@ jobs:
       - name: Build static (web deploy artifact)
         env:
           VITE_API_BASE_URL: https://api.aniwhere.link
+          VITE_NAVER_MAP_NCP_KEY_ID: ${{ secrets.VITE_NAVER_MAP_NCP_KEY_ID }}
         run: npm run build:static
 
   deploy:
@@ -72,6 +74,7 @@ jobs:
       - name: Build static (web deploy artifact)
         env:
           VITE_API_BASE_URL: https://api.aniwhere.link
+          VITE_NAVER_MAP_NCP_KEY_ID: ${{ secrets.VITE_NAVER_MAP_NCP_KEY_ID }}
         run: npm run build:static
 
       - name: Configure AWS credentials
