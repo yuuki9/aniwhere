@@ -22,12 +22,19 @@ import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { MapAssistantIcon, MapDetailIcon, type MapDetailIconName } from '../shared/ui/mapDetailIcons'
 import { StatusPill } from '../shared/ui/StatusPill'
+import { ExploreTopSearch } from './explore/ExploreTopSearch'
+import { MapOverlayControls } from './explore/MapOverlayControls'
+import { MapQuickChips, type MapQuickChipItem } from './explore/MapQuickChips'
 import { readNearbyExploreParams } from './searchNearby'
 
 const PAGE_SIZE = 10
 const MAP_FETCH_SIZE = 200
 const EMPTY_SHOPS: Shop[] = []
 const DETAIL_MEDIA_TONES = ['blue', 'orange', 'mint', 'violet'] as const
+const MAP_QUICK_CHIPS: MapQuickChipItem[] = [
+  { id: 'favorite', label: '관심매장' },
+  { id: 'active', label: '영업중' },
+]
 const ASSISTANT_SUGGESTIONS = ['홍대에서 일번쿠지 있는 곳', '피규어 종류가 많은 매장', '초행자에게 추천할 만한 곳']
 const ASSISTANT_RETRY_HINT = '현재 데이터 기준으로 바로 맞는 후보를 찾지 못했어요. 작품명, 지역명, 매장명을 조금 더 구체적으로 입력해보세요.'
 
@@ -271,11 +278,6 @@ export function ExplorePage() {
     () => shopsWithDistance.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
     [shopsWithDistance],
   )
-  const mapQuickChips = [
-    { id: 'favorite', label: '관심매장' },
-    { id: 'active', label: '영업중' },
-  ]
-
   const totalShops = shopsWithDistance.length
   const visibleShops = useMemo(
     () => shopsWithDistance.slice(0, Math.min(visibleListCount, totalShops)),
@@ -725,71 +727,6 @@ export function ExplorePage() {
     }
   }
 
-  const renderTopSearch = (attachTriggerRef: boolean) => (
-    <div className="map-search-row search-screen-toolrow">
-      <button
-        className="search-screen-icon map-search-home-button"
-        type="button"
-        onClick={() => navigate('/home')}
-        aria-label="홈으로 이동"
-      >
-        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <path d="m15 6-6 6 6 6" />
-        </svg>
-      </button>
-      <button className="search-screen-bar map-search-field" type="button" onClick={() => navigate('/search')}>
-        <span className="map-search-field-copy">매장, 작품, 지역 검색</span>
-        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="6" />
-          <path d="m16 16 4 4" />
-        </svg>
-      </button>
-      <button
-        className="search-filter-button map-filter-button"
-        type="button"
-        ref={attachTriggerRef ? filterTriggerRef : null}
-        onClick={() => setIsFilterSheetOpen(true)}
-        aria-controls="search-filter-sheet"
-        aria-expanded={isFilterSheetOpen}
-        aria-label={appliedFilterCount > 0 ? `필터 ${appliedFilterCount}개 적용됨` : '필터 열기'}
-      >
-        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <path d="M4 7h10" />
-          <path d="M18 7h2" />
-          <path d="M4 17h2" />
-          <path d="M10 17h10" />
-          <circle cx="16" cy="7" r="2" />
-          <circle cx="8" cy="17" r="2" />
-        </svg>
-        {appliedFilterCount > 0 ? <small>{appliedFilterCount}</small> : null}
-      </button>
-    </div>
-  )
-
-  const chipToolbar = (
-    <div className="map-chip-toolbar">
-      <ul className="map-chip-scroll" aria-label="빠른 필터">
-        {mapQuickChips.map((item) => {
-          const isMapQuickChipActive = Boolean(activeMapQuickChips[item.id])
-
-          return (
-            <li key={item.id}>
-              <button
-                className={`map-chip-status${isMapQuickChipActive ? ' map-chip-status-active' : ''}`}
-                type="button"
-                onClick={() => toggleMapQuickChip(item.id)}
-                aria-pressed={isMapQuickChipActive}
-                aria-label={`${item.label} ${isMapQuickChipActive ? '선택됨' : '선택 안 됨'}`}
-              >
-                {item.label}
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
-  )
-
   return (
     <main className="map-page-shell">
       <section className="map-page">
@@ -826,8 +763,16 @@ export function ExplorePage() {
           <div
             className={`map-explore-top ${sheetMode === 'expanded' || isListSheetOpen ? 'map-explore-top-hidden' : ''}`}
           >
-            {renderTopSearch(!isListSheetOpen)}
-            {chipToolbar}
+            <ExploreTopSearch
+              attachTriggerRef={!isListSheetOpen}
+              filterTriggerRef={filterTriggerRef}
+              isFilterSheetOpen={isFilterSheetOpen}
+              appliedFilterCount={appliedFilterCount}
+              onHomeClick={() => navigate('/home')}
+              onSearchClick={() => navigate('/search')}
+              onFilterClick={() => setIsFilterSheetOpen(true)}
+            />
+            <MapQuickChips items={MAP_QUICK_CHIPS} activeItems={activeMapQuickChips} onToggle={toggleMapQuickChip} />
 
             {hasPendingMapSearch && mapViewport ? (
               <button className="map-area-search-button" type="button" onClick={handleSearchCurrentMapArea}>
@@ -847,50 +792,13 @@ export function ExplorePage() {
 
           <SearchFilterSheet open={isFilterSheetOpen} triggerRef={filterTriggerRef} onClose={closeFilterSheet} />
 
-          {sheetMode !== 'expanded' ? (
-            <button
-              aria-label={isListSheetOpen ? '지도 보기' : '목록 보기'}
-              className={`map-list-fab ${isListSheetOpen ? 'map-list-fab-map' : ''}`}
-              type="button"
-              onClick={handleListFabClick}
-            >
-              <span className="map-list-fab-icon" aria-hidden="true">
-                {isListSheetOpen ? (
-                  <svg className="map-list-fab-map-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
-                    <path d="m4 5 5-2 6 2 5-2v16l-5 2-6-2-5 2V5Z" />
-                    <path d="M9 3v16" />
-                    <path d="M15 5v16" />
-                  </svg>
-                ) : (
-                  <svg className="map-list-fab-list-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 7h10" />
-                    <path d="M9 12h10" />
-                    <path d="M9 17h10" />
-                    <circle cx="5.25" cy="7" r="1.1" />
-                    <circle cx="5.25" cy="12" r="1.1" />
-                    <circle cx="5.25" cy="17" r="1.1" />
-                  </svg>
-                )}
-              </span>
-            </button>
-          ) : null}
-
-          {!isListSheetOpen && sheetMode !== 'expanded' ? (
-            <button
-              className={`map-location-fab ${locationState === 'ready' ? 'map-location-fab-active' : ''}`}
-              type="button"
-              onClick={handleRequestLocation}
-              aria-label="현재 위치 보기"
-            >
-              {locationState === 'loading' ? (
-                <span className="map-chip-gps-spinner map-control-icon" aria-hidden="true" />
-              ) : (
-                <span className="map-chip-gps-icon map-control-icon" aria-hidden="true">
-                  <span className="map-chip-gps-crosshair" />
-                </span>
-              )}
-            </button>
-          ) : null}
+          <MapOverlayControls
+            visible={sheetMode !== 'expanded'}
+            isListSheetOpen={isListSheetOpen}
+            locationState={locationState}
+            onListClick={handleListFabClick}
+            onLocationClick={handleRequestLocation}
+          />
 
           {!isListSheetOpen && sheetMode !== 'expanded' ? (
             <>
@@ -1035,7 +943,15 @@ export function ExplorePage() {
           {isListSheetOpen ? (
             <section className="map-results-sheet-v2" aria-label="검색 결과 목록">
               <div className="map-results-sheet-top">
-                {renderTopSearch(isListSheetOpen)}
+                <ExploreTopSearch
+                  attachTriggerRef={isListSheetOpen}
+                  filterTriggerRef={filterTriggerRef}
+                  isFilterSheetOpen={isFilterSheetOpen}
+                  appliedFilterCount={appliedFilterCount}
+                  onHomeClick={() => navigate('/home')}
+                  onSearchClick={() => navigate('/search')}
+                  onFilterClick={() => setIsFilterSheetOpen(true)}
+                />
               </div>
 
               {visibleShops.length === 0 && !shopsQuery.isLoading ? (
@@ -1406,8 +1322,3 @@ export function ExplorePage() {
     </main>
   )
 }
-
-
-
-
-

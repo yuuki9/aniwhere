@@ -3,6 +3,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const explorePageSource = () => fs.readFileSync(new URL('../src/pages/ExplorePage.tsx', import.meta.url), 'utf8')
+const exploreTopSearchSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/ExploreTopSearch.tsx', import.meta.url), 'utf8')
+const mapQuickChipsSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapQuickChips.tsx', import.meta.url), 'utf8')
+const mapOverlayControlsSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapOverlayControls.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   [
     '../src/App.css',
@@ -24,13 +30,14 @@ const cssRuleBodies = (css: string, selector: string) => {
 
 test('ExplorePage shares the search bar and filter sheet pattern with SearchPage', () => {
   const source = explorePageSource()
+  const topSearchSource = exploreTopSearchSource()
 
   assert.match(source, /SearchFilterSheet/)
-  assert.match(source, /className="search-screen-icon map-search-home-button"/)
-  assert.match(source, /onClick=\{\(\) => navigate\('\/home'\)\}/)
-  assert.match(source, /className="search-screen-bar map-search-field"/)
-  assert.match(source, /className="search-filter-button map-filter-button"/)
-  assert.match(source, /aria-label=\{appliedFilterCount > 0 \? `필터 \$\{appliedFilterCount\}개 적용됨` : '필터 열기'\}/)
+  assert.match(topSearchSource, /className="search-screen-icon map-search-home-button"/)
+  assert.match(source, /onHomeClick=\{\(\) => navigate\('\/home'\)\}/)
+  assert.match(topSearchSource, /className="search-screen-bar map-search-field"/)
+  assert.match(topSearchSource, /className="search-filter-button map-filter-button"/)
+  assert.match(topSearchSource, /aria-label=\{appliedFilterCount > 0 \? `/)
 })
 
 test('ExplorePage removes the map hamburger navigation trigger from the top search row', () => {
@@ -42,13 +49,29 @@ test('ExplorePage removes the map hamburger navigation trigger from the top sear
 
 test('ExplorePage binds the filter trigger ref only to the visible top search instance', () => {
   const source = explorePageSource()
+  const topSearchSource = exploreTopSearchSource()
 
-  assert.match(source, /const renderTopSearch = \(attachTriggerRef: boolean\) => \(/)
-  assert.match(source, /ref=\{attachTriggerRef \? filterTriggerRef : null\}/)
-  assert.match(source, /\{renderTopSearch\(!isListSheetOpen\)\}/)
-  assert.match(source, /\{renderTopSearch\(isListSheetOpen\)\}/)
+  assert.match(source, /<ExploreTopSearch/)
+  assert.match(topSearchSource, /ref=\{attachTriggerRef \? filterTriggerRef : null\}/)
+  assert.match(source, /attachTriggerRef=\{!isListSheetOpen\}/)
+  assert.match(source, /attachTriggerRef=\{isListSheetOpen\}/)
   assert.doesNotMatch(source, /const topSearch = \(/)
   assert.doesNotMatch(source, /ref=\{filterTriggerRef\}/)
+  assert.doesNotMatch(source, /const renderTopSearch = /)
+})
+
+test('ExplorePage extracts map quick chips and overlay controls into focused components', () => {
+  const source = explorePageSource()
+  const quickChipsSource = mapQuickChipsSource()
+  const overlayControlsSource = mapOverlayControlsSource()
+
+  assert.match(source, /<MapQuickChips/)
+  assert.match(source, /<MapOverlayControls/)
+  assert.match(quickChipsSource, /aria-pressed=\{isActive\}/)
+  assert.match(quickChipsSource, /onToggle\(item\.id\)/)
+  assert.match(overlayControlsSource, /map-list-fab-list-icon map-control-icon/)
+  assert.match(overlayControlsSource, /map-chip-gps-icon map-control-icon/)
+  assert.doesNotMatch(source, /const chipToolbar = \(/)
 })
 
 test('ExplorePage exposes map viewport search after the map moves', () => {
@@ -118,20 +141,21 @@ test('Explore map chip rail only captures pointer events on actual controls', ()
 
 test('ExplorePage does not fabricate category filter chips without a facet API', () => {
   const source = explorePageSource()
+  const quickChipsSource = mapQuickChipsSource()
 
   assert.doesNotMatch(source, /const categories = useMemo/)
   assert.doesNotMatch(source, /setFilter/)
   assert.doesNotMatch(source, /role="tablist"/)
   assert.doesNotMatch(source, /category && !shop\.categories\.includes/)
-  assert.match(source, /mapQuickChips/)
   assert.match(source, /Deferred facet filters/)
-  assert.match(source, /className=\{`map-chip-status/)
-  assert.match(source, /aria-pressed=\{isMapQuickChipActive\}/)
-  assert.match(source, /toggleMapQuickChip\(item\.id\)/)
+  assert.match(source, /MAP_QUICK_CHIPS/)
+  assert.match(quickChipsSource, /className=\{`map-chip-status/)
+  assert.match(quickChipsSource, /aria-pressed=\{isActive\}/)
+  assert.match(source, /onToggle=\{toggleMapQuickChip\}/)
   assert.doesNotMatch(source, /className=\{`map-chip-status[\s\S]{0,280}setIsFilterSheetOpen\(true\)/)
-  assert.match(source, /관심매장/)
-  assert.match(source, /영업중/)
-  assert.doesNotMatch(source, /표시 매장 \$\{mappableShops\.length\}곳/)
+  assert.match(source, /id: 'favorite'/)
+  assert.match(source, /id: 'active'/)
+  assert.doesNotMatch(source, /mappableShops\.length\}/)
 })
 
 test('Explore styles stay isolated from admin route styles', () => {
@@ -171,6 +195,7 @@ test('Explore map CSS follows style rules for changed icon and control declarati
 test('Explore map controls remain visible before map ready and use centered list icon', () => {
   const source = explorePageSource()
   const mapSource = shopMapSource()
+  const overlayControlsSource = mapOverlayControlsSource()
   const styles = appCssSource()
   const zoomButtonRules = cssRuleBodies(styles, '.map-zoom-button')
   const zoomIconRules = cssRuleBodies(styles, '.map-zoom-icon')
@@ -179,9 +204,9 @@ test('Explore map controls remain visible before map ready and use centered list
   const chipIconRules = cssRuleBodies(styles, '.map-chip-status::before')
 
   assert.doesNotMatch(source, /&& mapReady \? \(/)
-  assert.doesNotMatch(source, /<strong>\{isListSheetOpen \? '지도 보기' : '매장 목록'\}<\/strong>/)
+  assert.doesNotMatch(source, /<strong>\{isListSheetOpen \?/)
   assert.match(mapSource, /className="map-zoom-icon"/)
-  assert.match(source, /className="map-list-fab-list-icon map-control-icon"/)
+  assert.match(overlayControlsSource, /className="map-list-fab-list-icon map-control-icon"/)
   assert.ok(listIconRules.some((rule) => /align-items:\s*center;/.test(rule)))
   assert.ok(listIconRules.some((rule) => /width:\s*28px;/.test(rule) && /height:\s*28px;/.test(rule)))
   assert.ok(listControlIconRules.some((rule) => /width:\s*28px;/.test(rule) && /height:\s*28px;/.test(rule)))
