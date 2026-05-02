@@ -3,7 +3,14 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const explorePageSource = () => fs.readFileSync(new URL('../src/pages/ExplorePage.tsx', import.meta.url), 'utf8')
-const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+const appCssSource = () =>
+  [
+    '../src/App.css',
+    '../src/styles/explore-search.css',
+    '../src/styles/admin-shop.css',
+  ]
+    .map((path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8'))
+    .join('\n')
 const shopMapSource = () => fs.readFileSync(new URL('../src/shared/ui/ShopMap.tsx', import.meta.url), 'utf8')
 
 const cssRuleBodies = (css: string, selector: string) => {
