@@ -795,7 +795,7 @@ export function ExplorePage() {
     }
   }
 
-  const topSearch = (
+  const renderTopSearch = (attachTriggerRef: boolean) => (
     <div className="map-search-row search-screen-toolrow">
       <button className="search-screen-bar map-search-field" type="button" onClick={() => navigate('/search')}>
         <span className="map-search-field-copy">매장, 작품, 지역 검색</span>
@@ -807,7 +807,7 @@ export function ExplorePage() {
       <button
         className="search-filter-button map-filter-button"
         type="button"
-        ref={filterTriggerRef}
+        ref={attachTriggerRef ? filterTriggerRef : null}
         onClick={() => setIsFilterSheetOpen(true)}
         aria-controls="search-filter-sheet"
         aria-expanded={isFilterSheetOpen}
@@ -886,7 +886,7 @@ export function ExplorePage() {
           <div
             className={`map-explore-top ${sheetMode === 'expanded' || isListSheetOpen ? 'map-explore-top-hidden' : ''}`}
           >
-            {topSearch}
+            {renderTopSearch(!isListSheetOpen)}
             {chipToolbar}
 
             {hasPendingMapSearch && mapViewport ? (
@@ -1095,7 +1095,7 @@ export function ExplorePage() {
           {isListSheetOpen ? (
             <section className="map-results-sheet-v2" aria-label="검색 결과 목록">
               <div className="map-results-sheet-top">
-                {topSearch}
+                {renderTopSearch(isListSheetOpen)}
               </div>
 
               {visibleShops.length === 0 && !shopsQuery.isLoading ? (

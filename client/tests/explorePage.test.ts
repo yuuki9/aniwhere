@@ -29,6 +29,17 @@ test('ExplorePage removes the map hamburger navigation trigger from the top sear
   assert.doesNotMatch(source, /<GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-map"/)
 })
 
+test('ExplorePage binds the filter trigger ref only to the visible top search instance', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /const renderTopSearch = \(attachTriggerRef: boolean\) => \(/)
+  assert.match(source, /ref=\{attachTriggerRef \? filterTriggerRef : null\}/)
+  assert.match(source, /\{renderTopSearch\(!isListSheetOpen\)\}/)
+  assert.match(source, /\{renderTopSearch\(isListSheetOpen\)\}/)
+  assert.doesNotMatch(source, /const topSearch = \(/)
+  assert.doesNotMatch(source, /ref=\{filterTriggerRef\}/)
+})
+
 test('ExplorePage exposes map viewport search after the map moves', () => {
   const source = explorePageSource()
 
@@ -119,6 +130,17 @@ test('Explore map buttons use consistent icon sizing and refresh affordance', ()
   assert.ok(filterIconRules.some((rule) => /width:\s*22px;/.test(rule) && /height:\s*22px;/.test(rule)))
   assert.ok(areaIconRules.some((rule) => /width:\s*16px;/.test(rule) && /height:\s*16px;/.test(rule)))
   assert.ok(controlIconRules.some((rule) => /width:\s*22px;/.test(rule) && /height:\s*22px;/.test(rule)))
+})
+
+test('Explore map CSS follows style rules for changed icon and control declarations', () => {
+  const styles = appCssSource()
+  const searchIconRules = cssRuleBodies(styles, '.map-search-field svg')
+  const areaIconRules = cssRuleBodies(styles, '.map-area-search-icon')
+  const aiFabRules = cssRuleBodies(styles, '.map-llm-fab')
+
+  assert.ok(searchIconRules.some((rule) => /stroke:\s*currentcolor;/.test(rule)))
+  assert.ok(areaIconRules.some((rule) => /stroke:\s*currentcolor;/.test(rule)))
+  assert.ok(aiFabRules.some((rule) => /bottom:\s*calc\(var\(--map-control-bottom, 96px\) \+ var\(--map-control-stack-height, 98px\) \+ var\(--map-control-size, 48px\) \+ \(var\(--map-control-gap, 10px\) \* 2\)\);/.test(rule)))
 })
 
 test('Explore map controls remain visible before map ready and use centered list icon', () => {
