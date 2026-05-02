@@ -5,6 +5,15 @@ import { loadNaverMaps } from '../lib/naverMapLoader'
 
 type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
 
+export type MapViewport = {
+  center: UserLocation
+  bounds: {
+    northEast: UserLocation
+    southWest: UserLocation
+  }
+  zoom: number
+}
+
 type ShopMapProps = {
   shops: Shop[]
   activeShopId: number | null
@@ -15,6 +24,7 @@ type ShopMapProps = {
   focusRequestId?: number
   selectionOrigin?: 'map' | 'list' | null
   onReady?: () => void
+  onViewportChange?: (viewport: MapViewport) => void
 }
 
 type MarkerWithListeners = {
@@ -129,6 +139,31 @@ function removeMarker(markerWithListeners: MarkerWithListeners) {
   markerWithListeners.marker.setMap(null)
 }
 
+function readMapViewport(map: naver.maps.Map): MapViewport {
+  const center = map.getCenter()
+  const bounds = map.getBounds()
+  const northEast = bounds.getNE()
+  const southWest = bounds.getSW()
+
+  return {
+    center: {
+      latitude: center.lat(),
+      longitude: center.lng(),
+    },
+    bounds: {
+      northEast: {
+        latitude: northEast.lat(),
+        longitude: northEast.lng(),
+      },
+      southWest: {
+        latitude: southWest.lat(),
+        longitude: southWest.lng(),
+      },
+    },
+    zoom: map.getZoom(),
+  }
+}
+
 export function ShopMap({
   shops,
   activeShopId,
@@ -139,10 +174,12 @@ export function ShopMap({
   focusRequestId = 0,
   selectionOrigin = null,
   onReady,
+  onViewportChange,
 }: ShopMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<naver.maps.Map | null>(null)
   const mapClickListenerRef = useRef<naver.maps.MapEventListener | null>(null)
+  const mapIdleListenerRef = useRef<naver.maps.MapEventListener | null>(null)
   const mapZoomListenerRef = useRef<naver.maps.MapEventListener | null>(null)
   const shopMarkersRef = useRef<MarkerWithListeners[]>([])
   const userMarkerRef = useRef<MarkerWithListeners | null>(null)
@@ -151,6 +188,7 @@ export function ShopMap({
   const onClearSelectionRef = useRef(onClearSelection)
   const onReadyRef = useRef(onReady)
   const onSelectShopRef = useRef(onSelectShop)
+  const onViewportChangeRef = useRef(onViewportChange)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [mapInitialized, setMapInitialized] = useState(false)
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM)
@@ -198,7 +236,8 @@ export function ShopMap({
     onClearSelectionRef.current = onClearSelection
     onReadyRef.current = onReady
     onSelectShopRef.current = onSelectShop
-  }, [onClearSelection, onReady, onSelectShop])
+    onViewportChangeRef.current = onViewportChange
+  }, [onClearSelection, onReady, onSelectShop, onViewportChange])
 
   useEffect(() => {
     let cancelled = false
@@ -238,8 +277,8 @@ export function ShopMap({
         mapZoomListenerRef.current = maps.Event.addListener(map, 'zoom_changed', () => {
           setCurrentZoom(map.getZoom())
         })
-
-        maps.Event.once(map, 'idle', () => {
+        mapIdleListenerRef.current = maps.Event.addListener(map, 'idle', () => {
+          onViewportChangeRef.current?.(readMapViewport(map))
           if (!readyNotifiedRef.current) {
             readyNotifiedRef.current = true
             onReadyRef.current?.()
@@ -270,6 +309,11 @@ export function ShopMap({
       if (mapZoomListenerRef.current) {
         naver.maps.Event.removeListener(mapZoomListenerRef.current)
         mapZoomListenerRef.current = null
+      }
+
+      if (mapIdleListenerRef.current) {
+        naver.maps.Event.removeListener(mapIdleListenerRef.current)
+        mapIdleListenerRef.current = null
       }
 
       mapRef.current?.destroy()
@@ -442,14 +486,6 @@ export function ShopMap({
     )
   }
 
-  if (validShops.length === 0 && !userLocation) {
-    return (
-      <div className="map-empty">
-        <p>지도에 표시할 좌표가 없습니다.</p>
-      </div>
-    )
-  }
-
   return (
     <>
       <div className="map-naver" ref={containerRef} />
@@ -462,7 +498,10 @@ export function ShopMap({
             type="button"
             onClick={() => changeZoom(1)}
           >
-            +
+            <svg className="map-zoom-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
           </button>
           <span className="map-zoom-divider" aria-hidden="true" />
           <button
@@ -472,7 +511,9 @@ export function ShopMap({
             type="button"
             onClick={() => changeZoom(-1)}
           >
-            -
+            <svg className="map-zoom-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+              <path d="M5 12h14" />
+            </svg>
           </button>
         </div>
       ) : null}

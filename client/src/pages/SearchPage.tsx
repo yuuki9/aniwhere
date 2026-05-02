@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
@@ -6,6 +6,7 @@ import type { Shop } from '../shared/api/types'
 import { formatRelativeUpdated } from '../shared/lib/format'
 import { requestCurrentLocation } from '../shared/lib/location'
 import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
+import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { StatusPill } from '../shared/ui/StatusPill'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
 import { buildNearbyExploreHref } from './searchNearby'
@@ -42,79 +43,11 @@ export function SearchPage() {
   const [nearbyError, setNearbyError] = useState<string | null>(null)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
-  const filterSheetRef = useRef<HTMLElement | null>(null)
-  const filterCloseButtonRef = useRef<HTMLButtonElement | null>(null)
   const appliedFilterCount = 0
 
   const closeFilterSheet = useCallback(() => {
     setIsFilterSheetOpen(false)
   }, [])
-
-  useEffect(() => {
-    if (!isFilterSheetOpen) {
-      return
-    }
-
-    const previousBodyOverflow = document.body.style.overflow
-    const filterTriggerElement = filterTriggerRef.current
-    const focusableSelector = [
-      'button:not([disabled])',
-      '[href]',
-      'input:not([disabled])',
-      'select:not([disabled])',
-      'textarea:not([disabled])',
-      '[tabindex]:not([tabindex="-1"])',
-    ].join(', ')
-
-    const focusFirstControl = () => {
-      filterCloseButtonRef.current?.focus()
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        closeFilterSheet()
-        return
-      }
-
-      if (event.key !== 'Tab') {
-        return
-      }
-
-      const focusableControls = Array.from(
-        filterSheetRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
-      )
-
-      if (focusableControls.length === 0) {
-        event.preventDefault()
-        return
-      }
-
-      const firstControl = focusableControls[0]
-      const lastControl = focusableControls[focusableControls.length - 1]
-
-      if (event.shiftKey && document.activeElement === firstControl) {
-        event.preventDefault()
-        lastControl.focus()
-        return
-      }
-
-      if (!event.shiftKey && document.activeElement === lastControl) {
-        event.preventDefault()
-        firstControl.focus()
-      }
-    }
-
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', handleKeyDown)
-    window.requestAnimationFrame(focusFirstControl)
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow
-      window.removeEventListener('keydown', handleKeyDown)
-      window.setTimeout(() => filterTriggerElement?.focus(), 0)
-    }
-  }, [closeFilterSheet, isFilterSheetOpen])
 
   const resultQuery = useQuery({
     queryKey: ['shops', 'search-page-results', currentKeyword, currentPage],
@@ -233,41 +166,7 @@ export function SearchPage() {
           </div>
         </header>
 
-        {isFilterSheetOpen ? (
-          <div className="search-filter-layer" role="presentation" onClick={closeFilterSheet}>
-            <section
-              id="search-filter-sheet"
-              className="search-filter-sheet"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="search-filter-title"
-              ref={filterSheetRef}
-              tabIndex={-1}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="search-filter-sheet-head">
-                <strong id="search-filter-title">매장 필터</strong>
-                <button type="button" ref={filterCloseButtonRef} onClick={closeFilterSheet} aria-label="필터 닫기">
-                  ×
-                </button>
-              </div>
-
-              <div className="search-filter-pending">
-                <strong>필터 항목 준비 중</strong>
-                <small>facet API가 연결되면 지역, 카테고리, 영업 상태 기준으로 검색 결과를 좁힐 수 있어요.</small>
-              </div>
-
-              <div className="search-filter-sheet-actions">
-                <button type="button" disabled>
-                  선택 초기화
-                </button>
-                <button type="button" disabled>
-                  필터 적용
-                </button>
-              </div>
-            </section>
-          </div>
-        ) : null}
+        <SearchFilterSheet open={isFilterSheetOpen} triggerRef={filterTriggerRef} onClose={closeFilterSheet} />
 
         {!currentKeyword ? (
           <div className="search-screen-content search-screen-content-v2">

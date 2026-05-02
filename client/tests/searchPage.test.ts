@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const searchPageSource = () => fs.readFileSync(new URL('../src/pages/SearchPage.tsx', import.meta.url), 'utf8')
+const filterSheetSource = () => fs.readFileSync(new URL('../src/shared/ui/SearchFilterSheet.tsx', import.meta.url), 'utf8')
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
 const cssRuleBodies = (css: string, selector: string) => {
@@ -49,16 +50,17 @@ test('SearchPage exposes an explicit nearby CTA through geolocation instead of s
 
 test('SearchPage has a filter button and bottom sheet shell without client-side facet generation', () => {
   const source = searchPageSource()
+  const filterSheet = filterSheetSource()
 
   assert.match(source, /search-filter-button/)
-  assert.match(source, /search-filter-sheet/)
-  assert.match(source, /filterTriggerRef/)
-  assert.match(source, /filterCloseButtonRef/)
-  assert.match(source, /event\.key === 'Escape'/)
-  assert.match(source, /querySelectorAll<HTMLElement>/)
-  assert.match(source, /선택 초기화/)
-  assert.match(source, /필터 적용/)
-  assert.match(source, /facet API가 연결되면/)
+  assert.match(source, /SearchFilterSheet/)
+  assert.match(filterSheet, /search-filter-sheet/)
+  assert.match(filterSheet, /filterCloseButtonRef/)
+  assert.match(filterSheet, /event\.key === 'Escape'/)
+  assert.match(filterSheet, /querySelectorAll<HTMLElement>/)
+  assert.match(filterSheet, /선택 초기화/)
+  assert.match(filterSheet, /필터 적용/)
+  assert.match(filterSheet, /facet API가 연결되면/)
   assert.doesNotMatch(source, /search-page-facets/)
 })
 
