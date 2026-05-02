@@ -1107,10 +1107,6 @@ p {
   padding: var(--ait-space-2) 0 var(--ait-space-3);
 }
 
-.home-work-chip-rail::-webkit-scrollbar {
-  display: none;
-}
-
 .home-quick-menu-item {
   display: flex;
   min-width: 0;
@@ -1156,324 +1152,12 @@ p {
   line-height: var(--ait-line-height-tight);
 }
 
-.home-rail-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ait-space-3);
-}
-
-.home-rail-controls button {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--ait-color-border);
-  border-radius: var(--ait-radius-full);
-  background: var(--ait-color-surface-raised);
-  color: var(--ait-color-text-primary);
-  font: inherit;
-  font-size: var(--ait-font-size-title-md);
-  font-weight: 800;
-  line-height: 1;
-  cursor: pointer;
-}
-
 .home-issue-section,
 .home-review-preview-section {
   display: flex;
   flex-direction: column;
   gap: var(--ait-space-6);
   padding-top: var(--ait-space-5);
-}
-
-.home-work-chip-rail {
-  display: flex;
-  gap: var(--ait-space-5);
-  width: calc(100% + 28px);
-  max-width: calc(100% + 28px);
-  min-width: 0;
-  margin-inline: -14px;
-  padding: 6px 14px var(--ait-space-6);
-  overflow-x: auto;
-  scroll-padding-inline: 14px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.home-work-chip {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 84px;
-  min-height: 96px;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 0 0 18px;
-  border: 0;
-  background: transparent;
-  color: var(--ait-color-text-primary);
-  scroll-snap-align: start;
-  text-align: center;
-  appearance: none;
-  cursor: pointer;
-}
-
-.home-work-chip[aria-pressed='true'] .home-issue-visual {
-  border-color: currentcolor;
-  box-shadow: inset 0 0 0 2px currentcolor;
-}
-
-.home-work-chip[aria-pressed='true']::after {
-  position: absolute;
-  left: 50%;
-  bottom: 5px;
-  width: 0;
-  height: 0;
-  border-right: 5px solid transparent;
-  border-left: 5px solid transparent;
-  border-top: 7px solid currentcolor;
-  content: '';
-  transform: translateX(-50%);
-}
-
-.home-work-chip-blue {
-  color: var(--ait-color-blue-600);
-}
-
-.home-work-chip-green {
-  color: var(--ait-color-green-700);
-}
-
-.home-work-chip-amber {
-  color: var(--ait-color-amber-700);
-}
-
-.home-issue-card-blue {
-  background: var(--ait-color-blue-50);
-}
-
-.home-issue-card-green {
-  background: var(--ait-color-green-50);
-}
-
-.home-issue-card-amber {
-  background: var(--ait-color-amber-50);
-}
-
-.home-issue-visual {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ait-color-surface-raised);
-}
-
-.home-issue-visual-card {
-  min-height: 122px;
-  border-radius: var(--ait-radius-xl);
-}
-
-.home-issue-visual-chip {
-  box-sizing: border-box;
-  width: 76px;
-  height: 76px;
-  border: 2px solid var(--ait-color-border);
-  border-radius: var(--ait-radius-full);
-}
-
-.home-work-chip-logo-text {
-  display: -webkit-box;
-  max-width: 58px;
-  color: currentcolor;
-  font-size: var(--ait-font-size-label);
-  font-weight: 900;
-  line-height: 1.15;
-  overflow: hidden;
-  text-align: center;
-  word-break: keep-all;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.home-issue-visual-svg {
-  width: 100%;
-  max-width: 184px;
-  height: 116px;
-}
-
-.home-issue-visual-chip .home-issue-visual-svg {
-  width: 54px;
-  height: 54px;
-}
-
-.home-issue-visual-fill {
-  fill: currentcolor;
-  opacity: 0.18;
-}
-
-.home-issue-visual-panel {
-  fill: var(--ait-color-surface-raised);
-  opacity: 0.92;
-}
-
-.home-issue-visual-line {
-  fill: none;
-  stroke: currentcolor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 6;
-  opacity: 0.34;
-}
-
-.home-issue-visual-dot {
-  fill: currentcolor;
-  opacity: 0.52;
-}
-
-.home-issue-card-blue .home-issue-visual,
-.home-issue-card-blue .home-work-store-panel-head small {
-  color: var(--ait-color-blue-600);
-}
-
-.home-issue-card-green .home-issue-visual,
-.home-issue-card-green .home-work-store-panel-head small {
-  color: var(--ait-color-green-700);
-}
-
-.home-issue-card-amber .home-issue-visual,
-.home-issue-card-amber .home-work-store-panel-head small {
-  color: var(--ait-color-amber-700);
-}
-
-.home-work-store-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ait-space-5);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.home-work-store-panel-head {
-  display: flex;
-  align-items: baseline;
-  min-width: 0;
-  gap: var(--ait-space-3);
-}
-
-.home-work-store-panel-head small {
-  display: inline-flex;
-  flex: 0 0 auto;
-  color: var(--ait-color-brand);
-  font-size: var(--ait-font-size-caption);
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.home-work-store-panel-head h3 {
-  flex: 0 1 auto;
-  min-width: 0;
-  margin: 0;
-  color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-title-sm);
-  line-height: var(--ait-line-height-tight);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-work-store-empty {
-  flex: 0 0 auto;
-  font-size: var(--ait-font-size-body-sm);
-  font-weight: 900;
-  text-decoration: none;
-}
-
-.home-work-store-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ait-space-3);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.home-work-store-list a {
-  display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  min-height: 104px;
-  align-items: stretch;
-  column-gap: var(--ait-space-5);
-  padding: var(--ait-space-4);
-  border: 1px solid var(--ait-color-border);
-  border-radius: var(--ait-radius-xl);
-  background: var(--ait-color-surface-raised);
-  color: inherit;
-  text-decoration: none;
-}
-
-.home-work-store-placeholder {
-  position: relative;
-  display: block;
-  min-height: 100%;
-  border-radius: var(--ait-radius-lg);
-  background:
-    linear-gradient(135deg, rgba(49, 130, 246, 0.14), rgba(13, 148, 136, 0.12)),
-    var(--ait-color-background-soft-start);
-  overflow: hidden;
-}
-
-.home-work-store-placeholder::before,
-.home-work-store-placeholder::after {
-  position: absolute;
-  content: '';
-}
-
-.home-work-store-placeholder::before {
-  inset: 18px 16px auto;
-  height: 24px;
-  border-radius: 8px 8px 4px 4px;
-  background: var(--ait-color-surface-raised);
-}
-
-.home-work-store-placeholder::after {
-  left: 22px;
-  right: 22px;
-  bottom: 22px;
-  height: 16px;
-  border-radius: 4px;
-  background: currentcolor;
-  opacity: 0.22;
-}
-
-.home-work-store-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--ait-space-2);
-}
-
-.home-work-store-copy strong,
-.home-work-store-copy small,
-.home-work-store-copy span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-work-store-copy strong {
-  color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-body-md);
-  line-height: var(--ait-line-height-title);
-}
-
-.home-work-store-copy small,
-.home-work-store-copy span {
-  color: var(--ait-color-text-secondary);
-  font-size: var(--ait-font-size-body-sm);
 }
 
 .home-work-store-empty {
@@ -1485,22 +1169,6 @@ p {
   border-radius: var(--ait-radius-xl);
   background: var(--ait-color-surface-raised);
   color: var(--ait-color-text-secondary);
-}
-
-.home-work-store-more {
-  display: inline-flex;
-  min-height: 42px;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  padding: 0 var(--ait-space-8);
-  border: 1px solid var(--ait-color-border);
-  border-radius: var(--ait-radius-full);
-  background: var(--ait-color-surface-raised);
-  color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-body-sm);
-  font-weight: 900;
-  text-decoration: none;
 }
 
 .home-review-empty-card {
@@ -2542,9 +2210,6 @@ p {
 .home-store-brand:focus-visible,
 .home-header-icon-button:focus-visible,
 .home-quick-menu-item:focus-visible,
-.home-rail-controls button:focus-visible,
-.home-work-chip:focus-visible,
-.home-work-store-list a:focus-visible,
 .home-work-store-empty:focus-visible,
 .map-search-field:focus-visible,
 .map-zoom-button:focus-visible,
@@ -2925,10 +2590,6 @@ p {
   .home-quick-icon {
     width: 52px;
     height: 52px;
-  }
-
-  .home-rail-controls {
-    display: none;
   }
 
   .floating-tabbar {
