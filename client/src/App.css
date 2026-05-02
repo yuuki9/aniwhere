@@ -5042,7 +5042,7 @@ p {
 .search-screen-icon svg {
   width: 22px;
   height: 22px;
-  stroke: currentColor;
+  stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
@@ -5100,7 +5100,7 @@ p {
 .search-filter-button svg {
   width: 22px;
   height: 22px;
-  stroke: currentColor;
+  stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
@@ -5250,7 +5250,7 @@ p {
   height: 20px;
   color: #7b8794;
   flex-shrink: 0;
-  stroke: currentColor;
+  stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;

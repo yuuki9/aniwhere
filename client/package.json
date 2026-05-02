@@ -7,7 +7,7 @@
     "dev": "granite dev",
     "build": "ait build",
     "build:static": "vite build --outDir dist-static",
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/check-css-style.mjs",
     "preview": "vite preview",
     "deploy": "ait deploy"
   },
