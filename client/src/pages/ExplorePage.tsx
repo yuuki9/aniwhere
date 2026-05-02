@@ -18,7 +18,8 @@ import {
   canBuildNaverWebDirectionUrl,
 } from '../shared/lib/naverDirections'
 import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
-import { ShopMap } from '../shared/ui/ShopMap'
+import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
+import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { StatusPill } from '../shared/ui/StatusPill'
 import { readNearbyExploreParams } from './searchNearby'
 
@@ -48,6 +49,7 @@ type AssistantMessage = {
 }
 
 type DetailIconName = 'pin' | 'clock' | 'layers' | 'tag' | 'link'
+type MapBounds = MapViewport['bounds']
 
 function buildDescriptionPreview(description: string | null, maxLength = 120) {
   if (!description) {
@@ -113,6 +115,16 @@ function buildDetailMediaItems(shop: Shop, uploadedPhotos: AdminShopPhoto[] = []
       alt: `${shop.name} 미디어 ${index + 1}`,
     }
   })
+}
+
+function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
+  const isInsideLatitude = shop.py >= bounds.southWest.latitude && shop.py <= bounds.northEast.latitude
+  const isInsideLongitude =
+    bounds.southWest.longitude <= bounds.northEast.longitude
+      ? shop.px >= bounds.southWest.longitude && shop.px <= bounds.northEast.longitude
+      : shop.px >= bounds.southWest.longitude || shop.px <= bounds.northEast.longitude
+
+  return isInsideLatitude && isInsideLongitude
 }
 
 function MapDetailIcon({ name }: { name: DetailIconName }) {
@@ -193,7 +205,7 @@ function MapDetailRow({
 
 function MapAssistantIcon() {
   return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+    <svg className="map-control-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
       <rect x="5.25" y="7" width="13.5" height="10.5" rx="5.25" fill="currentColor" opacity="0.18" />
       <path
         d="M9 19.5v-1.6m6 1.6v-1.6m-3-14v2.1m-5.4 3.5h10.8A2.6 2.6 0 0 1 20 12.1v3.4a2.6 2.6 0 0 1-2.6 2.6H9.7L6 20v-1.9a2.6 2.6 0 0 1-2-2.6v-3.4A2.6 2.6 0 0 1 6.6 9.5Z"
@@ -211,7 +223,6 @@ function MapAssistantIcon() {
 export function ExplorePage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const category = searchParams.get('category') ?? ''
   const regionId = Number(searchParams.get('regionId') ?? '') || undefined
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
@@ -226,11 +237,15 @@ export function ExplorePage() {
     nearbyRequest ? 'ready' : 'idle',
   )
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
+  const [activeMapQuickChips, setActiveMapQuickChips] = useState<Record<string, boolean>>({})
+  const [mapViewport, setMapViewport] = useState<MapViewport | null>(null)
+  const [mapViewportFilter, setMapViewportFilter] = useState<MapBounds | null>(null)
+  const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
   const [shareFeedback, setShareFeedback] = useState<string | null>(null)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
   const [peekDragOffset, setPeekDragOffset] = useState(0)
   const [isPeekDragging, setIsPeekDragging] = useState(false)
-  const [mapReady, setMapReady] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantInput, setAssistantInput] = useState('')
   const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([
@@ -243,6 +258,8 @@ export function ExplorePage() {
   const listScrollRef = useRef<HTMLDivElement | null>(null)
   const detailScrollRef = useRef<HTMLDivElement | null>(null)
   const assistantMessagesRef = useRef<HTMLDivElement | null>(null)
+  const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const hasMapViewportRef = useRef(false)
   const listScrollTopRef = useRef(0)
   const listVisibleCountRef = useRef(PAGE_SIZE)
   const pendingListRestoreRef = useRef(false)
@@ -250,6 +267,7 @@ export function ExplorePage() {
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
   const effectiveUserLocation = userLocation ?? nearbyRequest?.location ?? null
+  const appliedFilterCount = mapViewportFilter ? 1 : 0
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'explore-map-source'],
@@ -277,24 +295,19 @@ export function ExplorePage() {
 
   const allShops = useMemo(() => shopsQuery.data?.content ?? EMPTY_SHOPS, [shopsQuery.data?.content])
 
-  const categories = useMemo(
-    () => Array.from(new Set(allShops.flatMap((shop) => shop.categories))).slice(0, 8),
-    [allShops],
-  )
-
   const filteredShops = useMemo(() => {
     return allShops.filter((shop) => {
       if (regionId && shop.regionId !== regionId) {
         return false
       }
 
-      if (category && !shop.categories.includes(category)) {
+      if (mapViewportFilter && !isShopInsideMapBounds(shop, mapViewportFilter)) {
         return false
       }
 
       return true
     })
-  }, [allShops, category, regionId])
+  }, [allShops, mapViewportFilter, regionId])
 
   const shopsWithDistance = useMemo(() => {
     const nextShops = filteredShops.map((shop) => {
@@ -329,6 +342,10 @@ export function ExplorePage() {
     () => shopsWithDistance.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
     [shopsWithDistance],
   )
+  const mapQuickChips = [
+    { id: 'favorite', label: '관심매장' },
+    { id: 'active', label: '영업중' },
+  ]
 
   const totalShops = shopsWithDistance.length
   const visibleShops = useMemo(
@@ -431,22 +448,6 @@ export function ExplorePage() {
     setFocusRequestId((current) => current + 1)
   }, [])
 
-  const setFilter = (value?: string) => {
-    const next = new URLSearchParams(searchParams)
-    next.delete('shopId')
-
-    if (value) {
-      next.set('category', value)
-    } else {
-      next.delete('category')
-    }
-
-    syncSearchParams(next)
-    setVisibleListCount(PAGE_SIZE)
-    setSheetMode('peek')
-    requestMapFocus('shops')
-  }
-
   const handleSelectShop = (
     shopId: number,
     origin: Exclude<SelectionOrigin, null>,
@@ -541,6 +542,37 @@ export function ExplorePage() {
       setLocationError(error instanceof Error ? error.message : '현재 위치를 가져오지 못했습니다.')
     }
   }
+
+  const handleMapViewportChange = useCallback((viewport: MapViewport) => {
+    if (hasMapViewportRef.current) {
+      setHasPendingMapSearch(true)
+    } else {
+      hasMapViewportRef.current = true
+    }
+
+    setMapViewport(viewport)
+  }, [])
+
+  const handleSearchCurrentMapArea = () => {
+    if (!mapViewport) {
+      return
+    }
+
+    setMapViewportFilter(mapViewport.bounds)
+    setHasPendingMapSearch(false)
+    setVisibleListCount(PAGE_SIZE)
+  }
+
+  const closeFilterSheet = useCallback(() => {
+    setIsFilterSheetOpen(false)
+  }, [])
+
+  const toggleMapQuickChip = useCallback((chipId: string) => {
+    setActiveMapQuickChips((previous) => ({
+      ...previous,
+      [chipId]: !previous[chipId],
+    }))
+  }, [])
 
   const shopsError = shopsQuery.isError ? (shopsQuery.error as Error).message : null
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
@@ -764,51 +796,57 @@ export function ExplorePage() {
   }
 
   const topSearch = (
-    <div className="map-search-row">
-      <button className="map-search-field" type="button" onClick={() => navigate('/search')}>
+    <div className="map-search-row search-screen-toolrow">
+      <button className="search-screen-bar map-search-field" type="button" onClick={() => navigate('/search')}>
         <span className="map-search-field-copy">매장, 작품, 지역 검색</span>
-        <strong aria-hidden="true">⌕</strong>
+        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="6" />
+          <path d="m16 16 4 4" />
+        </svg>
       </button>
-      <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-map" />
+      <button
+        className="search-filter-button map-filter-button"
+        type="button"
+        ref={filterTriggerRef}
+        onClick={() => setIsFilterSheetOpen(true)}
+        aria-controls="search-filter-sheet"
+        aria-expanded={isFilterSheetOpen}
+        aria-label={appliedFilterCount > 0 ? `필터 ${appliedFilterCount}개 적용됨` : '필터 열기'}
+      >
+        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+          <path d="M4 7h10" />
+          <path d="M18 7h2" />
+          <path d="M4 17h2" />
+          <path d="M10 17h10" />
+          <circle cx="16" cy="7" r="2" />
+          <circle cx="8" cy="17" r="2" />
+        </svg>
+        {appliedFilterCount > 0 ? <small>{appliedFilterCount}</small> : null}
+      </button>
     </div>
   )
 
   const chipToolbar = (
     <div className="map-chip-toolbar">
-      <div className="map-chip-scroll" role="tablist" aria-label="카테고리 필터">
-        <button
-          className={`map-chip-filter ${category ? '' : 'map-chip-filter-active'}`}
-          type="button"
-          onClick={() => setFilter()}
-        >
-          전체
-        </button>
-        {categories.map((item) => (
-          <button
-            className={`map-chip-filter ${category === item ? 'map-chip-filter-active' : ''}`}
-            key={item}
-            type="button"
-            onClick={() => setFilter(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+      <ul className="map-chip-scroll" aria-label="빠른 필터">
+        {mapQuickChips.map((item) => {
+          const isMapQuickChipActive = Boolean(activeMapQuickChips[item.id])
 
-      <button
-        className={`map-chip-gps ${locationState === 'ready' ? 'map-chip-gps-active' : ''}`}
-        type="button"
-        onClick={handleRequestLocation}
-        aria-label="현재 위치 보기"
-      >
-        {locationState === 'loading' ? (
-          <span className="map-chip-gps-spinner" aria-hidden="true" />
-        ) : (
-          <span className="map-chip-gps-icon" aria-hidden="true">
-            <span className="map-chip-gps-crosshair" />
-          </span>
-        )}
-      </button>
+          return (
+            <li key={item.id}>
+              <button
+                className={`map-chip-status${isMapQuickChipActive ? ' map-chip-status-active' : ''}`}
+                type="button"
+                onClick={() => toggleMapQuickChip(item.id)}
+                aria-pressed={isMapQuickChipActive}
+                aria-label={`${item.label} ${isMapQuickChipActive ? '선택됨' : '선택 안 됨'}`}
+              >
+                {item.label}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 
@@ -837,7 +875,7 @@ export function ExplorePage() {
               activeShopId={detailShop?.id ?? null}
               onSelectShop={handleMapSelectShop}
               onClearSelection={handleClearSelection}
-              onReady={() => setMapReady(true)}
+              onViewportChange={handleMapViewportChange}
               userLocation={effectiveUserLocation}
               focusMode={focusMode}
               focusRequestId={focusRequestId}
@@ -851,9 +889,23 @@ export function ExplorePage() {
             {topSearch}
             {chipToolbar}
 
+            {hasPendingMapSearch && mapViewport ? (
+              <button className="map-area-search-button" type="button" onClick={handleSearchCurrentMapArea}>
+                <svg className="map-area-search-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+                  <path d="M20 11a8 8 0 0 0-14.6-4.5L4 8" />
+                  <path d="M4 4v4h4" />
+                  <path d="M4 13a8 8 0 0 0 14.6 4.5L20 16" />
+                  <path d="M20 20v-4h-4" />
+                </svg>
+                이 지역 매장 검색
+              </button>
+            ) : null}
+
             {locationError ? <p className="error-text map-inline-error map-inline-error-overlay">{locationError}</p> : null}
             {shopsError ? <p className="error-text map-inline-error map-inline-error-overlay">{shopsError}</p> : null}
           </div>
+
+          <SearchFilterSheet open={isFilterSheetOpen} triggerRef={filterTriggerRef} onClose={closeFilterSheet} />
 
           {sheetMode !== 'expanded' ? (
             <button
@@ -864,23 +916,43 @@ export function ExplorePage() {
             >
               <span className="map-list-fab-icon" aria-hidden="true">
                 {isListSheetOpen ? (
-                  <svg className="map-list-fab-map-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                  <svg className="map-list-fab-map-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
                     <path d="m4 5 5-2 6 2 5-2v16l-5 2-6-2-5 2V5Z" />
                     <path d="M9 3v16" />
                     <path d="M15 5v16" />
                   </svg>
                 ) : (
-                  <>
-                    <span />
-                    <span />
-                    <span />
-                  </>
+                  <svg className="map-list-fab-list-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 7h10" />
+                    <path d="M9 12h10" />
+                    <path d="M9 17h10" />
+                    <circle cx="5.25" cy="7" r="1.1" />
+                    <circle cx="5.25" cy="12" r="1.1" />
+                    <circle cx="5.25" cy="17" r="1.1" />
+                  </svg>
                 )}
               </span>
             </button>
           ) : null}
 
-          {!isListSheetOpen && sheetMode !== 'expanded' && mapReady ? (
+          {!isListSheetOpen && sheetMode !== 'expanded' ? (
+            <button
+              className={`map-location-fab ${locationState === 'ready' ? 'map-location-fab-active' : ''}`}
+              type="button"
+              onClick={handleRequestLocation}
+              aria-label="현재 위치 보기"
+            >
+              {locationState === 'loading' ? (
+                <span className="map-chip-gps-spinner map-control-icon" aria-hidden="true" />
+              ) : (
+                <span className="map-chip-gps-icon map-control-icon" aria-hidden="true">
+                  <span className="map-chip-gps-crosshair" />
+                </span>
+              )}
+            </button>
+          ) : null}
+
+          {!isListSheetOpen && sheetMode !== 'expanded' ? (
             <>
               <button
                 aria-expanded={assistantOpen}
