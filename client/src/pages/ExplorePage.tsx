@@ -1,4 +1,4 @@
-import { type ReactNode, type UIEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, type UIEvent, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
@@ -20,6 +20,7 @@ import {
 import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { ShopMap } from '../shared/ui/ShopMap'
 import { StatusPill } from '../shared/ui/StatusPill'
+import { readNearbyExploreParams } from './searchNearby'
 
 const PAGE_SIZE = 10
 const MAP_FETCH_SIZE = 200
@@ -213,14 +214,17 @@ export function ExplorePage() {
   const category = searchParams.get('category') ?? ''
   const regionId = Number(searchParams.get('regionId') ?? '') || undefined
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
-  const [focusMode, setFocusMode] = useState<FocusMode>(selectedShopId ? 'shop' : 'shops')
+  const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
+  const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
-  const [viewMode, setViewMode] = useState<ViewMode>('map')
+  const [viewMode, setViewMode] = useState<ViewMode>(nearbyRequest ? 'list' : 'map')
   const [sheetMode, setSheetMode] = useState<SheetMode>(selectedShopId ? 'peek' : 'peek')
   const [selectionOrigin, setSelectionOrigin] = useState<SelectionOrigin>(selectedShopId ? 'map' : null)
   const [visibleListCount, setVisibleListCount] = useState(PAGE_SIZE)
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
-  const [locationState, setLocationState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(nearbyRequest?.location ?? null)
+  const [locationState, setLocationState] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    nearbyRequest ? 'ready' : 'idle',
+  )
   const [locationError, setLocationError] = useState<string | null>(null)
   const [shareFeedback, setShareFeedback] = useState<string | null>(null)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
@@ -245,6 +249,7 @@ export function ExplorePage() {
   const peekPointerIdRef = useRef<number | null>(null)
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
+  const effectiveUserLocation = userLocation ?? nearbyRequest?.location ?? null
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'explore-map-source'],
@@ -292,22 +297,33 @@ export function ExplorePage() {
   }, [allShops, category, regionId])
 
   const shopsWithDistance = useMemo(() => {
-    return filteredShops.map((shop) => {
-      if (!userLocation || !Number.isFinite(shop.px) || !Number.isFinite(shop.py)) {
-        return { ...shop, distanceLabel: null }
+    const nextShops = filteredShops.map((shop) => {
+      if (!effectiveUserLocation || !Number.isFinite(shop.px) || !Number.isFinite(shop.py)) {
+        return { ...shop, distanceKm: null, distanceLabel: null }
       }
 
-      const distanceKm = calculateDistanceKm(userLocation, {
+      const distanceKm = calculateDistanceKm(effectiveUserLocation, {
         latitude: shop.py,
         longitude: shop.px,
       })
 
       return {
         ...shop,
+        distanceKm,
         distanceLabel: formatDistanceLabel(distanceKm),
       }
     })
-  }, [filteredShops, userLocation])
+
+    if (!effectiveUserLocation) {
+      return nextShops
+    }
+
+    const radiusFilteredShops = nearbyRequest
+      ? nextShops.filter((shop) => shop.distanceKm != null && shop.distanceKm <= nearbyRequest.radiusKm)
+      : nextShops
+
+    return [...radiusFilteredShops].sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity))
+  }, [effectiveUserLocation, filteredShops, nearbyRequest])
 
   const mappableShops = useMemo(
     () => shopsWithDistance.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
@@ -410,10 +426,10 @@ export function ExplorePage() {
     assistantMutation.mutate(normalizedQuestion)
   }
 
-  const requestMapFocus = (mode: FocusMode) => {
+  const requestMapFocus = useCallback((mode: FocusMode) => {
     setFocusMode(mode)
     setFocusRequestId((current) => current + 1)
-  }
+  }, [])
 
   const setFilter = (value?: string) => {
     const next = new URLSearchParams(searchParams)
@@ -542,7 +558,10 @@ export function ExplorePage() {
       }
     : null
   const naverDirectionUrl = naverDirectionTarget && canBuildNaverWebDirectionUrl(naverDirectionTarget)
-    ? buildNaverWebDirectionUrl(naverDirectionTarget, userLocation ? { ...userLocation, name: '현재 위치' } : null)
+    ? buildNaverWebDirectionUrl(
+        naverDirectionTarget,
+        effectiveUserLocation ? { ...effectiveUserLocation, name: '현재 위치' } : null,
+      )
     : null
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
   const detailActionLinkUrl = primaryLink?.url ?? naverSearchUrl
@@ -819,7 +838,7 @@ export function ExplorePage() {
               onSelectShop={handleMapSelectShop}
               onClearSelection={handleClearSelection}
               onReady={() => setMapReady(true)}
-              userLocation={userLocation}
+              userLocation={effectiveUserLocation}
               focusMode={focusMode}
               focusRequestId={focusRequestId}
               selectionOrigin={selectionOrigin}

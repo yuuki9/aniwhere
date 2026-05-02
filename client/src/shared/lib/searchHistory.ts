@@ -1,5 +1,5 @@
 const SEARCH_HISTORY_KEY = 'aniwhere-recent-searches'
-const MAX_HISTORY = 8
+const MAX_HISTORY = 5
 
 export function readRecentSearches() {
   if (typeof window === 'undefined') {
