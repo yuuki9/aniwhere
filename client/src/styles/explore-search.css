@@ -1572,7 +1572,6 @@
   font-size: var(--ait-font-size-label);
   line-height: 1.55;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .map-sheet-summary-card,
@@ -2842,8 +2841,6 @@
   text-decoration: none;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
-
-
 
 @media (max-width: 768px) {
   .map-surface-app-v2 {

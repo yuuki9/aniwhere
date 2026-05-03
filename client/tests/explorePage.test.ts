@@ -11,6 +11,8 @@ const appCssSource = () =>
   ]
     .map((path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8'))
     .join('\n')
+const adminShopCssSource = () => fs.readFileSync(new URL('../src/styles/admin-shop.css', import.meta.url), 'utf8')
+const exploreSearchCssSource = () => fs.readFileSync(new URL('../src/styles/explore-search.css', import.meta.url), 'utf8')
 const shopMapSource = () => fs.readFileSync(new URL('../src/shared/ui/ShopMap.tsx', import.meta.url), 'utf8')
 
 const cssRuleBodies = (css: string, selector: string) => {
@@ -122,6 +124,7 @@ test('ExplorePage does not fabricate category filter chips without a facet API',
   assert.doesNotMatch(source, /role="tablist"/)
   assert.doesNotMatch(source, /category && !shop\.categories\.includes/)
   assert.match(source, /mapQuickChips/)
+  assert.match(source, /Deferred facet filters/)
   assert.match(source, /className=\{`map-chip-status/)
   assert.match(source, /aria-pressed=\{isMapQuickChipActive\}/)
   assert.match(source, /toggleMapQuickChip\(item\.id\)/)
@@ -129,6 +132,16 @@ test('ExplorePage does not fabricate category filter chips without a facet API',
   assert.match(source, /관심매장/)
   assert.match(source, /영업중/)
   assert.doesNotMatch(source, /표시 매장 \$\{mappableShops\.length\}곳/)
+})
+
+test('Explore styles stay isolated from admin route styles', () => {
+  const styles = appCssSource()
+  const adminStyles = adminShopCssSource()
+  const exploreStyles = exploreSearchCssSource()
+
+  assert.match(styles, /\.map-llm-fab/)
+  assert.doesNotMatch(adminStyles, /map-llm-/)
+  assert.doesNotMatch(exploreStyles, /word-break:\s*break-word;/)
 })
 
 test('Explore map buttons use consistent icon sizing and refresh affordance', () => {

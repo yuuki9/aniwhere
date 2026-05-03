@@ -119,8 +119,7 @@
 }
 
 .admin-shop-list,
-.admin-grant-list,
-.map-llm-message-list {
+.admin-grant-list {
   display: grid;
   gap: var(--ait-space-6);
 }
@@ -131,8 +130,7 @@
 }
 
 .admin-shop-list-item,
-.admin-grant-card,
-.map-llm-recommend-card {
+.admin-grant-card {
   display: grid;
   gap: var(--ait-space-4);
   width: 100%;

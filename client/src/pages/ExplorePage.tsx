@@ -497,6 +497,7 @@ export function ExplorePage() {
   }, [])
 
   const toggleMapQuickChip = useCallback((chipId: string) => {
+    // Deferred facet filters: keep these chips as visual toggles until the backend API contract exists.
     setActiveMapQuickChips((previous) => ({
       ...previous,
       [chipId]: !previous[chipId],
