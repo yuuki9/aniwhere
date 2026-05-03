@@ -23,6 +23,7 @@ import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { MapDetailIcon } from '../shared/ui/mapDetailIcons'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
+import { MapDetailMediaSection } from './explore/MapDetailMediaSection'
 import { MapDetailSummaryCard } from './explore/MapDetailSummaryCard'
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
@@ -858,56 +859,13 @@ export function ExplorePage() {
                   </button>
                 </div>
 
-                <section className={`map-sheet-media map-sheet-media-${detailMediaTone}`}>
-                  <div className="map-sheet-media-topbar">
-                    <div className="map-sheet-topbar-actions">
-                      <button
-                        className="map-sheet-icon-button map-sheet-icon-button-overlay"
-                        type="button"
-                        onClick={handleExpandedBack}
-                        aria-label="뒤로 가기"
-                      >
-                        ←
-                      </button>
-                      <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
-                    </div>
-                    <div className="map-sheet-topbar-actions">
-                      <button
-                        className="map-sheet-icon-button map-sheet-icon-button-overlay"
-                        type="button"
-                        onClick={handleClearSelection}
-                        aria-label="상세 화면 닫기"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="map-sheet-media-grid">
-                    {detailMediaItems[0] ? (
-                      <article className="map-sheet-media-main">
-                        <img className="map-sheet-media-image" src={detailMediaItems[0].src} alt={detailMediaItems[0].alt} />
-                        <div className="map-sheet-media-image-overlay">
-                          <span className="map-sheet-media-badge">{detailShop.regionName ?? 'ANIWHERE'}</span>
-                          <strong>{detailShop.categories[0] ?? detailShop.works[0] ?? '매장 큐레이션'}</strong>
-                        </div>
-                      </article>
-                    ) : null}
-
-                    <div className="map-sheet-media-stack">
-                      {detailMediaItems.slice(1).map((item, index) => (
-                        <article className="map-sheet-media-tile" key={item.id}>
-                          <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
-                          {index === detailMediaItems.slice(1).length - 1 ? (
-                            <div className="map-sheet-media-count">
-                              <strong>+{Math.max(detailMediaItems.length, detailShop.links.length, detailShop.works.length, 4)}</strong>
-                            </div>
-                          ) : null}
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                </section>
+                <MapDetailMediaSection
+                  shop={detailShop}
+                  tone={detailMediaTone}
+                  detailMediaItems={detailMediaItems}
+                  onBack={handleExpandedBack}
+                  onClose={handleClearSelection}
+                />
 
                 <div className="map-sheet-shell map-sheet-shell-detail">
                   {detailError ? <p className="section error-text">{detailError}</p> : null}
