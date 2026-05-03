@@ -1,11 +1,11 @@
-import { type ReactNode, type UIEvent, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type UIEvent, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
 import { getShop, getShops } from '../shared/api/shops'
 import type { AdminShopPhoto, Shop } from '../shared/api/types'
-import { formatRelativeUpdated, linkTypeToLabel, statusToLabel } from '../shared/lib/format'
+import { linkTypeToLabel } from '../shared/lib/format'
 import {
   calculateDistanceKm,
   formatDistanceLabel,
@@ -20,8 +20,9 @@ import {
 import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
-import { MapDetailIcon, type MapDetailIconName } from '../shared/ui/mapDetailIcons'
+import { MapDetailIcon } from '../shared/ui/mapDetailIcons'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
+import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
 import { MapDetailSummaryCard } from './explore/MapDetailSummaryCard'
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
@@ -128,28 +129,6 @@ function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
       : shop.px >= bounds.southWest.longitude || shop.px <= bounds.northEast.longitude
 
   return isInsideLatitude && isInsideLongitude
-}
-
-function MapDetailRow({
-  icon,
-  label,
-  children,
-}: {
-  icon: MapDetailIconName
-  label: string
-  children: ReactNode
-}) {
-  return (
-    <div className="map-sheet-detail-row-v3">
-      <span className="map-sheet-detail-icon">
-        <MapDetailIcon name={icon} />
-      </span>
-      <div className="map-sheet-detail-copy">
-        <span>{label}</span>
-        <strong>{children}</strong>
-      </div>
-    </div>
-  )
 }
 
 export function ExplorePage() {
@@ -943,34 +922,12 @@ export function ExplorePage() {
                     onOpenDirections={openNaverDirections}
                   />
 
-                  <section className="section map-sheet-info-card map-sheet-info-list-v2 map-sheet-info-list-v3" id="map-place-info">
-                    <MapDetailRow icon="pin" label="주소">
-                      <button className="map-place-address-button" type="button" onClick={openNaverDirections}>
-                        {detailShop.address}
-                        <span>네이버 지도 웹</span>
-                      </button>
-                    </MapDetailRow>
-                    <MapDetailRow icon="layers" label="운영 정보">
-                      {detailFloorLabel ?? '층 정보 확인 필요'} · {statusToLabel(detailShop.status)}
-                      {detailShop.sellsIchibanKuji ? ' · 일번쿠지 취급' : ''}
-                    </MapDetailRow>
-                    <MapDetailRow icon="tag" label="취급 / 분류">
-                      {detailShop.works.length > 0
-                        ? `${detailShop.works.slice(0, 4).join(' · ')}${detailShop.works.length > 4 ? ` 외 ${detailShop.works.length - 4}개` : ''}`
-                        : detailShop.categories.length > 0
-                          ? detailShop.categories.join(' · ')
-                          : '등록된 작품 정보 없음'}
-                    </MapDetailRow>
-                    {detailShop.visitTip ? (
-                      <MapDetailRow icon="tag" label="방문 팁">
-                        {detailShop.visitTip}
-                      </MapDetailRow>
-                    ) : null}
-                    <MapDetailRow icon="clock" label="업데이트">
-                      {formatRelativeUpdated(detailShop.updatedAt)}
-                      {activeShop?.distanceLabel ? ` · ${activeShop.distanceLabel}` : ''}
-                    </MapDetailRow>
-                  </section>
+                  <MapDetailInfoCard
+                    shop={detailShop}
+                    floorLabel={detailFloorLabel}
+                    distanceLabel={activeShop?.distanceLabel ?? null}
+                    onOpenDirections={openNaverDirections}
+                  />
 
                   <section className="section map-place-review-card" id="map-place-review">
                     <div className="map-place-review-copy">
