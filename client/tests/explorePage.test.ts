@@ -19,6 +19,8 @@ const mapDetailSummaryCardSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapDetailSummaryCard.tsx', import.meta.url), 'utf8')
 const mapDetailInfoCardSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapDetailInfoCard.tsx', import.meta.url), 'utf8')
+const mapDetailMediaSectionSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapDetailMediaSection.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   [
     '../src/App.css',
@@ -161,6 +163,29 @@ test('ExplorePage extracts the expanded detail info rows into a focused componen
   assert.match(infoSource, /formatRelativeUpdated/)
   assert.doesNotMatch(source, /function MapDetailRow/)
   assert.doesNotMatch(source, /className="section map-sheet-info-card/)
+})
+
+test('Explore detail media uses uploaded shop photos only instead of fabricated external placeholders', () => {
+  const source = explorePageSource()
+  const mediaSource = mapDetailMediaSectionSource()
+
+  assert.match(source, /uploadedPhotos\.slice\(0, 5\)\.map/)
+  assert.match(mediaSource, /detailMediaItems\.length > 0/)
+  assert.doesNotMatch(source, /picsum\.photos/)
+  assert.doesNotMatch(mediaSource, /picsum\.photos/)
+  assert.doesNotMatch(source, /aniwhere-\$\{shop\.id\}/)
+})
+
+test('ExplorePage extracts the expanded detail media section into a focused component', () => {
+  const source = explorePageSource()
+  const mediaSource = mapDetailMediaSectionSource()
+
+  assert.match(source, /<MapDetailMediaSection/)
+  assert.match(mediaSource, /map-sheet-media-grid/)
+  assert.match(mediaSource, /detailMediaItems\.length > 0/)
+  assert.match(mediaSource, /GlobalNavigationMenu/)
+  assert.doesNotMatch(source, /className=\{`map-sheet-media/)
+  assert.doesNotMatch(source, /map-sheet-media-grid/)
 })
 
 test('ExplorePage exposes map viewport search after the map moves', () => {
