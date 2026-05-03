@@ -203,7 +203,6 @@ test('ExplorePage extracts the expanded detail supplement sections into a focuse
   assert.doesNotMatch(source, /map-sheet-link-section-v2/)
   assert.doesNotMatch(source, /map-sheet-recommend-section/)
 })
-
 test('ExplorePage exposes map viewport search after the map moves', () => {
   const source = explorePageSource()
 
