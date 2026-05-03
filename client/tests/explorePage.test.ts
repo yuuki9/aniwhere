@@ -24,6 +24,8 @@ test('ExplorePage shares the search bar and filter sheet pattern with SearchPage
   const source = explorePageSource()
 
   assert.match(source, /SearchFilterSheet/)
+  assert.match(source, /className="search-screen-icon map-search-home-button"/)
+  assert.match(source, /onClick=\{\(\) => navigate\('\/home'\)\}/)
   assert.match(source, /className="search-screen-bar map-search-field"/)
   assert.match(source, /className="search-filter-button map-filter-button"/)
   assert.match(source, /aria-label=\{appliedFilterCount > 0 \? `필터 \$\{appliedFilterCount\}개 적용됨` : '필터 열기'\}/)
@@ -72,11 +74,14 @@ test('Explore controls separate list, location, zoom, and AI actions for mobile 
 test('Explore map search and filter controls stay visually separated to avoid accidental taps', () => {
   const styles = appCssSource()
   const topRowRules = cssRuleBodies(styles, '.map-search-row.search-screen-toolrow')
+  const homeButtonRules = cssRuleBodies(styles, '.map-search-row .map-search-home-button')
   const fieldRules = cssRuleBodies(styles, '.map-search-row .search-screen-bar.map-search-field')
   const filterRules = cssRuleBodies(styles, '.map-search-row .map-filter-button')
 
   assert.ok(topRowRules.some((rule) => /gap:\s*var\(--ait-space-4\);/.test(rule)))
   assert.ok(topRowRules.some((rule) => /background:\s*transparent;/.test(rule)))
+  assert.ok(homeButtonRules.some((rule) => /width:\s*46px;/.test(rule)))
+  assert.ok(homeButtonRules.some((rule) => /height:\s*46px;/.test(rule)))
   assert.ok(fieldRules.some((rule) => /border-radius:\s*var\(--ait-radius-full\);/.test(rule)))
   assert.ok(fieldRules.some((rule) => /background:\s*rgba\(255,\s*255,\s*255,\s*0\.98\);/.test(rule)))
   assert.ok(filterRules.some((rule) => /width:\s*46px;/.test(rule)))
