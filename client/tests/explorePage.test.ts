@@ -21,6 +21,8 @@ const mapDetailInfoCardSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapDetailInfoCard.tsx', import.meta.url), 'utf8')
 const mapDetailMediaSectionSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapDetailMediaSection.tsx', import.meta.url), 'utf8')
+const mapDetailSupplementSectionsSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapDetailSupplementSections.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   [
     '../src/App.css',
@@ -186,6 +188,20 @@ test('ExplorePage extracts the expanded detail media section into a focused comp
   assert.match(mediaSource, /GlobalNavigationMenu/)
   assert.doesNotMatch(source, /className=\{`map-sheet-media/)
   assert.doesNotMatch(source, /map-sheet-media-grid/)
+})
+
+test('ExplorePage extracts the expanded detail supplement sections into a focused component', () => {
+  const source = explorePageSource()
+  const supplementSource = mapDetailSupplementSectionsSource()
+
+  assert.match(source, /<MapDetailSupplementSections/)
+  assert.match(supplementSource, /map-place-review-card/)
+  assert.match(supplementSource, /map-sheet-link-section-v2/)
+  assert.match(supplementSource, /map-sheet-recommend-section/)
+  assert.match(supplementSource, /linkTypeToLabel/)
+  assert.doesNotMatch(source, /map-place-review-card/)
+  assert.doesNotMatch(source, /map-sheet-link-section-v2/)
+  assert.doesNotMatch(source, /map-sheet-recommend-section/)
 })
 
 test('ExplorePage exposes map viewport search after the map moves', () => {
