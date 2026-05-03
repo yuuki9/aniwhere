@@ -26,6 +26,12 @@ import { StatusPill } from '../shared/ui/StatusPill'
 const EMPTY_SHOPS: Shop[] = []
 type AdminMobileSection = 'shops' | 'editor' | 'points' | 'history'
 
+type AdminPageProps = {
+  initialSection?: AdminMobileSection
+  skipUnlock?: boolean
+  onLock?: () => void
+}
+
 type ShopFormState = {
   name: string
   address: string
@@ -76,9 +82,13 @@ function getPendingPreviewUrls(files: File[]) {
   }))
 }
 
-export function AdminPage() {
+export function AdminPage({
+  initialSection = 'shops',
+  skipUnlock = false,
+  onLock,
+}: AdminPageProps = {}) {
   const queryClient = useQueryClient()
-  const [isUnlocked, setIsUnlocked] = useState(isAdminUnlocked())
+  const [isUnlocked, setIsUnlocked] = useState(skipUnlock || isAdminUnlocked())
   const [unlockCode, setUnlockCode] = useState('')
   const [unlockError, setUnlockError] = useState<string | null>(null)
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null)
@@ -93,7 +103,7 @@ export function AdminPage() {
     promotionCode: '',
     reason: '',
   })
-  const [mobileSection, setMobileSection] = useState<AdminMobileSection>('shops')
+  const [mobileSection, setMobileSection] = useState<AdminMobileSection>(initialSection)
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'admin-console'],
@@ -325,7 +335,17 @@ export function AdminPage() {
 
   const selectedShop = selectedShopId != null ? shops.find((shop) => shop.id === selectedShopId) ?? null : null
 
-  if (!isUnlocked) {
+  const lockAdmin = () => {
+    if (onLock) {
+      onLock()
+      return
+    }
+
+    clearAdminSession()
+    setIsUnlocked(false)
+  }
+
+  if (!skipUnlock && !isUnlocked) {
     return (
       <main className="app-shell admin-shell">
         <section className="section admin-unlock-card">
@@ -390,10 +410,7 @@ export function AdminPage() {
           <button
             className="ghost-action compact-action"
             type="button"
-            onClick={() => {
-              clearAdminSession()
-              setIsUnlocked(false)
-            }}
+            onClick={lockAdmin}
           >
             잠금
           </button>
