@@ -99,26 +99,11 @@ function formatFloorLabel(floor: string | null) {
 }
 
 function buildDetailMediaItems(shop: Shop, uploadedPhotos: AdminShopPhoto[] = []): DetailMediaItem[] {
-  if (uploadedPhotos.length > 0) {
-    return uploadedPhotos.slice(0, 5).map((photo, index) => ({
-      id: photo.id,
-      src: photo.dataUrl,
-      alt: `${shop.name} 실제 사진 ${index + 1}`,
-    }))
-  }
-
-  const seeds = ['hero', 'sub-1', 'sub-2', 'sub-3', 'sub-4']
-
-  return seeds.map((seed, index) => {
-    const size = index === 0 ? 960 : 480
-    const encodedSeed = encodeURIComponent(`aniwhere-${shop.id}-${shop.name}-${seed}`)
-
-    return {
-      id: `${shop.id}-${seed}`,
-      src: `https://picsum.photos/seed/${encodedSeed}/${size}/${size}`,
-      alt: `${shop.name} 미디어 ${index + 1}`,
-    }
-  })
+  return uploadedPhotos.slice(0, 5).map((photo, index) => ({
+    id: photo.id,
+    src: photo.dataUrl,
+    alt: `${shop.name} 실제 사진 ${index + 1}`,
+  }))
 }
 
 function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
