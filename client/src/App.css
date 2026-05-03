@@ -5732,6 +5732,33 @@ p {
   line-height: 1;
 }
 
+.admin-hub-grid {
+  display: grid;
+  gap: var(--ait-space-7);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-hub-card {
+  display: grid;
+  gap: var(--ait-space-5);
+  min-height: 180px;
+  padding: 24px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-hub-card strong {
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-title-lg);
+  line-height: var(--ait-line-height-title);
+}
+
+.admin-hub-card small {
+  color: var(--ait-color-text-tertiary);
+  font-size: var(--ait-font-size-body-sm);
+  line-height: var(--ait-line-height-body);
+}
+
 .admin-mobile-tabs-shell {
   display: none;
 }
@@ -6327,6 +6354,7 @@ p {
 
 @media (max-width: 1024px) {
   .admin-summary-grid,
+  .admin-hub-grid,
   .admin-points-grid,
   .admin-workspace {
     grid-template-columns: 1fr;
