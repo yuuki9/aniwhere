@@ -13,6 +13,8 @@ const mapAssistantPanelSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapAssistantPanel.tsx', import.meta.url), 'utf8')
 const mapResultsSheetSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapResultsSheet.tsx', import.meta.url), 'utf8')
+const mapPeekSheetSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapPeekSheet.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   [
     '../src/App.css',
@@ -111,6 +113,18 @@ test('ExplorePage extracts the list results sheet into a focused component', () 
   assert.match(resultsSheetSource, /formatRelativeUpdated/)
   assert.doesNotMatch(source, /className="map-results-sheet-v2"/)
   assert.doesNotMatch(source, /visibleShops\.map/)
+})
+
+test('ExplorePage extracts the peek bottom sheet into a focused component', () => {
+  const source = explorePageSource()
+  const peekSheetSource = mapPeekSheetSource()
+
+  assert.match(source, /<MapPeekSheet/)
+  assert.match(peekSheetSource, /className=\{\[/)
+  assert.match(peekSheetSource, /map-bottom-sheet-peek/)
+  assert.match(peekSheetSource, /onPointerDown/)
+  assert.match(peekSheetSource, /StatusPill/)
+  assert.doesNotMatch(source, /map-bottom-sheet-peek/)
 })
 
 test('ExplorePage exposes map viewport search after the map moves', () => {
