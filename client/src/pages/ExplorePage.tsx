@@ -21,8 +21,8 @@ import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { MapDetailIcon, type MapDetailIconName } from '../shared/ui/mapDetailIcons'
-import { StatusPill } from '../shared/ui/StatusPill'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
+import { MapDetailSummaryCard } from './explore/MapDetailSummaryCard'
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
 import { MapPeekSheet } from './explore/MapPeekSheet'
@@ -933,88 +933,15 @@ export function ExplorePage() {
                 <div className="map-sheet-shell map-sheet-shell-detail">
                   {detailError ? <p className="section error-text">{detailError}</p> : null}
 
-                  <section className="section map-sheet-summary-card map-sheet-summary-card-compact" id="map-place-home">
-                    <div className="map-sheet-summary-head map-sheet-summary-head-compact">
-                      <div className="map-sheet-summary-copy">
-                        <span className="eyebrow">{detailShop.regionName ?? `지역 ${detailShop.regionId ?? '-'}`}</span>
-                        <h1>{detailShop.name}</h1>
-                        <p>
-                          {detailShop.categories.length > 0
-                            ? detailShop.categories.join(' · ')
-                            : detailShop.works.length > 0
-                              ? detailShop.works.slice(0, 2).join(' · ')
-                              : '카테고리 확인 중'}
-                        </p>
-                      </div>
-                      <StatusPill status={detailShop.status} />
-                    </div>
-
-                    <div className="map-sheet-primary-actions">
-                      {primaryLink ? (
-                        <a className="map-sheet-primary-button map-sheet-primary-button-fill" href={primaryLink.url} rel="noreferrer" target="_blank">
-                          <MapDetailIcon name="link" />
-                          <span>공식 링크</span>
-                        </a>
-                      ) : null}
-                      <Link className="map-sheet-primary-button" to="/community">
-                        <MapDetailIcon name="tag" />
-                        <span>후기 보기</span>
-                      </Link>
-                    </div>
-
-                    <div className="map-place-action-grid" aria-label="매장 주요 액션">
-                      {detailActionLinkUrl ? (
-                        <a
-                          className="map-place-action"
-                          href={detailActionLinkUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          <MapDetailIcon name="link" />
-                          <span>전화/링크</span>
-                        </a>
-                      ) : (
-                        <button className="map-place-action" type="button" disabled aria-disabled="true">
-                          <MapDetailIcon name="link" />
-                          <span>전화/링크</span>
-                        </button>
-                      )}
-                      <button className="map-place-action" type="button" onClick={handleShareShop}>
-                        <MapDetailIcon name="tag" />
-                        <span>공유</span>
-                      </button>
-                      <button className="map-place-action map-place-action-primary" type="button" onClick={openNaverDirections}>
-                        <MapDetailIcon name="pin" />
-                        <span>경로 확인</span>
-                      </button>
-                      <Link className="map-place-action" to={`/community?shopId=${detailShop.id}`}>
-                        <MapDetailIcon name="clock" />
-                        <span>리뷰</span>
-                      </Link>
-                    </div>
-                    {shareFeedback ? (
-                      <p className="map-place-feedback" role="status" aria-live="polite">
-                        {shareFeedback}
-                      </p>
-                    ) : null}
-
-                    <nav className="map-place-tabs" aria-label="상세 정보 바로가기">
-                      <a href="#map-place-home">홈</a>
-                      <a href="#map-place-review">리뷰</a>
-                      <a href="#map-place-info">지도</a>
-                      <a href="#map-place-info">정보</a>
-                    </nav>
-
-                    {detailDescriptionPreview ? (
-                      <div className="map-sheet-ai-summary">
-                        <div className="map-sheet-ai-summary-head">
-                          <strong>AI 요약 정보</strong>
-                          <span>수집 링크 기반</span>
-                        </div>
-                        <p>{detailDescriptionPreview}</p>
-                      </div>
-                    ) : null}
-                  </section>
+                  <MapDetailSummaryCard
+                    shop={detailShop}
+                    primaryLinkUrl={primaryLink?.url ?? null}
+                    actionLinkUrl={detailActionLinkUrl}
+                    descriptionPreview={detailDescriptionPreview}
+                    shareFeedback={shareFeedback}
+                    onShareShop={handleShareShop}
+                    onOpenDirections={openNaverDirections}
+                  />
 
                   <section className="section map-sheet-info-card map-sheet-info-list-v2 map-sheet-info-list-v3" id="map-place-info">
                     <MapDetailRow icon="pin" label="주소">

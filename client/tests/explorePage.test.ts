@@ -15,6 +15,8 @@ const mapResultsSheetSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapResultsSheet.tsx', import.meta.url), 'utf8')
 const mapPeekSheetSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapPeekSheet.tsx', import.meta.url), 'utf8')
+const mapDetailSummaryCardSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapDetailSummaryCard.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   [
     '../src/App.css',
@@ -134,6 +136,17 @@ test('ExplorePage extracts the peek bottom sheet into a focused component', () =
   assert.match(peekSheetSource, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\)\s*onOpenDirections\(event\)/)
   assert.match(peekSheetSource, /StatusPill/)
   assert.doesNotMatch(source, /map-bottom-sheet-peek/)
+})
+
+test('ExplorePage extracts the expanded detail summary actions into a focused component', () => {
+  const source = explorePageSource()
+  const summarySource = mapDetailSummaryCardSource()
+
+  assert.match(source, /<MapDetailSummaryCard/)
+  assert.match(summarySource, /map-sheet-summary-card-compact/)
+  assert.match(summarySource, /map-place-action-grid/)
+  assert.match(summarySource, /shareFeedback/)
+  assert.doesNotMatch(source, /className="map-place-action-grid"/)
 })
 
 test('ExplorePage exposes map viewport search after the map moves', () => {
