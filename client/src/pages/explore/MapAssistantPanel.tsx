@@ -48,6 +48,15 @@ export function MapAssistantPanel({
   onSubmitQuestion,
   onSelectRecommendation,
 }: MapAssistantPanelProps) {
+  const canSubmitInput = !isPending && input.trim().length > 0
+  const handleSubmitQuestion = (question: string) => {
+    if (isPending) {
+      return
+    }
+
+    onSubmitQuestion(question)
+  }
+
   if (!visible) {
     return null
   }
@@ -56,7 +65,7 @@ export function MapAssistantPanel({
     <>
       <button
         aria-expanded={open}
-        aria-label="AI 탐색 열기"
+        aria-label={open ? 'AI 탐색 닫기' : 'AI 탐색 열기'}
         className="map-llm-fab"
         type="button"
         onClick={onToggle}
@@ -96,7 +105,8 @@ export function MapAssistantPanel({
                     className="map-llm-start-card"
                     key={suggestion}
                     type="button"
-                    onClick={() => onSubmitQuestion(suggestion)}
+                    disabled={isPending}
+                    onClick={() => handleSubmitQuestion(suggestion)}
                   >
                     <span>{index === 0 ? '추천 질문' : index === 1 ? '많이 찾는 질문' : '처음 시작 질문'}</span>
                     <strong>{suggestion}</strong>
@@ -150,7 +160,8 @@ export function MapAssistantPanel({
                         className="map-llm-suggestion"
                         key={suggestion}
                         type="button"
-                        onClick={() => onSubmitQuestion(suggestion)}
+                        disabled={isPending}
+                        onClick={() => handleSubmitQuestion(suggestion)}
                       >
                         {suggestion}
                       </button>
@@ -165,16 +176,21 @@ export function MapAssistantPanel({
             className="map-llm-input-row"
             onSubmit={(event) => {
               event.preventDefault()
-              onSubmitQuestion(input)
+              if (!canSubmitInput) {
+                return
+              }
+
+              handleSubmitQuestion(input)
             }}
           >
             <input
               className="map-llm-input"
               placeholder="작품명, 지역, 운영 상태를 물어보세요"
               value={input}
+              disabled={isPending}
               onChange={(event) => onInputChange(event.target.value)}
             />
-            <button className="map-llm-send" type="submit">
+            <button className="map-llm-send" type="submit" disabled={!canSubmitInput}>
               전송
             </button>
           </form>

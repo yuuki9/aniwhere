@@ -88,6 +88,17 @@ test('ExplorePage extracts the assistant panel into a focused component', () => 
   assert.doesNotMatch(source, /assistantMessages\.map/)
 })
 
+test('MapAssistantPanel announces toggle state and blocks duplicate pending submissions', () => {
+  const source = mapAssistantPanelSource()
+
+  assert.match(source, /aria-label=\{open \? 'AI 탐색 닫기' : 'AI 탐색 열기'\}/)
+  assert.match(source, /const canSubmitInput = !isPending && input\.trim\(\)\.length > 0/)
+  assert.match(source, /if \(isPending\) \{\s*return\s*\}/)
+  assert.match(source, /disabled=\{isPending\}/)
+  assert.match(source, /disabled=\{!canSubmitInput\}/)
+  assert.match(source, /if \(!canSubmitInput\) \{\s*return\s*\}/)
+})
+
 test('ExplorePage exposes map viewport search after the map moves', () => {
   const source = explorePageSource()
 
