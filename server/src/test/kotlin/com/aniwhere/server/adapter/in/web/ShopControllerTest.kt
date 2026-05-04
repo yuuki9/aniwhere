@@ -54,6 +54,27 @@ class ShopControllerTest {
     }
 
     @Test
+    fun `GET shops - workName 앞뒤 공백은 trim 후 전달`() {
+        every { useCase.searchShops(null, null, null, "원피스", any()) } returns PageImpl(emptyList())
+        mvc.perform(
+            get("/api/v1/shops")
+                .param("workName", " 원피스 ")
+                .param("page", "0")
+                .param("size", "20"),
+        )
+            .andExpect(status().isOk)
+        verify { useCase.searchShops(null, null, null, "원피스", any()) }
+    }
+
+    @Test
+    fun `GET shops - workName이 공백만이면 필터 미적용(null)`() {
+        every { useCase.searchShops(null, null, null, null, any()) } returns PageImpl(emptyList())
+        mvc.perform(get("/api/v1/shops").param("workName", "   ").param("page", "0").param("size", "20"))
+            .andExpect(status().isOk)
+        verify { useCase.searchShops(null, null, null, null, any()) }
+    }
+
+    @Test
     fun `POST shops - 샵 등록`() {
         every { useCase.createShop(any()) } returns sampleShop
         val req = ShopRequest(
