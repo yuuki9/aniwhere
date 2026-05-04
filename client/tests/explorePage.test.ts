@@ -3,7 +3,16 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const explorePageSource = () => fs.readFileSync(new URL('../src/pages/ExplorePage.tsx', import.meta.url), 'utf8')
-const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+const appCssSource = () =>
+  [
+    '../src/App.css',
+    '../src/styles/explore-search.css',
+    '../src/styles/admin-shop.css',
+  ]
+    .map((path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8'))
+    .join('\n')
+const adminShopCssSource = () => fs.readFileSync(new URL('../src/styles/admin-shop.css', import.meta.url), 'utf8')
+const exploreSearchCssSource = () => fs.readFileSync(new URL('../src/styles/explore-search.css', import.meta.url), 'utf8')
 const shopMapSource = () => fs.readFileSync(new URL('../src/shared/ui/ShopMap.tsx', import.meta.url), 'utf8')
 
 const cssRuleBodies = (css: string, selector: string) => {
@@ -17,6 +26,8 @@ test('ExplorePage shares the search bar and filter sheet pattern with SearchPage
   const source = explorePageSource()
 
   assert.match(source, /SearchFilterSheet/)
+  assert.match(source, /className="search-screen-icon map-search-home-button"/)
+  assert.match(source, /onClick=\{\(\) => navigate\('\/home'\)\}/)
   assert.match(source, /className="search-screen-bar map-search-field"/)
   assert.match(source, /className="search-filter-button map-filter-button"/)
   assert.match(source, /aria-label=\{appliedFilterCount > 0 \? `필터 \$\{appliedFilterCount\}개 적용됨` : '필터 열기'\}/)
@@ -65,11 +76,14 @@ test('Explore controls separate list, location, zoom, and AI actions for mobile 
 test('Explore map search and filter controls stay visually separated to avoid accidental taps', () => {
   const styles = appCssSource()
   const topRowRules = cssRuleBodies(styles, '.map-search-row.search-screen-toolrow')
+  const homeButtonRules = cssRuleBodies(styles, '.map-search-row .map-search-home-button')
   const fieldRules = cssRuleBodies(styles, '.map-search-row .search-screen-bar.map-search-field')
   const filterRules = cssRuleBodies(styles, '.map-search-row .map-filter-button')
 
   assert.ok(topRowRules.some((rule) => /gap:\s*var\(--ait-space-4\);/.test(rule)))
   assert.ok(topRowRules.some((rule) => /background:\s*transparent;/.test(rule)))
+  assert.ok(homeButtonRules.some((rule) => /width:\s*46px;/.test(rule)))
+  assert.ok(homeButtonRules.some((rule) => /height:\s*46px;/.test(rule)))
   assert.ok(fieldRules.some((rule) => /border-radius:\s*var\(--ait-radius-full\);/.test(rule)))
   assert.ok(fieldRules.some((rule) => /background:\s*rgba\(255,\s*255,\s*255,\s*0\.98\);/.test(rule)))
   assert.ok(filterRules.some((rule) => /width:\s*46px;/.test(rule)))
@@ -110,6 +124,7 @@ test('ExplorePage does not fabricate category filter chips without a facet API',
   assert.doesNotMatch(source, /role="tablist"/)
   assert.doesNotMatch(source, /category && !shop\.categories\.includes/)
   assert.match(source, /mapQuickChips/)
+  assert.match(source, /Deferred facet filters/)
   assert.match(source, /className=\{`map-chip-status/)
   assert.match(source, /aria-pressed=\{isMapQuickChipActive\}/)
   assert.match(source, /toggleMapQuickChip\(item\.id\)/)
@@ -117,6 +132,16 @@ test('ExplorePage does not fabricate category filter chips without a facet API',
   assert.match(source, /관심매장/)
   assert.match(source, /영업중/)
   assert.doesNotMatch(source, /표시 매장 \$\{mappableShops\.length\}곳/)
+})
+
+test('Explore styles stay isolated from admin route styles', () => {
+  const styles = appCssSource()
+  const adminStyles = adminShopCssSource()
+  const exploreStyles = exploreSearchCssSource()
+
+  assert.match(styles, /\.map-llm-fab/)
+  assert.doesNotMatch(adminStyles, /map-llm-/)
+  assert.doesNotMatch(exploreStyles, /word-break:\s*break-word;/)
 })
 
 test('Explore map buttons use consistent icon sizing and refresh affordance', () => {

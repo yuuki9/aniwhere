@@ -4,7 +4,10 @@ import fs from 'node:fs'
 
 const searchPageSource = () => fs.readFileSync(new URL('../src/pages/SearchPage.tsx', import.meta.url), 'utf8')
 const filterSheetSource = () => fs.readFileSync(new URL('../src/shared/ui/SearchFilterSheet.tsx', import.meta.url), 'utf8')
-const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+const appCssSource = () =>
+  ['../src/App.css', '../src/styles/explore-search.css']
+    .map((path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8'))
+    .join('\n')
 
 const cssRuleBodies = (css: string, selector: string) => {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
