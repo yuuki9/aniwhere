@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.springdoc.core.annotations.ParameterObject
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
@@ -23,7 +24,7 @@ class ShopController(private val useCase: ShopUseCase) {
     @GetMapping("/{id}")
     fun getShop(@PathVariable id: Long) = ApiResponse.ok(useCase.getShop(id))
 
-    @Operation(summary = "샵 검색 (페이징). workName 지정 시 `works.name` 과 정확히 일치하는 작품을 취급하는 매장만 포함")
+    @Operation(summary = "샵 검색 (페이징). 결과가 없을 때 `code`·`message` 로 안내. workName 지정 시 `works.name` 과 정확히 일치하는 작품을 취급하는 매장만 포함")
     @GetMapping
     fun searchShops(
         @RequestParam(required = false) regionId: Short?,
@@ -31,15 +32,20 @@ class ShopController(private val useCase: ShopUseCase) {
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) workName: String?,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
-    ) = ApiResponse.ok(
-        useCase.searchShops(
+    ): ApiResponse<Page<Shop>> {
+        val page = useCase.searchShops(
             regionId,
             category,
             keyword,
             workName?.trim()?.takeIf { it.isNotEmpty() },
             pageable,
-        ),
-    )
+        )
+        return if (page.totalElements == 0L) {
+            ApiResponse.ok(page, EMPTY_SHOP_SEARCH_CODE, EMPTY_SHOP_SEARCH_MESSAGE)
+        } else {
+            ApiResponse.ok(page)
+        }
+    }
 
     @Operation(summary = "샵 등록")
     @PostMapping
@@ -55,6 +61,11 @@ class ShopController(private val useCase: ShopUseCase) {
     @Operation(summary = "샵 삭제")
     @DeleteMapping("/{id}")
     fun deleteShop(@PathVariable id: Long) = run { useCase.deleteShop(id); ApiResponse.ok() }
+
+    private companion object {
+        const val EMPTY_SHOP_SEARCH_CODE = "EMPTY_RESULT"
+        const val EMPTY_SHOP_SEARCH_MESSAGE = "선택하신 필터 조건에 맞는 굿즈샵이 없습니다."
+    }
 }
 
 data class ShopRequest(

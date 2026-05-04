@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
@@ -51,11 +52,13 @@ class ShopControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content.length()").value(1))
             .andExpect(jsonPath("$.data.totalElements").value(1))
+            .andExpect(jsonPath("$.code").doesNotExist())
+            .andExpect(jsonPath("$.message").doesNotExist())
     }
 
     @Test
     fun `GET shops - workName 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(null, null, null, "원피스", any()) } returns PageImpl(emptyList())
+        every { useCase.searchShops(null, null, null, "원피스", any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("workName", " 원피스 ")
@@ -67,10 +70,23 @@ class ShopControllerTest {
     }
 
     @Test
+    fun `GET shops - 검색 결과가 없으면 code 와 안내 메시지`() {
+        val pageable = PageRequest.of(0, 20)
+        every { useCase.searchShops(any(), any(), any(), any(), any()) } returns PageImpl(emptyList(), pageable, 0)
+        mvc.perform(get("/api/v1/shops").param("page", "0").param("size", "20"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.code").value("EMPTY_RESULT"))
+            .andExpect(jsonPath("$.message").value("선택하신 필터 조건에 맞는 굿즈샵이 없습니다."))
+            .andExpect(jsonPath("$.data.totalElements").value(0))
+    }
+
+    @Test
     fun `GET shops - workName이 공백만이면 필터 미적용(null)`() {
         every { useCase.searchShops(null, null, null, null, any()) } returns PageImpl(emptyList())
         mvc.perform(get("/api/v1/shops").param("workName", "   ").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
+            .andExpect(jsonPath("$.code").value("EMPTY_RESULT"))
         verify { useCase.searchShops(null, null, null, null, any()) }
     }
 
