@@ -9,6 +9,8 @@ const mapQuickChipsSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapQuickChips.tsx', import.meta.url), 'utf8')
 const mapOverlayControlsSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapOverlayControls.tsx', import.meta.url), 'utf8')
+const mapAssistantPanelSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapAssistantPanel.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   [
     '../src/App.css',
@@ -72,6 +74,29 @@ test('ExplorePage extracts map quick chips and overlay controls into focused com
   assert.match(overlayControlsSource, /map-list-fab-list-icon map-control-icon/)
   assert.match(overlayControlsSource, /map-chip-gps-icon map-control-icon/)
   assert.doesNotMatch(source, /const chipToolbar = \(/)
+})
+
+test('ExplorePage extracts the assistant panel into a focused component', () => {
+  const source = explorePageSource()
+  const assistantPanelSource = mapAssistantPanelSource()
+
+  assert.match(source, /<MapAssistantPanel/)
+  assert.match(assistantPanelSource, /className="map-llm-panel"/)
+  assert.match(assistantPanelSource, /messages\.map/)
+  assert.match(assistantPanelSource, /suggestions\.map/)
+  assert.doesNotMatch(source, /className="map-llm-panel"/)
+  assert.doesNotMatch(source, /assistantMessages\.map/)
+})
+
+test('MapAssistantPanel announces toggle state and blocks duplicate pending submissions', () => {
+  const source = mapAssistantPanelSource()
+
+  assert.match(source, /aria-label=\{open \? 'AI 탐색 닫기' : 'AI 탐색 열기'\}/)
+  assert.match(source, /const canSubmitInput = !isPending && input\.trim\(\)\.length > 0/)
+  assert.match(source, /if \(isPending\) \{\s*return\s*\}/)
+  assert.match(source, /disabled=\{isPending\}/)
+  assert.match(source, /disabled=\{!canSubmitInput\}/)
+  assert.match(source, /if \(!canSubmitInput\) \{\s*return\s*\}/)
 })
 
 test('ExplorePage exposes map viewport search after the map moves', () => {

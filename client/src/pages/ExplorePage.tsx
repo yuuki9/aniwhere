@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
 import { getShop, getShops } from '../shared/api/shops'
-import type { AdminShopPhoto, MapAssistantRecommendation, Shop } from '../shared/api/types'
+import type { AdminShopPhoto, Shop } from '../shared/api/types'
 import { formatRelativeUpdated, linkTypeToLabel, statusToLabel } from '../shared/lib/format'
 import {
   calculateDistanceKm,
@@ -20,8 +20,9 @@ import {
 import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
-import { MapAssistantIcon, MapDetailIcon, type MapDetailIconName } from '../shared/ui/mapDetailIcons'
+import { MapDetailIcon, type MapDetailIconName } from '../shared/ui/mapDetailIcons'
 import { StatusPill } from '../shared/ui/StatusPill'
+import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
 import { MapQuickChips, type MapQuickChipItem } from './explore/MapQuickChips'
@@ -49,13 +50,6 @@ type DetailMediaItem = {
   alt: string
 }
 
-type AssistantMessage = {
-  id: string
-  role: 'assistant' | 'user'
-  content: string
-  recommendations?: MapAssistantRecommendation[]
-}
-
 type MapBounds = MapViewport['bounds']
 
 function buildDescriptionPreview(description: string | null, maxLength = 120) {
@@ -72,7 +66,7 @@ function buildDescriptionPreview(description: string | null, maxLength = 120) {
   return `${normalized.slice(0, maxLength).trimEnd()}…`
 }
 
-function shouldShowAssistantSuggestions(messages: AssistantMessage[]) {
+function shouldShowAssistantSuggestions(messages: MapAssistantMessage[]) {
   const userMessageCount = messages.filter((message) => message.role === 'user').length
 
   if (userMessageCount === 0) {
@@ -184,7 +178,7 @@ export function ExplorePage() {
   const [isPeekDragging, setIsPeekDragging] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantInput, setAssistantInput] = useState('')
-  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([
+  const [assistantMessages, setAssistantMessages] = useState<MapAssistantMessage[]>([
     {
       id: 'assistant-welcome',
       role: 'assistant',
@@ -800,145 +794,25 @@ export function ExplorePage() {
             onLocationClick={handleRequestLocation}
           />
 
-          {!isListSheetOpen && sheetMode !== 'expanded' ? (
-            <>
-              <button
-                aria-expanded={assistantOpen}
-                aria-label="AI 탐색 열기"
-                className="map-llm-fab"
-                type="button"
-                onClick={() => setAssistantOpen((current) => !current)}
-              >
-                <MapAssistantIcon />
-              </button>
-
-              {showAssistantReturn ? (
-                <button
-                  className="map-llm-return"
-                  type="button"
-                  onClick={() => setAssistantOpen(true)}
-                >
-                  AI로 돌아가기
-                </button>
-              ) : null}
-
-              {assistantOpen ? (
-                <aside className="map-llm-panel" aria-label="AI 탐색 대화창">
-                  <div className="map-llm-panel-head">
-                    <strong>AI 챗봇</strong>
-                    <button className="map-llm-close" type="button" onClick={() => setAssistantOpen(false)}>
-                      ×
-                    </button>
-                  </div>
-
-                  {!assistantHasConversation ? (
-                    <div className="map-llm-start-screen">
-                      <div className="map-llm-start-copy">
-                        <span className="map-llm-start-badge">
-                          <MapAssistantIcon />
-                          AI 탐색
-                        </span>
-                        <strong>궁금한 것이 있으신가요?</strong>
-                        <p>AI에게 질문해 보세요.</p>
-                      </div>
-
-                      <div className="map-llm-start-list">
-                        {ASSISTANT_SUGGESTIONS.map((suggestion, index) => (
-                          <button
-                            className="map-llm-start-card"
-                            key={suggestion}
-                            type="button"
-                            onClick={() => submitAssistantQuestion(suggestion)}
-                          >
-                            <span>{index === 0 ? '추천 질문' : index === 1 ? '많이 찾는 질문' : '처음 시작 질문'}</span>
-                            <strong>{suggestion}</strong>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="map-llm-message-list" ref={assistantMessagesRef}>
-                      {assistantMessages.map((message) => (
-                        <article
-                          className={`map-llm-message map-llm-message-${message.role}`}
-                          key={message.id}
-                        >
-                          <p>{message.content}</p>
-                          {message.recommendations && message.recommendations.length > 0 ? (
-                            <div className="map-llm-recommend-list">
-                              {message.recommendations.map((recommendation) => {
-                                const recommendedShop = shopsWithDistance.find((shop) => shop.id === recommendation.shopId)
-
-                                if (!recommendedShop) {
-                                  return null
-                                }
-
-                                return (
-                                  <button
-                                    className="map-llm-recommend-card"
-                                    key={`${message.id}-${recommendation.shopId}`}
-                                    type="button"
-                                    onClick={() => {
-                                      handleSelectShop(recommendedShop.id, 'map')
-                                    }}
-                                  >
-                                    <strong>{recommendedShop.name}</strong>
-                                    <span>{recommendation.reason}</span>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          ) : null}
-                        </article>
-                      ))}
-
-                      {assistantMutation.isPending ? (
-                        <article className="map-llm-message map-llm-message-assistant">
-                          <p>조건에 맞는 매장을 정리하는 중입니다...</p>
-                        </article>
-                      ) : null}
-
-                      {showAssistantSuggestions ? (
-                        <article className="map-llm-message map-llm-message-suggestion">
-                          <strong>이런 질문으로 다시 이어가보세요</strong>
-                          <div className="map-llm-suggestion-row">
-                            {ASSISTANT_SUGGESTIONS.map((suggestion) => (
-                              <button
-                                className="map-llm-suggestion"
-                                key={suggestion}
-                                type="button"
-                                onClick={() => submitAssistantQuestion(suggestion)}
-                              >
-                                {suggestion}
-                              </button>
-                            ))}
-                          </div>
-                        </article>
-                      ) : null}
-                    </div>
-                  )}
-
-                  <form
-                    className="map-llm-input-row"
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      submitAssistantQuestion(assistantInput)
-                    }}
-                  >
-                    <input
-                      className="map-llm-input"
-                      placeholder="작품명, 지역, 운영 상태를 물어보세요"
-                      value={assistantInput}
-                      onChange={(event) => setAssistantInput(event.target.value)}
-                    />
-                    <button className="map-llm-send" type="submit">
-                      전송
-                    </button>
-                  </form>
-                </aside>
-              ) : null}
-            </>
-          ) : null}
+          <MapAssistantPanel
+            visible={!isListSheetOpen && sheetMode !== 'expanded'}
+            open={assistantOpen}
+            showReturn={showAssistantReturn}
+            hasConversation={assistantHasConversation}
+            showSuggestions={showAssistantSuggestions}
+            messages={assistantMessages}
+            messagesRef={assistantMessagesRef}
+            suggestions={ASSISTANT_SUGGESTIONS}
+            input={assistantInput}
+            isPending={assistantMutation.isPending}
+            shops={shopsWithDistance}
+            onToggle={() => setAssistantOpen((current) => !current)}
+            onOpen={() => setAssistantOpen(true)}
+            onClose={() => setAssistantOpen(false)}
+            onInputChange={setAssistantInput}
+            onSubmitQuestion={submitAssistantQuestion}
+            onSelectRecommendation={(shopId) => handleSelectShop(shopId, 'map')}
+          />
 
           {isListSheetOpen ? (
             <section className="map-results-sheet-v2" aria-label="검색 결과 목록">
