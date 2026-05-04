@@ -3,6 +3,7 @@
 .idea
 .vscode/*
 !.vscode/extensions.json
+.cursorrules
 
 # Node / frontend artifacts
 node_modules
