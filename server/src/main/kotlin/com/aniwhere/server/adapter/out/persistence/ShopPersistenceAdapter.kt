@@ -21,8 +21,8 @@ class ShopPersistenceAdapter(
 
     override fun findById(id: Long) = shopRepo.findByIdOrNull(id)?.let(ShopMapper::toDomain)
 
-    override fun findAll(regionId: Short?, categoryName: String?, keyword: String?, pageable: Pageable): Page<Shop> =
-        shopRepo.search(regionId, categoryName, keyword, pageable).map(ShopMapper::toDomain)
+    override fun findAll(regionId: Short?, categoryName: String?, keyword: String?, workName: String?, pageable: Pageable): Page<Shop> =
+        shopRepo.search(regionId, categoryName, keyword, workName, pageable).map(ShopMapper::toDomain)
 
     override fun save(shop: Shop): Shop {
         val region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }

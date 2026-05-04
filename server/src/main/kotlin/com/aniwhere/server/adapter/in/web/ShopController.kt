@@ -23,14 +23,15 @@ class ShopController(private val useCase: ShopUseCase) {
     @GetMapping("/{id}")
     fun getShop(@PathVariable id: Long) = ApiResponse.ok(useCase.getShop(id))
 
-    @Operation(summary = "샵 검색 (페이징)")
+    @Operation(summary = "샵 검색 (페이징). workName 지정 시 `works.name` 과 정확히 일치하는 작품을 취급하는 매장만 포함")
     @GetMapping
     fun searchShops(
         @RequestParam(required = false) regionId: Short?,
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) workName: String?,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
-    ) = ApiResponse.ok(useCase.searchShops(regionId, category, keyword, pageable))
+    ) = ApiResponse.ok(useCase.searchShops(regionId, category, keyword, workName?.takeIf { it.isNotBlank() }, pageable))
 
     @Operation(summary = "샵 등록")
     @PostMapping
