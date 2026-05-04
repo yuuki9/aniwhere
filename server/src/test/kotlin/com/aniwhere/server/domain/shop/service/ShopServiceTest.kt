@@ -47,8 +47,8 @@ class ShopServiceTest {
     @Test
     fun `searchShops - 페이징 검색`() {
         val pageable = PageRequest.of(0, 20)
-        every { port.findAll(any(), any(), any(), pageable) } returns PageImpl(listOf(sampleShop))
-        val result = service.searchShops(regionId = 1, categoryName = null, keyword = "테스트", pageable = pageable)
+        every { port.findAll(any(), any(), any(), any(), pageable) } returns PageImpl(listOf(sampleShop))
+        val result = service.searchShops(regionId = 1, categoryName = null, keyword = "테스트", workName = null, pageable = pageable)
         assertEquals(1, result.totalElements)
     }
 

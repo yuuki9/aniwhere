@@ -46,7 +46,7 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - 샵 페이징 검색`() {
-        every { useCase.searchShops(any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("keyword", "테스트").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content.length()").value(1))
