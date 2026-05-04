@@ -31,7 +31,15 @@ class ShopController(private val useCase: ShopUseCase) {
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) workName: String?,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
-    ) = ApiResponse.ok(useCase.searchShops(regionId, category, keyword, workName?.takeIf { it.isNotBlank() }, pageable))
+    ) = ApiResponse.ok(
+        useCase.searchShops(
+            regionId,
+            category,
+            keyword,
+            workName?.trim()?.takeIf { it.isNotEmpty() },
+            pageable,
+        ),
+    )
 
     @Operation(summary = "샵 등록")
     @PostMapping
