@@ -25,6 +25,7 @@ import { StatusPill } from '../shared/ui/StatusPill'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
+import { MapPeekSheet } from './explore/MapPeekSheet'
 import { MapQuickChips, type MapQuickChipItem } from './explore/MapQuickChips'
 import { MapResultsSheet } from './explore/MapResultsSheet'
 import { readNearbyExploreParams } from './searchNearby'
@@ -836,58 +837,20 @@ export function ExplorePage() {
             onSelectShop={handleListSelectShop}
           />
 
-          {detailShop && sheetMode === 'peek' ? (
-            <section
-              className={[
-                'map-bottom-sheet',
-                'map-bottom-sheet-peek',
-                isPeekDragging ? 'map-bottom-sheet-peek-dragging' : '',
-                selectionOrigin === 'list' ? 'map-bottom-sheet-peek-static' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              aria-label={`${detailShop.name} 요약 정보`}
-              onClick={handlePeekClick}
-              onPointerCancel={handlePeekPointerCancel}
-              onPointerDown={handlePeekPointerDown}
-              onPointerMove={handlePeekPointerMove}
-              onPointerUp={handlePeekPointerEnd}
-              style={{
-                transform: peekDragOffset !== 0 ? `translateY(${peekDragOffset}px)` : undefined,
-              }}
-            >
-              <div className="map-sheet-peek-trigger" aria-hidden="true">
-                <span className="map-bottom-sheet-handle" />
-              </div>
-
-              <div className="map-sheet-peek-summary">
-                <div className="map-sheet-peek-copy">
-                  <div className="map-sheet-peek-head">
-                    <strong>{detailShop.name}</strong>
-                    <StatusPill status={detailShop.status} />
-                  </div>
-                  <p>
-                    {detailShop.regionName ?? `지역 ${detailShop.regionId ?? '-'}`}
-                    {activeShop?.distanceLabel ? ` · ${activeShop.distanceLabel}` : ''}
-                  </p>
-                  <p className="map-sheet-peek-meta">{detailShop.address}</p>
-                </div>
-                <button
-                  className="map-sheet-peek-route"
-                  type="button"
-                  onClick={openNaverDirections}
-                  aria-label={`${detailShop.name} 네이버 지도 웹 길찾기 열기`}
-                >
-                  {detailHeroImage ? (
-                    <img src={detailHeroImage.src} alt="" aria-hidden="true" />
-                  ) : (
-                    <span aria-hidden="true">{detailShop.name.slice(0, 1)}</span>
-                  )}
-                  <strong aria-hidden="true">↱</strong>
-                </button>
-              </div>
-            </section>
-          ) : null}
+          <MapPeekSheet
+            shop={sheetMode === 'peek' ? detailShop : null}
+            distanceLabel={activeShop?.distanceLabel ?? null}
+            heroImage={detailHeroImage}
+            isDragging={isPeekDragging}
+            dragOffset={peekDragOffset}
+            selectionOrigin={selectionOrigin}
+            onClick={handlePeekClick}
+            onOpenDirections={openNaverDirections}
+            onPointerCancel={handlePeekPointerCancel}
+            onPointerDown={handlePeekPointerDown}
+            onPointerMove={handlePeekPointerMove}
+            onPointerUp={handlePeekPointerEnd}
+          />
 
           {detailShop && sheetMode === 'expanded' ? (
             <section className="map-bottom-sheet map-bottom-sheet-expanded" aria-label={`${detailShop.name} 상세 정보`}>
