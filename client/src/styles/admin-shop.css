@@ -7,6 +7,7 @@
 
 .admin-unlock-card,
 .admin-panel,
+.admin-hub-card,
 .admin-summary-card {
   background: var(--ait-color-gray-0);
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -61,10 +62,37 @@
 }
 
 .admin-summary-grid,
+.admin-hub-grid,
 .admin-points-grid {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-hub-grid {
+  gap: var(--ait-space-7);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-hub-card {
+  display: grid;
+  gap: var(--ait-space-5);
+  min-height: 180px;
+  padding: var(--ait-space-8);
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-hub-card strong {
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-title-lg);
+  line-height: var(--ait-line-height-title);
+}
+
+.admin-hub-card small {
+  color: var(--ait-color-text-tertiary);
+  font-size: var(--ait-font-size-body-sm);
+  line-height: var(--ait-line-height-body);
 }
 
 .admin-summary-card {
@@ -392,6 +420,7 @@
 
 @media (max-width: 1024px) {
   .admin-summary-grid,
+  .admin-hub-grid,
   .admin-points-grid,
   .admin-workspace {
     grid-template-columns: 1fr;
