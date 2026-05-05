@@ -91,7 +91,7 @@ export function MapDetailSummaryCard({
       <nav className="map-place-tabs" aria-label="상세 정보 바로가기">
         <a href="#map-place-home">홈</a>
         <a href="#map-place-review">리뷰</a>
-        <a href="#map-place-info">지도</a>
+        <a href="#map-place-detail">지도</a>
         <a href="#map-place-info">정보</a>
       </nav>
 

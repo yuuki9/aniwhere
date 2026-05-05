@@ -64,7 +64,7 @@ export function MapDetailMediaSection({
                 <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
                 {index === detailMediaItems.slice(1).length - 1 ? (
                   <div className="map-sheet-media-count">
-                    <strong>+{Math.max(detailMediaItems.length, shop.links.length, shop.works.length, 4)}</strong>
+                    <strong>+{detailMediaItems.length}</strong>
                   </div>
                 ) : null}
               </article>

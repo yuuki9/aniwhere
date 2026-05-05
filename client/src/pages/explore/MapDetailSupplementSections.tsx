@@ -9,11 +9,27 @@ type MapDetailSupplementSectionsProps = {
   onSelectRelatedShop: (shopId: number) => void
 }
 
+function getSafeExternalUrl(raw: string) {
+  try {
+    const url = new URL(raw)
+
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
 export function MapDetailSupplementSections({
   shop,
   relatedShops,
   onSelectRelatedShop,
 }: MapDetailSupplementSectionsProps) {
+  const safeLinks = shop.links.flatMap((item) => {
+    const url = getSafeExternalUrl(item.url)
+
+    return url ? [{ ...item, url }] : []
+  })
+
   return (
     <>
       <section className="section map-place-review-card" id="map-place-review">
@@ -46,14 +62,14 @@ export function MapDetailSupplementSections({
         </section>
       ) : null}
 
-      {shop.links.length > 0 ? (
+      {safeLinks.length > 0 ? (
         <section className="section map-sheet-link-section-v2">
           <div className="map-sheet-section-head">
             <strong>공식 / 외부 링크</strong>
-            <span>{shop.links.length}개</span>
+            <span>{safeLinks.length}개</span>
           </div>
           <div className="map-sheet-link-list">
-            {shop.links.map((item) => (
+            {safeLinks.map((item) => (
               <a className="map-sheet-link-row" href={item.url} key={item.id} rel="noreferrer" target="_blank">
                 <span className="map-sheet-link-icon">
                   <MapDetailIcon name="link" />
