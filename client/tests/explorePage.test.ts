@@ -130,6 +130,8 @@ test('ExplorePage extracts the peek bottom sheet into a focused component', () =
   assert.match(peekSheetSource, /event\.key === 'Enter' \|\| event\.key === ' '/)
   assert.match(peekSheetSource, /event\.preventDefault\(\)/)
   assert.match(peekSheetSource, /onPointerDown/)
+  assert.match(peekSheetSource, /onPointerUp=\{\(event\) => \{\s*event\.stopPropagation\(\)/)
+  assert.match(peekSheetSource, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\)\s*onOpenDirections\(event\)/)
   assert.match(peekSheetSource, /StatusPill/)
   assert.doesNotMatch(source, /map-bottom-sheet-peek/)
 })

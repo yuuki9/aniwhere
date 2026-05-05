@@ -92,7 +92,16 @@ export function MapPeekSheet({
         <button
           className="map-sheet-peek-route"
           type="button"
-          onClick={onOpenDirections}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+          }}
+          onPointerUp={(event) => {
+            event.stopPropagation()
+          }}
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenDirections(event)
+          }}
           aria-label={`${shop.name} 네이버 지도 웹 길찾기 열기`}
         >
           {heroImage ? (
