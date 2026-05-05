@@ -73,7 +73,9 @@ export function AdminAccessGate() {
             type="button"
             onClick={() => {
               unlockAdminPreview()
-              setIsUnlocked(true)
+              const unlocked = isAdminUnlocked()
+              setIsUnlocked(unlocked)
+              setUnlockError(unlocked ? null : '관리자 잠금 해제에 실패했습니다.')
             }}
           >
             개발 미리보기로 열기

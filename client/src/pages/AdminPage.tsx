@@ -336,13 +336,9 @@ export function AdminPage({
   const selectedShop = selectedShopId != null ? shops.find((shop) => shop.id === selectedShopId) ?? null : null
 
   const lockAdmin = () => {
-    if (onLock) {
-      onLock()
-      return
-    }
-
     clearAdminSession()
     setIsUnlocked(false)
+    onLock?.()
   }
 
   if (!skipUnlock && !isUnlocked) {

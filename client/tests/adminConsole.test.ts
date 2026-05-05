@@ -25,6 +25,8 @@ test('admin routes are split under a shared access gate', () => {
   assert.match(gate, /<Outlet context=\{\{ lockAdmin \}\} \/>/)
   assert.match(gate, /unlockAdminSession/)
   assert.match(gate, /unlockAdminPreview/)
+  assert.match(gate, /const unlocked = isAdminUnlocked\(\)/)
+  assert.match(gate, /setIsUnlocked\(unlocked\)/)
   assert.match(outlet, /useOutletContext<AdminOutletContext>/)
 })
 
@@ -53,4 +55,5 @@ test('admin subroutes reuse the current admin console by initial section before 
   assert.match(adminPage, /skipUnlock\?: boolean/)
   assert.match(adminPage, /onLock\?: \(\) => void/)
   assert.match(adminPage, /useState\(skipUnlock \|\| isAdminUnlocked\(\)\)/)
+  assert.match(adminPage, /const lockAdmin = \(\) => \{\s*clearAdminSession\(\)\s*setIsUnlocked\(false\)\s*onLock\?\.\(\)\s*\}/)
 })
