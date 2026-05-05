@@ -853,7 +853,11 @@ export function ExplorePage() {
           />
 
           {detailShop && sheetMode === 'expanded' ? (
-            <section className="map-bottom-sheet map-bottom-sheet-expanded" aria-label={`${detailShop.name} 상세 정보`}>
+            <section
+              className="map-bottom-sheet map-bottom-sheet-expanded"
+              id="map-place-detail"
+              aria-label={`${detailShop.name} 상세 정보`}
+            >
               <div className="map-sheet-expanded-body" onScroll={handleDetailBodyScroll} ref={detailScrollRef}>
                 <div
                   className={[

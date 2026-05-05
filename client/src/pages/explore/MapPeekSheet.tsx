@@ -50,6 +50,20 @@ export function MapPeekSheet({
         .filter(Boolean)
         .join(' ')}
       aria-label={`${shop.name} 요약 정보`}
+      aria-controls="map-place-detail"
+      aria-expanded={false}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) {
+          return
+        }
+
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onClick()
+        }
+      }}
       onClick={onClick}
       onPointerCancel={onPointerCancel}
       onPointerDown={onPointerDown}
