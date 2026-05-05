@@ -11,6 +11,8 @@ const mapOverlayControlsSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapOverlayControls.tsx', import.meta.url), 'utf8')
 const mapAssistantPanelSource = () =>
   fs.readFileSync(new URL('../src/pages/explore/MapAssistantPanel.tsx', import.meta.url), 'utf8')
+const mapResultsSheetSource = () =>
+  fs.readFileSync(new URL('../src/pages/explore/MapResultsSheet.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   [
     '../src/App.css',
@@ -97,6 +99,18 @@ test('MapAssistantPanel announces toggle state and blocks duplicate pending subm
   assert.match(source, /disabled=\{isPending\}/)
   assert.match(source, /disabled=\{!canSubmitInput\}/)
   assert.match(source, /if \(!canSubmitInput\) \{\s*return\s*\}/)
+})
+
+test('ExplorePage extracts the list results sheet into a focused component', () => {
+  const source = explorePageSource()
+  const resultsSheetSource = mapResultsSheetSource()
+
+  assert.match(source, /<MapResultsSheet/)
+  assert.match(resultsSheetSource, /className="map-results-sheet-v2"/)
+  assert.match(resultsSheetSource, /visibleShops\.map/)
+  assert.match(resultsSheetSource, /formatRelativeUpdated/)
+  assert.doesNotMatch(source, /className="map-results-sheet-v2"/)
+  assert.doesNotMatch(source, /visibleShops\.map/)
 })
 
 test('ExplorePage exposes map viewport search after the map moves', () => {

@@ -26,6 +26,7 @@ import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssist
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
 import { MapQuickChips, type MapQuickChipItem } from './explore/MapQuickChips'
+import { MapResultsSheet } from './explore/MapResultsSheet'
 import { readNearbyExploreParams } from './searchNearby'
 
 const PAGE_SIZE = 10
@@ -814,57 +815,26 @@ export function ExplorePage() {
             onSelectRecommendation={(shopId) => handleSelectShop(shopId, 'map')}
           />
 
-          {isListSheetOpen ? (
-            <section className="map-results-sheet-v2" aria-label="검색 결과 목록">
-              <div className="map-results-sheet-top">
-                <ExploreTopSearch
-                  attachTriggerRef={isListSheetOpen}
-                  filterTriggerRef={filterTriggerRef}
-                  isFilterSheetOpen={isFilterSheetOpen}
-                  appliedFilterCount={appliedFilterCount}
-                  onHomeClick={() => navigate('/home')}
-                  onSearchClick={() => navigate('/search')}
-                  onFilterClick={() => setIsFilterSheetOpen(true)}
-                />
-              </div>
-
-              {visibleShops.length === 0 && !shopsQuery.isLoading ? (
-                <div className="map-list-empty">
-                  <strong>조건에 맞는 매장이 없습니다.</strong>
-                  <p>다른 키워드나 태그로 다시 탐색해보세요.</p>
-                </div>
-              ) : null}
-
-              <div className="map-results-sheet-list" onScroll={handleListScroll} ref={listScrollRef}>
-                {visibleShops.map((shop) => (
-                  <button
-                    className="map-results-card"
-                    key={shop.id}
-                    type="button"
-                    onClick={() => handleListSelectShop(shop.id)}
-                  >
-                    <div className="map-list-item-head">
-                      <strong>{shop.name}</strong>
-                      <StatusPill status={shop.status} />
-                    </div>
-                    <p>
-                      {shop.regionName ?? `지역 ${shop.regionId ?? '-'}`} · 작품 {shop.works.length}
-                      {shop.distanceLabel ? ` · ${shop.distanceLabel}` : ''}
-                    </p>
-                    <p className="map-list-item-subtle">{shop.address}</p>
-                    <p className="map-list-item-subtle">{formatRelativeUpdated(shop.updatedAt)}</p>
-                  </button>
-                ))}
-
-                {visibleShops.length < totalShops ? (
-                  <div className="map-results-sheet-loading">
-                    <span>{visibleShops.length} / {totalShops}</span>
-                    <p>아래로 내리면 다음 매장을 이어서 불러옵니다.</p>
-                  </div>
-                ) : null}
-              </div>
-            </section>
-          ) : null}
+          <MapResultsSheet
+            visible={isListSheetOpen}
+            topSearch={
+              <ExploreTopSearch
+                attachTriggerRef={isListSheetOpen}
+                filterTriggerRef={filterTriggerRef}
+                isFilterSheetOpen={isFilterSheetOpen}
+                appliedFilterCount={appliedFilterCount}
+                onHomeClick={() => navigate('/home')}
+                onSearchClick={() => navigate('/search')}
+                onFilterClick={() => setIsFilterSheetOpen(true)}
+              />
+            }
+            visibleShops={visibleShops}
+            totalShops={totalShops}
+            isLoading={shopsQuery.isLoading}
+            listRef={listScrollRef}
+            onScroll={handleListScroll}
+            onSelectShop={handleListSelectShop}
+          />
 
           {detailShop && sheetMode === 'peek' ? (
             <section
