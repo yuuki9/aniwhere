@@ -26,11 +26,17 @@ import { StatusPill } from '../shared/ui/StatusPill'
 const EMPTY_SHOPS: Shop[] = []
 type AdminMobileSection = 'shops' | 'editor' | 'points' | 'history'
 
-type AdminPageProps = {
-  initialSection?: AdminMobileSection
-  skipUnlock?: boolean
-  onLock?: () => void
-}
+type AdminPageProps =
+  | {
+      initialSection?: AdminMobileSection
+      skipUnlock?: false
+      onLock?: () => void
+    }
+  | {
+      initialSection?: AdminMobileSection
+      skipUnlock: true
+      onLock: () => void
+    }
 
 type ShopFormState = {
   name: string
@@ -341,7 +347,7 @@ export function AdminPage({
     onLock?.()
   }
 
-  if (!skipUnlock && !isUnlocked) {
+  if (!isUnlocked) {
     return (
       <main className="app-shell admin-shell">
         <section className="section admin-unlock-card">
