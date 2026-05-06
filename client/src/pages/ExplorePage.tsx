@@ -16,8 +16,10 @@ import {
   buildNaverWebDirectionUrl,
   canBuildNaverWebDirectionUrl,
 } from '../shared/lib/naverDirections'
+import { isAppsInTossRuntime } from '../shared/lib/auth'
 import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
+import { AitNavigation } from '../shared/ui/ait'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
@@ -164,6 +166,7 @@ export function ExplorePage() {
   const peekMovedRef = useRef(false)
   const effectiveUserLocation = userLocation ?? nearbyRequest?.location ?? null
   const appliedFilterCount = mapViewportFilter ? 1 : 0
+  const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'explore-map-source'],
@@ -695,6 +698,7 @@ export function ExplorePage() {
             'map-surface',
             'map-surface-app',
             'map-surface-app-v2',
+            !usesTossNavigation ? 'map-surface-local-navigation' : '',
             detailShop ? 'map-surface-sheet-open' : '',
             sheetMode === 'expanded' ? 'map-surface-sheet-expanded' : '',
             isListSheetOpen ? 'map-surface-list-open' : '',
@@ -702,6 +706,8 @@ export function ExplorePage() {
             .filter(Boolean)
             .join(' ')}
         >
+          <AitNavigation className="map-route-navigation" title="지도" showBack onBack={() => navigate('/home')} />
+
           {shopsQuery.isLoading && allShops.length === 0 ? (
             <div className="map-empty">
               <p>매장 지도를 준비하고 있습니다.</p>
@@ -728,7 +734,6 @@ export function ExplorePage() {
               filterTriggerRef={filterTriggerRef}
               isFilterSheetOpen={isFilterSheetOpen}
               appliedFilterCount={appliedFilterCount}
-              onHomeClick={() => navigate('/home')}
               onSearchClick={() => navigate('/search')}
               onFilterClick={() => setIsFilterSheetOpen(true)}
             />
@@ -788,7 +793,6 @@ export function ExplorePage() {
                 filterTriggerRef={filterTriggerRef}
                 isFilterSheetOpen={isFilterSheetOpen}
                 appliedFilterCount={appliedFilterCount}
-                onHomeClick={() => navigate('/home')}
                 onSearchClick={() => navigate('/search')}
                 onFilterClick={() => setIsFilterSheetOpen(true)}
               />
