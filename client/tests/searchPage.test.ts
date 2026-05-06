@@ -74,13 +74,14 @@ test('SearchPage search icon button follows the home header icon button touch ta
   assert.match(iconRule, /height:\s*42px;/)
 })
 
-test('SearchPage header uses AitNavigation title and compact icon proportions', () => {
+test('SearchPage header uses brand navigation and compact icon proportions', () => {
   const source = searchPageSource()
   const styles = appCssSource()
   const iconSvgRule = cssRuleBody(styles, '.search-screen-icon svg')
   const searchBarRules = cssRuleBodies(styles, '.search-screen-bar')
 
-  assert.match(source, /<AitNavigation[^>]*title="검색"/)
+  assert.match(source, /<AitNavigation/)
+  assert.doesNotMatch(source, /title="검색"/)
   assert.doesNotMatch(source, /search-page-titlebar/)
   assert.doesNotMatch(source, /search-mode-tabs/)
   assert.doesNotMatch(source, /search-mode-tab/)

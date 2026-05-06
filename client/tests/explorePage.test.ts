@@ -47,7 +47,8 @@ test('ExplorePage shares the search bar and filter sheet pattern with SearchPage
   const topSearchSource = exploreTopSearchSource()
 
   assert.match(source, /SearchFilterSheet/)
-  assert.match(source, /<AitNavigation[^>]*title="지도"/)
+  assert.match(source, /<AitNavigation/)
+  assert.doesNotMatch(source, /title="지도"/)
   assert.match(source, /onBack=\{\(\) => navigate\('\/home'\)\}/)
   assert.doesNotMatch(topSearchSource, /map-search-home-button/)
   assert.doesNotMatch(source, /onHomeClick=/)

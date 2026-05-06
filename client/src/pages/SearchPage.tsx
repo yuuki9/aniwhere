@@ -114,7 +114,7 @@ export function SearchPage() {
 
   return (
     <main className="search-screen-shell">
-      <AitNavigation className="search-route-navigation" title="검색" showBack onBack={handleSearchBack} />
+      <AitNavigation className="search-route-navigation" showBack onBack={handleSearchBack} />
       <section className="search-screen search-screen-v2">
         <header className="search-screen-top search-screen-top-v2">
           <div className="search-screen-toolrow">

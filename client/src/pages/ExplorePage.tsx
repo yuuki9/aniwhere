@@ -706,7 +706,7 @@ export function ExplorePage() {
             .filter(Boolean)
             .join(' ')}
         >
-          <AitNavigation className="map-route-navigation" title="지도" showBack onBack={() => navigate('/home')} />
+          <AitNavigation className="map-route-navigation" showBack onBack={() => navigate('/home')} />
 
           {shopsQuery.isLoading && allShops.length === 0 ? (
             <div className="map-empty">
