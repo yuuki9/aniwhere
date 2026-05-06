@@ -5,6 +5,15 @@ import {
   type HomeQuickMenu,
 } from './homeViewModel'
 
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4 4" />
+    </svg>
+  )
+}
+
 function HomeQuickMenuIcon({ icon }: { icon: HomeQuickMenu['icon'] }) {
   const commonProps = {
     'aria-hidden': true,
@@ -49,7 +58,7 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
     <section className="section discover-search-entry-section" aria-label="매장 검색">
       <button className="map-search-field home-search-entry" type="button" onClick={onSearch}>
         <span className="map-search-field-copy">매장명, 작품명, 지역으로 검색</span>
-        <strong aria-hidden="true">⌕</strong>
+        <SearchIcon />
       </button>
     </section>
   )
