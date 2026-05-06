@@ -7,7 +7,7 @@ import {
 
 function SearchIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
       <circle cx="11" cy="11" r="6" />
       <path d="m16 16 4 4" />
     </svg>
