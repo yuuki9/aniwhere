@@ -690,24 +690,6 @@ p {
   gap: var(--ait-space-12);
 }
 
-.intro-brand-lockup {
-  display: flex;
-  align-items: center;
-  gap: var(--ait-space-6);
-  width: fit-content;
-  color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-body-lg);
-  font-weight: 800;
-}
-
-.intro-brand-logo {
-  width: var(--ait-component-intro-logo-size-compact);
-  height: var(--ait-component-intro-logo-size-compact);
-  border-radius: var(--ait-radius-sm);
-  background: var(--ait-color-intro-brand-surface);
-  object-fit: cover;
-}
-
 .search-focus-top,
 .search-focus-form,
 .search-rank-chip {
@@ -719,6 +701,69 @@ p {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.ait-navigation {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--ait-space-4);
+}
+
+.ait-navigation-side {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.ait-navigation-side-trailing {
+  justify-content: flex-end;
+}
+
+.ait-navigation-brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ait-space-4);
+  color: var(--ait-color-text-primary);
+  font-size: var(--ait-font-size-body-lg);
+  font-weight: 800;
+  line-height: var(--ait-line-height-tight);
+}
+
+.ait-navigation-brand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ait-navigation-logo {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--ait-radius-sm);
+  background: var(--ait-color-intro-brand-surface);
+  object-fit: cover;
+}
+
+.ait-navigation-icon-button {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ait-radius-full);
+  background: transparent;
+  color: var(--ait-color-text-primary);
+  cursor: pointer;
+}
+
+.ait-navigation-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .ait-top-copy {
@@ -2190,6 +2235,7 @@ p {
 .global-nav-close:focus-visible,
 .global-nav-item:focus-visible,
 .ait-button:focus-visible,
+.ait-navigation-icon-button:focus-visible,
 .home-store-brand:focus-visible,
 .home-header-icon-button:focus-visible,
 .home-quick-menu-item:focus-visible,
@@ -2550,11 +2596,6 @@ p {
     gap: var(--ait-space-6);
     padding: var(--ait-space-0);
     border-radius: 0;
-  }
-
-  .intro-brand-logo {
-    width: var(--ait-component-intro-logo-size-compact);
-    height: var(--ait-component-intro-logo-size-compact);
   }
 
   .intro-top .ait-top-copy h1 {

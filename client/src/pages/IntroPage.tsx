@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
 import { startServiceEntry } from '../shared/lib/auth'
-import { AitButton, AitListRow, AitTop } from '../shared/ui/ait'
+import { AitButton, AitListRow, AitNavigation, AitTop } from '../shared/ui/ait'
 
 type IntroFeatureIconType = 'search' | 'write' | 'approve' | 'point'
 
@@ -104,15 +103,10 @@ export function IntroPage() {
 
   return (
     <main className="app-shell intro-mobile-shell">
+      <AitNavigation />
       <section className="section intro-mobile-panel">
         <AitTop
           className="intro-top"
-          brand={
-            <div className="intro-brand-lockup">
-              <img className="intro-brand-logo" src={aniwhereIcon} alt="" />
-              <span>애니웨어</span>
-            </div>
-          }
           title={
             <>
               피규어·가챠샵을 찾고,
