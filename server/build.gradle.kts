@@ -16,6 +16,7 @@ java {
 repositories { mavenCentral() }
 
 dependencies {
+    implementation("software.amazon.awssdk:s3:2.29.29")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")

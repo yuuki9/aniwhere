@@ -1,6 +1,7 @@
 package com.aniwhere.server.adapter.out.persistence.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -45,6 +46,10 @@ class ShopEntity(
 
     @OneToOne(mappedBy = "shop", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.LAZY)
     var detail: ShopDetailEntity? = null,
+
+    @OneToMany(mappedBy = "shop", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @BatchSize(size = 30)
+    var images: MutableList<ShopImageEntity> = mutableListOf(),
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

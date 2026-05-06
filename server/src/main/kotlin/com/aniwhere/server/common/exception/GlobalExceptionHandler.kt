@@ -15,6 +15,10 @@ class GlobalExceptionHandler {
     fun handleNotFound(e: EntityNotFoundException) =
         ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.message ?: "Not found"))
 
+    @ExceptionHandler(BadRequestException::class)
+    fun handleBadRequest(e: BadRequestException) =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.message ?: "Bad request"))
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(e: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Unit>> {
         val msg = e.bindingResult.fieldErrors.joinToString("; ") { "${it.field}: ${it.defaultMessage}" }
