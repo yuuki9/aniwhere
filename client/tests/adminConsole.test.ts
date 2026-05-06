@@ -41,21 +41,24 @@ test('admin hub focuses on shop management and point rewards only', () => {
   assert.match(styles, /\.admin-hub-card/)
 })
 
-test('admin subroutes reuse the current admin console by initial section before deeper extraction', () => {
+test('admin subroutes scope the shared console to each task area', () => {
   const shops = adminShopsSource()
   const rewards = adminRewardsSource()
   const adminPage = adminPageSource()
 
-  assert.match(shops, /<AdminPage initialSection="shops" skipUnlock onLock=\{lockAdmin\} \/>/)
-  assert.match(rewards, /<AdminPage initialSection="points" skipUnlock onLock=\{lockAdmin\} \/>/)
+  assert.match(shops, /<AdminPage initialSection="shops" scope="shops" skipUnlock onLock=\{lockAdmin\} \/>/)
+  assert.match(rewards, /<AdminPage initialSection="points" scope="rewards" skipUnlock onLock=\{lockAdmin\} \/>/)
   assert.match(shops, /useAdminOutlet/)
   assert.match(rewards, /useAdminOutlet/)
   assert.match(adminPage, /type AdminPageProps/)
   assert.match(adminPage, /initialSection\?: AdminMobileSection/)
+  assert.match(adminPage, /scope\?: AdminPageScope/)
   assert.match(adminPage, /skipUnlock\?: false/)
   assert.match(adminPage, /skipUnlock: true/)
   assert.match(adminPage, /onLock: \(\) => void/)
   assert.match(adminPage, /onLock\?: \(\) => void/)
+  assert.match(adminPage, /const showShopSections = scope !== 'rewards'/)
+  assert.match(adminPage, /const showPointSections = scope !== 'shops'/)
   assert.match(adminPage, /useState\(skipUnlock \|\| isAdminUnlocked\(\)\)/)
   assert.match(adminPage, /const lockAdmin = \(\) => \{\s*clearAdminSession\(\)\s*setIsUnlocked\(false\)\s*onLock\?\.\(\)\s*\}/)
   assert.match(adminPage, /if \(!isUnlocked\) \{/)
