@@ -74,18 +74,17 @@ test('SearchPage search icon button follows the home header icon button touch ta
   assert.match(iconRule, /height:\s*42px;/)
 })
 
-test('SearchPage header uses a single search title with compact icon proportions', () => {
+test('SearchPage header uses AitNavigation title and compact icon proportions', () => {
   const source = searchPageSource()
   const styles = appCssSource()
-  const titleRule = cssRuleBody(styles, '.search-page-title')
   const iconSvgRule = cssRuleBody(styles, '.search-screen-icon svg')
   const searchBarRules = cssRuleBodies(styles, '.search-screen-bar')
 
-  assert.match(source, /className="search-page-title">검색/)
+  assert.match(source, /<AitNavigation[^>]*title="검색"/)
+  assert.doesNotMatch(source, /search-page-titlebar/)
   assert.doesNotMatch(source, /search-mode-tabs/)
   assert.doesNotMatch(source, /search-mode-tab/)
   assert.match(source, /placeholder="매장, 지역, 작품 이름 검색"/)
-  assert.match(titleRule, /font-size:\s*var\(--ait-font-size-body-lg\);/)
   assert.match(iconSvgRule, /width:\s*22px;/)
   assert.match(iconSvgRule, /height:\s*22px;/)
   assert.ok(searchBarRules.some((rule) => /min-height:\s*42px;/.test(rule)))
@@ -98,7 +97,7 @@ test('SearchPage treats keyword changes as replaceable search state instead of b
   assert.match(source, /const handleSearchBack = \(\) =>/)
   assert.match(source, /setSearchParams\(new URLSearchParams\(\), \{ replace: true \}\)/)
   assert.match(source, /setSearchParams\(next, \{ replace: true \}\)/)
-  assert.match(source, /onClick=\{handleSearchBack\}/)
+  assert.match(source, /onBack=\{handleSearchBack\}/)
 })
 
 test('SearchPage renders the bundled location guide image for the empty search state', () => {

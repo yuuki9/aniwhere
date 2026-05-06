@@ -7,6 +7,7 @@ import { isAppsInTossRuntime } from '../../lib/auth'
 type AitNavigationProps = {
   title?: string
   showBack?: boolean
+  onBack?: () => void
   trailing?: ReactNode
   className?: string
 }
@@ -26,7 +27,13 @@ function BackIcon() {
   )
 }
 
-export function AitNavigation({ title = '애니웨어', showBack = false, trailing, className }: AitNavigationProps) {
+export function AitNavigation({
+  title = '애니웨어',
+  showBack = false,
+  onBack,
+  trailing,
+  className,
+}: AitNavigationProps) {
   const navigate = useNavigate()
   const shouldUseTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
 
@@ -38,7 +45,12 @@ export function AitNavigation({ title = '애니웨어', showBack = false, traili
     <header className={['ait-navigation', className].filter(Boolean).join(' ')}>
       <div className="ait-navigation-side">
         {showBack ? (
-          <button className="ait-navigation-icon-button" type="button" aria-label="뒤로가기" onClick={() => navigate(-1)}>
+          <button
+            className="ait-navigation-icon-button"
+            type="button"
+            aria-label="뒤로가기"
+            onClick={onBack ?? (() => navigate(-1))}
+          >
             <BackIcon />
           </button>
         ) : null}

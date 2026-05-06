@@ -7,13 +7,18 @@
   padding-bottom: 0;
 }
 
-.route-navigation {
+.route-navigation,
+.search-route-navigation {
   width: min(var(--ait-size-content-compact), 100%);
   margin: 0 auto;
   padding:
     max(var(--ait-space-4), calc(env(safe-area-inset-top) + var(--ait-space-2)))
     var(--ait-space-8)
     0;
+}
+
+.search-route-navigation {
+  background: var(--ait-color-gray-0);
 }
 
 .route-shell-map {
