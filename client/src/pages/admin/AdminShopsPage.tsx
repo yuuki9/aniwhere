@@ -4,5 +4,5 @@ import { useAdminOutlet } from './adminOutlet'
 export function AdminShopsPage() {
   const { lockAdmin } = useAdminOutlet()
 
-  return <AdminPage initialSection="shops" skipUnlock onLock={lockAdmin} />
+  return <AdminPage initialSection="shops" scope="shops" skipUnlock onLock={lockAdmin} />
 }

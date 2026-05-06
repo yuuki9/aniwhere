@@ -25,15 +25,18 @@ import { StatusPill } from '../shared/ui/StatusPill'
 
 const EMPTY_SHOPS: Shop[] = []
 type AdminMobileSection = 'shops' | 'editor' | 'points' | 'history'
+type AdminPageScope = 'all' | 'shops' | 'rewards'
 
 type AdminPageProps =
   | {
       initialSection?: AdminMobileSection
+      scope?: AdminPageScope
       skipUnlock?: false
       onLock?: () => void
     }
   | {
       initialSection?: AdminMobileSection
+      scope?: AdminPageScope
       skipUnlock: true
       onLock: () => void
     }
@@ -90,6 +93,7 @@ function getPendingPreviewUrls(files: File[]) {
 
 export function AdminPage({
   initialSection = 'shops',
+  scope = 'all',
   skipUnlock = false,
   onLock,
 }: AdminPageProps = {}) {
@@ -110,23 +114,30 @@ export function AdminPage({
     reason: '',
   })
   const [mobileSection, setMobileSection] = useState<AdminMobileSection>(initialSection)
+  const showShopSections = scope !== 'rewards'
+  const showPointSections = scope !== 'shops'
+  const consoleTitle = scope === 'shops'
+    ? '매장 등록 / 수정'
+    : scope === 'rewards'
+      ? '포인트 지급 / 이력'
+      : '매장 운영 / 포인트 지급'
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'admin-console'],
     queryFn: () => getShops({ page: 0, size: 200 }),
-    enabled: isUnlocked,
+    enabled: isUnlocked && showShopSections,
   })
 
   const pointGrantQuery = useQuery({
     queryKey: ['admin-point-grants'],
     queryFn: listPointGrantRequests,
-    enabled: isUnlocked,
+    enabled: isUnlocked && showPointSections,
   })
 
   const selectedShopPhotosQuery = useQuery({
     queryKey: ['admin-shop-photos', selectedShopId],
     queryFn: () => getShopPhotos(selectedShopId as number),
-    enabled: isUnlocked && selectedShopId != null,
+    enabled: isUnlocked && showShopSections && selectedShopId != null,
   })
 
   const shops = useMemo(() => shopsQuery.data?.content ?? EMPTY_SHOPS, [shopsQuery.data?.content])
@@ -407,7 +418,7 @@ export function AdminPage({
           <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
           <div className="admin-console-title">
             <span className="eyebrow">ADMIN CONSOLE</span>
-            <strong>매장 운영 / 포인트 지급</strong>
+            <strong>{consoleTitle}</strong>
           </div>
           <button
             className="ghost-action compact-action"
@@ -420,56 +431,71 @@ export function AdminPage({
       </section>
 
       <section className="section admin-summary-grid">
-        <article className="admin-summary-card">
-          <span>전체 매장</span>
-          <strong>{shops.length}</strong>
-        </article>
-        <article className="admin-summary-card">
-          <span>운영 중</span>
-          <strong>{activeShopCount}</strong>
-        </article>
-        <article className="admin-summary-card">
-          <span>검증 필요</span>
-          <strong>{unverifiedShopCount}</strong>
-        </article>
-        <article className="admin-summary-card">
-          <span>포인트 대기</span>
-          <strong>{queuedGrantCount}</strong>
-        </article>
+        {showShopSections ? (
+          <>
+            <article className="admin-summary-card">
+              <span>전체 매장</span>
+              <strong>{shops.length}</strong>
+            </article>
+            <article className="admin-summary-card">
+              <span>운영 중</span>
+              <strong>{activeShopCount}</strong>
+            </article>
+            <article className="admin-summary-card">
+              <span>검증 필요</span>
+              <strong>{unverifiedShopCount}</strong>
+            </article>
+          </>
+        ) : null}
+        {showPointSections ? (
+          <article className="admin-summary-card">
+            <span>포인트 대기</span>
+            <strong>{queuedGrantCount}</strong>
+          </article>
+        ) : null}
       </section>
 
       <section className="section admin-mobile-tabs-shell" aria-label="관리자 작업 전환">
-        <button
-          className={`admin-mobile-tab ${mobileSection === 'shops' ? 'admin-mobile-tab-active' : ''}`}
-          type="button"
-          onClick={() => setMobileSection('shops')}
-        >
-          매장 목록
-        </button>
-        <button
-          className={`admin-mobile-tab ${mobileSection === 'editor' ? 'admin-mobile-tab-active' : ''}`}
-          type="button"
-          onClick={() => setMobileSection('editor')}
-        >
-          {selectedShop ? '매장 편집' : '매장 등록'}
-        </button>
-        <button
-          className={`admin-mobile-tab ${mobileSection === 'points' ? 'admin-mobile-tab-active' : ''}`}
-          type="button"
-          onClick={() => setMobileSection('points')}
-        >
-          포인트 지급
-        </button>
-        <button
-          className={`admin-mobile-tab ${mobileSection === 'history' ? 'admin-mobile-tab-active' : ''}`}
-          type="button"
-          onClick={() => setMobileSection('history')}
-        >
-          지급 이력
-        </button>
+        {showShopSections ? (
+          <>
+            <button
+              className={`admin-mobile-tab ${mobileSection === 'shops' ? 'admin-mobile-tab-active' : ''}`}
+              type="button"
+              onClick={() => setMobileSection('shops')}
+            >
+              매장 목록
+            </button>
+            <button
+              className={`admin-mobile-tab ${mobileSection === 'editor' ? 'admin-mobile-tab-active' : ''}`}
+              type="button"
+              onClick={() => setMobileSection('editor')}
+            >
+              {selectedShop ? '매장 편집' : '매장 등록'}
+            </button>
+          </>
+        ) : null}
+        {showPointSections ? (
+          <>
+            <button
+              className={`admin-mobile-tab ${mobileSection === 'points' ? 'admin-mobile-tab-active' : ''}`}
+              type="button"
+              onClick={() => setMobileSection('points')}
+            >
+              포인트 지급
+            </button>
+            <button
+              className={`admin-mobile-tab ${mobileSection === 'history' ? 'admin-mobile-tab-active' : ''}`}
+              type="button"
+              onClick={() => setMobileSection('history')}
+            >
+              지급 이력
+            </button>
+          </>
+        ) : null}
       </section>
 
-      <section className="admin-workspace">
+      {showShopSections ? (
+        <section className="admin-workspace">
         <article
           className={`section admin-panel admin-panel-list ${mobileSection !== 'shops' ? 'admin-mobile-section-hidden' : ''}`}
         >
@@ -704,9 +730,11 @@ export function AdminPage({
 
           {shopNotice ? <p className="form-help-text">{shopNotice}</p> : null}
         </article>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="admin-points-grid">
+      {showPointSections ? (
+        <section className="admin-points-grid">
         <article className={`section admin-panel ${mobileSection !== 'points' ? 'admin-mobile-section-hidden' : ''}`}>
           <div className="section-header">
             <div>
@@ -816,7 +844,8 @@ export function AdminPage({
             ) : null}
           </div>
         </article>
-      </section>
+        </section>
+      ) : null}
     </main>
   )
 }

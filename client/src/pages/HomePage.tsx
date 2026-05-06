@@ -104,7 +104,7 @@ function HomeIssueSection() {
       <div className="home-section-head">
         <h2 id="home-issues-title">작품으로 찾기</h2>
       </div>
-      <HomePendingCard title="작품별 매장 모아보기는 준비 중이에요" description="홈 전용 API가 준비되면 작품별 취급 매장을 연결할게요." />
+      <HomePendingCard title="작품별 매장 연결을 준비하고 있어요" description="관리자가 취급 작품을 확인한 매장만 연결할게요." />
     </section>
   )
 }
