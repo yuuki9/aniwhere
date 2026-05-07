@@ -20,8 +20,8 @@ import {
 } from '../shared/lib/adminAccess'
 import { formatDateTime } from '../shared/lib/format'
 import { grantPromotionRewardForCurrentUser } from '../shared/lib/tossPromotion'
-import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { StatusPill } from '../shared/ui/StatusPill'
+import { AitNavigation } from '../shared/ui/ait'
 
 const EMPTY_SHOPS: Shop[] = []
 type AdminMobileSection = 'shops' | 'editor' | 'points' | 'history'
@@ -361,9 +361,9 @@ export function AdminPage({
   if (!isUnlocked) {
     return (
       <main className="app-shell admin-shell">
+        <AitNavigation />
         <section className="section admin-unlock-card">
           <div className="admin-unlock-head">
-            <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
             <div>
               <span className="eyebrow">ADMIN</span>
               <h1>관리자 콘솔 잠금 해제</h1>
@@ -413,9 +413,9 @@ export function AdminPage({
 
   return (
     <main className="app-shell admin-shell">
+      <AitNavigation />
       <section className="section admin-console-head">
         <div className="map-search-row admin-console-topbar">
-          <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
           <div className="admin-console-title">
             <span className="eyebrow">ADMIN CONSOLE</span>
             <strong>{consoleTitle}</strong>

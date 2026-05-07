@@ -13,10 +13,11 @@ dist-ssr
 *.log
 client/node_modules
 client/dist
-client/aniwhere-client.ait
+client/*.ait
 client/.vite
 
 # Misc
+tmp/
 *.suo
 *.ntvs*
 *.njsproj

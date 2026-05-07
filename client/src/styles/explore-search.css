@@ -465,6 +465,12 @@
   cursor: default;
 }
 
+.map-zoom-button:focus-visible,
+.map-list-fab:focus-visible {
+  outline: 3px solid rgba(49, 130, 246, 0.34);
+  outline-offset: 3px;
+}
+
 .map-zoom-divider {
   height: 1px;
   background: var(--ait-color-border);
