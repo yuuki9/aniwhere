@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
+import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
@@ -115,14 +116,15 @@ class ShopService(
         try {
             if (hasCoverChange) {
                 val part = coverImage!!
-                val primaryKey = "$id/primary.${extensionFor(part.contentType)}"
+                // 운영 중인 고정 키(예: primary.jpg)를 트랜잭션 전에 덮어쓰면 DB 실패 시에도 클라이언트가 깨진 바이트를 보게 된다. UUID 접미로 항상 새 오브젝트에 올린 뒤 스왑한다.
+                val primaryKey = "$id/primary.${UUID.randomUUID()}.${extensionFor(part.contentType)}"
                 imageStorage.putObject(primaryKey, part.bytes, normalizeContentType(part.contentType))
                 uploadedKeys.add(primaryKey)
                 newPrimaryRow = ShopImagePersistenceRow(primaryKey, ShopImageRole.PRIMARY, 0)
             }
             if (hasGalleryReplace) {
                 galleryRows = gallery.mapIndexed { index, part ->
-                    val key = "$id/gallery-${index + 1}.${extensionFor(part.contentType)}"
+                    val key = "$id/gallery-${index + 1}.${UUID.randomUUID()}.${extensionFor(part.contentType)}"
                     imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
                     uploadedKeys.add(key)
                     ShopImagePersistenceRow(key, ShopImageRole.GALLERY, index + 1)
@@ -134,10 +136,7 @@ class ShopService(
                 port.swapShopImageRecords(id, newPrimaryRow, galleryRows)
             } ?: emptyList()
 
-            // 동일 확장자면 키가 기존과 같아서 put으로 덮어쓴 직후다. removed 에도 같은 문자열이 오므로 삭제하면 신규 객체까지 지워진다.
-            val overwrittenKeys = uploadedKeys.toSet()
             oldKeysRemoved.forEach { key ->
-                if (key in overwrittenKeys) return@forEach
                 runCatching { imageStorage.deleteObject(key) }
             }
         } catch (e: Exception) {

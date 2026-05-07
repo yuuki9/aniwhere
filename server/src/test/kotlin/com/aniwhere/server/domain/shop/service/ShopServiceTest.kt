@@ -310,7 +310,8 @@ class ShopServiceTest {
     }
 
     @Test
-    fun `updateShopWithImages - 대표 교체 시 키가 기존과 같으면 S3 삭제하지 않음_덮어쓴 객체 유지`() {
+    fun `updateShopWithImages - 대표 교체 시 UUID 키로 업로드하고 예전 고정 키만 S3 에서 삭제`() {
+        val primaryUploaded = Regex("""^1/primary\.[\da-fA-F-]+\.jpg$""")
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
@@ -324,13 +325,23 @@ class ShopServiceTest {
             gallery = emptyList(),
         )
 
-        verify { imageStorage.putObject("1/primary.jpg", any(), "image/jpeg") }
-        verify { port.swapShopImageRecords(1L, match { it.role == ShopImageRole.PRIMARY && it.s3Key == "1/primary.jpg" }, null) }
-        verify(exactly = 0) { imageStorage.deleteObject(any()) }
+        verify {
+            imageStorage.putObject(match { primaryUploaded.matches(it) }, any(), "image/jpeg")
+        }
+        verify {
+            port.swapShopImageRecords(
+                1L,
+                match { it.role == ShopImageRole.PRIMARY && primaryUploaded.matches(it.s3Key) },
+                null,
+            )
+        }
+        verify { imageStorage.deleteObject("1/primary.jpg") }
+        verify(exactly = 1) { imageStorage.deleteObject(any()) }
     }
 
     @Test
     fun `updateShopWithImages - 대표 확장자가 바뀌면 예전 키만 S3 삭제`() {
+        val primaryUploaded = Regex("""^1/primary\.[\da-fA-F-]+\.jpg$""")
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
@@ -344,13 +355,14 @@ class ShopServiceTest {
             gallery = emptyList(),
         )
 
-        verify { imageStorage.putObject("1/primary.jpg", any(), "image/jpeg") }
+        verify { imageStorage.putObject(match { primaryUploaded.matches(it) }, any(), "image/jpeg") }
         verify { imageStorage.deleteObject("1/primary.png") }
         verify(exactly = 1) { imageStorage.deleteObject(any()) }
     }
 
     @Test
-    fun `updateShopWithImages - 갤러리 교체 시 겹치는 키만 S3 삭제에서 제외`() {
+    fun `updateShopWithImages - 갤러리 교체 시 UUID 키로 업로드 후 기존 고정 키 전부 삭제`() {
+        val g1Uploaded = Regex("""^1/gallery-1\.[\da-fA-F-]+\.png$""")
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
@@ -366,9 +378,10 @@ class ShopServiceTest {
             gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
         )
 
-        verify { imageStorage.putObject("1/gallery-1.png", any(), "image/png") }
+        verify { imageStorage.putObject(match { g1Uploaded.matches(it) }, any(), "image/png") }
+        verify { imageStorage.deleteObject("1/gallery-1.png") }
         verify { imageStorage.deleteObject("1/gallery-2.png") }
-        verify(exactly = 1) { imageStorage.deleteObject(any()) }
+        verify(exactly = 2) { imageStorage.deleteObject(any()) }
     }
 
     @Test
