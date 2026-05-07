@@ -67,8 +67,7 @@ class ShopService(
                 port.saveShopImageRecords(id, rows)
             }
         } catch (e: Exception) {
-            uploadedKeys.forEach { imageStorage.deleteObject(it) }
-            compensateRemoveShopDraft(id, e)
+            compensateCreateShopWithImagesFailure(e, id, uploadedKeys)
             throw e
         }
 
@@ -82,15 +81,21 @@ class ShopService(
     override fun deleteShop(id: Long) = port.deleteById(id)
 
     /**
-     * 선저장된 상점 + S3 업로드 / 이미지 메타 저장 간 실패 시, 이미지 없는 레코드가 남지 않도록 제거합니다.
-     * 보상 실패 시 [cause] 에 suppress 된다.
+     * 업로드/메타 저장 실패 후 보장 정리. 전부 best-effort이며, 어떤 단계든 실패해도 다음 단계는 시도한다.
+     * 보상 과정 예외만 [original] 에 suppress 된다([original] 은 덮어쓰지 않는다).
      */
-    private fun compensateRemoveShopDraft(shopId: Long, cause: Exception) {
-        transactionTemplate.execute {
-            runCatching { port.deleteById(shopId) }
+    private fun compensateCreateShopWithImagesFailure(original: Exception, shopId: Long, uploadedKeys: List<String>) {
+        for (key in uploadedKeys) {
+            runCatching { imageStorage.deleteObject(key) }
                 .exceptionOrNull()
-                ?.let { cause.addSuppressed(it) }
+                ?.let { original.addSuppressed(it) }
         }
+        runCatching {
+            transactionTemplate.execute {
+                port.deleteById(shopId)
+            }
+        }.exceptionOrNull()
+            ?.let { original.addSuppressed(it) }
     }
 
     private fun validateImageUploadPart(part: ImageUploadPart) {

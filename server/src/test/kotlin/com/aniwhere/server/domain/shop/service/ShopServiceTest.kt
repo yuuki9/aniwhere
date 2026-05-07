@@ -208,6 +208,55 @@ class ShopServiceTest {
     }
 
     @Test
+    fun `createShopWithImages - 보상 단계 중 S3 deleteObject 실패해도 나머지 정리 시도 원 예외 유지`() {
+        val created = sampleShop.copy(id = null)
+        every { port.save(any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every { port.saveShopImageRecords(1L, any()) } throws RuntimeException("db error")
+        every { imageStorage.deleteObject("1/primary.jpg") } throws RuntimeException("s3 delete primary fail")
+        every { imageStorage.deleteObject("1/gallery-1.png") } returns Unit
+        every { port.deleteById(1L) } returns Unit
+
+        val ex = assertThrows<RuntimeException> {
+            service.createShopWithImages(
+                created,
+                ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+                listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+            )
+        }
+
+        assertEquals("db error", ex.message)
+        assertTrue(ex.suppressed.any { it.message == "s3 delete primary fail" })
+        verifyOrder {
+            imageStorage.deleteObject("1/primary.jpg")
+            imageStorage.deleteObject("1/gallery-1.png")
+            port.deleteById(1L)
+        }
+    }
+
+    @Test
+    fun `createShopWithImages - 보상 상점 삭제 실패 시 suppress 되고 원 업로드 실패 원인 유지`() {
+        val created = sampleShop.copy(id = null)
+        every { port.save(any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every { port.saveShopImageRecords(1L, any()) } throws RuntimeException("db error")
+        every { imageStorage.deleteObject(any()) } returns Unit
+        every { port.deleteById(1L) } throws RuntimeException("delete shop fail")
+
+        val ex = assertThrows<RuntimeException> {
+            service.createShopWithImages(
+                created,
+                ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+                listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+            )
+        }
+
+        assertEquals("db error", ex.message)
+        assertTrue(ex.suppressed.any { it.message == "delete shop fail" })
+        verify { port.deleteById(1L) }
+    }
+
+    @Test
     fun `updateShop - 샵 수정 성공`() {
         val updated = sampleShop.copy(name = "수정된샵")
         every { port.update(1L, any()) } returns updated
