@@ -116,14 +116,16 @@ class ShopServiceTest {
         verify(exactly = 2) { imageStorage.putObject(any(), any(), any()) }
         verify { port.saveShopImageRecords(1L, any()) }
         verify(exactly = 0) { imageStorage.deleteObject(any()) }
+        verify(exactly = 0) { port.deleteById(any()) }
     }
 
     @Test
-    fun `createShopWithImages - 이미지 메타 저장 실패 시 업로드된 S3 객체 삭제를 시도한다`() {
+    fun `createShopWithImages - 이미지 메타 저장 실패 시 S3 객체와 선저장 상점을 보상 삭제한다`() {
         val created = sampleShop.copy(id = null)
         every { port.save(any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
         every { port.saveShopImageRecords(1L, any()) } throws RuntimeException("db error")
+        every { port.deleteById(1L) } returns Unit
 
         assertThrows<RuntimeException> {
             service.createShopWithImages(
@@ -139,7 +141,53 @@ class ShopServiceTest {
             port.saveShopImageRecords(1L, any())
             imageStorage.deleteObject("1/primary.jpg")
             imageStorage.deleteObject("1/gallery-1.png")
+            port.deleteById(1L)
         }
+    }
+
+    @Test
+    fun `createShopWithImages - 갤러리 업로드 실패 시 이미 업로드된 객체와 상점 레코드를 정리한다`() {
+        val created = sampleShop.copy(id = null)
+        every { port.save(any()) } returns sampleShop
+        every { imageStorage.putObject("1/primary.jpg", any(), any()) } returns Unit
+        every { imageStorage.putObject("1/gallery-1.png", any(), any()) } throws RuntimeException("s3 down")
+        every { port.deleteById(1L) } returns Unit
+
+        assertThrows<RuntimeException> {
+            service.createShopWithImages(
+                created,
+                ImageUploadPart(byteArrayOf(1), "image/jpeg"),
+                listOf(ImageUploadPart(byteArrayOf(2), "image/png")),
+            )
+        }
+
+        verifyOrder {
+            imageStorage.putObject("1/primary.jpg", any(), any())
+            imageStorage.putObject("1/gallery-1.png", any(), any())
+            imageStorage.deleteObject("1/primary.jpg")
+            port.deleteById(1L)
+        }
+        verify(exactly = 0) { port.saveShopImageRecords(any(), any()) }
+    }
+
+    @Test
+    fun `createShopWithImages - 커버 업로드 직후 실패하면 S3 삭제 없이 상점만 보상 삭제한다`() {
+        val created = sampleShop.copy(id = null)
+        every { port.save(any()) } returns sampleShop
+        every { imageStorage.putObject("1/primary.jpg", any(), any()) } throws RuntimeException("s3 network")
+        every { port.deleteById(1L) } returns Unit
+
+        assertThrows<RuntimeException> {
+            service.createShopWithImages(
+                created,
+                ImageUploadPart(byteArrayOf(1), "image/jpeg"),
+                emptyList(),
+            )
+        }
+
+        verify(exactly = 0) { imageStorage.deleteObject(any()) }
+        verify(exactly = 0) { port.saveShopImageRecords(any(), any()) }
+        verify { port.deleteById(1L) }
     }
 
     @Test

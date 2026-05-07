@@ -68,6 +68,7 @@ class ShopService(
             }
         } catch (e: Exception) {
             uploadedKeys.forEach { imageStorage.deleteObject(it) }
+            compensateRemoveShopDraft(id, e)
             throw e
         }
 
@@ -79,6 +80,18 @@ class ShopService(
 
     @Transactional
     override fun deleteShop(id: Long) = port.deleteById(id)
+
+    /**
+     * 선저장된 상점 + S3 업로드 / 이미지 메타 저장 간 실패 시, 이미지 없는 레코드가 남지 않도록 제거합니다.
+     * 보상 실패 시 [cause] 에 suppress 된다.
+     */
+    private fun compensateRemoveShopDraft(shopId: Long, cause: Exception) {
+        transactionTemplate.execute {
+            runCatching { port.deleteById(shopId) }
+                .exceptionOrNull()
+                ?.let { cause.addSuppressed(it) }
+        }
+    }
 
     private companion object {
         const val MAX_GALLERY_IMAGES = 6
