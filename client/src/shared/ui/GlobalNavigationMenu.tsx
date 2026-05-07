@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { isAppsInTossRuntime } from '../lib/auth'
 import { APP_NAV_ITEMS, isNavigationItemActive } from './appNavigation'
 
 type GlobalNavigationMenuProps = {
@@ -32,6 +33,7 @@ export function GlobalNavigationMenu({
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const closeRef = useRef<HTMLButtonElement | null>(null)
   const drawerRef = useRef<HTMLElement | null>(null)
+  const shouldUseTossNavigation = isAppsInTossRuntime()
 
   const close = useCallback(() => {
     setOpen(false)
@@ -92,6 +94,10 @@ export function GlobalNavigationMenu({
     }
 
     navigate(to)
+  }
+
+  if (shouldUseTossNavigation) {
+    return null
   }
 
   return (

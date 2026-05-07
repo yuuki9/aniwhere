@@ -6,6 +6,7 @@ import type { Shop } from '../shared/api/types'
 import { formatRelativeUpdated } from '../shared/lib/format'
 import { requestCurrentLocation } from '../shared/lib/location'
 import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
+import { AitNavigation } from '../shared/ui/ait'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { StatusPill } from '../shared/ui/StatusPill'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
@@ -113,18 +114,9 @@ export function SearchPage() {
 
   return (
     <main className="search-screen-shell">
+      <AitNavigation className="search-route-navigation" showBack onBack={handleSearchBack} />
       <section className="search-screen search-screen-v2">
         <header className="search-screen-top search-screen-top-v2">
-          <div className="search-page-titlebar">
-            <button className="search-screen-icon" type="button" onClick={handleSearchBack} aria-label="뒤로가기">
-              <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-                <path d="M15 5 8 12l7 7" />
-              </svg>
-            </button>
-            <strong className="search-page-title">검색</strong>
-            <div aria-hidden="true" />
-          </div>
-
           <div className="search-screen-toolrow">
             <form className="search-screen-bar" onSubmit={handleSubmit}>
               <input

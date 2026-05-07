@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { GlobalNavigationMenu } from '../../shared/ui/GlobalNavigationMenu'
+import { AitNavigation } from '../../shared/ui/ait'
 import { useAdminOutlet } from './adminOutlet'
 
 export function AdminHomePage() {
@@ -7,9 +7,9 @@ export function AdminHomePage() {
 
   return (
     <main className="app-shell admin-shell">
+      <AitNavigation />
       <section className="section admin-console-head">
         <div className="map-search-row admin-console-topbar">
-          <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
           <div className="admin-console-title">
             <span className="eyebrow">ADMIN CONSOLE</span>
             <strong>운영 작업 선택</strong>

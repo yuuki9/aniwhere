@@ -4,7 +4,7 @@ const BRAND_ICON_URL =
   'https://static.toss.im/appsintoss/29865/c231d8e8-83f4-452b-8f97-d9795f6403e8.png'
 
 export default defineConfig({
-  appName: 'aniwhere-client',
+  appName: 'aniwhere',
   brand: {
     displayName: '애니웨어',
     primaryColor: '#3182F6',
@@ -26,7 +26,7 @@ export default defineConfig({
   ],
   navigationBar: {
     withBackButton: true,
-    withHomeButton: true,
+    withHomeButton: false,
   },
   outdir: 'dist',
   webViewProps: {

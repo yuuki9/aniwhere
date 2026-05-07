@@ -8,7 +8,7 @@ import {
   unlockAdminPreview,
   unlockAdminSession,
 } from '../../shared/lib/adminAccess'
-import { GlobalNavigationMenu } from '../../shared/ui/GlobalNavigationMenu'
+import { AitNavigation } from '../../shared/ui/ait'
 
 export function AdminAccessGate() {
   const [isUnlocked, setIsUnlocked] = useState(isAdminUnlocked())
@@ -40,9 +40,9 @@ export function AdminAccessGate() {
 
   return (
     <main className="app-shell admin-shell">
+      <AitNavigation />
       <section className="section admin-unlock-card">
         <div className="admin-unlock-head">
-          <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
           <div>
             <span className="eyebrow">ADMIN</span>
             <h1>관리자 콘솔 잠금 해제</h1>

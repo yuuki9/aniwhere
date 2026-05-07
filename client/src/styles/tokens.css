@@ -130,6 +130,8 @@
   --ait-component-button-height: 48px;
   --ait-component-button-radius: var(--ait-radius-lg);
   --ait-component-icon-button-size: 46px;
+  --ait-component-navigation-height: 44px;
+  --ait-component-navigation-button-size: 40px;
   --ait-component-card-radius: var(--ait-radius-2xl);
   --ait-component-sheet-radius: var(--ait-radius-4xl);
   --ait-component-list-row-min-height: 60px;
@@ -143,7 +145,7 @@
   --ait-component-intro-feature-asset-size-compact: 34px;
   --ait-component-intro-figure-height: 204px;
   --ait-component-intro-figure-height-compact: 168px;
-  --ait-component-intro-shell-top-space: 42px;
+  --ait-component-intro-shell-top-space: var(--ait-space-6);
   --ait-component-intro-list-row-min-height: 56px;
   --ait-component-intro-title-size: 28px;
   --ait-component-intro-title-size-compact: 26px;

@@ -47,8 +47,11 @@ test('ExplorePage shares the search bar and filter sheet pattern with SearchPage
   const topSearchSource = exploreTopSearchSource()
 
   assert.match(source, /SearchFilterSheet/)
-  assert.match(topSearchSource, /className="search-screen-icon map-search-home-button"/)
-  assert.match(source, /onHomeClick=\{\(\) => navigate\('\/home'\)\}/)
+  assert.match(source, /<AitNavigation/)
+  assert.doesNotMatch(source, /title="지도"/)
+  assert.match(source, /onBack=\{\(\) => navigate\('\/home'\)\}/)
+  assert.doesNotMatch(topSearchSource, /map-search-home-button/)
+  assert.doesNotMatch(source, /onHomeClick=/)
   assert.match(topSearchSource, /className="search-screen-bar map-search-field"/)
   assert.match(topSearchSource, /className="search-filter-button map-filter-button"/)
   assert.match(topSearchSource, /aria-label=\{appliedFilterCount > 0 \? `/)
@@ -67,11 +70,27 @@ test('ExplorePage binds the filter trigger ref only to the visible top search in
 
   assert.match(source, /<ExploreTopSearch/)
   assert.match(topSearchSource, /ref=\{attachTriggerRef \? filterTriggerRef : null\}/)
-  assert.match(source, /attachTriggerRef=\{!isListSheetOpen\}/)
+  assert.match(source, /const isExploreTopHidden = sheetMode === 'expanded' \|\| isListSheetOpen/)
+  assert.match(source, /!isExploreTopHidden \? \(/)
+  assert.match(source, /attachTriggerRef\s+filterTriggerRef=\{filterTriggerRef\}/)
   assert.match(source, /attachTriggerRef=\{isListSheetOpen\}/)
   assert.doesNotMatch(source, /const topSearch = \(/)
   assert.doesNotMatch(source, /ref=\{filterTriggerRef\}/)
   assert.doesNotMatch(source, /const renderTopSearch = /)
+})
+
+test('ExplorePage removes hidden top controls from interaction when detail is expanded', () => {
+  const source = explorePageSource()
+  const styles = appCssSource()
+  const hiddenRows = cssRuleBodies(styles, '.map-explore-top-hidden .map-search-row')
+  const hiddenChips = cssRuleBodies(styles, '.map-explore-top-hidden .map-chip-toolbar')
+  const hiddenAreaSearch = cssRuleBodies(styles, '.map-explore-top-hidden .map-area-search-button')
+
+  assert.match(source, /aria-hidden=\{isExploreTopHidden\}/)
+  assert.match(source, /!isExploreTopHidden \? \([\s\S]*?<ExploreTopSearch/)
+  assert.ok(hiddenRows.some((rule) => /pointer-events:\s*none;/.test(rule)))
+  assert.ok(hiddenChips.some((rule) => /pointer-events:\s*none;/.test(rule)))
+  assert.ok(hiddenAreaSearch.some((rule) => /pointer-events:\s*none;/.test(rule)))
 })
 
 test('ExplorePage extracts map quick chips and overlay controls into focused components', () => {
@@ -84,8 +103,28 @@ test('ExplorePage extracts map quick chips and overlay controls into focused com
   assert.match(quickChipsSource, /aria-pressed=\{isActive\}/)
   assert.match(quickChipsSource, /onToggle\(item\.id\)/)
   assert.match(overlayControlsSource, /map-list-fab-list-icon map-control-icon/)
-  assert.match(overlayControlsSource, /map-chip-gps-icon map-control-icon/)
+  assert.match(overlayControlsSource, /map-location-target-icon map-control-icon/)
   assert.doesNotMatch(source, /const chipToolbar = \(/)
+})
+
+test('Explore location button uses a distinct target icon and transient fallback message', () => {
+  const source = explorePageSource()
+  const overlayControlsSource = mapOverlayControlsSource()
+  const styles = appCssSource()
+  const targetIconRules = cssRuleBodies(styles, '.map-location-target-icon')
+  const targetIconButtonRules = cssRuleBodies(styles, '.map-location-fab .map-location-target-icon')
+  const toastRules = cssRuleBodies(styles, '.map-location-error-toast')
+
+  assert.match(overlayControlsSource, /className="map-location-target-icon map-control-icon"/)
+  assert.match(overlayControlsSource, /<circle cx="12" cy="12" r="5"/)
+  assert.match(source, /function getLocationErrorMessage\(error: unknown\)/)
+  assert.match(source, /showLocationError\(getLocationErrorMessage\(error\)\)/)
+  assert.match(source, /window\.setTimeout\(\(\) => \{[\s\S]*?setLocationError\(null\)/)
+  assert.match(source, /className="map-location-error-toast"/)
+  assert.doesNotMatch(source, /map-inline-error map-inline-error-overlay">\{locationError\}/)
+  assert.ok(targetIconRules.some((rule) => /stroke:\s*currentcolor;/.test(rule)))
+  assert.ok(targetIconButtonRules.some((rule) => /width:\s*24px;/.test(rule) && /height:\s*24px;/.test(rule)))
+  assert.ok(toastRules.some((rule) => /pointer-events:\s*none;/.test(rule)))
 })
 
 test('ExplorePage extracts the assistant panel into a focused component', () => {
@@ -185,14 +224,58 @@ test('ExplorePage extracts the expanded detail media section into a focused comp
   const mediaSource = mapDetailMediaSectionSource()
 
   assert.match(source, /<MapDetailMediaSection/)
+  assert.match(source, /showTopbarControls=\{!usesTossNavigation\}/)
   assert.match(mediaSource, /map-sheet-media-grid/)
   assert.match(mediaSource, /detailMediaItems\.length > 0/)
   assert.match(mediaSource, /<strong>\+\{detailMediaItems\.length\}<\/strong>/)
+  assert.match(mediaSource, /showTopbarControls \? \(/)
   assert.match(mediaSource, /GlobalNavigationMenu/)
   assert.doesNotMatch(mediaSource, /shop\.links\.length/)
   assert.doesNotMatch(mediaSource, /shop\.works\.length,\s*4/)
   assert.doesNotMatch(source, /className=\{`map-sheet-media/)
   assert.doesNotMatch(source, /map-sheet-media-grid/)
+})
+
+test('Explore detail sheet hides duplicate chrome controls in Toss navigation runtime', () => {
+  const source = explorePageSource()
+  const mediaSource = mapDetailMediaSectionSource()
+
+  assert.match(source, /const usesTossNavigation = useMemo\(\(\) => isAppsInTossRuntime\(\), \[\]\)/)
+  assert.match(source, /!usesTossNavigation \? \(/)
+  assert.match(source, /showTopbarControls=\{!usesTossNavigation\}/)
+  assert.match(mediaSource, /showTopbarControls: boolean/)
+  assert.match(mediaSource, /\{showTopbarControls \? \(/)
+  assert.match(mediaSource, /aria-label="뒤로 가기"/)
+  assert.match(mediaSource, /aria-label="상세 화면 닫기"/)
+})
+
+test('Explore detail selection pushes history so native back closes the sheet first', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /const replaceSearchParams = \(next: URLSearchParams\) => \{\s*setSearchParams\(next, \{ replace: true \}\)/)
+  assert.match(source, /const pushSearchParams = \(next: URLSearchParams\) => \{\s*setSearchParams\(next\)/)
+  assert.match(source, /if \(selectedShopId == null\) \{\s*pushSearchParams\(next\)\s*\} else \{\s*replaceSearchParams\(next\)/)
+  assert.match(source, /next\.delete\('shopId'\)[\s\S]*?replaceSearchParams\(next\)/)
+  assert.doesNotMatch(source, /syncSearchParams/)
+})
+
+test('Explore detail shop changes replace history instead of stacking visited shops', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /const sheetMode: SheetMode = selectedShopId && sheetParam === 'expanded' \? 'expanded' : 'peek'/)
+  assert.match(source, /selectedShopId == null[\s\S]*?pushSearchParams\(next\)[\s\S]*?replaceSearchParams\(next\)/)
+  assert.doesNotMatch(source, /setSheetMode/)
+})
+
+test('Explore expanded detail state is encoded in history for native back folding', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /const sheetParam = searchParams\.get\('sheet'\)/)
+  assert.match(source, /selectedShopId && sheetParam === 'expanded' \? 'expanded' : 'peek'/)
+  assert.match(source, /next\.set\('sheet', 'expanded'\)/)
+  assert.match(source, /next\.delete\('sheet'\)/)
+  assert.match(source, /if \(selectedShopId != null && sheetParam !== 'expanded'\) \{[\s\S]*?pushSearchParams\(next\)/)
+  assert.doesNotMatch(source, /setSheetMode/)
 })
 
 test('ExplorePage extracts the expanded detail supplement sections into a focused component', () => {
@@ -236,14 +319,11 @@ test('Explore controls separate list, location, zoom, and AI actions for mobile 
 test('Explore map search and filter controls stay visually separated to avoid accidental taps', () => {
   const styles = appCssSource()
   const topRowRules = cssRuleBodies(styles, '.map-search-row.search-screen-toolrow')
-  const homeButtonRules = cssRuleBodies(styles, '.map-search-row .map-search-home-button')
   const fieldRules = cssRuleBodies(styles, '.map-search-row .search-screen-bar.map-search-field')
   const filterRules = cssRuleBodies(styles, '.map-search-row .map-filter-button')
 
   assert.ok(topRowRules.some((rule) => /gap:\s*var\(--ait-space-4\);/.test(rule)))
   assert.ok(topRowRules.some((rule) => /background:\s*transparent;/.test(rule)))
-  assert.ok(homeButtonRules.some((rule) => /width:\s*46px;/.test(rule)))
-  assert.ok(homeButtonRules.some((rule) => /height:\s*46px;/.test(rule)))
   assert.ok(fieldRules.some((rule) => /border-radius:\s*var\(--ait-radius-full\);/.test(rule)))
   assert.ok(fieldRules.some((rule) => /background:\s*rgba\(255,\s*255,\s*255,\s*0\.98\);/.test(rule)))
   assert.ok(filterRules.some((rule) => /width:\s*46px;/.test(rule)))
@@ -265,11 +345,13 @@ test('Explore map overlay controls avoid competing raised layers', () => {
 test('Explore map chip rail only captures pointer events on actual controls', () => {
   const styles = appCssSource()
   const topRules = cssRuleBodies(styles, '.map-explore-top')
+  const routeNavigationRules = cssRuleBodies(styles, '.map-route-navigation')
   const chipToolbarRules = cssRuleBodies(styles, '.map-chip-toolbar')
   const chipScrollRules = cssRuleBodies(styles, '.map-chip-scroll')
   const chipStatusRules = cssRuleBodies(styles, '.map-chip-status')
 
   assert.ok(topRules.some((rule) => /pointer-events:\s*none;/.test(rule)))
+  assert.ok(routeNavigationRules.some((rule) => /pointer-events:\s*auto;/.test(rule)))
   assert.ok(chipToolbarRules.some((rule) => /align-self:\s*flex-start;/.test(rule)))
   assert.ok(chipScrollRules.some((rule) => /width:\s*fit-content;/.test(rule)))
   assert.ok(chipScrollRules.some((rule) => /flex:\s*0 1 auto;/.test(rule)))

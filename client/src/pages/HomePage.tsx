@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import aniwhereIcon from '../assets/aniwhere_icon.png'
 import {
   buildHomeQuickMenus,
   type HomeQuickMenu,
@@ -8,15 +7,9 @@ import {
 
 function SearchIcon() {
   return (
-    <svg aria-hidden="true" className="home-icon-svg" viewBox="0 0 24 24">
-      <path
-        d="m20 20-4.2-4.2m1.2-5.3a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4 4" />
     </svg>
   )
 }
@@ -60,17 +53,14 @@ function HomeQuickMenuIcon({ icon }: { icon: HomeQuickMenu['icon'] }) {
   }
 }
 
-function HomeHeader({ onSearch }: { onSearch: () => void }) {
+function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
   return (
-    <header className="home-store-header">
-      <Link className="home-store-brand" to="/home" aria-label="애니웨어 홈">
-        <img className="home-store-brand-icon" src={aniwhereIcon} alt="" aria-hidden="true" />
-        애니웨어
-      </Link>
-      <button className="home-header-icon-button" type="button" aria-label="검색하기" onClick={onSearch}>
+    <section className="section discover-search-entry-section" aria-label="매장 검색">
+      <button className="map-search-field home-search-entry" type="button" onClick={onSearch}>
+        <span className="map-search-field-copy">매장명, 작품명, 지역으로 검색</span>
         <SearchIcon />
       </button>
-    </header>
+    </section>
   )
 }
 
@@ -126,7 +116,7 @@ export function HomePage() {
 
   return (
     <main className="app-shell discover-shell">
-      <HomeHeader onSearch={() => navigate('/search')} />
+      <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeQuickMenuSection menus={quickMenus} />
       <HomeIssueSection />
       <HomeReviewPreviewSection />

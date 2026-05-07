@@ -4,8 +4,8 @@ import { Link, useParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { getShop } from '../shared/api/shops'
 import { formatDateTime, formatRelativeUpdated, linkTypeToLabel, statusToLabel } from '../shared/lib/format'
-import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { StatusPill } from '../shared/ui/StatusPill'
+import { AitNavigation } from '../shared/ui/ait'
 
 function formatFloorLabel(floor: string | null) {
   if (!floor) {
@@ -57,6 +57,7 @@ export function ShopPage() {
   if (!Number.isFinite(parsedId)) {
     return (
       <main className="app-shell shop-detail-shell">
+        <AitNavigation showBack />
         <section className="section">
           <h1>잘못된 매장 경로입니다.</h1>
           <Link className="text-link" to="/explore">
@@ -71,15 +72,7 @@ export function ShopPage() {
 
   return (
     <main className="app-shell shop-detail-shell">
-      <section className="section shop-detail-topbar">
-        <div className="shop-detail-topbar-left">
-          <Link className="shop-detail-back" to="/explore">
-            ←
-          </Link>
-          <strong>매장 상세</strong>
-        </div>
-        <GlobalNavigationMenu />
-      </section>
+      <AitNavigation showBack />
 
       {shopQuery.isLoading ? <p className="section">매장 정보를 불러오는 중입니다.</p> : null}
       {shopQuery.isError ? <p className="section error-text">{(shopQuery.error as Error).message}</p> : null}

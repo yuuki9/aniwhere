@@ -5,7 +5,6 @@ type ExploreTopSearchProps = {
   filterTriggerRef: RefObject<HTMLButtonElement | null>
   isFilterSheetOpen: boolean
   appliedFilterCount: number
-  onHomeClick: () => void
   onSearchClick: () => void
   onFilterClick: () => void
 }
@@ -15,22 +14,11 @@ export function ExploreTopSearch({
   filterTriggerRef,
   isFilterSheetOpen,
   appliedFilterCount,
-  onHomeClick,
   onSearchClick,
   onFilterClick,
 }: ExploreTopSearchProps) {
   return (
     <div className="map-search-row search-screen-toolrow">
-      <button
-        className="search-screen-icon map-search-home-button"
-        type="button"
-        onClick={onHomeClick}
-        aria-label="홈으로 이동"
-      >
-        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <path d="m15 6-6 6 6 6" />
-        </svg>
-      </button>
       <button className="search-screen-bar map-search-field" type="button" onClick={onSearchClick}>
         <span className="map-search-field-copy">매장, 작품, 지역 검색</span>
         <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">

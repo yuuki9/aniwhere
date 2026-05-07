@@ -8,7 +8,6 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { createPost, getPosts } from '../shared/api/community'
 import { formatDateTime } from '../shared/lib/format'
-import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 
 export function CommunityPage() {
   const navigate = useNavigate()
@@ -68,7 +67,6 @@ export function CommunityPage() {
     <main className="app-shell">
       <section className="section discover-search-entry-section">
         <div className="map-search-row">
-          <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-inline" />
           <button className="map-search-field" type="button" onClick={() => navigate('/search')}>
             <span className="map-search-field-copy">매장명, 작품명, 지역으로 검색</span>
             <strong aria-hidden="true">⌕</strong>
