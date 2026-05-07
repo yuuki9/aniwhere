@@ -3,6 +3,7 @@ package com.aniwhere.server.adapter.`in`.web
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
+import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -12,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -117,10 +120,46 @@ class ShopControllerTest {
         mvc.perform(
             put("/api/v1/shops/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(req))
+                .content(mapper.writeValueAsString(req)),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.name").value("수정된샵"))
+    }
+
+    @Test
+    fun `PUT shops_{id} multipart - replaceGallery 없이 갤러리 파일이 있으면 400`() {
+        val png = MockMultipartFile("galleryImages", "a.png", "image/png", ShopServiceTest.minimalPngBytes)
+        mvc.perform(
+            multipart(HttpMethod.PUT, "/api/v1/shops/1")
+                .file(png)
+                .param("name", "테스트샵")
+                .param("address", "주소")
+                .param("px", "127.0276368")
+                .param("py", "37.4979462"),
+        )
+            .andExpect(status().isBadRequest)
+        verify(exactly = 0) { useCase.updateShopWithImages(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `PUT shops_{id} multipart - replaceGallery 로 갤러리 업데이트`() {
+        val gallery = MockMultipartFile("galleryImages", "a.png", "image/png", ShopServiceTest.minimalPngBytes)
+        every {
+            useCase.updateShopWithImages(1L, any(), null, true, match { it.size == 1 })
+        } returns sampleShop.copy()
+
+        mvc.perform(
+            multipart(HttpMethod.PUT, "/api/v1/shops/1")
+                .file(gallery)
+                .param("name", "테스트샵")
+                .param("address", "주소")
+                .param("px", "127.0276368")
+                .param("py", "37.4979462")
+                .param("replaceGallery", "true"),
+        )
+            .andExpect(status().isOk)
+
+        verify { useCase.updateShopWithImages(1L, any(), null, true, match { it.size == 1 }) }
     }
 
     @Test

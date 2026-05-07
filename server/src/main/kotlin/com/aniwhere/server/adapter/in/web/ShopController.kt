@@ -76,10 +76,34 @@ class ShopController(private val useCase: ShopUseCase) {
         ),
     )
 
-    @Operation(summary = "샵 수정")
-    @PutMapping("/{id}")
-    fun updateShop(@PathVariable id: Long, @Valid @RequestBody req: ShopRequest) =
+    @Operation(summary = "샵 수정 (JSON)")
+    @PutMapping("/{id}", consumes = [MediaType.APPLICATION_JSON_VALUE])
+    fun updateShopJson(@PathVariable id: Long, @Valid @RequestBody req: ShopRequest) =
         ApiResponse.ok(useCase.updateShop(id, req.toDomain()))
+
+    @Operation(
+        summary = "샵 수정 (텍스트·이미지)",
+        description = "multipart: Shop 등록과 같은 텍스트 필드명. coverImage가 있으면 대표 교체. replaceGallery=true이면 galleryImages(반복)로 갤러리 전체 교체(파트 없으면 갤러리 비움).",
+    )
+    @PutMapping("/{id}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun updateShopWithImages(
+        @PathVariable id: Long,
+        @Valid @ModelAttribute request: ShopUpdateMultipartRequest,
+    ): ApiResponse<Shop> {
+        val galleryFiles = request.galleryImages.orEmpty().filter { !it.isEmpty }
+        if (!request.replaceGallery && galleryFiles.isNotEmpty()) {
+            throw BadRequestException("갤러리 파일은 replaceGallery=true 일 때만 전송할 수 있습니다.")
+        }
+        val coverUpload = request.coverImage?.takeUnless { it.isEmpty }?.requireImagePart()
+        val galleryUploads = if (request.replaceGallery) {
+            galleryFiles.map { it.requireImagePart() }
+        } else {
+            emptyList()
+        }
+        return ApiResponse.ok(
+            useCase.updateShopWithImages(id, request.toShop(), coverUpload, request.replaceGallery, galleryUploads),
+        )
+    }
 
     @Operation(summary = "샵 삭제")
     @DeleteMapping("/{id}")
@@ -133,6 +157,39 @@ data class ShopCreateMultipartRequest(
     val sellsIchibanKuji: Boolean? = null,
     val visitTip: String? = null,
     val coverImage: MultipartFile,
+    val galleryImages: List<MultipartFile>? = null,
+) {
+    fun toShop(): Shop = ShopRequest(
+        name = name,
+        address = address,
+        px = px,
+        py = py,
+        floor = floor,
+        regionId = regionId,
+        status = status,
+        sellsIchibanKuji = sellsIchibanKuji,
+        visitTip = visitTip,
+    ).toDomain()
+}
+
+@Schema(
+    description = "multipart 수정: 등록과 동일 필드명. 대표 교체 시 coverImage, 갤러리 통째 교체 시 replaceGallery=true 및 galleryImages(비우면 갤러리 전부 삭제).",
+)
+data class ShopUpdateMultipartRequest(
+    @field:NotBlank @Schema(example = "샵 이름") val name: String,
+    @field:NotBlank @Schema(example = "서울시 …") val address: String,
+    @Schema(example = "127.0276368") val px: BigDecimal,
+    @Schema(example = "37.4979462") val py: BigDecimal,
+    @Schema(example = "2F") val floor: String? = null,
+    @Schema(example = "1") val regionId: Short? = null,
+    @Schema(example = "UNVERIFIED", allowableValues = ["ACTIVE", "CLOSED", "UNVERIFIED"])
+    val status: String = "UNVERIFIED",
+    val sellsIchibanKuji: Boolean? = null,
+    val visitTip: String? = null,
+    @Schema(description = "비워두거나 생략하면 대표 이미지 유지")
+    val coverImage: MultipartFile? = null,
+    @Schema(description = "true일 때만 galleryImages로 갤러리 통째 교체")
+    val replaceGallery: Boolean = false,
     val galleryImages: List<MultipartFile>? = null,
 ) {
     fun toShop(): Shop = ShopRequest(

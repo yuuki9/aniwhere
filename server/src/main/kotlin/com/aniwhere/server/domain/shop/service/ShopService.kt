@@ -77,6 +77,71 @@ class ShopService(
     @Transactional
     override fun updateShop(id: Long, shop: Shop) = port.update(id, shop)
 
+    @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
+    override fun updateShopWithImages(
+        id: Long,
+        shop: Shop,
+        coverImage: ImageUploadPart?,
+        replaceGallery: Boolean,
+        gallery: List<ImageUploadPart>,
+    ): Shop {
+        port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+
+        transactionTemplate.execute {
+            port.update(id, shop)
+        }
+
+        val hasCoverChange = coverImage != null
+        val hasGalleryReplace = replaceGallery
+
+        if (!hasCoverChange && !hasGalleryReplace) {
+            return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        }
+
+        if (hasGalleryReplace && gallery.size > MAX_GALLERY_IMAGES) {
+            throw BadRequestException("갤러리 이미지는 최대 ${MAX_GALLERY_IMAGES}장까지 등록할 수 있습니다.")
+        }
+
+        var newPrimaryRow: ShopImagePersistenceRow? = null
+        var galleryRows: List<ShopImagePersistenceRow>? = null
+        val uploadedKeys = mutableListOf<String>()
+
+        try {
+            if (hasCoverChange) {
+                val part = coverImage!!
+                validateImageUploadPart(part)
+                val primaryKey = "$id/primary.${extensionFor(part.contentType)}"
+                imageStorage.putObject(primaryKey, part.bytes, normalizeContentType(part.contentType))
+                uploadedKeys.add(primaryKey)
+                newPrimaryRow = ShopImagePersistenceRow(primaryKey, ShopImageRole.PRIMARY, 0)
+            }
+            if (hasGalleryReplace) {
+                gallery.forEach { validateImageUploadPart(it) }
+                galleryRows = gallery.mapIndexed { index, part ->
+                    val key = "$id/gallery-${index + 1}.${extensionFor(part.contentType)}"
+                    imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
+                    uploadedKeys.add(key)
+                    ShopImagePersistenceRow(key, ShopImageRole.GALLERY, index + 1)
+                }
+            }
+
+            val oldKeysRemoved = transactionTemplate.execute {
+                port.swapShopImageRecords(id, newPrimaryRow, galleryRows)
+            } ?: emptyList()
+
+            oldKeysRemoved.forEach { key ->
+                runCatching { imageStorage.deleteObject(key) }
+            }
+        } catch (e: Exception) {
+            for (key in uploadedKeys) {
+                runCatching { imageStorage.deleteObject(key) }.exceptionOrNull()?.let { e.addSuppressed(it) }
+            }
+            throw e
+        }
+
+        return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+    }
+
     @Transactional
     override fun deleteShop(id: Long) = port.deleteById(id)
 
