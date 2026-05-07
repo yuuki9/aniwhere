@@ -1,31 +1,25 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import introStoreGuide from '../assets/intro-store-guide.webp'
-import { startServiceEntry } from '../shared/lib/auth'
 import { AitButton, AitListRow, AitNavigation, AitTop } from '../shared/ui/ait'
 
-type IntroFeatureIconType = 'search' | 'write' | 'approve' | 'point'
+type IntroFeatureIconType = 'search' | 'write' | 'approve'
 
 const featureItems = [
   {
     icon: 'search',
-    title: '매장 찾기',
-    body: '피규어·가챠샵을 키워드와 지역으로 찾아요.',
+    title: '주변 매장 찾기',
+    body: '피규어·가챠·굿즈샵을 지도에서 확인해요',
   },
   {
     icon: 'write',
-    title: '후기 작성',
-    body: '방문한 매장의 경험을 간단히 남겨요.',
+    title: '후기와 팁 확인',
+    body: '재고, 위치, 분위기 정보를 미리 살펴봐요',
   },
   {
     icon: 'approve',
-    title: '검토 승인',
-    body: '운영팀 검토 후 승인 상태를 확인해요.',
-  },
-  {
-    icon: 'point',
-    title: '포인트 적립',
-    body: '승인된 후기는 포인트로 이어져요.',
+    title: '방문 기록 남기기',
+    body: '다녀온 정보를 공유하고 포인트를 받아요',
   },
 ] as const
 
@@ -51,54 +45,30 @@ function IntroFeatureIcon({ type }: { type: IntroFeatureIconType }) {
             <path d="M8.5 12.2l2.2 2.2 4.8-5" />
           </>
         ) : null}
-        {type === 'point' ? (
-          <>
-            <circle cx="12" cy="12" r="8" />
-            <text x="12" y="12" textAnchor="middle">
-              P
-            </text>
-          </>
-        ) : null}
       </svg>
     </span>
   )
 }
 
 type EntryRouteState =
-  | {
-      entryMode: 'preview'
-    }
-  | {
-      entryMode: 'toss'
-      referrer: 'DEFAULT' | 'SANDBOX'
-    }
+  {
+    entryMode: 'preview'
+  }
 
 export function IntroPage() {
   const navigate = useNavigate()
-  const [isStarting, setIsStarting] = useState(false)
-  const [startError, setStartError] = useState<string | null>(null)
 
-  const handleStart = async () => {
-    if (isStarting) {
-      return
+  useEffect(() => {
+    document.body.classList.add('intro-route-body')
+
+    return () => {
+      document.body.classList.remove('intro-route-body')
     }
+  }, [])
 
-    setIsStarting(true)
-    setStartError(null)
-
-    try {
-      const result = await startServiceEntry()
-      const state: EntryRouteState =
-        result.mode === 'preview'
-          ? { entryMode: 'preview' }
-          : { entryMode: 'toss', referrer: result.referrer }
-
-      navigate('/home', { state })
-    } catch (error) {
-      setStartError(error instanceof Error ? error.message : '시작하는 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.')
-    } finally {
-      setIsStarting(false)
-    }
+  const handleStart = () => {
+    const state: EntryRouteState = { entryMode: 'preview' }
+    navigate('/home', { state })
   }
 
   return (
@@ -109,9 +79,16 @@ export function IntroPage() {
           className="intro-top"
           title={
             <>
-              피규어·가챠샵을 찾고,
+              가까운 피규어·가챠샵,
               <br />
-              후기로 포인트까지
+              이제 한 번에 찾아보세요
+            </>
+          }
+          subtitle={
+            <>
+              흩어진 굿즈샵 정보를 지도에서 확인하고,
+              <br />
+              방문 후기와 팁까지 함께 볼 수 있어요.
             </>
           }
         />
@@ -123,6 +100,8 @@ export function IntroPage() {
             src={introStoreGuide}
           />
         </figure>
+
+        <h2 className="intro-flow-title">찾기부터 방문 기록까지</h2>
 
         <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
           {featureItems.map((item) => (
@@ -137,25 +116,10 @@ export function IntroPage() {
           ))}
         </ul>
 
-        {startError ? (
-          <p className="error-text" role="alert">
-            {startError}
-          </p>
-        ) : null}
-
         <div className="intro-mobile-actions">
-          <AitButton
-            aria-busy={isStarting}
-            className="intro-primary-action"
-            disabled={isStarting}
-            display="full"
-            onClick={handleStart}
-          >
-            {isStarting ? '로그인 준비 중' : '토스로 로그인하기'}
+          <AitButton className="intro-primary-action" display="full" onClick={handleStart}>
+            매장 찾기 시작하기
           </AitButton>
-          <Link className="ait-button ait-button-full intro-secondary-action" to="/explore">
-            로그인 없이 둘러보기
-          </Link>
         </div>
       </section>
     </main>

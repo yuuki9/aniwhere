@@ -30,6 +30,14 @@
   padding-bottom: 0;
 }
 
+body.intro-route-body {
+  background: var(--ait-color-gray-0);
+}
+
+body.intro-route-body #root {
+  background: var(--ait-color-gray-0);
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -477,8 +485,9 @@
 
 .intro-mobile-shell {
   width: 100%;
-  max-width: var(--ait-size-screen-design);
+  max-width: none;
   min-height: 100dvh;
+  align-items: center;
   justify-content: flex-start;
   margin: 0 auto;
   padding: max(var(--ait-component-intro-shell-top-space), calc(env(safe-area-inset-top) + var(--ait-space-3)))
@@ -685,6 +694,7 @@ p {
   flex: 1;
   flex-direction: column;
   gap: var(--ait-space-8);
+  width: min(var(--ait-size-screen-design), 100%);
   min-height: 0;
   padding: var(--ait-space-0);
   border: 0;
@@ -695,6 +705,22 @@ p {
 
 .intro-top {
   padding: 0;
+}
+
+.intro-top .ait-top-copy {
+  gap: var(--ait-space-4);
+}
+
+.intro-top .ait-top-copy h1 {
+  font-size: var(--ait-font-size-display-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.intro-top .ait-top-copy p {
+  color: var(--ait-color-text-secondary);
+  font-size: var(--ait-font-size-body-lg);
+  line-height: var(--ait-line-height-body);
 }
 
 .ait-top {
@@ -819,6 +845,14 @@ p {
   object-position: center;
 }
 
+.intro-flow-title {
+  margin: var(--ait-space-1) var(--ait-space-0) calc(var(--ait-space-1) * -1);
+  color: var(--ait-color-text-primary);
+  font-size: var(--ait-font-size-body-lg);
+  font-weight: 700;
+  line-height: var(--ait-line-height-title);
+}
+
 .intro-feature-list {
   display: flex;
   flex-direction: column;
@@ -837,7 +871,7 @@ p {
   align-items: center;
   gap: var(--ait-space-6);
   min-height: var(--ait-component-intro-list-row-min-height);
-  padding: var(--ait-space-5) var(--ait-space-0);
+  padding: var(--ait-space-4) var(--ait-space-0);
   border-radius: var(--ait-radius-lg);
 }
 
@@ -892,11 +926,6 @@ p {
   color: var(--ait-color-intro-feature-time);
 }
 
-.intro-feature-icon-point {
-  background: var(--ait-color-blue-50);
-  color: var(--ait-color-brand);
-}
-
 .intro-feature-icon-svg {
   width: var(--ait-space-12);
   height: var(--ait-space-12);
@@ -916,22 +945,6 @@ p {
   stroke: var(--ait-color-gray-0);
 }
 
-.intro-feature-icon-point .intro-feature-icon-svg {
-  fill: none;
-  stroke: none;
-}
-
-.intro-feature-icon-point .intro-feature-icon-svg circle {
-  fill: currentcolor;
-}
-
-.intro-feature-icon-point .intro-feature-icon-svg text {
-  fill: var(--ait-color-gray-0);
-  font-size: 11px;
-  font-weight: 900;
-  dominant-baseline: middle;
-}
-
 .intro-feature-list .ait-list-row-copy {
   display: flex;
   flex: 1;
@@ -942,13 +955,14 @@ p {
 
 .intro-feature-list .ait-list-row-copy strong {
   color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-body-md);
+  font-size: var(--ait-font-size-body-lg);
+  font-weight: 600;
   line-height: var(--ait-line-height-title);
 }
 
 .intro-feature-list .ait-list-row-copy span {
   color: var(--ait-color-text-secondary);
-  font-size: var(--ait-font-size-body-sm);
+  font-size: var(--ait-font-size-body-md);
   line-height: var(--ait-line-height-body);
 }
 
@@ -994,9 +1008,10 @@ p {
 .intro-mobile-actions {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--ait-space-3);
   margin-top: auto;
-  padding-top: var(--ait-space-0);
+  padding-top: var(--ait-space-6);
 }
 
 .intro-primary-action {
@@ -1004,26 +1019,6 @@ p {
   min-height: var(--ait-component-intro-action-height);
   border-radius: var(--ait-radius-xl);
   font-size: var(--ait-font-size-title-sm);
-}
-
-.intro-secondary-action {
-  min-height: var(--ait-component-intro-action-height);
-  border: 1px solid var(--ait-color-border);
-  background: var(--ait-color-surface-soft);
-  color: var(--ait-color-brand);
-  font-size: var(--ait-font-size-title-sm);
-}
-
-.intro-secondary-action:active {
-  background: var(--ait-color-blue-50);
-}
-
-.intro-secondary-link {
-  align-self: center;
-  min-height: 44px;
-  align-items: center;
-  padding-inline: var(--ait-space-6);
-  font-size: var(--ait-font-size-body-sm);
 }
 
 .intro-footer-actions {
