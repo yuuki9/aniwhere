@@ -10,9 +10,18 @@ import javax.imageio.ImageIO
 
 /**
  * multipart의 Content-Type만으로는 임의 바이트를 통과시킬 수 있으므로,
- * 래스터 형식은 ImageIO로 디코딩·형식 대조를 하고 WebP는 컨테이너·비트스트림 청크를 검사합니다.
+ * 래스터 형식은 ImageIO로 디코딩·형식 대조를 하고 WebP는 RIFF 경계 준수·청크 순회·VP8/VP8L 최소 시그니처를 검사합니다.
+ * (JDK WebP 디코더가 없어 픽셀 검증까지는 보장하지 않습니다. 애니메이션 전용 패턴은 키프레임 검사 때문에 통과하지 못할 수 있습니다.)
  */
 object ShopImagePayloadValidator {
+
+    /** 손실 VP8 정적 이미지 키프레임 시작 3바이트. https://developers.google.com/speed/webp/docs/riff_container */
+    private const val VP8_KEYFRAME_TAG_0 = 0x9D
+    private const val VP8_KEYFRAME_TAG_1 = 0x01
+    private const val VP8_KEYFRAME_TAG_2 = 0x2A
+
+    /** VP8L 시그니처(첫 번째 출력 비트 패턴 포함). Lossless 형식 헤더. */
+    private const val VP8L_SIGNATURE_BYTE = 0x2F
 
     fun validate(bytes: ByteArray, normalizedContentType: String) {
         if (bytes.isEmpty()) {
@@ -74,34 +83,75 @@ object ShopImagePayloadValidator {
             throw BadRequestException("WebP 이미지 형식이 아닙니다.")
         }
         val riffPayload = ByteBuffer.wrap(bytes, 4, 4).order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xFFFF_FFFFL
-        if (riffPayload < 4L || 8 + riffPayload > bytes.size) {
+        if (riffPayload < 4L) {
             throw BadRequestException("WebP 이미지 형식이 아닙니다.")
         }
+        val riffTotalLong = 8L + riffPayload
+        if (riffTotalLong != bytes.size.toLong()) {
+            throw BadRequestException("WebP 이미지 형식이 아닙니다.")
+        }
+        if (riffTotalLong > Int.MAX_VALUE.toLong()) {
+            throw BadRequestException("WebP 이미지 형식이 아닙니다.")
+        }
+        val riffEndExclusive = riffTotalLong.toInt()
         if (!fourCcEquals(bytes, 8, "WEBP")) {
             throw BadRequestException("WebP 이미지 형식이 아닙니다.")
         }
         var offset = 12
         var foundBitstreamChunk = false
-        while (offset + 8 <= bytes.size) {
+        while (offset + 8 <= riffEndExclusive) {
             val chunkId = readFourCcAscii(bytes, offset)
             val chunkSize = ByteBuffer.wrap(bytes, offset + 4, 4).order(ByteOrder.LITTLE_ENDIAN).int
             if (chunkSize < 0) {
                 throw BadRequestException("WebP 이미지 형식이 아닙니다.")
             }
             val paddedPayload = chunkSize + (chunkSize and 1)
-            if (offset + 8L + paddedPayload.toLong() > bytes.size) {
+            val chunkEndExclusive = offset + 8L + paddedPayload.toLong()
+            if (chunkEndExclusive > riffEndExclusive.toLong()) {
                 throw BadRequestException("WebP 이미지 형식이 아닙니다.")
             }
+            val payloadOffset = offset + 8
             when (chunkId) {
-                "VP8 ", "VP8L" -> {
+                "VP8 " -> {
+                    validateVp8LossyKeyframePrefix(bytes, payloadOffset, chunkSize)
+                    foundBitstreamChunk = true
+                    break
+                }
+                "VP8L" -> {
+                    validateVp8lSignature(bytes, payloadOffset, chunkSize)
                     foundBitstreamChunk = true
                     break
                 }
             }
-            offset += 8 + paddedPayload
+            offset = chunkEndExclusive.toInt()
         }
         if (!foundBitstreamChunk) {
             throw BadRequestException("WebP 이미지 형식이 아닙니다.")
+        }
+    }
+
+    private fun validateVp8LossyKeyframePrefix(bytes: ByteArray, payloadOffset: Int, chunkPayloadSize: Int) {
+        if (chunkPayloadSize < 10) {
+            throw BadRequestException("WebP 이미지 형식이 아닙니다.")
+        }
+        requirePayloadByte(bytes, payloadOffset, VP8_KEYFRAME_TAG_0, "VP8")
+        requirePayloadByte(bytes, payloadOffset + 1, VP8_KEYFRAME_TAG_1, "VP8")
+        requirePayloadByte(bytes, payloadOffset + 2, VP8_KEYFRAME_TAG_2, "VP8")
+    }
+
+    private fun validateVp8lSignature(bytes: ByteArray, payloadOffset: Int, chunkPayloadSize: Int) {
+        if (chunkPayloadSize < 5) {
+            throw BadRequestException("WebP 이미지 형식이 아닙니다.")
+        }
+        requirePayloadByte(bytes, payloadOffset, VP8L_SIGNATURE_BYTE, "VP8L")
+    }
+
+    private fun requirePayloadByte(bytes: ByteArray, index: Int, expectedUnsigned: Int, label: String) {
+        if (index >= bytes.size) {
+            throw BadRequestException("WebP 이미지 형식이 아닙니다.")
+        }
+        if ((bytes[index].toInt() and 0xFF) != expectedUnsigned) {
+            throw BadRequestException("WebP 이미지 형식이 아닙니다.($label 비트스트림 시그니처)")
         }
     }
 
