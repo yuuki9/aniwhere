@@ -6,6 +6,7 @@ import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springdoc.core.annotations.ParameterObject
 import jakarta.validation.Valid
@@ -61,19 +62,17 @@ class ShopController(private val useCase: ShopUseCase) {
 
     @Operation(
         summary = "샵 등록 (이미지 포함)",
-        description = "multipart: `shop`(JSON), 필수 `coverImage`(대표), 선택 `galleryImages`(동일 필드명으로 여러 개, 최대 6)",
+        description = "multipart/form-data: ShopRequest와 동일한 이름의 텍스트 필드 + 필수 coverImage + 선택 galleryImages(같은 필드명 반복, 최대 6).",
     )
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @ResponseStatus(HttpStatus.CREATED)
     fun createShopWithImages(
-        @Valid @RequestPart("shop") shop: ShopRequest,
-        @RequestPart("coverImage") coverImage: MultipartFile,
-        @RequestPart("galleryImages", required = false) galleryImages: List<MultipartFile>?,
+        @Valid @ModelAttribute request: ShopCreateMultipartRequest,
     ) = ApiResponse.ok(
         useCase.createShopWithImages(
-            shop.toDomain(),
-            coverImage.requireImagePart(),
-            galleryImages.orEmpty().filter { !it.isEmpty }.map { it.requireImagePart() },
+            request.toShop(),
+            request.coverImage.requireImagePart(),
+            request.galleryImages.orEmpty().filter { !it.isEmpty }.map { it.requireImagePart() },
         ),
     )
 
@@ -119,4 +118,32 @@ data class ShopRequest(
         sellsIchibanKuji = sellsIchibanKuji,
         visitTip = visitTip,
     )
+}
+
+@Schema(description = "multipart 등록: ShopRequest 필드명과 동일한 폼 필드 + coverImage(파일) + galleryImages(파일, 반복)")
+data class ShopCreateMultipartRequest(
+    @field:NotBlank @Schema(example = "샵 이름") val name: String,
+    @field:NotBlank @Schema(example = "서울시 …") val address: String,
+    @Schema(example = "127.0276368") val px: BigDecimal,
+    @Schema(example = "37.4979462") val py: BigDecimal,
+    @Schema(example = "2F") val floor: String? = null,
+    @Schema(example = "1") val regionId: Short? = null,
+    @Schema(example = "UNVERIFIED", allowableValues = ["ACTIVE", "CLOSED", "UNVERIFIED"])
+    val status: String = "UNVERIFIED",
+    val sellsIchibanKuji: Boolean? = null,
+    val visitTip: String? = null,
+    val coverImage: MultipartFile,
+    val galleryImages: List<MultipartFile>? = null,
+) {
+    fun toShop(): Shop = ShopRequest(
+        name = name,
+        address = address,
+        px = px,
+        py = py,
+        floor = floor,
+        regionId = regionId,
+        status = status,
+        sellsIchibanKuji = sellsIchibanKuji,
+        visitTip = visitTip,
+    ).toDomain()
 }
