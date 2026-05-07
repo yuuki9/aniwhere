@@ -55,9 +55,14 @@ export function MapOverlayControls({
           {locationState === 'loading' ? (
             <span className="map-chip-gps-spinner map-control-icon" aria-hidden="true" />
           ) : (
-            <span className="map-chip-gps-icon map-control-icon" aria-hidden="true">
-              <span className="map-chip-gps-crosshair" />
-            </span>
+            <svg className="map-location-target-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="5" />
+              <circle cx="12" cy="12" r="1.8" />
+              <path d="M12 3.5v3" />
+              <path d="M12 17.5v3" />
+              <path d="M3.5 12h3" />
+              <path d="M17.5 12h3" />
+            </svg>
           )}
         </button>
       ) : null}

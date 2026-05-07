@@ -1,4 +1,4 @@
-import { type UIEvent, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type UIEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
@@ -53,6 +53,17 @@ type DetailMediaItem = {
   id: string
   src: string
   alt: string
+}
+
+function getLocationErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : ''
+  const lowerMessage = message.toLowerCase()
+
+  if (message.includes('권한') || lowerMessage.includes('permission') || lowerMessage.includes('denied')) {
+    return '위치 권한이 필요해요. 지역 검색으로도 매장을 찾을 수 있어요.'
+  }
+
+  return '현재 위치를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.'
 }
 
 type MapBounds = MapViewport['bounds']
@@ -123,11 +134,12 @@ export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const regionId = Number(searchParams.get('regionId') ?? '') || undefined
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
+  const sheetParam = searchParams.get('sheet')
   const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>(nearbyRequest ? 'list' : 'map')
-  const [sheetMode, setSheetMode] = useState<SheetMode>(selectedShopId ? 'peek' : 'peek')
+  const sheetMode: SheetMode = selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
   const [selectionOrigin, setSelectionOrigin] = useState<SelectionOrigin>(selectedShopId ? 'map' : null)
   const [visibleListCount, setVisibleListCount] = useState(PAGE_SIZE)
   const [userLocation, setUserLocation] = useState<UserLocation | null>(nearbyRequest?.location ?? null)
@@ -157,6 +169,7 @@ export function ExplorePage() {
   const detailScrollRef = useRef<HTMLDivElement | null>(null)
   const assistantMessagesRef = useRef<HTMLDivElement | null>(null)
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const locationErrorTimerRef = useRef<number | null>(null)
   const hasMapViewportRef = useRef(false)
   const listScrollTopRef = useRef(0)
   const listVisibleCountRef = useRef(PAGE_SIZE)
@@ -314,8 +327,33 @@ export function ExplorePage() {
     },
   })
 
-  const syncSearchParams = (next: URLSearchParams) => {
+  const replaceSearchParams = (next: URLSearchParams) => {
     setSearchParams(next, { replace: true })
+  }
+
+  const pushSearchParams = (next: URLSearchParams) => {
+    setSearchParams(next)
+  }
+
+  const clearLocationError = () => {
+    if (locationErrorTimerRef.current != null) {
+      window.clearTimeout(locationErrorTimerRef.current)
+      locationErrorTimerRef.current = null
+    }
+
+    setLocationError(null)
+  }
+
+  const showLocationError = (message: string) => {
+    if (locationErrorTimerRef.current != null) {
+      window.clearTimeout(locationErrorTimerRef.current)
+    }
+
+    setLocationError(message)
+    locationErrorTimerRef.current = window.setTimeout(() => {
+      setLocationError(null)
+      locationErrorTimerRef.current = null
+    }, 3600)
   }
 
   const submitAssistantQuestion = (question: string) => {
@@ -349,11 +387,19 @@ export function ExplorePage() {
   ) => {
     const next = new URLSearchParams(searchParams)
     next.set('shopId', String(shopId))
+    if (nextSheetMode === 'expanded') {
+      next.set('sheet', 'expanded')
+    } else {
+      next.delete('sheet')
+    }
 
-    syncSearchParams(next)
+    if (selectedShopId == null) {
+      pushSearchParams(next)
+    } else {
+      replaceSearchParams(next)
+    }
     setSelectionOrigin(origin)
     setIsDetailHeaderCollapsed(false)
-    setSheetMode(nextSheetMode)
     setAssistantOpen(false)
     if (origin === 'list') {
       requestMapFocus('shop')
@@ -366,10 +412,10 @@ export function ExplorePage() {
   const restoreListView = () => {
     const next = new URLSearchParams(searchParams)
     next.delete('shopId')
-    syncSearchParams(next)
+    next.delete('sheet')
+    replaceSearchParams(next)
     pendingListRestoreRef.current = true
     setVisibleListCount(Math.max(PAGE_SIZE, listVisibleCountRef.current))
-    setSheetMode('peek')
     setAssistantOpen(false)
     requestMapFocus('shops')
     setViewMode('list')
@@ -388,8 +434,8 @@ export function ExplorePage() {
 
     const next = new URLSearchParams(searchParams)
     next.delete('shopId')
-    syncSearchParams(next)
-    setSheetMode('peek')
+    next.delete('sheet')
+    replaceSearchParams(next)
     setAssistantOpen(false)
     setFocusMode('idle')
     setViewMode('map')
@@ -424,16 +470,17 @@ export function ExplorePage() {
     }
 
     setLocationState('loading')
-    setLocationError(null)
+    clearLocationError()
 
     try {
       const location = await requestCurrentLocation()
       setUserLocation(location)
       setLocationState('ready')
+      clearLocationError()
       requestMapFocus('user')
     } catch (error) {
       setLocationState('error')
-      setLocationError(error instanceof Error ? error.message : '현재 위치를 가져오지 못했습니다.')
+      showLocationError(getLocationErrorMessage(error))
     }
   }
 
@@ -493,6 +540,7 @@ export function ExplorePage() {
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
   const detailActionLinkUrl = primaryLink?.url ?? naverSearchUrl
   const isListSheetOpen = viewMode === 'list' && !detailShop
+  const isExploreTopHidden = sheetMode === 'expanded' || isListSheetOpen
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
   const showAssistantReturn = !assistantOpen && assistantHasConversation && !isListSheetOpen && sheetMode !== 'expanded'
@@ -524,11 +572,17 @@ export function ExplorePage() {
   }
 
   const expandPeekSheet = () => {
+    if (selectedShopId != null && sheetParam !== 'expanded') {
+      const next = new URLSearchParams(searchParams)
+      next.set('shopId', String(selectedShopId))
+      next.set('sheet', 'expanded')
+      pushSearchParams(next)
+    }
+
     setIsDetailHeaderCollapsed(false)
     setPeekDragOffset(0)
     setIsPeekDragging(false)
     setAssistantOpen(false)
-    setSheetMode('expanded')
   }
 
   const resetPeekDrag = () => {
@@ -601,6 +655,14 @@ export function ExplorePage() {
     pendingListRestoreRef.current = false
   }, [isListSheetOpen, visibleListCount])
 
+  useEffect(() => {
+    return () => {
+      if (locationErrorTimerRef.current != null) {
+        window.clearTimeout(locationErrorTimerRef.current)
+      }
+    }
+  }, [])
+
   useLayoutEffect(() => {
     if (sheetMode !== 'expanded' || !detailScrollRef.current) {
       return
@@ -634,7 +696,13 @@ export function ExplorePage() {
       return
     }
 
-    setSheetMode('peek')
+    if (selectedShopId != null && sheetParam === 'expanded') {
+      const next = new URLSearchParams(searchParams)
+      next.delete('sheet')
+      replaceSearchParams(next)
+    }
+
+    setIsDetailHeaderCollapsed(false)
   }
 
   const openNaverDirections = (event?: { stopPropagation: () => void }) => {
@@ -727,35 +795,45 @@ export function ExplorePage() {
           )}
 
           <div
-            className={`map-explore-top ${sheetMode === 'expanded' || isListSheetOpen ? 'map-explore-top-hidden' : ''}`}
+            className={`map-explore-top ${isExploreTopHidden ? 'map-explore-top-hidden' : ''}`}
+            aria-hidden={isExploreTopHidden}
           >
-            <ExploreTopSearch
-              attachTriggerRef={!isListSheetOpen}
-              filterTriggerRef={filterTriggerRef}
-              isFilterSheetOpen={isFilterSheetOpen}
-              appliedFilterCount={appliedFilterCount}
-              onSearchClick={() => navigate('/search')}
-              onFilterClick={() => setIsFilterSheetOpen(true)}
-            />
-            <MapQuickChips items={MAP_QUICK_CHIPS} activeItems={activeMapQuickChips} onToggle={toggleMapQuickChip} />
+            {!isExploreTopHidden ? (
+              <>
+                <ExploreTopSearch
+                  attachTriggerRef
+                  filterTriggerRef={filterTriggerRef}
+                  isFilterSheetOpen={isFilterSheetOpen}
+                  appliedFilterCount={appliedFilterCount}
+                  onSearchClick={() => navigate('/search')}
+                  onFilterClick={() => setIsFilterSheetOpen(true)}
+                />
+                <MapQuickChips items={MAP_QUICK_CHIPS} activeItems={activeMapQuickChips} onToggle={toggleMapQuickChip} />
 
-            {hasPendingMapSearch && mapViewport ? (
-              <button className="map-area-search-button" type="button" onClick={handleSearchCurrentMapArea}>
-                <svg className="map-area-search-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
-                  <path d="M20 11a8 8 0 0 0-14.6-4.5L4 8" />
-                  <path d="M4 4v4h4" />
-                  <path d="M4 13a8 8 0 0 0 14.6 4.5L20 16" />
-                  <path d="M20 20v-4h-4" />
-                </svg>
-                이 지역 매장 검색
-              </button>
+                {hasPendingMapSearch && mapViewport ? (
+                  <button className="map-area-search-button" type="button" onClick={handleSearchCurrentMapArea}>
+                    <svg className="map-area-search-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+                      <path d="M20 11a8 8 0 0 0-14.6-4.5L4 8" />
+                      <path d="M4 4v4h4" />
+                      <path d="M4 13a8 8 0 0 0 14.6 4.5L20 16" />
+                      <path d="M20 20v-4h-4" />
+                    </svg>
+                    이 지역 매장 검색
+                  </button>
+                ) : null}
+
+                {shopsError ? <p className="error-text map-inline-error map-inline-error-overlay">{shopsError}</p> : null}
+              </>
             ) : null}
-
-            {locationError ? <p className="error-text map-inline-error map-inline-error-overlay">{locationError}</p> : null}
-            {shopsError ? <p className="error-text map-inline-error map-inline-error-overlay">{shopsError}</p> : null}
           </div>
 
           <SearchFilterSheet open={isFilterSheetOpen} triggerRef={filterTriggerRef} onClose={closeFilterSheet} />
+
+          {locationError && sheetMode !== 'expanded' && !isListSheetOpen ? (
+            <p className="map-location-error-toast" role="status">
+              {locationError}
+            </p>
+          ) : null}
 
           <MapOverlayControls
             visible={sheetMode !== 'expanded'}
