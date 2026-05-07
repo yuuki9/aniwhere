@@ -12,6 +12,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         default_batch_fetch_size: 100
+  servlet:
+    multipart:
+      max-file-size: 12MB
+      max-request-size: 90MB
 
 springdoc:
   swagger-ui:
@@ -29,3 +33,10 @@ server:
 # OpenAPI "Try it out" base URL. Override with APP_PUBLIC_URL (e.g. http://localhost:8080 for local same-origin).
 app:
   api-public-url: ${APP_PUBLIC_URL:https://api.aniwhere.link}
+  s3:
+    shop-images:
+      bucket: ${AWS_S3_SHOP_IMAGES_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-2}
+      public-base-url: ${AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL:}
+      # 기본 false: 버킷 미설정 시 기동 실패. 로컬만 예외로 허용하려면 true 로 두세요.
+      skip-startup-bucket-check: ${APP_S3_SHOP_IMAGES_SKIP_STARTUP_BUCKET_CHECK:false}

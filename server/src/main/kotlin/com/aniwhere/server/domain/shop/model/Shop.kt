@@ -18,6 +18,7 @@ data class Shop(
     val categories: List<String> = emptyList(),
     val works: List<String> = emptyList(),
     val links: List<ShopLink> = emptyList(),
+    val images: List<ShopImage> = emptyList(),
     val description: String? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,

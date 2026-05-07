@@ -1,12 +1,15 @@
 package com.aniwhere.server.adapter.out.persistence
 
 import com.aniwhere.server.adapter.out.persistence.entity.ShopEntity
+import com.aniwhere.server.adapter.out.persistence.entity.ShopImageEntity
+import com.aniwhere.server.adapter.out.persistence.entity.ShopImageRoleEnum
 import com.aniwhere.server.adapter.out.persistence.entity.ShopStatusEnum
 import com.aniwhere.server.adapter.out.persistence.mapper.ShopMapper
 import com.aniwhere.server.adapter.out.persistence.repository.RegionRepository
 import com.aniwhere.server.adapter.out.persistence.repository.ShopRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
 import com.aniwhere.server.domain.shop.port.out.ShopPersistencePort
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -17,12 +20,13 @@ import org.springframework.stereotype.Component
 class ShopPersistenceAdapter(
     private val shopRepo: ShopRepository,
     private val regionRepo: RegionRepository,
+    private val shopMapper: ShopMapper,
 ) : ShopPersistencePort {
 
-    override fun findById(id: Long) = shopRepo.findByIdOrNull(id)?.let(ShopMapper::toDomain)
+    override fun findById(id: Long) = shopRepo.findByIdOrNull(id)?.let(shopMapper::toDomain)
 
     override fun findAll(regionId: Short?, categoryName: String?, keyword: String?, workName: String?, pageable: Pageable): Page<Shop> =
-        shopRepo.search(regionId, categoryName, keyword, workName, pageable).map(ShopMapper::toDomain)
+        shopRepo.search(regionId, categoryName, keyword, workName, pageable).map(shopMapper::toDomain)
 
     override fun save(shop: Shop): Shop {
         val region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }
@@ -34,7 +38,22 @@ class ShopPersistenceAdapter(
             sellsIchibanKuji = shop.sellsIchibanKuji,
             visitTip = shop.visitTip,
         )
-        return ShopMapper.toDomain(shopRepo.save(entity))
+        return shopMapper.toDomain(shopRepo.save(entity))
+    }
+
+    override fun saveShopImageRecords(shopId: Long, rows: List<ShopImagePersistenceRow>) {
+        val shop = shopRepo.findByIdOrNull(shopId) ?: throw EntityNotFoundException("Shop not found: $shopId")
+        rows.forEach { row ->
+            shop.images.add(
+                ShopImageEntity(
+                    shop = shop,
+                    s3Key = row.s3Key,
+                    role = ShopImageRoleEnum.valueOf(row.role.name.lowercase()),
+                    sortOrder = row.sortOrder,
+                ),
+            )
+        }
+        shopRepo.save(shop)
     }
 
     override fun update(id: Long, shop: Shop): Shop {
@@ -48,7 +67,7 @@ class ShopPersistenceAdapter(
         entity.sellsIchibanKuji = shop.sellsIchibanKuji
         entity.visitTip = shop.visitTip
         entity.region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }
-        return ShopMapper.toDomain(shopRepo.save(entity))
+        return shopMapper.toDomain(shopRepo.save(entity))
     }
 
     override fun deleteById(id: Long) {

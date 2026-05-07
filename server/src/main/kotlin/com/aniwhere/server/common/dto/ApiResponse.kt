@@ -16,6 +16,7 @@ data class ApiResponse<T>(
 
         fun ok() = ApiResponse<Unit>(success = true)
 
-        fun error(message: String) = ApiResponse<Unit>(success = false, message = message)
+        fun error(message: String, code: String? = null) =
+            ApiResponse<Unit>(success = false, code = code, message = message)
     }
 }
