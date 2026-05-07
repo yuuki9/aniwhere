@@ -73,11 +73,7 @@
 
 .map-surface-local-navigation .map-explore-top,
 .map-surface-local-navigation .map-list-sticky {
-  padding-top: calc(
-    max(var(--ait-space-4), calc(env(safe-area-inset-top) + var(--ait-space-2))) +
-    var(--ait-component-navigation-height) +
-    var(--ait-space-5)
-  );
+  padding-top: calc(max(var(--ait-space-4), calc(env(safe-area-inset-top) + var(--ait-space-2))) + var(--ait-component-navigation-height) + var(--ait-space-5));
 }
 
 .map-explore-top {
