@@ -38,3 +38,5 @@ app:
       bucket: ${AWS_S3_SHOP_IMAGES_BUCKET:}
       region: ${AWS_REGION:ap-northeast-2}
       public-base-url: ${AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL:}
+      # 기본 false: 버킷 미설정 시 기동 실패. 로컬만 예외로 허용하려면 true 로 두세요.
+      skip-startup-bucket-check: ${APP_S3_SHOP_IMAGES_SKIP_STARTUP_BUCKET_CHECK:false}

@@ -1,7 +1,6 @@
 package com.aniwhere.server.domain.shop.service
 
 import com.aniwhere.server.common.exception.EntityNotFoundException
-import com.aniwhere.server.config.ShopImagesS3Properties
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopImageRole
@@ -12,7 +11,9 @@ import com.aniwhere.server.domain.shop.port.out.ShopPersistencePort
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,6 +21,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.SimpleTransactionStatus
+import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 
 @ExtendWith(MockKExtension::class)
@@ -31,6 +35,8 @@ class ShopServiceTest {
     @MockK
     private lateinit var imageStorage: ShopImageStoragePort
 
+    private lateinit var transactionTemplate: TransactionTemplate
+
     private lateinit var service: ShopService
 
     private val sampleShop = Shop(
@@ -41,7 +47,13 @@ class ShopServiceTest {
 
     @BeforeEach
     fun setup() {
-        service = ShopService(port, imageStorage, ShopImagesS3Properties(bucket = "test-bucket"))
+        val tm = mockk<PlatformTransactionManager>()
+        every { tm.getTransaction(any()) } returns SimpleTransactionStatus(true)
+        every { tm.commit(any()) } returns Unit
+        every { tm.rollback(any()) } returns Unit
+        transactionTemplate = TransactionTemplate(tm)
+        service = ShopService(port, imageStorage, transactionTemplate)
+        every { imageStorage.deleteObject(any()) } returns Unit
     }
 
     @Test
@@ -103,6 +115,31 @@ class ShopServiceTest {
         )
         verify(exactly = 2) { imageStorage.putObject(any(), any(), any()) }
         verify { port.saveShopImageRecords(1L, any()) }
+        verify(exactly = 0) { imageStorage.deleteObject(any()) }
+    }
+
+    @Test
+    fun `createShopWithImages - 이미지 메타 저장 실패 시 업로드된 S3 객체 삭제를 시도한다`() {
+        val created = sampleShop.copy(id = null)
+        every { port.save(any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every { port.saveShopImageRecords(1L, any()) } throws RuntimeException("db error")
+
+        assertThrows<RuntimeException> {
+            service.createShopWithImages(
+                created,
+                ImageUploadPart(byteArrayOf(1), "image/jpeg"),
+                listOf(ImageUploadPart(byteArrayOf(2), "image/png")),
+            )
+        }
+
+        verifyOrder {
+            imageStorage.putObject("1/primary.jpg", any(), any())
+            imageStorage.putObject("1/gallery-1.png", any(), any())
+            port.saveShopImageRecords(1L, any())
+            imageStorage.deleteObject("1/primary.jpg")
+            imageStorage.deleteObject("1/gallery-1.png")
+        }
     }
 
     @Test

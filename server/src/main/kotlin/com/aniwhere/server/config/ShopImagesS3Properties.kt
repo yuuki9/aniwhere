@@ -9,6 +9,8 @@ data class ShopImagesS3Properties(
     val bucket: String = "",
     val region: String = "ap-northeast-2",
     val publicBaseUrl: String = "",
+    /** true면 버킷 비어 있어도 기동 허용 (로컬 전용 권장). */
+    val skipStartupBucketCheck: Boolean = false,
 ) {
     fun resolvePublicUrl(s3Key: String): String {
         val base = publicBaseUrl.trimEnd('/')
