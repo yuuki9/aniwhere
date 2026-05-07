@@ -88,6 +88,10 @@ class ShopService(
     ): Shop {
         port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
 
+        if (gallery.isNotEmpty() && !replaceGallery) {
+            throw BadRequestException("갤러리 파일은 replaceGallery=true 일 때만 전송할 수 있습니다.")
+        }
+
         val hasCoverChange = coverImage != null
         val hasGalleryReplace = replaceGallery
 

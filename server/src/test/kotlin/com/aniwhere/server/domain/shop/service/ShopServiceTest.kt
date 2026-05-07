@@ -297,6 +297,38 @@ class ShopServiceTest {
     }
 
     @Test
+    fun `updateShopWithImages - replaceGallery false 인데 gallery 가 있으면 거절`() {
+        every { port.findById(1L) } returns sampleShop
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                sampleShop,
+                coverImage = null,
+                replaceGallery = false,
+                gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - replaceGallery false 인데 대표와 gallery 동시 전송 시 거절하고 업로드 없음`() {
+        every { port.findById(1L) } returns sampleShop
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                sampleShop,
+                ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+                replaceGallery = false,
+                gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+    }
+
+    @Test
     fun `updateShopWithImages - 메타만 갱신하고 이미지 경로 미호출`() {
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
