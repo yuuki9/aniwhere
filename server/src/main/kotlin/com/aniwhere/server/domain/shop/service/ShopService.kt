@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
+import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
@@ -76,6 +77,81 @@ class ShopService(
 
     @Transactional
     override fun updateShop(id: Long, shop: Shop) = port.update(id, shop)
+
+    @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
+    override fun updateShopWithImages(
+        id: Long,
+        shop: Shop,
+        coverImage: ImageUploadPart?,
+        replaceGallery: Boolean,
+        gallery: List<ImageUploadPart>,
+    ): Shop {
+        port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+
+        if (gallery.isNotEmpty() && !replaceGallery) {
+            throw BadRequestException("갤러리 파일은 replaceGallery=true 일 때만 전송할 수 있습니다.")
+        }
+
+        val hasCoverChange = coverImage != null
+        val hasGalleryReplace = replaceGallery
+
+        if (!hasCoverChange && !hasGalleryReplace) {
+            transactionTemplate.execute {
+                port.update(id, shop)
+            }
+            return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        }
+
+        if (hasGalleryReplace && gallery.size > MAX_GALLERY_IMAGES) {
+            throw BadRequestException("갤러리 이미지는 최대 ${MAX_GALLERY_IMAGES}장까지 등록할 수 있습니다.")
+        }
+
+        if (hasCoverChange) {
+            validateImageUploadPart(coverImage!!)
+        }
+        if (hasGalleryReplace) {
+            gallery.forEach { validateImageUploadPart(it) }
+        }
+
+        var newPrimaryRow: ShopImagePersistenceRow? = null
+        var galleryRows: List<ShopImagePersistenceRow>? = null
+        val uploadedKeys = mutableListOf<String>()
+
+        try {
+            if (hasCoverChange) {
+                val part = coverImage!!
+                // 운영 중인 고정 키(예: primary.jpg)를 트랜잭션 전에 덮어쓰면 DB 실패 시에도 클라이언트가 깨진 바이트를 보게 된다. UUID 접미로 항상 새 오브젝트에 올린 뒤 스왑한다.
+                val primaryKey = "$id/primary.${UUID.randomUUID()}.${extensionFor(part.contentType)}"
+                imageStorage.putObject(primaryKey, part.bytes, normalizeContentType(part.contentType))
+                uploadedKeys.add(primaryKey)
+                newPrimaryRow = ShopImagePersistenceRow(primaryKey, ShopImageRole.PRIMARY, 0)
+            }
+            if (hasGalleryReplace) {
+                galleryRows = gallery.mapIndexed { index, part ->
+                    val key = "$id/gallery-${index + 1}.${UUID.randomUUID()}.${extensionFor(part.contentType)}"
+                    imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
+                    uploadedKeys.add(key)
+                    ShopImagePersistenceRow(key, ShopImageRole.GALLERY, index + 1)
+                }
+            }
+
+            val oldKeysRemoved = transactionTemplate.execute {
+                port.update(id, shop)
+                port.swapShopImageRecords(id, newPrimaryRow, galleryRows)
+            } ?: emptyList()
+
+            oldKeysRemoved.forEach { key ->
+                runCatching { imageStorage.deleteObject(key) }
+            }
+        } catch (e: Exception) {
+            for (key in uploadedKeys) {
+                runCatching { imageStorage.deleteObject(key) }.exceptionOrNull()?.let { e.addSuppressed(it) }
+            }
+            throw e
+        }
+
+        return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+    }
 
     @Transactional
     override fun deleteShop(id: Long) = port.deleteById(id)

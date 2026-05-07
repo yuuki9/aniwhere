@@ -56,6 +56,40 @@ class ShopPersistenceAdapter(
         shopRepo.save(shop)
     }
 
+    override fun swapShopImageRecords(
+        shopId: Long,
+        newPrimaryRow: ShopImagePersistenceRow?,
+        galleryReplacementRows: List<ShopImagePersistenceRow>?,
+    ): List<String> {
+        val shop = shopRepo.findByIdOrNull(shopId) ?: throw EntityNotFoundException("Shop not found: $shopId")
+        val removedKeys = mutableListOf<String>()
+        if (newPrimaryRow != null) {
+            val oldPrimary = shop.images.filter { it.role == ShopImageRoleEnum.primary }.toList()
+            oldPrimary.forEach {
+                removedKeys.add(it.s3Key)
+                shop.images.remove(it)
+            }
+            shop.images.add(imageRowToEntity(shop, newPrimaryRow))
+        }
+        if (galleryReplacementRows != null) {
+            val oldGallery = shop.images.filter { it.role == ShopImageRoleEnum.gallery }.toList()
+            oldGallery.forEach {
+                removedKeys.add(it.s3Key)
+                shop.images.remove(it)
+            }
+            galleryReplacementRows.forEach { shop.images.add(imageRowToEntity(shop, it)) }
+        }
+        shopRepo.save(shop)
+        return removedKeys
+    }
+
+    private fun imageRowToEntity(shop: ShopEntity, row: ShopImagePersistenceRow) = ShopImageEntity(
+        shop = shop,
+        s3Key = row.s3Key,
+        role = ShopImageRoleEnum.valueOf(row.role.name.lowercase()),
+        sortOrder = row.sortOrder,
+    )
+
     override fun update(id: Long, shop: Shop): Shop {
         val entity = shopRepo.findByIdOrNull(id) ?: throw EntityNotFoundException("Shop not found: $id")
         entity.name = shop.name

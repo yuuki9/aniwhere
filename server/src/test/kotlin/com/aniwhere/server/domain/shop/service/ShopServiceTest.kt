@@ -264,6 +264,178 @@ class ShopServiceTest {
     }
 
     @Test
+    fun `updateShopWithImages - 대표 이미지 검증 실패 시 메타·이미지 DB 모두 미반영`() {
+        every { port.findById(1L) } returns sampleShop
+        val incoming = sampleShop.copy(name = "실패해야함")
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                incoming,
+                ImageUploadPart(byteArrayOf(1, 2, 3), "image/jpeg"),
+                replaceGallery = false,
+                gallery = emptyList(),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { port.swapShopImageRecords(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - replaceGallery 에 갤러리 바이트 실패 시 update 미호출`() {
+        every { port.findById(1L) } returns sampleShop
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                sampleShop,
+                coverImage = null,
+                replaceGallery = true,
+                gallery = listOf(ImageUploadPart(byteArrayOf(9, 9), "image/png")),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - replaceGallery false 인데 gallery 가 있으면 거절`() {
+        every { port.findById(1L) } returns sampleShop
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                sampleShop,
+                coverImage = null,
+                replaceGallery = false,
+                gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - replaceGallery false 인데 대표와 gallery 동시 전송 시 거절하고 업로드 없음`() {
+        every { port.findById(1L) } returns sampleShop
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                sampleShop,
+                ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+                replaceGallery = false,
+                gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - 메타만 갱신하고 이미지 경로 미호출`() {
+        every { port.findById(1L) } returns sampleShop
+        every { port.update(1L, any()) } returns sampleShop
+        val incoming = sampleShop.copy(name = "갱신된이름")
+
+        assertEquals(sampleShop.name, service.updateShopWithImages(1L, incoming, null, false, emptyList()).name)
+
+        verify { port.update(1L, incoming) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+        verify(exactly = 0) { port.swapShopImageRecords(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - 대표 교체 시 UUID 키로 업로드하고 예전 고정 키만 S3 에서 삭제`() {
+        val primaryUploaded = Regex("""^1/primary\.[\da-fA-F-]+\.jpg$""")
+        every { port.findById(1L) } returns sampleShop
+        every { port.update(1L, any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every { port.swapShopImageRecords(1L, any(), null) } returns listOf("1/primary.jpg")
+
+        service.updateShopWithImages(
+            1L,
+            sampleShop,
+            ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+            replaceGallery = false,
+            gallery = emptyList(),
+        )
+
+        verify {
+            imageStorage.putObject(match { primaryUploaded.matches(it) }, any(), "image/jpeg")
+        }
+        verify {
+            port.swapShopImageRecords(
+                1L,
+                match { it.role == ShopImageRole.PRIMARY && primaryUploaded.matches(it.s3Key) },
+                null,
+            )
+        }
+        verify { imageStorage.deleteObject("1/primary.jpg") }
+        verify(exactly = 1) { imageStorage.deleteObject(any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - 대표 확장자가 바뀌면 예전 키만 S3 삭제`() {
+        val primaryUploaded = Regex("""^1/primary\.[\da-fA-F-]+\.jpg$""")
+        every { port.findById(1L) } returns sampleShop
+        every { port.update(1L, any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every { port.swapShopImageRecords(1L, any(), null) } returns listOf("1/primary.png")
+
+        service.updateShopWithImages(
+            1L,
+            sampleShop,
+            ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+            replaceGallery = false,
+            gallery = emptyList(),
+        )
+
+        verify { imageStorage.putObject(match { primaryUploaded.matches(it) }, any(), "image/jpeg") }
+        verify { imageStorage.deleteObject("1/primary.png") }
+        verify(exactly = 1) { imageStorage.deleteObject(any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - 갤러리 교체 시 UUID 키로 업로드 후 기존 고정 키 전부 삭제`() {
+        val g1Uploaded = Regex("""^1/gallery-1\.[\da-fA-F-]+\.png$""")
+        every { port.findById(1L) } returns sampleShop
+        every { port.update(1L, any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every {
+            port.swapShopImageRecords(1L, null, any())
+        } returns listOf("1/gallery-1.png", "1/gallery-2.png")
+
+        service.updateShopWithImages(
+            1L,
+            sampleShop,
+            coverImage = null,
+            replaceGallery = true,
+            gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+        )
+
+        verify { imageStorage.putObject(match { g1Uploaded.matches(it) }, any(), "image/png") }
+        verify { imageStorage.deleteObject("1/gallery-1.png") }
+        verify { imageStorage.deleteObject("1/gallery-2.png") }
+        verify(exactly = 2) { imageStorage.deleteObject(any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - replaceGallery true 에 갤러리 비우면 swap 만 호출`() {
+        every { port.findById(1L) } returns sampleShop
+        every { port.update(1L, any()) } returns sampleShop
+        every { port.swapShopImageRecords(1L, null, emptyList()) } returns listOf("1/gallery-1.png")
+
+        service.updateShopWithImages(
+            1L,
+            sampleShop,
+            coverImage = null,
+            replaceGallery = true,
+            gallery = emptyList(),
+        )
+
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+        verify { port.swapShopImageRecords(1L, null, emptyList()) }
+        verify { imageStorage.deleteObject("1/gallery-1.png") }
+    }
+
+    @Test
     fun `deleteShop - 샵 삭제 성공`() {
         every { port.deleteById(1L) } returns Unit
         service.deleteShop(1L)
