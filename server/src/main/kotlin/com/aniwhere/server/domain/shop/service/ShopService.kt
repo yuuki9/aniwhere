@@ -46,14 +46,14 @@ class ShopService(
         val saved = port.save(shop.copy(id = null))
         val id = saved.id ?: error("Shop id missing after save")
 
-        val primaryKey = "shops/$id/primary.${extensionFor(cover.contentType)}"
+        val primaryKey = "$id/primary.${extensionFor(cover.contentType)}"
         imageStorage.putObject(primaryKey, cover.bytes, normalizeContentType(cover.contentType))
 
         val rows = mutableListOf(
             ShopImagePersistenceRow(s3Key = primaryKey, role = ShopImageRole.PRIMARY, sortOrder = 0),
         )
         gallery.forEachIndexed { index, part ->
-            val key = "shops/$id/gallery/${index + 1}.${extensionFor(part.contentType)}"
+            val key = "$id/gallery-${index + 1}.${extensionFor(part.contentType)}"
             imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
             rows.add(ShopImagePersistenceRow(s3Key = key, role = ShopImageRole.GALLERY, sortOrder = index + 1))
         }
