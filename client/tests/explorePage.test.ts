@@ -188,14 +188,29 @@ test('ExplorePage extracts the expanded detail media section into a focused comp
   const mediaSource = mapDetailMediaSectionSource()
 
   assert.match(source, /<MapDetailMediaSection/)
+  assert.match(source, /showTopbarControls=\{!usesTossNavigation\}/)
   assert.match(mediaSource, /map-sheet-media-grid/)
   assert.match(mediaSource, /detailMediaItems\.length > 0/)
   assert.match(mediaSource, /<strong>\+\{detailMediaItems\.length\}<\/strong>/)
+  assert.match(mediaSource, /showTopbarControls \? \(/)
   assert.match(mediaSource, /GlobalNavigationMenu/)
   assert.doesNotMatch(mediaSource, /shop\.links\.length/)
   assert.doesNotMatch(mediaSource, /shop\.works\.length,\s*4/)
   assert.doesNotMatch(source, /className=\{`map-sheet-media/)
   assert.doesNotMatch(source, /map-sheet-media-grid/)
+})
+
+test('Explore detail sheet hides duplicate chrome controls in Toss navigation runtime', () => {
+  const source = explorePageSource()
+  const mediaSource = mapDetailMediaSectionSource()
+
+  assert.match(source, /const usesTossNavigation = useMemo\(\(\) => isAppsInTossRuntime\(\), \[\]\)/)
+  assert.match(source, /!usesTossNavigation \? \(/)
+  assert.match(source, /showTopbarControls=\{!usesTossNavigation\}/)
+  assert.match(mediaSource, /showTopbarControls: boolean/)
+  assert.match(mediaSource, /\{showTopbarControls \? \(/)
+  assert.match(mediaSource, /aria-label="뒤로 가기"/)
+  assert.match(mediaSource, /aria-label="상세 화면 닫기"/)
 })
 
 test('ExplorePage extracts the expanded detail supplement sections into a focused component', () => {

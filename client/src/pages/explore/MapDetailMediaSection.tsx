@@ -11,6 +11,7 @@ type MapDetailMediaSectionProps = {
   shop: Shop
   tone: string
   detailMediaItems: MapDetailMediaItem[]
+  showTopbarControls: boolean
   onBack: () => void
   onClose: () => void
 }
@@ -19,34 +20,37 @@ export function MapDetailMediaSection({
   shop,
   tone,
   detailMediaItems,
+  showTopbarControls,
   onBack,
   onClose,
 }: MapDetailMediaSectionProps) {
   return (
     <section className={`map-sheet-media map-sheet-media-${tone}`}>
-      <div className="map-sheet-media-topbar">
-        <div className="map-sheet-topbar-actions">
-          <button
-            className="map-sheet-icon-button map-sheet-icon-button-overlay"
-            type="button"
-            onClick={onBack}
-            aria-label="뒤로 가기"
-          >
-            ←
-          </button>
-          <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
+      {showTopbarControls ? (
+        <div className="map-sheet-media-topbar">
+          <div className="map-sheet-topbar-actions">
+            <button
+              className="map-sheet-icon-button map-sheet-icon-button-overlay"
+              type="button"
+              onClick={onBack}
+              aria-label="뒤로 가기"
+            >
+              ←
+            </button>
+            <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
+          </div>
+          <div className="map-sheet-topbar-actions">
+            <button
+              className="map-sheet-icon-button map-sheet-icon-button-overlay"
+              type="button"
+              onClick={onClose}
+              aria-label="상세 화면 닫기"
+            >
+              ×
+            </button>
+          </div>
         </div>
-        <div className="map-sheet-topbar-actions">
-          <button
-            className="map-sheet-icon-button map-sheet-icon-button-overlay"
-            type="button"
-            onClick={onClose}
-            aria-label="상세 화면 닫기"
-          >
-            ×
-          </button>
-        </div>
-      </div>
+      ) : null}
 
       {detailMediaItems.length > 0 ? (
         <div className="map-sheet-media-grid">

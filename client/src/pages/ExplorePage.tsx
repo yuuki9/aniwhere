@@ -835,22 +835,27 @@ export function ExplorePage() {
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  <div className="map-sheet-sticky-actions">
-                    <button className="map-sheet-icon-button" type="button" onClick={handleExpandedBack} aria-label="뒤로 가기">
-                      ←
-                    </button>
-                    <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
-                  </div>
+                  {!usesTossNavigation ? (
+                    <div className="map-sheet-sticky-actions">
+                      <button className="map-sheet-icon-button" type="button" onClick={handleExpandedBack} aria-label="뒤로 가기">
+                        ←
+                      </button>
+                      <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
+                    </div>
+                  ) : null}
                   <strong>{detailShop.name}</strong>
-                  <button className="map-sheet-icon-button" type="button" onClick={handleClearSelection} aria-label="상세 화면 닫기">
-                    ×
-                  </button>
+                  {!usesTossNavigation ? (
+                    <button className="map-sheet-icon-button" type="button" onClick={handleClearSelection} aria-label="상세 화면 닫기">
+                      ×
+                    </button>
+                  ) : null}
                 </div>
 
                 <MapDetailMediaSection
                   shop={detailShop}
                   tone={detailMediaTone}
                   detailMediaItems={detailMediaItems}
+                  showTopbarControls={!usesTossNavigation}
                   onBack={handleExpandedBack}
                   onClose={handleClearSelection}
                 />
