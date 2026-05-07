@@ -15,6 +15,7 @@ interface ShopUseCase {
      * [coverImage]가 있으면 대표 이미지를 교체합니다.
      * [replaceGallery]가 true면 [gallery](0~MAX장) 내용으로 갤러리를 통째로 바꿉니다(미전송 파일이 없으면 갤러리 비움).
      * 둘 다 없으면 메타 데이터([shop])만 갱신합니다.
+     * 이미지가 있는 요청에서는 이미지 검증을 DB 반영보다 앞두고, `update`와 이미지 행 교체는 한 트랜잭션에서 처리합니다(S3 업로드는 트랜잭션 밖).
      */
     fun updateShopWithImages(
         id: Long,

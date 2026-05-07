@@ -87,19 +87,25 @@ class ShopService(
     ): Shop {
         port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
 
-        transactionTemplate.execute {
-            port.update(id, shop)
-        }
-
         val hasCoverChange = coverImage != null
         val hasGalleryReplace = replaceGallery
 
         if (!hasCoverChange && !hasGalleryReplace) {
+            transactionTemplate.execute {
+                port.update(id, shop)
+            }
             return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
         }
 
         if (hasGalleryReplace && gallery.size > MAX_GALLERY_IMAGES) {
             throw BadRequestException("갤러리 이미지는 최대 ${MAX_GALLERY_IMAGES}장까지 등록할 수 있습니다.")
+        }
+
+        if (hasCoverChange) {
+            validateImageUploadPart(coverImage!!)
+        }
+        if (hasGalleryReplace) {
+            gallery.forEach { validateImageUploadPart(it) }
         }
 
         var newPrimaryRow: ShopImagePersistenceRow? = null
@@ -109,14 +115,12 @@ class ShopService(
         try {
             if (hasCoverChange) {
                 val part = coverImage!!
-                validateImageUploadPart(part)
                 val primaryKey = "$id/primary.${extensionFor(part.contentType)}"
                 imageStorage.putObject(primaryKey, part.bytes, normalizeContentType(part.contentType))
                 uploadedKeys.add(primaryKey)
                 newPrimaryRow = ShopImagePersistenceRow(primaryKey, ShopImageRole.PRIMARY, 0)
             }
             if (hasGalleryReplace) {
-                gallery.forEach { validateImageUploadPart(it) }
                 galleryRows = gallery.mapIndexed { index, part ->
                     val key = "$id/gallery-${index + 1}.${extensionFor(part.contentType)}"
                     imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
@@ -126,10 +130,14 @@ class ShopService(
             }
 
             val oldKeysRemoved = transactionTemplate.execute {
+                port.update(id, shop)
                 port.swapShopImageRecords(id, newPrimaryRow, galleryRows)
             } ?: emptyList()
 
+            // 동일 확장자면 키가 기존과 같아서 put으로 덮어쓴 직후다. removed 에도 같은 문자열이 오므로 삭제하면 신규 객체까지 지워진다.
+            val overwrittenKeys = uploadedKeys.toSet()
             oldKeysRemoved.forEach { key ->
+                if (key in overwrittenKeys) return@forEach
                 runCatching { imageStorage.deleteObject(key) }
             }
         } catch (e: Exception) {

@@ -264,6 +264,39 @@ class ShopServiceTest {
     }
 
     @Test
+    fun `updateShopWithImages - 대표 이미지 검증 실패 시 메타·이미지 DB 모두 미반영`() {
+        every { port.findById(1L) } returns sampleShop
+        val incoming = sampleShop.copy(name = "실패해야함")
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                incoming,
+                ImageUploadPart(byteArrayOf(1, 2, 3), "image/jpeg"),
+                replaceGallery = false,
+                gallery = emptyList(),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { port.swapShopImageRecords(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - replaceGallery 에 갤러리 바이트 실패 시 update 미호출`() {
+        every { port.findById(1L) } returns sampleShop
+        assertThrows<BadRequestException> {
+            service.updateShopWithImages(
+                1L,
+                sampleShop,
+                coverImage = null,
+                replaceGallery = true,
+                gallery = listOf(ImageUploadPart(byteArrayOf(9, 9), "image/png")),
+            )
+        }
+        verify(exactly = 0) { port.update(any(), any()) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+    }
+
+    @Test
     fun `updateShopWithImages - 메타만 갱신하고 이미지 경로 미호출`() {
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
@@ -277,7 +310,7 @@ class ShopServiceTest {
     }
 
     @Test
-    fun `updateShopWithImages - 대표만 교체 시 swap 후 예전 대표 객체 삭제`() {
+    fun `updateShopWithImages - 대표 교체 시 키가 기존과 같으면 S3 삭제하지 않음_덮어쓴 객체 유지`() {
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
@@ -292,8 +325,50 @@ class ShopServiceTest {
         )
 
         verify { imageStorage.putObject("1/primary.jpg", any(), "image/jpeg") }
-        verify { port.swapShopImageRecords(1L, match { it?.role == ShopImageRole.PRIMARY && it?.s3Key == "1/primary.jpg" }, null) }
-        verify { imageStorage.deleteObject("1/primary.jpg") }
+        verify { port.swapShopImageRecords(1L, match { it.role == ShopImageRole.PRIMARY && it.s3Key == "1/primary.jpg" }, null) }
+        verify(exactly = 0) { imageStorage.deleteObject(any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - 대표 확장자가 바뀌면 예전 키만 S3 삭제`() {
+        every { port.findById(1L) } returns sampleShop
+        every { port.update(1L, any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every { port.swapShopImageRecords(1L, any(), null) } returns listOf("1/primary.png")
+
+        service.updateShopWithImages(
+            1L,
+            sampleShop,
+            ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+            replaceGallery = false,
+            gallery = emptyList(),
+        )
+
+        verify { imageStorage.putObject("1/primary.jpg", any(), "image/jpeg") }
+        verify { imageStorage.deleteObject("1/primary.png") }
+        verify(exactly = 1) { imageStorage.deleteObject(any()) }
+    }
+
+    @Test
+    fun `updateShopWithImages - 갤러리 교체 시 겹치는 키만 S3 삭제에서 제외`() {
+        every { port.findById(1L) } returns sampleShop
+        every { port.update(1L, any()) } returns sampleShop
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every {
+            port.swapShopImageRecords(1L, null, any())
+        } returns listOf("1/gallery-1.png", "1/gallery-2.png")
+
+        service.updateShopWithImages(
+            1L,
+            sampleShop,
+            coverImage = null,
+            replaceGallery = true,
+            gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+        )
+
+        verify { imageStorage.putObject("1/gallery-1.png", any(), "image/png") }
+        verify { imageStorage.deleteObject("1/gallery-2.png") }
+        verify(exactly = 1) { imageStorage.deleteObject(any()) }
     }
 
     @Test
