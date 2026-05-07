@@ -35,11 +35,11 @@ class ShopService(
 
     @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
     override fun createShopWithImages(shop: Shop, cover: ImageUploadPart, gallery: List<ImageUploadPart>): Shop {
-        assertAllowedImage(cover.contentType)
+        validateImageUploadPart(cover)
         if (gallery.size > MAX_GALLERY_IMAGES) {
             throw BadRequestException("갤러리 이미지는 최대 ${MAX_GALLERY_IMAGES}장까지 등록할 수 있습니다.")
         }
-        gallery.forEach { assertAllowedImage(it.contentType) }
+        gallery.forEach { validateImageUploadPart(it) }
 
         val saved = transactionTemplate.execute {
             port.save(shop.copy(id = null))
@@ -93,6 +93,14 @@ class ShopService(
         }
     }
 
+    private fun validateImageUploadPart(part: ImageUploadPart) {
+        val normalized = normalizeContentType(part.contentType)
+        if (normalized !in ALLOWED_IMAGE_TYPES) {
+            throw BadRequestException("지원하지 않는 이미지 형식입니다. 허용: JPEG, PNG, WebP, GIF")
+        }
+        ShopImagePayloadValidator.validate(part.bytes, normalized)
+    }
+
     private companion object {
         const val MAX_GALLERY_IMAGES = 6
         private val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
@@ -100,13 +108,6 @@ class ShopService(
         fun normalizeContentType(raw: String): String {
             val base = raw.substringBefore(';').trim().lowercase()
             return if (base == "image/jpg") "image/jpeg" else base
-        }
-
-        fun assertAllowedImage(rawContentType: String) {
-            val t = normalizeContentType(rawContentType)
-            if (t !in ALLOWED_IMAGE_TYPES) {
-                throw BadRequestException("지원하지 않는 이미지 형식입니다. 허용: JPEG, PNG, WebP, GIF")
-            }
         }
 
         fun extensionFor(rawContentType: String): String = when (normalizeContentType(rawContentType)) {

@@ -1,5 +1,6 @@
 package com.aniwhere.server.domain.shop.service
 
+import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
@@ -24,7 +25,10 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.SimpleTransactionStatus
 import org.springframework.transaction.support.TransactionTemplate
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
+import javax.imageio.ImageIO
 
 @ExtendWith(MockKExtension::class)
 class ShopServiceTest {
@@ -95,8 +99,8 @@ class ShopServiceTest {
             savedRows = secondArg()
         }
         every { port.findById(1L) } returns sampleShop
-        val cover = ImageUploadPart(byteArrayOf(1, 2, 3), "image/jpeg")
-        val gallery = listOf(ImageUploadPart(byteArrayOf(4), "image/png"))
+        val cover = ImageUploadPart(tinyValidJpeg, "image/jpeg")
+        val gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png"))
         val result = service.createShopWithImages(created, cover, gallery)
         assertEquals(1L, result.id)
         assertEquals(
@@ -120,6 +124,19 @@ class ShopServiceTest {
     }
 
     @Test
+    fun `createShopWithImages - 잘못된 이미지 바이트는 저장 전에 거절`() {
+        assertThrows<BadRequestException> {
+            service.createShopWithImages(
+                sampleShop.copy(id = null),
+                ImageUploadPart(byteArrayOf(1, 2, 3), "image/jpeg"),
+                emptyList(),
+            )
+        }
+        verify(exactly = 0) { port.save(any()) }
+        verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
+    }
+
+    @Test
     fun `createShopWithImages - 이미지 메타 저장 실패 시 S3 객체와 선저장 상점을 보상 삭제한다`() {
         val created = sampleShop.copy(id = null)
         every { port.save(any()) } returns sampleShop
@@ -130,8 +147,8 @@ class ShopServiceTest {
         assertThrows<RuntimeException> {
             service.createShopWithImages(
                 created,
-                ImageUploadPart(byteArrayOf(1), "image/jpeg"),
-                listOf(ImageUploadPart(byteArrayOf(2), "image/png")),
+                ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+                listOf(ImageUploadPart(minimalPngBytes, "image/png")),
             )
         }
 
@@ -156,8 +173,8 @@ class ShopServiceTest {
         assertThrows<RuntimeException> {
             service.createShopWithImages(
                 created,
-                ImageUploadPart(byteArrayOf(1), "image/jpeg"),
-                listOf(ImageUploadPart(byteArrayOf(2), "image/png")),
+                ImageUploadPart(tinyValidJpeg, "image/jpeg"),
+                listOf(ImageUploadPart(minimalPngBytes, "image/png")),
             )
         }
 
@@ -180,7 +197,7 @@ class ShopServiceTest {
         assertThrows<RuntimeException> {
             service.createShopWithImages(
                 created,
-                ImageUploadPart(byteArrayOf(1), "image/jpeg"),
+                ImageUploadPart(tinyValidJpeg, "image/jpeg"),
                 emptyList(),
             )
         }
@@ -202,5 +219,27 @@ class ShopServiceTest {
         every { port.deleteById(1L) } returns Unit
         service.deleteShop(1L)
         verify { port.deleteById(1L) }
+    }
+
+    companion object {
+
+        /** 1×1 화살 무늬 검사 패턴 포함 최소 PNG. */
+        val minimalPngBytes: ByteArray = byteArrayOf(
+            0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F.toByte(), 0x15.toByte(), 0xC4.toByte(), 0x89.toByte(),
+            0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78.toByte(), 0x9C.toByte(),
+            0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D.toByte(), 0x0A.toByte(), 0x2D.toByte(), 0xB4.toByte(),
+            0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE.toByte(), 0x42, 0x60, 0x82.toByte(),
+        )
+
+        val tinyValidJpeg: ByteArray by lazy {
+            val img = BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB)
+            ByteArrayOutputStream().use { os ->
+                ImageIO.write(img, "jpg", os)
+                os.toByteArray()
+            }
+        }
     }
 }
