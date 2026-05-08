@@ -11,10 +11,19 @@ if (!fs.existsSync(assetsDir)) {
   process.exit(1)
 }
 
-const jsFiles = fs
-  .readdirSync(assetsDir, { withFileTypes: true })
-  .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-  .map((entry) => path.join(assetsDir, entry.name))
+function collectJsFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(dir, entry.name)
+
+    if (entry.isDirectory()) {
+      return collectJsFiles(fullPath)
+    }
+
+    return entry.isFile() && fullPath.endsWith('.js') ? [fullPath] : []
+  })
+}
+
+const jsFiles = collectJsFiles(assetsDir)
 
 if (jsFiles.length === 0) {
   console.error(`No JavaScript assets found under: ${assetsDir}`)

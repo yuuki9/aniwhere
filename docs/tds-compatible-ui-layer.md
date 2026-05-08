@@ -34,7 +34,7 @@ These components intentionally provide only the patterns Aniwhere currently uses
 ```bash
 cd client
 npm ci
-npm run build:static
+npm run build:static:verify
 ```
 
 Deploy target:
@@ -50,11 +50,10 @@ client/dist-static
 - public build 결과물 안에 `@toss/tds-mobile` 관련 문자열이 들어가면 배포를 중단합니다.
 - 배포 후 브라우저에서 흰 화면이 아닌지 `/home`, `/explore`, `/intro` 진입을 확인합니다.
 
-검증용으로 다음 스크립트를 사용합니다.
+검증은 위 `build:static:verify`에 포함되어 있습니다. 내부적으로 `build:static`과 `audit:public-bundle`을 순서대로 실행합니다.
 
 ```bash
-npm run build:static
-node scripts/assert-public-bundle-no-tds.mjs
+npm run build:static:verify
 ```
 
 이 스크립트는 `dist-static/assets/*.js`에서 아래 문자열이 발견되면 실패합니다.
