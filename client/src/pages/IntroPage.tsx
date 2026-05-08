@@ -13,7 +13,7 @@ const featureItems = [
   },
   {
     icon: 'write',
-    title: '지도에서 비교하고',
+    title: '지도에서도 확인하고',
     body: '위치와 방문 정보를 한눈에 살펴봐요',
   },
   {

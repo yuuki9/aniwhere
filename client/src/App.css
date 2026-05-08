@@ -856,7 +856,7 @@ p {
 .intro-feature-list {
   display: flex;
   flex-direction: column;
-  gap: var(--ait-space-0);
+  gap: var(--ait-space-5);
   padding: var(--ait-space-0);
   margin: var(--ait-space-6) var(--ait-space-0) var(--ait-space-0);
   list-style: none;
@@ -898,7 +898,7 @@ p {
   top: calc(100% + var(--ait-space-1));
   left: 50%;
   width: 2px;
-  height: calc(var(--ait-space-14) + var(--ait-space-4));
+  height: calc(var(--ait-space-14) + var(--ait-space-9));
   border-radius: var(--ait-radius-full);
   background: repeating-linear-gradient(
     to bottom,
