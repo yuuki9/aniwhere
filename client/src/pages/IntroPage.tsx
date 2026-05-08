@@ -8,17 +8,17 @@ type IntroFeatureIconType = 'curation' | 'map' | 'review'
 const featureItems = [
   {
     icon: 'curation',
-    title: '인기 작품 큐레이션부터!',
-    body: '포스터와 트렌드 기준으로 둘러봐요',
+    title: '인기 작품을 모아봤어요',
+    body: '요즘 많이 찾는 작품부터 둘러봐요',
   },
   {
     icon: 'map',
-    title: '지도와 필터로 빠르게!',
-    body: '가까운 굿즈샵과 방문 정보를 확인해요',
+    title: '지도에서 한눈에 확인해요',
+    body: '필터로 원하는 굿즈샵을 찾아봐요',
   },
   {
     icon: 'review',
-    title: '방문 후기도 이어서!',
+    title: '방문 후기도 남겨요',
     body: '채택되면 포인트도 받을 수 있어요',
   },
 ] as const
