@@ -13,6 +13,28 @@ const introPageSource = () => fs.readFileSync(new URL('../src/pages/IntroPage.ts
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
 let viteServer: ViteDevServer | undefined
+type DomGlobalName =
+  | 'window'
+  | 'self'
+  | 'document'
+  | 'navigator'
+  | 'HTMLElement'
+  | 'MouseEvent'
+  | 'Node'
+  | 'getComputedStyle'
+  | 'IS_REACT_ACT_ENVIRONMENT'
+
+const domGlobalNames: DomGlobalName[] = [
+  'window',
+  'self',
+  'document',
+  'navigator',
+  'HTMLElement',
+  'MouseEvent',
+  'Node',
+  'getComputedStyle',
+  'IS_REACT_ACT_ENVIRONMENT',
+]
 
 const loadIntroPage = async () => {
   viteServer ??= await createServer({
@@ -31,7 +53,7 @@ test.after(async () => {
   await viteServer?.close()
 })
 
-const setDomGlobal = (name: string, value: unknown) => {
+const setDomGlobal = (name: DomGlobalName, value: unknown) => {
   Object.defineProperty(globalThis, name, {
     configurable: true,
     value,
@@ -43,6 +65,9 @@ const setupDom = () => {
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
     url: 'https://aniwhere.test/intro',
   })
+  const previousGlobals = new Map<DomGlobalName, PropertyDescriptor | undefined>(
+    domGlobalNames.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]),
+  )
 
   setDomGlobal('window', dom.window)
   setDomGlobal('self', dom.window)
@@ -57,10 +82,15 @@ const setupDom = () => {
   return {
     container: dom.window.document.getElementById('root') as HTMLElement,
     dom,
+    previousGlobals,
   }
 }
 
-const cleanupDom = (dom: JSDOM, root?: Root) => {
+const cleanupDom = (
+  dom: JSDOM,
+  previousGlobals: Map<DomGlobalName, PropertyDescriptor | undefined>,
+  root?: Root,
+) => {
   if (root != null) {
     act(() => {
       root.unmount()
@@ -69,18 +99,14 @@ const cleanupDom = (dom: JSDOM, root?: Root) => {
 
   dom.window.close()
 
-  for (const name of [
-    'window',
-    'self',
-    'document',
-    'navigator',
-    'HTMLElement',
-    'MouseEvent',
-    'Node',
-    'getComputedStyle',
-    'IS_REACT_ACT_ENVIRONMENT',
-  ]) {
-    Reflect.deleteProperty(globalThis, name)
+  for (const name of domGlobalNames) {
+    const descriptor = previousGlobals.get(name)
+
+    if (descriptor != null) {
+      Object.defineProperty(globalThis, name, descriptor)
+    } else {
+      Reflect.deleteProperty(globalThis, name)
+    }
   }
 }
 
@@ -115,7 +141,7 @@ test('IntroPage explains Aniwhere through curation, map exploration, and review 
 
 test('IntroPage starts in home first instead of opening Toss login from intro', async () => {
   const { IntroPage } = await loadIntroPage()
-  const { container, dom } = setupDom()
+  const { container, dom, previousGlobals } = setupDom()
   const root = createRoot(container)
   const styles = appCssSource()
   const actionsRule = cssRuleBody(styles, '.intro-mobile-actions')
@@ -154,7 +180,7 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
 
     assert.match(container.textContent ?? '', /home preview/)
   } finally {
-    cleanupDom(dom, root)
+    cleanupDom(dom, previousGlobals, root)
   }
 
   assert.match(actionsRule, /align-items:\s*center;/)
@@ -162,7 +188,7 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
 
 test('IntroPage paints a full white ADS viewport instead of exposing the global app background', async () => {
   const { IntroPage } = await loadIntroPage()
-  const { container, dom } = setupDom()
+  const { container, dom, previousGlobals } = setupDom()
   const root = createRoot(container)
   const styles = appCssSource()
   const shellRule = cssRuleBody(styles, '.intro-mobile-shell')
@@ -181,7 +207,7 @@ test('IntroPage paints a full white ADS viewport instead of exposing the global 
 
     assert.equal(document.body.classList.contains('intro-route-body'), false)
   } finally {
-    cleanupDom(dom)
+    cleanupDom(dom, previousGlobals)
   }
 
   assert.match(shellRule, /width:\s*100%;/)
