@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "granite dev",
     "build": "ait build",
-    "build:static": "vite build --outDir dist-static",
+    "build:static": "vite build --mode public --outDir dist-static",
+    "audit:public-bundle": "node scripts/assert-public-bundle-no-tds.mjs",
+    "build:static:verify": "npm run build:static && npm run audit:public-bundle",
     "lint": "eslint . && node scripts/check-css-style.mjs",
     "preview": "vite preview",
     "deploy": "ait deploy"
@@ -15,6 +17,8 @@
     "@apps-in-toss/web-framework": "^2.0.9",
     "@emotion/react": "^11.14.0",
     "@tanstack/react-query": "^5.95.2",
+    "@toss/tds-mobile": "^2.3.0",
+    "@toss/tds-mobile-ait": "^2.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.13.2",
