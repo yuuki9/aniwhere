@@ -3,22 +3,22 @@ import { useNavigate } from 'react-router-dom'
 import introStoreGuide from '../assets/intro-store-guide.webp'
 import { AitButton, AitListRow, AitNavigation, AitTop } from '../shared/ui/ait'
 
-type IntroFeatureIconType = 'search' | 'write' | 'approve'
+type IntroFeatureIconType = 'curation' | 'map' | 'review'
 
 const featureItems = [
   {
-    icon: 'search',
-    title: '원하는 조건으로 찾아보고',
-    body: '매장명·작품명·지역으로 시작해요',
+    icon: 'curation',
+    title: '인기 작품 큐레이션부터!',
+    body: '포스터와 트렌드 기준으로 둘러봐요',
   },
   {
-    icon: 'write',
-    title: '지도에서도 확인하고',
-    body: '위치와 방문 정보를 한눈에 살펴봐요',
+    icon: 'map',
+    title: '지도와 필터로 빠르게!',
+    body: '가까운 굿즈샵과 방문 정보를 확인해요',
   },
   {
-    icon: 'approve',
-    title: '후기 남기고 이어가요',
+    icon: 'review',
+    title: '방문 후기도 이어서!',
     body: '채택되면 포인트도 받을 수 있어요',
   },
 ] as const
@@ -27,22 +27,27 @@ function IntroFeatureIcon({ type }: { type: IntroFeatureIconType }) {
   return (
     <span className={`intro-feature-icon intro-feature-icon-${type}`} aria-hidden="true">
       <svg className="intro-feature-icon-svg" viewBox="0 0 24 24" focusable="false">
-        {type === 'search' ? (
+        {type === 'curation' ? (
           <>
-            <circle cx="10.5" cy="10.5" r="5.5" />
-            <path d="M15 15l4.5 4.5" />
+            <rect x="5" y="6" width="9" height="13" rx="2" />
+            <path d="M10.5 9.2l.8 1.6 1.8.3-1.3 1.2.3 1.8-1.6-.9-1.6.9.3-1.8-1.3-1.2 1.8-.3.8-1.6z" />
+            <path d="M15.5 8h2a1.5 1.5 0 0 1 1.5 1.5V17" />
+            <path d="M16 17h3" />
           </>
         ) : null}
-        {type === 'write' ? (
+        {type === 'map' ? (
           <>
-            <path d="M5 18.5l4.2-1 8.9-8.9a2.1 2.1 0 0 0-3-3L6.2 14.5 5 18.5z" />
-            <path d="M13.8 6.8l3.4 3.4" />
+            <path d="M12 20s5-4.8 5-9a5 5 0 0 0-10 0c0 4.2 5 9 5 9z" />
+            <circle cx="12" cy="11" r="1.7" />
+            <path d="M4.5 18.5h15" />
           </>
         ) : null}
-        {type === 'approve' ? (
+        {type === 'review' ? (
           <>
-            <circle cx="12" cy="12" r="8" />
-            <path d="M8.5 12.2l2.2 2.2 4.8-5" />
+            <path d="M5 6.5h14v8.8H9.2L5 18.7V6.5z" />
+            <path d="M8.5 10h5" />
+            <path d="M8.5 12.6h3" />
+            <path d="M15.1 12.4l1.2 1.2 2.3-2.6" />
           </>
         ) : null}
       </svg>

@@ -923,17 +923,19 @@ p {
   color: var(--ait-color-intro-feature-time);
 }
 
-.intro-feature-icon-search {
+.intro-feature-icon-curation {
+  background: var(--ait-color-intro-brand-surface);
+  color: var(--ait-color-aniwhere-icon-coral);
+}
+
+.intro-feature-icon-map {
   background: var(--ait-color-blue-50);
   color: var(--ait-color-brand);
 }
 
-.intro-feature-icon-write {
-  color: var(--ait-color-intro-feature-map);
-}
-
-.intro-feature-icon-approve {
-  color: var(--ait-color-brand);
+.intro-feature-icon-review {
+  background: var(--ait-color-amber-50);
+  color: var(--ait-color-amber-700);
 }
 
 .intro-feature-icon-svg {
@@ -944,15 +946,6 @@ p {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.2;
-}
-
-.intro-feature-icon-approve .intro-feature-icon-svg circle {
-  fill: currentcolor;
-  stroke: currentcolor;
-}
-
-.intro-feature-icon-approve .intro-feature-icon-svg path {
-  stroke: var(--ait-color-gray-0);
 }
 
 .intro-feature-list .ait-list-row-copy {
