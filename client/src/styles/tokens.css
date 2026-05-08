@@ -146,6 +146,8 @@
   --ait-component-intro-feature-asset-size: 40px;
   --ait-component-intro-feature-icon-size: 24px;
   --ait-component-intro-feature-asset-size-compact: 34px;
+  --ait-component-intro-chain-row-gap: calc(var(--ait-space-10) + var(--ait-space-1));
+  --ait-component-intro-chain-connector-height: calc(var(--ait-space-10) + var(--ait-space-10) + var(--ait-space-4));
   --ait-component-intro-figure-height: 204px;
   --ait-component-intro-figure-height-compact: 168px;
   --ait-component-intro-shell-top-space: var(--ait-space-6);
