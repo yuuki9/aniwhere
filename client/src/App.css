@@ -491,7 +491,7 @@ body.intro-route-body #root {
   justify-content: flex-start;
   margin: 0 auto;
   padding: max(var(--ait-component-intro-shell-top-space), calc(env(safe-area-inset-top) + var(--ait-space-3)))
-    var(--ait-space-8)
+    var(--ait-space-14)
     max(var(--ait-space-7), calc(env(safe-area-inset-bottom) + var(--ait-space-4)));
   background: var(--ait-color-gray-0);
 }
@@ -887,6 +887,8 @@ p {
 .intro-feature-list .ait-list-row-asset {
   display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .intro-chain-row:not(:last-child) .ait-list-row-asset {
@@ -952,7 +954,7 @@ p {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--ait-space-2);
+  gap: var(--ait-space-1);
   min-width: 0;
 }
 
@@ -2579,7 +2581,7 @@ p {
     max-width: var(--ait-size-screen-design);
     margin: 0 auto;
     padding: max(var(--ait-component-intro-shell-top-space), calc(env(safe-area-inset-top) + var(--ait-space-3)))
-      var(--ait-space-8)
+      var(--ait-space-14)
       max(var(--ait-space-7), calc(env(safe-area-inset-bottom) + var(--ait-space-4)));
   }
 

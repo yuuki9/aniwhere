@@ -228,6 +228,7 @@ test('IntroPage paints a full white ADS viewport instead of exposing the global 
 
   assert.match(shellRule, /width:\s*100%;/)
   assert.match(shellRule, /max-width:\s*none;/)
+  assert.match(shellRule, /var\(--ait-space-14\)/)
   assert.match(shellRule, /background:\s*var\(--ait-color-gray-0\);/)
   assert.match(bodyRule, /background:\s*var\(--ait-color-gray-0\);/)
 })
@@ -259,7 +260,19 @@ test('IntroPage uses compact TDS-like top and list row text rhythm', () => {
   assert.match(iconSvgRule, /height:\s*var\(--ait-component-intro-feature-icon-size\);/)
   assert.match(iconSvgRule, /stroke-width:\s*2\.2;/)
   assert.match(rowRule, /padding:\s*var\(--ait-space-3\) var\(--ait-space-0\);/)
+  assert.match(cssRuleBody(styles, '.intro-feature-list .ait-list-row-asset'), /align-items:\s*center;/)
   assert.match(rowTitleRule, /font-size:\s*var\(--ait-font-size-title-sm\);/)
   assert.match(rowTitleRule, /font-weight:\s*600;/)
   assert.match(rowBodyRule, /font-size:\s*var\(--ait-font-size-body-md\);/)
+})
+
+test('IntroPage aligns its coral accent with the feature icon scale', () => {
+  const tokens = fs.readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
+  const styles = appCssSource()
+  const copyRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row-copy')
+
+  assert.match(tokens, /--ait-color-aniwhere-text-coral:\s*var\(--ait-color-aniwhere-icon-coral\);/)
+  assert.match(tokens, /--ait-component-intro-feature-asset-size:\s*40px;/)
+  assert.match(tokens, /--ait-component-intro-feature-icon-size:\s*28px;/)
+  assert.match(copyRule, /gap:\s*var\(--ait-space-1\);/)
 })
