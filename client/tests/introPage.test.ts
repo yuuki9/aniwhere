@@ -250,6 +250,7 @@ test('IntroPage uses compact TDS-like top and list row text rhythm', () => {
   assert.match(accentRule, /color:\s*var\(--ait-color-aniwhere-text-coral\);/)
   assert.match(figureRule, /height:\s*var\(--ait-component-intro-figure-height\);/)
   assert.match(listRule, /gap:\s*var\(--ait-component-intro-chain-row-gap\);/)
+  assert.match(listRule, /margin:\s*var\(--ait-space-12\) var\(--ait-space-0\) var\(--ait-space-0\);/)
   assert.match(connectorRule, /height:\s*var\(--ait-component-intro-chain-connector-height\);/)
   assert.match(connectorRule, /transparent\s+var\(--ait-space-2\),\s*transparent\s+var\(--ait-space-5\)/)
   assert.match(iconRule, /width:\s*var\(--ait-component-intro-feature-asset-size\);/)

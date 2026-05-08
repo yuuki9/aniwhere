@@ -858,7 +858,7 @@ p {
   flex-direction: column;
   gap: var(--ait-component-intro-chain-row-gap);
   padding: var(--ait-space-0);
-  margin: var(--ait-space-6) var(--ait-space-0) var(--ait-space-0);
+  margin: var(--ait-space-12) var(--ait-space-0) var(--ait-space-0);
   list-style: none;
 }
 
