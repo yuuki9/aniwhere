@@ -18,6 +18,10 @@ export const router = createBrowserRouter([
     element: <IntroPage />,
   },
   {
+    path: '/intro',
+    element: <IntroPage />,
+  },
+  {
     path: '/',
     element: <MainLayout />,
     children: [

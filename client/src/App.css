@@ -836,7 +836,7 @@ p {
 
 .intro-guide-figure {
   width: 100%;
-  height: 252px;
+  height: var(--ait-component-intro-figure-height);
   margin: var(--ait-space-6) auto var(--ait-space-12);
   overflow: hidden;
   border-radius: var(--ait-radius-3xl);
@@ -913,12 +913,12 @@ p {
 
 .intro-feature-icon {
   display: inline-flex;
-  width: 52px;
-  height: 52px;
+  width: var(--ait-component-intro-feature-asset-size);
+  height: var(--ait-component-intro-feature-asset-size);
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: var(--ait-radius-xl);
+  border-radius: var(--ait-radius-lg);
   background: var(--ait-color-gray-100);
   color: var(--ait-color-intro-feature-time);
 }
@@ -939,13 +939,13 @@ p {
 }
 
 .intro-feature-icon-svg {
-  width: 27px;
-  height: 27px;
+  width: var(--ait-component-intro-feature-icon-size);
+  height: var(--ait-component-intro-feature-icon-size);
   fill: none;
   stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.4;
+  stroke-width: 2.2;
 }
 
 .intro-feature-list .ait-list-row-copy {
@@ -2571,6 +2571,7 @@ p {
 
   .intro-mobile-panel {
     gap: var(--ait-space-6);
+    width: 100%;
     padding: var(--ait-space-0);
     border-radius: 0;
   }
