@@ -8,18 +8,18 @@ type IntroFeatureIconType = 'search' | 'write' | 'approve'
 const featureItems = [
   {
     icon: 'search',
-    title: '주변 매장 찾기',
-    body: '피규어·가챠·굿즈샵을 지도에서 확인해요',
+    title: '원하는 조건으로 찾아보고',
+    body: '매장명·작품명·지역으로 시작해요',
   },
   {
     icon: 'write',
-    title: '후기와 팁 확인',
-    body: '재고, 위치, 분위기 정보를 미리 살펴봐요',
+    title: '지도에서 비교하고',
+    body: '위치와 방문 정보를 한눈에 살펴봐요',
   },
   {
     icon: 'approve',
-    title: '방문 기록 남기기',
-    body: '다녀온 정보를 공유하고 포인트를 받아요',
+    title: '후기 남기고 이어가요',
+    body: '채택되면 포인트도 받을 수 있어요',
   },
 ] as const
 
@@ -75,33 +75,24 @@ export function IntroPage() {
     <main className="app-shell intro-mobile-shell">
       <AitNavigation />
       <section className="section intro-mobile-panel">
-        <AitTop
-          className="intro-top"
-          title={
-            <>
-              가까운 피규어·가챠샵,
-              <br />
-              이제 한 번에 찾아보세요
-            </>
-          }
-          subtitle={
-            <>
-              흩어진 굿즈샵 정보를 지도에서 확인하고,
-              <br />
-              방문 후기와 팁까지 함께 볼 수 있어요.
-            </>
-          }
-        />
-
         <figure className="intro-guide-figure">
           <img
-            alt="지도 위 굿즈샵과 가챠 머신을 안내하는 애니웨어 마스코트"
+            alt="지도 위 굿즈샵 정보를 안내하는 애니웨어 마스코트"
             className="intro-guide-image"
             src={introStoreGuide}
           />
         </figure>
 
-        <h2 className="intro-flow-title">찾기부터 방문 기록까지</h2>
+        <AitTop
+          className="intro-top"
+          title={
+            <>
+              흩어진 굿즈샵 정보,
+              <br />
+              <span className="intro-title-accent">애니웨어</span>에 모아뒀어요
+            </>
+          }
+        />
 
         <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
           {featureItems.map((item) => (
@@ -118,7 +109,7 @@ export function IntroPage() {
 
         <div className="intro-mobile-actions">
           <AitButton className="intro-primary-action" display="full" onClick={handleStart}>
-            매장 찾기 시작하기
+            매장 둘러보기
           </AitButton>
         </div>
       </section>
