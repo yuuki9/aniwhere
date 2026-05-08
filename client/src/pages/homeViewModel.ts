@@ -8,13 +8,13 @@ export type HomeQuickMenu = {
 export const buildHomeQuickMenus = (): HomeQuickMenu[] => [
   {
     id: 'stores',
-    label: '매장찾기',
+    label: '매장 찾기',
     href: '/explore',
     icon: 'pin',
   },
   {
     id: 'reviews',
-    label: '방문후기',
+    label: '방문 후기',
     href: '/community',
     icon: 'review',
   },

@@ -1043,6 +1043,25 @@ p {
   width: min(var(--ait-size-content-compact), 100%);
 }
 
+.home-top {
+  gap: var(--ait-space-5);
+  padding: var(--ait-space-4) var(--ait-space-0) var(--ait-space-2);
+}
+
+.home-top .ait-top-copy {
+  gap: var(--ait-space-3);
+}
+
+.home-top .ait-top-copy h1 {
+  font-size: var(--ait-font-size-title-lg);
+  font-weight: 700;
+}
+
+.home-top .ait-top-copy p {
+  color: var(--ait-color-text-tertiary);
+  font-size: var(--ait-font-size-body-md);
+}
+
 .map-explore-shell {
   width: min(920px, 100%);
 }

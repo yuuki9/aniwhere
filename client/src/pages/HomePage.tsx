@@ -4,6 +4,7 @@ import {
   buildHomeQuickMenus,
   type HomeQuickMenu,
 } from './homeViewModel'
+import { AitTop } from '../shared/ui/ait'
 
 function SearchIcon() {
   return (
@@ -57,7 +58,7 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
   return (
     <section className="section discover-search-entry-section" aria-label="매장 검색">
       <button className="map-search-field home-search-entry" type="button" onClick={onSearch}>
-        <span className="map-search-field-copy">매장명, 작품명, 지역으로 검색</span>
+        <span className="map-search-field-copy">작품, 매장명, 지역으로 검색</span>
         <SearchIcon />
       </button>
     </section>
@@ -94,7 +95,10 @@ function HomeIssueSection() {
       <div className="home-section-head">
         <h2 id="home-issues-title">작품으로 찾기</h2>
       </div>
-      <HomePendingCard title="작품별 매장 연결을 준비하고 있어요" description="관리자가 취급 작품을 확인한 매장만 연결할게요." />
+      <HomePendingCard
+        title="작품별 매장 찾기를 준비 중이에요"
+        description="확인된 매장부터 작품별로 차근차근 연결할게요."
+      />
     </section>
   )
 }
@@ -105,7 +109,10 @@ function HomeReviewPreviewSection() {
       <div className="home-section-head">
         <h2 id="home-review-preview-title">최근 방문 후기</h2>
       </div>
-      <HomePendingCard title="아직 소개할 방문 후기가 없어요" description="매장별 후기 API가 준비되면 사진과 함께 최근 방문 기록을 보여드릴게요." />
+      <HomePendingCard
+        title="첫 방문 후기를 기다리고 있어요"
+        description="다녀온 매장 이야기가 모이면 탐색에 도움이 되는 후기부터 보여드릴게요."
+      />
     </section>
   )
 }
@@ -116,6 +123,11 @@ export function HomePage() {
 
   return (
     <main className="app-shell discover-shell">
+      <AitTop
+        className="home-top"
+        title="어디부터 둘러볼까요?"
+        subtitle="관심 있는 작품이나 가고 싶은 지역부터 시작해보세요."
+      />
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeQuickMenuSection menus={quickMenus} />
       <HomeIssueSection />
