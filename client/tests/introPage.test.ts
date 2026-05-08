@@ -1,9 +1,88 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { JSDOM } from 'jsdom'
+import React from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react-dom/test-utils'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { createServer, type ViteDevServer } from 'vite'
 
 const introPageSource = () => fs.readFileSync(new URL('../src/pages/IntroPage.tsx', import.meta.url), 'utf8')
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+
+let viteServer: ViteDevServer | undefined
+
+const loadIntroPage = async () => {
+  viteServer ??= await createServer({
+    appType: 'custom',
+    logLevel: 'error',
+    root: fileURLToPath(new URL('..', import.meta.url)),
+    server: { middlewareMode: true },
+  })
+
+  return viteServer.ssrLoadModule('/src/pages/IntroPage.tsx') as Promise<{
+    IntroPage: React.ComponentType
+  }>
+}
+
+test.after(async () => {
+  await viteServer?.close()
+})
+
+const setDomGlobal = (name: string, value: unknown) => {
+  Object.defineProperty(globalThis, name, {
+    configurable: true,
+    value,
+    writable: true,
+  })
+}
+
+const setupDom = () => {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+    url: 'https://aniwhere.test/intro',
+  })
+
+  setDomGlobal('window', dom.window)
+  setDomGlobal('self', dom.window)
+  setDomGlobal('document', dom.window.document)
+  setDomGlobal('navigator', dom.window.navigator)
+  setDomGlobal('HTMLElement', dom.window.HTMLElement)
+  setDomGlobal('MouseEvent', dom.window.MouseEvent)
+  setDomGlobal('Node', dom.window.Node)
+  setDomGlobal('getComputedStyle', dom.window.getComputedStyle.bind(dom.window))
+  setDomGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+
+  return {
+    container: dom.window.document.getElementById('root') as HTMLElement,
+    dom,
+  }
+}
+
+const cleanupDom = (dom: JSDOM, root?: Root) => {
+  if (root != null) {
+    act(() => {
+      root.unmount()
+    })
+  }
+
+  dom.window.close()
+
+  for (const name of [
+    'window',
+    'self',
+    'document',
+    'navigator',
+    'HTMLElement',
+    'MouseEvent',
+    'Node',
+    'getComputedStyle',
+    'IS_REACT_ACT_ENVIRONMENT',
+  ]) {
+    Reflect.deleteProperty(globalThis, name)
+  }
+}
 
 const cssRuleBodies = (css: string, selector: string) => {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -34,27 +113,77 @@ test('IntroPage explains Aniwhere through curation, map exploration, and review 
   assert.doesNotMatch(source, /운영팀 검토 후 승인 상태를 확인해요/)
 })
 
-test('IntroPage starts in home first instead of opening Toss login from intro', () => {
-  const source = introPageSource()
+test('IntroPage starts in home first instead of opening Toss login from intro', async () => {
+  const { IntroPage } = await loadIntroPage()
+  const { container, dom } = setupDom()
+  const root = createRoot(container)
   const styles = appCssSource()
   const actionsRule = cssRuleBody(styles, '.intro-mobile-actions')
 
-  assert.match(source, /navigate\('\/home'/)
-  assert.match(source, /매장 둘러보기/)
-  assert.doesNotMatch(source, /startServiceEntry/)
-  assert.doesNotMatch(source, /토스로 시작하기/)
-  assert.doesNotMatch(source, /로그인 준비 중/)
-  assert.doesNotMatch(source, /intro-secondary-action/)
+  try {
+    await act(async () => {
+      root.render(
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/intro'] },
+          React.createElement(
+            Routes,
+            null,
+            React.createElement(Route, {
+              element: React.createElement(IntroPage),
+              path: '/intro',
+            }),
+            React.createElement(Route, {
+              element: React.createElement('p', null, 'home preview'),
+              path: '/home',
+            }),
+          ),
+        ),
+      )
+    })
+
+    const action = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('매장 둘러보기'),
+    )
+
+    assert.ok(action, 'primary intro action should render')
+
+    await act(async () => {
+      action.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
+    })
+
+    assert.match(container.textContent ?? '', /home preview/)
+  } finally {
+    cleanupDom(dom, root)
+  }
+
   assert.match(actionsRule, /align-items:\s*center;/)
 })
 
-test('IntroPage paints a full white ADS viewport instead of exposing the global app background', () => {
-  const source = introPageSource()
+test('IntroPage paints a full white ADS viewport instead of exposing the global app background', async () => {
+  const { IntroPage } = await loadIntroPage()
+  const { container, dom } = setupDom()
+  const root = createRoot(container)
   const styles = appCssSource()
   const shellRule = cssRuleBody(styles, '.intro-mobile-shell')
   const bodyRule = cssRuleBody(styles, 'body.intro-route-body')
 
-  assert.match(source, /document\.body\.classList\.add\('intro-route-body'\)/)
+  try {
+    await act(async () => {
+      root.render(React.createElement(MemoryRouter, null, React.createElement(IntroPage)))
+    })
+
+    assert.equal(document.body.classList.contains('intro-route-body'), true)
+
+    act(() => {
+      root.unmount()
+    })
+
+    assert.equal(document.body.classList.contains('intro-route-body'), false)
+  } finally {
+    cleanupDom(dom)
+  }
+
   assert.match(shellRule, /width:\s*100%;/)
   assert.match(shellRule, /max-width:\s*none;/)
   assert.match(shellRule, /background:\s*var\(--ait-color-gray-0\);/)
@@ -74,7 +203,7 @@ test('IntroPage uses compact TDS-like top and list row text rhythm', () => {
 
   assert.match(titleRule, /font-size:\s*var\(--ait-font-size-display-md\);/)
   assert.match(titleRule, /font-weight:\s*700;/)
-  assert.match(accentRule, /color:\s*var\(--ait-color-aniwhere-icon-coral\);/)
+  assert.match(accentRule, /color:\s*var\(--ait-color-aniwhere-text-coral\);/)
   assert.match(listRule, /gap:\s*var\(--ait-space-5\);/)
   assert.match(iconRule, /width:\s*52px;/)
   assert.match(iconRule, /height:\s*52px;/)
