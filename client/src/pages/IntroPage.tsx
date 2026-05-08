@@ -8,17 +8,17 @@ type IntroFeatureIconType = 'curation' | 'map' | 'review'
 const featureItems = [
   {
     icon: 'curation',
-    title: '인기 작품을 모아봤어요',
-    body: '요즘 많이 찾는 작품부터 둘러봐요',
+    title: '인기 작품별로 모아봤어요',
+    body: '관련 굿즈샵을 바로 둘러봐요',
   },
   {
     icon: 'map',
     title: '지도에서 한눈에 확인해요',
-    body: '필터로 원하는 굿즈샵을 찾아봐요',
+    body: '필터로 원하는 매장을 찾아봐요',
   },
   {
     icon: 'review',
-    title: '방문 후기도 남겨요',
+    title: '후기를 남겨요',
     body: '채택되면 포인트도 받을 수 있어요',
   },
 ] as const
@@ -29,10 +29,10 @@ function IntroFeatureIcon({ type }: { type: IntroFeatureIconType }) {
       <svg className="intro-feature-icon-svg" viewBox="0 0 24 24" focusable="false">
         {type === 'curation' ? (
           <>
-            <rect x="5" y="6" width="9" height="13" rx="2" />
-            <path d="M10.5 9.2l.8 1.6 1.8.3-1.3 1.2.3 1.8-1.6-.9-1.6.9.3-1.8-1.3-1.2 1.8-.3.8-1.6z" />
-            <path d="M15.5 8h2a1.5 1.5 0 0 1 1.5 1.5V17" />
-            <path d="M16 17h3" />
+            <path d="M6.5 6h9a2 2 0 0 1 2 2v10h-11a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+            <path d="M9 10h5" />
+            <path d="M9 13.5h3.5" />
+            <path d="M17.5 8.5h1a2 2 0 0 1 2 2V17" />
           </>
         ) : null}
         {type === 'map' ? (
