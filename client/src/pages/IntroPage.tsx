@@ -109,7 +109,7 @@ export function IntroPage() {
             <AitListRow
               asset={<IntroFeatureIcon name={item.iconName} type={item.icon} />}
               border="none"
-              className="intro-chain-row"
+              className={`intro-chain-row intro-chain-row-${item.icon}`}
               description={item.body}
               key={item.title}
               title={item.title}
