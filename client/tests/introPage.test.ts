@@ -200,7 +200,10 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
 test('IntroPage is reachable from the documented intro route', () => {
   const source = routerSource()
 
-  assert.match(source, /path:\s*'\/intro'[\s\S]*element:\s*<IntroPage \/>/)
+  assert.match(
+    source,
+    /\{[^{}]*(?:path:\s*['"]\/intro['"][^{}]*element:\s*<IntroPage\s*\/>|element:\s*<IntroPage\s*\/>[^{}]*path:\s*['"]\/intro['"])[^{}]*\}/,
+  )
 })
 
 test('IntroPage paints a full white ADS viewport instead of exposing the global app background', async () => {
