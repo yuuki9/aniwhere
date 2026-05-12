@@ -139,7 +139,8 @@ export function ExplorePage() {
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
   const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
-  const routeViewMode: ViewMode = nearbyRequest || viewParam === 'list' ? 'list' : 'map'
+  const routeViewMode: ViewMode =
+    viewParam === 'list' ? 'list' : viewParam === 'map' ? 'map' : nearbyRequest ? 'list' : 'map'
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
   const sheetMode: SheetMode = selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
@@ -325,13 +326,8 @@ export function ExplorePage() {
   const moveViewMode = (nextViewMode: ViewMode) => {
     const next = new URLSearchParams(searchParams)
 
-    if (nextViewMode === 'list') {
-      next.set('view', 'list')
-      pushSearchParams(next)
-    } else {
-      next.delete('view')
-      replaceSearchParams(next)
-    }
+    next.set('view', nextViewMode)
+    pushSearchParams(next)
   }
 
   const clearLocationError = () => {
@@ -488,6 +484,11 @@ export function ExplorePage() {
 
     if (isListSheetOpen) {
       handleSwitchView('map')
+      return
+    }
+
+    if (selectedShopId != null) {
+      handleClearSelection()
       return
     }
 

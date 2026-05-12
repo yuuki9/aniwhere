@@ -12,6 +12,7 @@
   --map-route-navigation-top: max(var(--ait-space-4), calc(env(safe-area-inset-top) + var(--ait-space-2)));
   --map-route-navigation-space: calc(var(--map-route-navigation-top) + var(--ait-component-navigation-height));
   --map-expanded-sheet-top: 0;
+
   margin-top: 0 !important;
   min-height: 100dvh !important;
   height: 100dvh !important;
