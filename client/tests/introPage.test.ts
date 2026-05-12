@@ -11,6 +11,7 @@ import { createServer, type ViteDevServer } from 'vite'
 
 const introPageSource = () => fs.readFileSync(new URL('../src/pages/IntroPage.tsx', import.meta.url), 'utf8')
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+const routerSource = () => fs.readFileSync(new URL('../src/app/router.tsx', import.meta.url), 'utf8')
 
 let viteServer: ViteDevServer | undefined
 type DomGlobalName =
@@ -129,12 +130,22 @@ test('IntroPage explains Aniwhere through curation, map exploration, and review 
 
   assert.match(source, /흩어진 굿즈샵 정보,/)
   assert.match(source, /애니웨어<\/span>에 모아뒀어요/)
-  assert.match(source, /인기 작품별로 모아봤어요/)
-  assert.match(source, /관련 굿즈샵을 바로 둘러봐요/)
+  assert.match(source, /관심 있는 작품이 생겼나요\?/)
+  assert.match(source, /관련 굿즈샵을 추천해드려요/)
   assert.match(source, /지도에서 한눈에 확인해요/)
   assert.match(source, /필터로 원하는 매장을 찾아봐요/)
-  assert.match(source, /후기를 남겨요/)
+  assert.match(source, /방문후기를 남겨요/)
   assert.match(source, /채택되면 포인트도 받을 수 있어요/)
+  assert.doesNotMatch(source, /인기 작품별로 모아봤어요/)
+  assert.doesNotMatch(source, /관련 굿즈샵을 바로 둘러봐요/)
+  assert.doesNotMatch(source, /내 취향대로/)
+  assert.doesNotMatch(source, /재밌게 본 작품/)
+  assert.doesNotMatch(source, /좁혀봐요/)
+  assert.match(source, /iconName:\s*'icon-star-mono'/)
+  assert.match(source, /iconName:\s*'icon-pin-mono'/)
+  assert.match(source, /iconName:\s*'icon-pencil-mono'/)
+  assert.match(source, /intro-chain-row-\$\{item\.icon\}/)
+  assert.doesNotMatch(source, /<path d="M4\.5 18\.5h15" \/>/)
   assert.doesNotMatch(source, /포인트를 받아요/)
   assert.doesNotMatch(source, /운영팀 검토 후 승인 상태를 확인해요/)
 })
@@ -169,7 +180,7 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
     })
 
     const action = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('매장 둘러보기'),
+      button.textContent?.includes('입장하기'),
     )
 
     assert.ok(action, 'primary intro action should render')
@@ -184,6 +195,15 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
   }
 
   assert.match(actionsRule, /align-items:\s*center;/)
+})
+
+test('IntroPage is reachable from the documented intro route', () => {
+  const source = routerSource()
+
+  assert.match(
+    source,
+    /\{[^{}]*(?:path:\s*['"]\/intro['"][^{}]*element:\s*<IntroPage\s*\/>|element:\s*<IntroPage\s*\/>[^{}]*path:\s*['"]\/intro['"])[^{}]*\}/,
+  )
 })
 
 test('IntroPage paints a full white ADS viewport instead of exposing the global app background', async () => {
@@ -212,6 +232,7 @@ test('IntroPage paints a full white ADS viewport instead of exposing the global 
 
   assert.match(shellRule, /width:\s*100%;/)
   assert.match(shellRule, /max-width:\s*none;/)
+  assert.match(shellRule, /var\(--ait-space-14\)/)
   assert.match(shellRule, /background:\s*var\(--ait-color-gray-0\);/)
   assert.match(bodyRule, /background:\s*var\(--ait-color-gray-0\);/)
 })
@@ -220,24 +241,54 @@ test('IntroPage uses compact TDS-like top and list row text rhythm', () => {
   const styles = appCssSource()
   const titleRule = cssRuleBody(styles, '.intro-top .ait-top-copy h1')
   const accentRule = cssRuleBody(styles, '.intro-title-accent')
+  const figureRule = cssRuleBody(styles, '.intro-guide-figure')
   const listRule = cssRuleBody(styles, '.intro-feature-list')
   const iconRule = cssRuleBody(styles, '.intro-feature-icon')
   const iconSvgRule = cssRuleBody(styles, '.intro-feature-icon-svg')
+  const curationIconSvgRule = cssRuleBody(styles, '.intro-feature-icon-curation .intro-feature-icon-svg')
+  const reviewIconSvgRule = cssRuleBody(styles, '.intro-feature-icon-review .intro-feature-icon-svg')
+  const connectorRule = cssRuleBody(styles, '.intro-chain-row:not(:last-child) .ait-list-row-asset::after')
   const rowRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row')
   const rowTitleRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row-copy strong')
+  const curationRowTitleRule = cssRuleBody(styles, '.intro-chain-row-curation .ait-list-row-copy strong')
   const rowBodyRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row-copy span')
 
   assert.match(titleRule, /font-size:\s*var\(--ait-font-size-display-md\);/)
   assert.match(titleRule, /font-weight:\s*700;/)
   assert.match(accentRule, /color:\s*var\(--ait-color-aniwhere-text-coral\);/)
-  assert.match(listRule, /gap:\s*var\(--ait-space-5\);/)
-  assert.match(iconRule, /width:\s*52px;/)
-  assert.match(iconRule, /height:\s*52px;/)
-  assert.match(iconSvgRule, /width:\s*27px;/)
-  assert.match(iconSvgRule, /height:\s*27px;/)
-  assert.match(iconSvgRule, /stroke-width:\s*2\.4;/)
+  assert.match(accentRule, /var\(--ait-color-intro-title-highlight\)/)
+  assert.match(accentRule, /font-weight:\s*800;/)
+  assert.match(figureRule, /height:\s*var\(--ait-component-intro-figure-height\);/)
+  assert.match(listRule, /gap:\s*var\(--ait-component-intro-chain-row-gap\);/)
+  assert.match(listRule, /margin:\s*var\(--ait-space-12\) var\(--ait-space-0\) var\(--ait-space-0\);/)
+  assert.match(connectorRule, /height:\s*var\(--ait-component-intro-chain-connector-height\);/)
+  assert.match(connectorRule, /transparent\s+var\(--ait-space-2\),\s*transparent\s+var\(--ait-space-5\)/)
+  assert.match(iconRule, /width:\s*var\(--ait-component-intro-feature-asset-size\);/)
+  assert.match(iconRule, /height:\s*var\(--ait-component-intro-feature-asset-size\);/)
+  assert.match(iconSvgRule, /width:\s*var\(--ait-component-intro-feature-icon-size\);/)
+  assert.match(iconSvgRule, /height:\s*var\(--ait-component-intro-feature-icon-size\);/)
+  assert.match(iconSvgRule, /stroke-width:\s*2\.2;/)
+  assert.match(curationIconSvgRule, /scale\(var\(--ait-component-intro-feature-icon-scale-curation\)\)/)
+  assert.match(reviewIconSvgRule, /scale\(var\(--ait-component-intro-feature-icon-scale-review\)\)/)
   assert.match(rowRule, /padding:\s*var\(--ait-space-3\) var\(--ait-space-0\);/)
+  assert.match(cssRuleBody(styles, '.intro-feature-list .ait-list-row-asset'), /align-items:\s*center;/)
   assert.match(rowTitleRule, /font-size:\s*var\(--ait-font-size-title-sm\);/)
   assert.match(rowTitleRule, /font-weight:\s*600;/)
+  assert.match(rowTitleRule, /letter-spacing:\s*0;/)
+  assert.match(curationRowTitleRule, /scaleX\(var\(--ait-component-intro-feature-title-compact-scale\)\)/)
   assert.match(rowBodyRule, /font-size:\s*var\(--ait-font-size-body-md\);/)
+})
+
+test('IntroPage aligns its coral accent with the feature icon scale', () => {
+  const tokens = fs.readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
+  const styles = appCssSource()
+  const copyRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row-copy')
+
+  assert.match(tokens, /--ait-color-aniwhere-text-coral:\s*var\(--ait-color-aniwhere-icon-coral\);/)
+  assert.match(tokens, /--ait-color-intro-title-highlight:\s*rgba\(255,\s*103,\s*79,\s*0\.2\);/)
+  assert.match(tokens, /--ait-component-intro-feature-asset-size:\s*40px;/)
+  assert.match(tokens, /--ait-component-intro-feature-icon-size:\s*28px;/)
+  assert.match(tokens, /--ait-component-intro-feature-icon-scale-curation:\s*1\.14;/)
+  assert.match(tokens, /--ait-component-intro-feature-icon-scale-review:\s*0\.92;/)
+  assert.match(copyRule, /gap:\s*var\(--ait-space-1\);/)
 })

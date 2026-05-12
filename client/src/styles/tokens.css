@@ -51,8 +51,9 @@
   --ait-color-intro-overlay-cool: rgba(49, 130, 246, 0.08);
   --ait-color-intro-panel-end: #fffdfb;
   --ait-color-intro-brand-surface: #fff4ec;
+  --ait-color-intro-title-highlight: rgba(255, 103, 79, 0.2);
   --ait-color-aniwhere-icon-coral: #ff674f;
-  --ait-color-aniwhere-text-coral: #c93f2a;
+  --ait-color-aniwhere-text-coral: var(--ait-color-aniwhere-icon-coral);
   --ait-color-intro-feature-map: #ff6b35;
   --ait-color-intro-feature-time: #3182f6;
   --ait-color-intro-feature-spark: #fbbf24;
@@ -144,7 +145,13 @@
   --ait-component-intro-logo-size: 44px;
   --ait-component-intro-logo-size-compact: 36px;
   --ait-component-intro-feature-asset-size: 40px;
+  --ait-component-intro-feature-icon-size: 28px;
+  --ait-component-intro-feature-icon-scale-curation: 1.14;
+  --ait-component-intro-feature-icon-scale-review: 0.92;
+  --ait-component-intro-feature-title-compact-scale: 0.985;
   --ait-component-intro-feature-asset-size-compact: 34px;
+  --ait-component-intro-chain-row-gap: calc(var(--ait-space-10) + var(--ait-space-1));
+  --ait-component-intro-chain-connector-height: calc(var(--ait-space-10) + var(--ait-space-10) + var(--ait-space-4));
   --ait-component-intro-figure-height: 204px;
   --ait-component-intro-figure-height-compact: 168px;
   --ait-component-intro-shell-top-space: var(--ait-space-6);
