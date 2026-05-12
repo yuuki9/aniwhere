@@ -38,6 +38,8 @@ export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const currentKeyword = searchParams.get('keyword') ?? ''
   const currentPage = Number(searchParams.get('page') ?? '0')
+  const returnTo = searchParams.get('returnTo')
+  const safeReturnTo = returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : null
   const [keyword, setKeyword] = useState(currentKeyword)
   const [recentSearches, setRecentSearches] = useState(() => readRecentSearches())
   const [nearbyState, setNearbyState] = useState<'idle' | 'loading' | 'error'>('idle')
@@ -66,6 +68,10 @@ export function SearchPage() {
     const trimmed = nextKeyword.trim()
     const next = new URLSearchParams()
 
+    if (safeReturnTo) {
+      next.set('returnTo', safeReturnTo)
+    }
+
     if (trimmed) {
       next.set('keyword', trimmed)
       setRecentSearches(pushRecentSearch(trimmed))
@@ -87,8 +93,19 @@ export function SearchPage() {
 
   const handleSearchBack = () => {
     if (currentKeyword.trim()) {
-      setSearchParams(new URLSearchParams(), { replace: true })
+      const next = new URLSearchParams()
+
+      if (safeReturnTo) {
+        next.set('returnTo', safeReturnTo)
+      }
+
+      setSearchParams(next, { replace: true })
       setKeyword('')
+      return
+    }
+
+    if (safeReturnTo) {
+      navigate(safeReturnTo, { replace: true })
       return
     }
 

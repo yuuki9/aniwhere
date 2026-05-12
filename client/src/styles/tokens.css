@@ -144,12 +144,12 @@
   --ait-component-intro-panel-padding-compact: 18px 16px 16px;
   --ait-component-intro-logo-size: 44px;
   --ait-component-intro-logo-size-compact: 36px;
-  --ait-component-intro-feature-asset-size: 40px;
-  --ait-component-intro-feature-icon-size: 28px;
+  --ait-component-intro-feature-asset-size: 48px;
+  --ait-component-intro-feature-icon-size: 44px;
   --ait-component-intro-feature-icon-scale-curation: 1.14;
   --ait-component-intro-feature-icon-scale-review: 0.92;
   --ait-component-intro-feature-title-compact-scale: 0.985;
-  --ait-component-intro-feature-asset-size-compact: 34px;
+  --ait-component-intro-feature-asset-size-compact: 40px;
   --ait-component-intro-chain-row-gap: calc(var(--ait-space-10) + var(--ait-space-1));
   --ait-component-intro-chain-connector-height: calc(var(--ait-space-10) + var(--ait-space-10) + var(--ait-space-4));
   --ait-component-intro-figure-height: 204px;

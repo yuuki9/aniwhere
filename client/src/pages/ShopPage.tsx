@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
@@ -18,6 +18,14 @@ function formatFloorLabel(floor: string | null) {
 export function ShopPage() {
   const { shopId } = useParams()
   const parsedId = Number(shopId)
+
+  useEffect(() => {
+    document.body.classList.add('shop-detail-route-body')
+
+    return () => {
+      document.body.classList.remove('shop-detail-route-body')
+    }
+  }, [])
 
   const shopQuery = useQuery({
     queryKey: ['shop', parsedId],

@@ -135,8 +135,20 @@ function buildMarkerGroups(shops: Shop[], zoom: number, activeShopId: number | n
 }
 
 function removeMarker(markerWithListeners: MarkerWithListeners) {
-  naver.maps.Event.removeListener(markerWithListeners.listeners)
-  markerWithListeners.marker.setMap(null)
+  window.naver?.maps?.Event?.removeListener(markerWithListeners.listeners)
+  try {
+    markerWithListeners.marker.setMap(null)
+  } catch {
+    // Naver Maps can throw during route teardown after its internal map reference is already cleared.
+  }
+}
+
+function removeMapListener(listener: naver.maps.MapEventListener | null) {
+  if (!listener) {
+    return
+  }
+
+  window.naver?.maps?.Event?.removeListener(listener)
 }
 
 function readMapViewport(map: naver.maps.Map): MapViewport {
@@ -302,21 +314,25 @@ export function ShopMap({
       }
 
       if (mapClickListenerRef.current) {
-        naver.maps.Event.removeListener(mapClickListenerRef.current)
+        removeMapListener(mapClickListenerRef.current)
         mapClickListenerRef.current = null
       }
 
       if (mapZoomListenerRef.current) {
-        naver.maps.Event.removeListener(mapZoomListenerRef.current)
+        removeMapListener(mapZoomListenerRef.current)
         mapZoomListenerRef.current = null
       }
 
       if (mapIdleListenerRef.current) {
-        naver.maps.Event.removeListener(mapIdleListenerRef.current)
+        removeMapListener(mapIdleListenerRef.current)
         mapIdleListenerRef.current = null
       }
 
-      mapRef.current?.destroy()
+      try {
+        mapRef.current?.destroy()
+      } catch {
+        // Naver Maps cleanup may race with route transitions in WebView/headless environments.
+      }
       mapRef.current = null
     }
   }, [])

@@ -1,8 +1,8 @@
 export type HomeQuickMenu = {
-  id: 'stores' | 'reviews' | 'report'
+  id: 'stores' | 'reviews' | 'admin'
   label: string
   href: string
-  icon: 'pin' | 'review' | 'report'
+  icon: 'pin' | 'review' | 'admin'
 }
 
 export const buildHomeQuickMenus = (): HomeQuickMenu[] => [
@@ -19,9 +19,9 @@ export const buildHomeQuickMenus = (): HomeQuickMenu[] => [
     icon: 'review',
   },
   {
-    id: 'report',
-    label: '제보하기',
-    href: '/community',
-    icon: 'report',
+    id: 'admin',
+    label: '매장 등록',
+    href: '/admin/shops',
+    icon: 'admin',
   },
 ]
