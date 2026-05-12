@@ -44,6 +44,15 @@ export type ShopLink = {
   url: string
 }
 
+export type ShopImageRole = 'PRIMARY' | 'GALLERY'
+
+export type ShopImage = {
+  id: number
+  url: string
+  role: ShopImageRole
+  sortOrder: number
+}
+
 export type Shop = {
   id: number
   name: string
@@ -59,6 +68,7 @@ export type Shop = {
   categories: string[]
   works: string[]
   links: ShopLink[]
+  images: ShopImage[]
   description: string | null
   createdAt: string
   updatedAt: string

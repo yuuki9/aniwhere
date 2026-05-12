@@ -1,116 +1,71 @@
 import { Link } from 'react-router-dom'
 import type { Shop } from '../../shared/api/types'
-import { linkTypeToLabel } from '../../shared/lib/format'
-import { MapDetailIcon } from '../../shared/ui/mapDetailIcons'
+import type { MapDetailTab } from './MapDetailSummaryCard'
 
 type MapDetailSupplementSectionsProps = {
   shop: Shop
-  relatedShops: Shop[]
-  onSelectRelatedShop: (shopId: number) => void
-}
-
-function getSafeExternalUrl(raw: string) {
-  try {
-    const url = new URL(raw)
-
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null
-  } catch {
-    return null
-  }
+  activeTab: MapDetailTab
+  mediaItems: Array<{
+    id: string
+    src: string
+    alt: string
+  }>
 }
 
 export function MapDetailSupplementSections({
   shop,
-  relatedShops,
-  onSelectRelatedShop,
+  activeTab,
+  mediaItems,
 }: MapDetailSupplementSectionsProps) {
-  const safeLinks = shop.links.flatMap((item) => {
-    const url = getSafeExternalUrl(item.url)
-
-    return url ? [{ ...item, url }] : []
-  })
-
-  return (
-    <>
-      <section className="section map-place-review-card" id="map-place-review">
-        <div className="map-place-review-copy">
-          <strong>{shop.name}</strong>
-          <span>다녀오셨나요?</span>
-          <p>방문 팁과 굿즈 정보를 리뷰로 남겨주세요.</p>
-        </div>
-        <Link className="map-place-review-button" to={`/community?shopId=${shop.id}`}>
-          ✎ 리뷰 쓰기
-        </Link>
-      </section>
-
-      {shop.works.length > 0 ? (
-        <section className="section map-sheet-list-card">
-          <div className="map-sheet-section-head">
-            <strong>취급 작품</strong>
-            <span>{shop.works.length}개</span>
-          </div>
+  if (activeTab === 'works') {
+    return (
+      <section className="section map-sheet-info-card map-sheet-tab-panel" id="map-place-works">
+        {shop.works.length > 0 ? (
           <div className="map-sheet-token-cloud">
-            {shop.works.slice(0, 8).map((work) => (
+            {shop.works.map((work) => (
               <span className="map-sheet-token-chip" key={work}>
                 {work}
               </span>
             ))}
           </div>
-          {shop.works.length > 8 ? (
-            <p className="map-sheet-footnote">외 {shop.works.length - 8}개</p>
-          ) : null}
-        </section>
-      ) : null}
+        ) : (
+          <p className="map-sheet-footnote">아직 연결된 작품 정보가 없어요.</p>
+        )}
+      </section>
+    )
+  }
 
-      {safeLinks.length > 0 ? (
-        <section className="section map-sheet-link-section-v2">
-          <div className="map-sheet-section-head">
-            <strong>공식 / 외부 링크</strong>
-            <span>{safeLinks.length}개</span>
-          </div>
-          <div className="map-sheet-link-list">
-            {safeLinks.map((item) => (
-              <a className="map-sheet-link-row" href={item.url} key={item.id} rel="noreferrer" target="_blank">
-                <span className="map-sheet-link-icon">
-                  <MapDetailIcon name="link" />
-                </span>
-                <div className="map-sheet-link-copy">
-                  <strong>{linkTypeToLabel(item.type)}</strong>
-                  <p>{item.url}</p>
-                </div>
-              </a>
+  if (activeTab === 'photos') {
+    return (
+      <section className="section map-sheet-info-card map-sheet-tab-panel" id="map-place-photos">
+        {mediaItems.length > 0 ? (
+          <div className="map-sheet-photo-feed">
+            {mediaItems.map((item) => (
+              <article className="map-sheet-photo-item" key={item.id}>
+                <img src={item.src} alt={item.alt} />
+              </article>
             ))}
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <p className="map-sheet-footnote">등록된 매장 사진이 없어요.</p>
+        )}
+      </section>
+    )
+  }
 
-      {relatedShops.length > 0 ? (
-        <section className="section map-sheet-section map-sheet-recommend-section">
-          <div className="map-sheet-section-head">
-            <strong>함께 보면 좋은 장소</strong>
-            <span>{relatedShops.length}곳</span>
-          </div>
+  if (activeTab === 'review') {
+    return (
+      <section className="section map-sheet-info-card map-sheet-tab-panel map-place-review-card" id="map-place-review">
+        <div className="map-place-review-copy">
+          <span>방문 리뷰를 기다리고 있어요.</span>
+          <p>다녀온 매장 이야기와 굿즈 정보를 리뷰로 남기면 다음 방문자에게 도움이 돼요.</p>
+        </div>
+        <Link className="map-place-review-button" to={`/community?shopId=${shop.id}`}>
+          리뷰 남기기
+        </Link>
+      </section>
+    )
+  }
 
-          <div className="map-related-rail">
-            {relatedShops.map((relatedShop) => (
-              <button
-                className="map-related-card"
-                key={relatedShop.id}
-                type="button"
-                onClick={() => onSelectRelatedShop(relatedShop.id)}
-              >
-                <div className="map-related-card-visual">
-                  <span>{relatedShop.categories[0] ?? 'SHOP'}</span>
-                </div>
-                <div className="map-related-card-copy">
-                  <strong>{relatedShop.name}</strong>
-                  <p>{relatedShop.regionName ?? `지역 ${relatedShop.regionId ?? '-'}`}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-    </>
-  )
+  return null
 }

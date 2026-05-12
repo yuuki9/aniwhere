@@ -1,5 +1,6 @@
+import type { PointerEvent } from 'react'
+import noImageStore from '../../assets/images/explore-no-image-store.png'
 import type { Shop } from '../../shared/api/types'
-import { GlobalNavigationMenu } from '../../shared/ui/GlobalNavigationMenu'
 
 type MapDetailMediaItem = {
   id: string
@@ -11,71 +12,79 @@ type MapDetailMediaSectionProps = {
   shop: Shop
   tone: string
   detailMediaItems: MapDetailMediaItem[]
-  showTopbarControls: boolean
-  onBack: () => void
-  onClose: () => void
+  totalMediaCount: number
+  onDragHandlePointerCancel: () => void
+  onDragHandlePointerDown: (event: PointerEvent<HTMLDivElement>) => void
+  onDragHandlePointerMove: (event: PointerEvent<HTMLDivElement>) => void
+  onDragHandlePointerUp: (event: PointerEvent<HTMLDivElement>) => void
 }
 
 export function MapDetailMediaSection({
   shop,
   tone,
   detailMediaItems,
-  showTopbarControls,
-  onBack,
-  onClose,
+  totalMediaCount,
+  onDragHandlePointerCancel,
+  onDragHandlePointerDown,
+  onDragHandlePointerMove,
+  onDragHandlePointerUp,
 }: MapDetailMediaSectionProps) {
-  return (
-    <section className={`map-sheet-media map-sheet-media-${tone}`}>
-      {showTopbarControls ? (
-        <div className="map-sheet-media-topbar">
-          <div className="map-sheet-topbar-actions">
-            <button
-              className="map-sheet-icon-button map-sheet-icon-button-overlay"
-              type="button"
-              onClick={onBack}
-              aria-label="뒤로 가기"
-            >
-              ←
-            </button>
-            <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
-          </div>
-          <div className="map-sheet-topbar-actions">
-            <button
-              className="map-sheet-icon-button map-sheet-icon-button-overlay"
-              type="button"
-              onClick={onClose}
-              aria-label="상세 화면 닫기"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      ) : null}
+  const hasMedia = detailMediaItems.length > 0
+  const isSingleMedia = detailMediaItems.length === 1
+  const secondaryMediaItems = detailMediaItems.slice(1)
 
-      {detailMediaItems.length > 0 ? (
+  return (
+    <section
+      className={[
+        'map-sheet-media',
+        `map-sheet-media-${tone}`,
+        !hasMedia ? 'map-sheet-media-empty' : '',
+        isSingleMedia ? 'map-sheet-media-single' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <div
+        className="map-sheet-expanded-drag-handle"
+        aria-hidden="true"
+        onPointerCancel={onDragHandlePointerCancel}
+        onPointerDown={onDragHandlePointerDown}
+        onPointerMove={onDragHandlePointerMove}
+        onPointerUp={onDragHandlePointerUp}
+      >
+        <span />
+      </div>
+
+      {hasMedia ? (
         <div className="map-sheet-media-grid">
           <article className="map-sheet-media-main">
             <img className="map-sheet-media-image" src={detailMediaItems[0].src} alt={detailMediaItems[0].alt} />
             <div className="map-sheet-media-image-overlay">
               <span className="map-sheet-media-badge">{shop.regionName ?? 'ANIWHERE'}</span>
-              <strong>{shop.categories[0] ?? shop.works[0] ?? '매장 큐레이션'}</strong>
+              <strong>{shop.categories[0] ?? '매장 이미지'}</strong>
             </div>
           </article>
 
-          <div className="map-sheet-media-stack">
-            {detailMediaItems.slice(1).map((item, index) => (
-              <article className="map-sheet-media-tile" key={item.id}>
-                <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
-                {index === detailMediaItems.slice(1).length - 1 ? (
-                  <div className="map-sheet-media-count">
-                    <strong>+{detailMediaItems.length}</strong>
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
+          {secondaryMediaItems.length > 0 ? (
+            <div className="map-sheet-media-stack">
+              {secondaryMediaItems.map((item, index) => (
+                <article className="map-sheet-media-tile" key={item.id}>
+                  <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
+                  {index === secondaryMediaItems.length - 1 ? (
+                    <div className="map-sheet-media-count">
+                      <strong>{totalMediaCount > detailMediaItems.length ? `${totalMediaCount}장` : `${detailMediaItems.length}장`}</strong>
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      ) : (
+        <div className="map-sheet-media-fallback" aria-label="매장 이미지 준비 중">
+          <img className="map-sheet-no-image-image" src={noImageStore} alt="" aria-hidden="true" />
+        </div>
+      )}
     </section>
   )
 }

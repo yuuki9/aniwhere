@@ -1,6 +1,6 @@
 import { type UIEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
 import { getShop, getShops } from '../shared/api/shops'
@@ -17,14 +17,13 @@ import {
   canBuildNaverWebDirectionUrl,
 } from '../shared/lib/naverDirections'
 import { isAppsInTossRuntime } from '../shared/lib/auth'
-import { GlobalNavigationMenu } from '../shared/ui/GlobalNavigationMenu'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { AitNavigation } from '../shared/ui/ait'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
 import { MapDetailMediaSection } from './explore/MapDetailMediaSection'
-import { MapDetailSummaryCard } from './explore/MapDetailSummaryCard'
+import { MapDetailSummaryCard, type MapDetailTab } from './explore/MapDetailSummaryCard'
 import { MapDetailSupplementSections } from './explore/MapDetailSupplementSections'
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
@@ -68,20 +67,6 @@ function getLocationErrorMessage(error: unknown) {
 
 type MapBounds = MapViewport['bounds']
 
-function buildDescriptionPreview(description: string | null, maxLength = 120) {
-  if (!description) {
-    return null
-  }
-
-  const normalized = description.replace(/\s+/g, ' ').trim()
-
-  if (normalized.length <= maxLength) {
-    return normalized
-  }
-
-  return `${normalized.slice(0, maxLength).trimEnd()}…`
-}
-
 function shouldShowAssistantSuggestions(messages: MapAssistantMessage[]) {
   const userMessageCount = messages.filter((message) => message.role === 'user').length
 
@@ -112,11 +97,27 @@ function formatFloorLabel(floor: string | null) {
 }
 
 function buildDetailMediaItems(shop: Shop, uploadedPhotos: AdminShopPhoto[] = []): DetailMediaItem[] {
-  return uploadedPhotos.slice(0, 5).map((photo, index) => ({
+  const apiImages = [...(shop.images ?? [])]
+    .sort((a, b) => {
+      if (a.role !== b.role) {
+        return a.role === 'PRIMARY' ? -1 : 1
+      }
+
+      return a.sortOrder - b.sortOrder
+    })
+    .map((image, index) => ({
+      id: `shop-image-${image.id ?? index}`,
+      src: image.url,
+      alt: `${shop.name} 매장 이미지 ${index + 1}`,
+    }))
+
+  const localImages = uploadedPhotos.map((photo, index) => ({
     id: photo.id,
     src: photo.dataUrl,
-    alt: `${shop.name} 실제 사진 ${index + 1}`,
+    alt: `${shop.name} 업로드 이미지 ${index + 1}`,
   }))
+
+  return [...apiImages, ...localImages]
 }
 
 function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
@@ -131,14 +132,16 @@ function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
 
 export function ExplorePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const regionId = Number(searchParams.get('regionId') ?? '') || undefined
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
+  const viewParam = searchParams.get('view')
   const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
+  const routeViewMode: ViewMode = nearbyRequest || viewParam === 'list' ? 'list' : 'map'
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
-  const [viewMode, setViewMode] = useState<ViewMode>(nearbyRequest ? 'list' : 'map')
   const sheetMode: SheetMode = selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
   const [selectionOrigin, setSelectionOrigin] = useState<SelectionOrigin>(selectedShopId ? 'map' : null)
   const [visibleListCount, setVisibleListCount] = useState(PAGE_SIZE)
@@ -152,10 +155,12 @@ export function ExplorePage() {
   const [mapViewport, setMapViewport] = useState<MapViewport | null>(null)
   const [mapViewportFilter, setMapViewportFilter] = useState<MapBounds | null>(null)
   const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
-  const [shareFeedback, setShareFeedback] = useState<string | null>(null)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
+  const [detailTab, setDetailTab] = useState<MapDetailTab>('info')
   const [peekDragOffset, setPeekDragOffset] = useState(0)
   const [isPeekDragging, setIsPeekDragging] = useState(false)
+  const [expandedDragOffset, setExpandedDragOffset] = useState(0)
+  const [isExpandedDragging, setIsExpandedDragging] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantInput, setAssistantInput] = useState('')
   const [assistantMessages, setAssistantMessages] = useState<MapAssistantMessage[]>([
@@ -177,9 +182,13 @@ export function ExplorePage() {
   const peekPointerIdRef = useRef<number | null>(null)
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
+  const expandedPointerIdRef = useRef<number | null>(null)
+  const expandedDragStartYRef = useRef<number | null>(null)
   const effectiveUserLocation = userLocation ?? nearbyRequest?.location ?? null
   const appliedFilterCount = mapViewportFilter ? 1 : 0
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
+  const searchReturnTo = `${location.pathname}${location.search}`
+  const searchHref = `/search?returnTo=${encodeURIComponent(searchReturnTo)}`
 
   const shopsQuery = useQuery({
     queryKey: ['shops', 'explore-map-source'],
@@ -270,28 +279,6 @@ export function ExplorePage() {
 
   const detailShop = activeShopDetailQuery.data ?? activeShop ?? null
 
-  const relatedShops = useMemo(() => {
-    if (!detailShop) {
-      return []
-    }
-
-    const categoriesSet = new Set(detailShop.categories)
-
-    return allShops
-      .filter((shop) => shop.id !== detailShop.id)
-      .map((shop) => {
-        const sharedCategoryCount = shop.categories.filter((item) => categoriesSet.has(item)).length
-        const sameRegionBonus = shop.regionId && detailShop.regionId && shop.regionId === detailShop.regionId ? 2 : 0
-        const score = sharedCategoryCount + sameRegionBonus
-
-        return { shop, score }
-      })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 6)
-      .map((item) => item.shop)
-  }, [allShops, detailShop])
-
   const assistantMutation = useMutation({
     mutationFn: async (question: string) =>
       askMapAssistant({
@@ -333,6 +320,18 @@ export function ExplorePage() {
 
   const pushSearchParams = (next: URLSearchParams) => {
     setSearchParams(next)
+  }
+
+  const moveViewMode = (nextViewMode: ViewMode) => {
+    const next = new URLSearchParams(searchParams)
+
+    if (nextViewMode === 'list') {
+      next.set('view', 'list')
+      pushSearchParams(next)
+    } else {
+      next.delete('view')
+      replaceSearchParams(next)
+    }
   }
 
   const clearLocationError = () => {
@@ -387,6 +386,7 @@ export function ExplorePage() {
   ) => {
     const next = new URLSearchParams(searchParams)
     next.set('shopId', String(shopId))
+    next.delete('view')
     if (nextSheetMode === 'expanded') {
       next.set('sheet', 'expanded')
     } else {
@@ -400,25 +400,26 @@ export function ExplorePage() {
     }
     setSelectionOrigin(origin)
     setIsDetailHeaderCollapsed(false)
+    setDetailTab('info')
     setAssistantOpen(false)
     if (origin === 'list') {
       requestMapFocus('shop')
     } else {
       setFocusMode('idle')
     }
-    setViewMode('map')
   }
 
   const restoreListView = () => {
     const next = new URLSearchParams(searchParams)
     next.delete('shopId')
     next.delete('sheet')
+    next.set('view', 'list')
     replaceSearchParams(next)
     pendingListRestoreRef.current = true
     setVisibleListCount(Math.max(PAGE_SIZE, listVisibleCountRef.current))
     setAssistantOpen(false)
+    setDetailTab('info')
     requestMapFocus('shops')
-    setViewMode('list')
     setSelectionOrigin(null)
   }
 
@@ -435,10 +436,11 @@ export function ExplorePage() {
     const next = new URLSearchParams(searchParams)
     next.delete('shopId')
     next.delete('sheet')
+    next.delete('view')
     replaceSearchParams(next)
     setAssistantOpen(false)
+    setDetailTab('info')
     setFocusMode('idle')
-    setViewMode('map')
     setSelectionOrigin(null)
   }
 
@@ -452,7 +454,7 @@ export function ExplorePage() {
       setAssistantOpen(false)
     }
 
-    setViewMode(nextView)
+    moveViewMode(nextView)
   }
 
   const handleListFabClick = () => {
@@ -462,6 +464,34 @@ export function ExplorePage() {
     }
 
     handleSwitchView(isListSheetOpen ? 'map' : 'list')
+  }
+
+  const shrinkExpandedSheet = () => {
+    if (selectedShopId != null && sheetParam === 'expanded') {
+      const next = new URLSearchParams(searchParams)
+      next.delete('sheet')
+      replaceSearchParams(next)
+    }
+
+    setIsDetailHeaderCollapsed(false)
+    setDetailTab('info')
+    setExpandedDragOffset(0)
+    setIsExpandedDragging(false)
+    requestMapFocus('shop')
+  }
+
+  const handleExploreBack = () => {
+    if (sheetMode === 'expanded') {
+      shrinkExpandedSheet()
+      return
+    }
+
+    if (isListSheetOpen) {
+      handleSwitchView('map')
+      return
+    }
+
+    navigate('/home')
   }
 
   const handleRequestLocation = async () => {
@@ -518,12 +548,13 @@ export function ExplorePage() {
 
   const shopsError = shopsQuery.isError ? (shopsQuery.error as Error).message : null
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
-  const primaryLink = detailShop?.links[0] ?? null
   const detailFloorLabel = formatFloorLabel(detailShop?.floor ?? null)
-  const detailDescriptionPreview = buildDescriptionPreview(detailShop?.description ?? detailShop?.visitTip ?? null, 104)
+  const detailDescription = detailShop?.description ?? detailShop?.visitTip ?? null
   const detailMediaTone = detailShop ? getDetailMediaTone(detailShop.id) : 'blue'
   const detailMediaItems = detailShop ? buildDetailMediaItems(detailShop, detailPhotosQuery.data ?? []) : []
+  const detailPreviewMediaItems = detailMediaItems.slice(0, 5)
   const detailHeroImage = detailMediaItems[0] ?? null
+  const activeDetailTab = detailTab === 'photos' && detailMediaItems.length <= 5 ? 'info' : detailTab
   const naverDirectionTarget = detailShop
     ? {
         latitude: detailShop.py,
@@ -538,8 +569,7 @@ export function ExplorePage() {
       )
     : null
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
-  const detailActionLinkUrl = primaryLink?.url ?? naverSearchUrl
-  const isListSheetOpen = viewMode === 'list' && !detailShop
+  const isListSheetOpen = routeViewMode === 'list' && selectedShopId == null
   const isExploreTopHidden = sheetMode === 'expanded' || isListSheetOpen
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
@@ -646,6 +676,50 @@ export function ExplorePage() {
     expandPeekSheet()
   }
 
+  const resetExpandedDrag = () => {
+    expandedPointerIdRef.current = null
+    expandedDragStartYRef.current = null
+    setExpandedDragOffset(0)
+    setIsExpandedDragging(false)
+  }
+
+  const handleExpandedDragPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    expandedPointerIdRef.current = event.pointerId
+    expandedDragStartYRef.current = event.clientY
+    setIsExpandedDragging(true)
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const handleExpandedDragPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (expandedPointerIdRef.current !== event.pointerId || expandedDragStartYRef.current == null) {
+      return
+    }
+
+    const deltaY = event.clientY - expandedDragStartYRef.current
+    const nextOffset = Math.max(0, Math.min(deltaY, 112))
+    setExpandedDragOffset(nextOffset)
+  }
+
+  const handleExpandedDragPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (expandedPointerIdRef.current !== event.pointerId || expandedDragStartYRef.current == null) {
+      return
+    }
+
+    const deltaY = event.clientY - expandedDragStartYRef.current
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+
+    if (deltaY >= 44) {
+      shrinkExpandedSheet()
+      return
+    }
+
+    resetExpandedDrag()
+  }
+
+  const handleExpandedDragPointerCancel = () => {
+    resetExpandedDrag()
+  }
+
   useLayoutEffect(() => {
     if (!isListSheetOpen || !pendingListRestoreRef.current || !listScrollRef.current) {
       return
@@ -690,21 +764,6 @@ export function ExplorePage() {
     handleSelectShop(shopId, 'list', 'expanded')
   }
 
-  const handleExpandedBack = () => {
-    if (selectionOrigin === 'list') {
-      restoreListView()
-      return
-    }
-
-    if (selectedShopId != null && sheetParam === 'expanded') {
-      const next = new URLSearchParams(searchParams)
-      next.delete('sheet')
-      replaceSearchParams(next)
-    }
-
-    setIsDetailHeaderCollapsed(false)
-  }
-
   const openNaverDirections = (event?: { stopPropagation: () => void }) => {
     event?.stopPropagation()
 
@@ -718,46 +777,6 @@ export function ExplorePage() {
     }
   }
 
-  const handleShareShop = async () => {
-    if (!detailShop) {
-      return
-    }
-
-    setShareFeedback(null)
-
-    const shareData = {
-      title: detailShop.name,
-      text: `${detailShop.name} - ${detailShop.address}`,
-      url: window.location.href,
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData)
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return
-        }
-
-        setShareFeedback('공유를 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.')
-      }
-
-      return
-    }
-
-    try {
-      if (!navigator.clipboard?.writeText) {
-        setShareFeedback('이 환경에서는 공유 링크를 복사할 수 없습니다.')
-        return
-      }
-
-      await navigator.clipboard.writeText(shareData.url)
-      setShareFeedback('공유 링크를 복사했습니다.')
-    } catch {
-      setShareFeedback('공유 링크를 복사하지 못했습니다.')
-    }
-  }
-
   return (
     <main className="map-page-shell">
       <section className="map-page">
@@ -766,7 +785,7 @@ export function ExplorePage() {
             'map-surface',
             'map-surface-app',
             'map-surface-app-v2',
-            !usesTossNavigation ? 'map-surface-local-navigation' : '',
+            usesTossNavigation ? 'map-surface-toss-navigation' : 'map-surface-local-navigation',
             detailShop ? 'map-surface-sheet-open' : '',
             sheetMode === 'expanded' ? 'map-surface-sheet-expanded' : '',
             isListSheetOpen ? 'map-surface-list-open' : '',
@@ -774,9 +793,12 @@ export function ExplorePage() {
             .filter(Boolean)
             .join(' ')}
         >
-          <AitNavigation className="map-route-navigation" showBack onBack={() => navigate('/home')} />
+          {!usesTossNavigation ? (
+            <AitNavigation className="map-route-navigation" showBack onBack={handleExploreBack} />
+          ) : null}
 
-          {shopsQuery.isLoading && allShops.length === 0 ? (
+          {!isListSheetOpen ? (
+            shopsQuery.isLoading && allShops.length === 0 ? (
             <div className="map-empty">
               <p>매장 지도를 준비하고 있습니다.</p>
             </div>
@@ -792,7 +814,8 @@ export function ExplorePage() {
               focusRequestId={focusRequestId}
               selectionOrigin={selectionOrigin}
             />
-          )}
+            )
+          ) : null}
 
           <div
             className={`map-explore-top ${isExploreTopHidden ? 'map-explore-top-hidden' : ''}`}
@@ -805,7 +828,7 @@ export function ExplorePage() {
                   filterTriggerRef={filterTriggerRef}
                   isFilterSheetOpen={isFilterSheetOpen}
                   appliedFilterCount={appliedFilterCount}
-                  onSearchClick={() => navigate('/search')}
+                  onSearchClick={() => navigate(searchHref)}
                   onFilterClick={() => setIsFilterSheetOpen(true)}
                 />
                 <MapQuickChips items={MAP_QUICK_CHIPS} activeItems={activeMapQuickChips} onToggle={toggleMapQuickChip} />
@@ -871,7 +894,7 @@ export function ExplorePage() {
                 filterTriggerRef={filterTriggerRef}
                 isFilterSheetOpen={isFilterSheetOpen}
                 appliedFilterCount={appliedFilterCount}
-                onSearchClick={() => navigate('/search')}
+                onSearchClick={() => navigate(searchHref)}
                 onFilterClick={() => setIsFilterSheetOpen(true)}
               />
             }
@@ -900,9 +923,16 @@ export function ExplorePage() {
 
           {detailShop && sheetMode === 'expanded' ? (
             <section
-              className="map-bottom-sheet map-bottom-sheet-expanded"
+              className={[
+                'map-bottom-sheet',
+                'map-bottom-sheet-expanded',
+                isExpandedDragging ? 'map-bottom-sheet-expanded-dragging' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               id="map-place-detail"
               aria-label={`${detailShop.name} 상세 정보`}
+              style={expandedDragOffset > 0 ? { transform: `translateY(${expandedDragOffset}px)` } : undefined}
             >
               <div className="map-sheet-expanded-body" onScroll={handleDetailBodyScroll} ref={detailScrollRef}>
                 <div
@@ -913,29 +943,18 @@ export function ExplorePage() {
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  {!usesTossNavigation ? (
-                    <div className="map-sheet-sticky-actions">
-                      <button className="map-sheet-icon-button" type="button" onClick={handleExpandedBack} aria-label="뒤로 가기">
-                        ←
-                      </button>
-                      <GlobalNavigationMenu triggerClassName="global-nav-trigger global-nav-trigger-overlay" />
-                    </div>
-                  ) : null}
                   <strong>{detailShop.name}</strong>
-                  {!usesTossNavigation ? (
-                    <button className="map-sheet-icon-button" type="button" onClick={handleClearSelection} aria-label="상세 화면 닫기">
-                      ×
-                    </button>
-                  ) : null}
                 </div>
 
                 <MapDetailMediaSection
                   shop={detailShop}
                   tone={detailMediaTone}
-                  detailMediaItems={detailMediaItems}
-                  showTopbarControls={!usesTossNavigation}
-                  onBack={handleExpandedBack}
-                  onClose={handleClearSelection}
+                  detailMediaItems={detailPreviewMediaItems}
+                  totalMediaCount={detailMediaItems.length}
+                  onDragHandlePointerCancel={handleExpandedDragPointerCancel}
+                  onDragHandlePointerDown={handleExpandedDragPointerDown}
+                  onDragHandlePointerMove={handleExpandedDragPointerMove}
+                  onDragHandlePointerUp={handleExpandedDragPointerEnd}
                 />
 
                 <div className="map-sheet-shell map-sheet-shell-detail">
@@ -943,25 +962,25 @@ export function ExplorePage() {
 
                   <MapDetailSummaryCard
                     shop={detailShop}
-                    primaryLinkUrl={primaryLink?.url ?? null}
-                    actionLinkUrl={detailActionLinkUrl}
-                    descriptionPreview={detailDescriptionPreview}
-                    shareFeedback={shareFeedback}
-                    onShareShop={handleShareShop}
-                    onOpenDirections={openNaverDirections}
+                    description={detailDescription}
+                    activeTab={activeDetailTab}
+                    photoCount={detailMediaItems.length}
+                    onTabChange={setDetailTab}
                   />
 
-                  <MapDetailInfoCard
-                    shop={detailShop}
-                    floorLabel={detailFloorLabel}
-                    distanceLabel={activeShop?.distanceLabel ?? null}
-                    onOpenDirections={openNaverDirections}
-                  />
+                  {activeDetailTab === 'info' ? (
+                    <MapDetailInfoCard
+                      shop={detailShop}
+                      floorLabel={detailFloorLabel}
+                      distanceLabel={activeShop?.distanceLabel ?? null}
+                      onOpenDirections={openNaverDirections}
+                    />
+                  ) : null}
 
                   <MapDetailSupplementSections
                     shop={detailShop}
-                    relatedShops={relatedShops}
-                    onSelectRelatedShop={(shopId) => handleSelectShop(shopId, selectionOrigin ?? 'map', 'expanded')}
+                    activeTab={activeDetailTab}
+                    mediaItems={detailMediaItems}
                   />
                 </div>
               </div>

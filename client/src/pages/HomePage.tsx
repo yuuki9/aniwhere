@@ -1,10 +1,9 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  buildHomeQuickMenus,
-  type HomeQuickMenu,
-} from './homeViewModel'
-import { AitTop } from '../shared/ui/ait'
+import homeQuickAdminIcon from '../assets/icons/home-quick-admin.webp'
+import homeQuickReviewIcon from '../assets/icons/home-quick-review.webp'
+import homeQuickStoreIcon from '../assets/icons/home-quick-store.webp'
+import { buildHomeQuickMenus, type HomeQuickMenu } from './homeViewModel'
 
 function SearchIcon() {
   return (
@@ -16,42 +15,13 @@ function SearchIcon() {
 }
 
 function HomeQuickMenuIcon({ icon }: { icon: HomeQuickMenu['icon'] }) {
-  const commonProps = {
-    'aria-hidden': true,
-    className: 'home-quick-icon-svg',
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    strokeWidth: 1.8,
-  }
+  const iconSrc = {
+    pin: homeQuickStoreIcon,
+    review: homeQuickReviewIcon,
+    admin: homeQuickAdminIcon,
+  }[icon]
 
-  switch (icon) {
-    case 'pin':
-      return (
-        <svg {...commonProps}>
-          <path d="M12 21s-5.2-5.1-5.2-9.4a5.2 5.2 0 1 1 10.4 0C17.2 15.9 12 21 12 21Z" />
-          <circle cx="12" cy="11.4" r="1.8" />
-        </svg>
-      )
-    case 'review':
-      return (
-        <svg {...commonProps}>
-          <path d="M5 6.5h14v9.2H9.2L5 19.5v-13Z" />
-          <path d="M8.5 10h7M8.5 13h4.5" />
-        </svg>
-      )
-    case 'report':
-      return (
-        <svg {...commonProps}>
-          <path d="M12 21s-5.2-5.1-5.2-9.4a5.2 5.2 0 1 1 10.4 0C17.2 15.9 12 21 12 21Z" />
-          <path d="M12 8.8v5.2M9.4 11.4h5.2" />
-        </svg>
-      )
-    default:
-      return null
-  }
+  return <img alt="" aria-hidden="true" className="home-quick-icon-image" src={iconSrc} />
 }
 
 function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
@@ -67,10 +37,15 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
 
 function HomeQuickMenuSection({ menus }: { menus: HomeQuickMenu[] }) {
   return (
-    <nav className="home-quick-menu" aria-label="홈 빠른 메뉴">
+    <nav className="home-quick-menu" data-menu-count={menus.length} aria-label="홈 빠른 메뉴">
       {menus.map((menu) => (
         <Link className="home-quick-menu-item" key={menu.id} to={menu.href}>
-          <span className="home-quick-icon">
+          <span
+            className={`home-quick-icon home-quick-icon-${menu.id}`}
+            data-tds-asset-shape="squircle-background"
+            data-tds-asset-size="medium"
+            data-tds-icon-name={`home-${menu.icon}`}
+          >
             <HomeQuickMenuIcon icon={menu.icon} />
           </span>
           <span>{menu.label}</span>
@@ -123,11 +98,6 @@ export function HomePage() {
 
   return (
     <main className="app-shell discover-shell">
-      <AitTop
-        className="home-top"
-        title="어디부터 둘러볼까요?"
-        subtitle="관심 있는 작품이나 가고 싶은 지역부터 시작해보세요."
-      />
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeQuickMenuSection menus={quickMenus} />
       <HomeIssueSection />

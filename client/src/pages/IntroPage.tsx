@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
+import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
+import introFeatureReviewIcon from '../assets/icons/intro-feature-review.webp'
 import introStoreGuide from '../assets/intro-store-guide.webp'
 import { AitButton, AitListRow, AitNavigation, AitTop } from '../shared/ui/ait'
 
@@ -28,6 +31,12 @@ const featureItems = [
 ] as const
 
 function IntroFeatureIcon({ name, type }: { name: IntroFeatureIconName; type: IntroFeatureIconType }) {
+  const iconSrc = {
+    curation: introFeatureCurationIcon,
+    map: introFeatureMapIcon,
+    review: introFeatureReviewIcon,
+  }[type]
+
   return (
     <span
       className={`intro-feature-icon intro-feature-icon-${type}`}
@@ -36,26 +45,7 @@ function IntroFeatureIcon({ name, type }: { name: IntroFeatureIconName; type: In
       data-tds-icon-name={name}
       aria-hidden="true"
     >
-      <svg className="intro-feature-icon-svg" viewBox="0 0 24 24" focusable="false">
-        {type === 'curation' ? (
-          <>
-            <path d="m12 4.8 1.9 4 4.4.6-3.2 3.1.8 4.4-3.9-2.1-3.9 2.1.8-4.4-3.2-3.1 4.4-.6L12 4.8z" />
-          </>
-        ) : null}
-        {type === 'map' ? (
-          <>
-            <path d="M12 20s5-4.8 5-9a5 5 0 0 0-10 0c0 4.2 5 9 5 9z" />
-            <circle cx="12" cy="11" r="1.7" />
-          </>
-        ) : null}
-        {type === 'review' ? (
-          <>
-            <path d="M6.2 17.8 7 14l8.7-8.7a1.8 1.8 0 0 1 2.5 2.5L9.5 16.5l-3.3 1.3z" />
-            <path d="m14.5 6.5 3 3" />
-            <path d="M5.5 20h13" />
-          </>
-        ) : null}
-      </svg>
+      <img alt="" className="intro-feature-icon-image" src={iconSrc} />
     </span>
   )
 }

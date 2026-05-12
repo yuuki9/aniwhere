@@ -323,6 +323,12 @@
   box-shadow: var(--ait-shadow-xl);
 }
 
+.shop-detail-shell {
+  width: min(var(--ait-size-content-compact), 100%);
+  min-height: 100dvh;
+  background: var(--ait-color-gray-0);
+}
+
 .shop-detail-media-grid {
   display: grid;
   gap: var(--ait-space-5);

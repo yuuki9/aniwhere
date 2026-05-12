@@ -1,4 +1,4 @@
-export type MapDetailIconName = 'pin' | 'clock' | 'layers' | 'tag' | 'link'
+export type MapDetailIconName = 'pin' | 'clock' | 'layers' | 'tag' | 'link' | 'route'
 
 export function MapDetailIcon({ name }: { name: MapDetailIconName }) {
   const commonProps = {
@@ -47,6 +47,15 @@ export function MapDetailIcon({ name }: { name: MapDetailIconName }) {
           <path d="M10.3 13.7 8.2 15.8a3 3 0 1 1-4.2-4.2l2.8-2.8a3 3 0 0 1 4.2 0" />
           <path d="M13.7 10.3 15.8 8.2a3 3 0 1 1 4.2 4.2l-2.8 2.8a3 3 0 0 1-4.2 0" />
           <path d="m9 15 6-6" />
+        </svg>
+      )
+    case 'route':
+      return (
+        <svg {...commonProps}>
+          <path d="M5.5 18.5h3.2a3 3 0 0 0 0-6H7.4a3 3 0 0 1 0-6h2.1" />
+          <path d="m16 5 3 3-3 3" />
+          <path d="M12.5 8H19" />
+          <circle cx="5.5" cy="18.5" r="1.4" />
         </svg>
       )
     default:
