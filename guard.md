@@ -36,6 +36,30 @@
 - 모든 화면 카피는 실사용자 기준의 짧고 직접적인 문장으로 정리합니다.
 - 홈은 진입과 발견에, 검색은 검색 결과에, 지도는 위치 비교에 집중하도록 역할을 분리합니다.
 
+## TDS / 출시 심사 기준 적용
+
+- TDS 또는 Apps in Toss 기준을 언급하는 UI 변경은 공식 문서와 프로젝트 문서를 함께 확인합니다.
+  - 공식 문서: Apps in Toss 개발자센터, TDS 컴포넌트 문서
+  - 프로젝트 문서: `docs/ux-mobile-research.md`, `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`
+- 공식 TDS 컴포넌트로 확인되지 않은 패턴은 "TDS 컴포넌트"라고 부르지 않습니다.
+  - 예: 공개 문서에서 Toast 컴포넌트 근거가 확인되지 않으면 `TDS Toast`가 아니라 `TDS 톤의 app-owned status notice`로 취급합니다.
+- 필드 검증 오류는 해당 필드 바로 아래에 표시할 수 있습니다.
+- 저장 실패, 서버 오류, 권한 오류, 인프라 오류처럼 특정 입력 필드와 무관한 상태는 폼 본문 아래에 붙이지 않습니다.
+  - 특히 textarea/마지막 필드 아래에 서버 오류가 붙어 해당 필드 오류처럼 보이게 만들지 않습니다.
+  - 하단 CTA 근처의 독립 상태 표시, app-owned notice, 또는 승인된 TDS 패턴을 사용합니다.
+- `alert()`/`confirm()` 같은 브라우저 기본 모달은 사용하지 않습니다.
+- 신규 UI는 `--ait-*` 토큰과 `client/src/shared/ui/ait` 계층을 우선 사용합니다.
+
+## 입력 폼 상태 보존
+
+- Apps in Toss WebView에서는 pull-to-refresh, 스와이프 뒤로가기, 네이티브 내비게이션 등으로 작성 중 화면이 쉽게 이탈될 수 있습니다.
+- 긴 입력 폼은 새로고침/라우트 왕복에 대비해 작성 중 값을 보존할 수 있습니다.
+  - 텍스트, 선택 주소, 좌표처럼 재입력 비용이 큰 값은 `sessionStorage` 기반 draft 보존을 허용합니다.
+  - 등록 성공 시 draft는 즉시 삭제합니다.
+  - 명시적 취소/홈 이탈 플로우를 만들 경우 draft 삭제 또는 확인 절차를 둡니다.
+  - 파일 객체는 브라우저 보안/수명 제약이 있으므로 hard refresh 후 완전 보존 대상으로 보지 않습니다.
+- draft 보존은 TDS 자체 규칙이 아니라 Apps in Toss WebView 입력 UX 방어장치로 문서화합니다.
+
 ## 구현 방향
 
 - `shops`, `community(posts/comments)`를 중심으로 화면을 구성합니다.

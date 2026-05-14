@@ -27,6 +27,15 @@ These components intentionally provide only the patterns Aniwhere currently uses
 - Keep screen-specific CSS thin; prefer `.ait-*` classes for reusable component behavior.
 - Do not add raw colors, radii, or spacing to feature CSS unless the value is asset-specific or genuinely one-off.
 
+## Status Feedback Rules
+
+- Use inline field errors only for validation that belongs to that exact field.
+- Do not render save/server/infrastructure errors under the final form field; users can misread them as field-specific errors.
+- For non-field status feedback, use a small app-owned status notice near the active CTA or another documented TDS-compatible pattern.
+- If an official TDS component is not available in the public Apps in Toss documentation, do not label the local implementation as that TDS component.
+  - Example: call it `app-owned status notice` instead of `TDS Toast` unless the project is using an approved official Toast component.
+- Native browser `alert()` and `confirm()` remain disallowed for launch-facing flows.
+
 ## Server 관리자 배포 Guide
 
 `aniwhere.link`에 배포할 때는 반드시 public build를 사용합니다.

@@ -1,4 +1,4 @@
-import { request, toQueryString } from './client'
+import { request, requestForm, toQueryString } from './client'
 import type {
   PageResponse,
   Shop,
@@ -31,6 +31,44 @@ export function createShop(payload: ShopRequest) {
   })
 }
 
+export function createShopWithImages(payload: ShopRequest, files: File[]) {
+  const formData = new FormData()
+
+  appendShopRequestFields(formData, payload)
+
+  formData.set('coverImage', files[0])
+  files.slice(1, 7).forEach((file) => {
+    formData.append('galleryImages', file)
+  })
+
+  return requestForm<Shop>('/api/v1/shops', formData)
+}
+
+type UpdateShopImagePayload = {
+  coverImage?: File | null
+  replaceGallery?: boolean
+  galleryImages?: File[]
+}
+
+export function updateShopWithImages(id: number, payload: ShopRequest, images: UpdateShopImagePayload) {
+  const formData = new FormData()
+
+  appendShopRequestFields(formData, payload)
+
+  if (images.coverImage) {
+    formData.set('coverImage', images.coverImage)
+  }
+
+  if (images.replaceGallery) {
+    formData.set('replaceGallery', 'true')
+    images.galleryImages?.slice(0, 6).forEach((file) => {
+      formData.append('galleryImages', file)
+    })
+  }
+
+  return requestForm<Shop>(`/api/v1/shops/${id}`, formData, { method: 'PUT' })
+}
+
 export function updateShop(id: number, payload: ShopRequest) {
   return request<Shop>(`/api/v1/shops/${id}`, {
     method: 'PUT',
@@ -42,4 +80,24 @@ export function deleteShop(id: number) {
   return request<Unit>(`/api/v1/shops/${id}`, {
     method: 'DELETE',
   })
+}
+
+function appendShopRequestFields(formData: FormData, payload: ShopRequest) {
+  formData.set('name', payload.name)
+  formData.set('address', payload.address)
+  formData.set('px', String(payload.px))
+  formData.set('py', String(payload.py))
+  if (payload.floor) {
+    formData.set('floor', payload.floor)
+  }
+  if (payload.regionId != null) {
+    formData.set('regionId', String(payload.regionId))
+  }
+  formData.set('status', payload.status)
+  if (payload.sellsIchibanKuji != null) {
+    formData.set('sellsIchibanKuji', String(payload.sellsIchibanKuji))
+  }
+  if (payload.visitTip) {
+    formData.set('visitTip', payload.visitTip)
+  }
 }

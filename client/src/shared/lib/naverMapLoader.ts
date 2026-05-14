@@ -118,7 +118,7 @@ export function loadNaverMaps() {
     script.defer = true
     script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(
       keyId,
-    )}&callback=${NAVER_MAP_CALLBACK_NAME}`
+    )}&submodules=geocoder&callback=${NAVER_MAP_CALLBACK_NAME}`
     script.onerror = () => {
       rejectLoad(new Error('네이버 지도 SDK를 불러오지 못했습니다.'))
     }

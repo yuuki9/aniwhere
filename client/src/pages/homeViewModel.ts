@@ -20,7 +20,7 @@ export const buildHomeQuickMenus = (): HomeQuickMenu[] => [
   },
   {
     id: 'admin',
-    label: '매장 등록',
+    label: '매장 관리',
     href: '/admin/shops',
     icon: 'admin',
   },

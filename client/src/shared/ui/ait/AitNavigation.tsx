@@ -7,6 +7,8 @@ import { isAppsInTossRuntime } from '../../lib/auth'
 type AitNavigationProps = {
   title?: string
   showBack?: boolean
+  showLogo?: boolean
+  renderInToss?: boolean
   onBack?: () => void
   trailing?: ReactNode
   className?: string
@@ -30,6 +32,8 @@ function BackIcon() {
 export function AitNavigation({
   title = '애니웨어',
   showBack = false,
+  showLogo = true,
+  renderInToss = false,
   onBack,
   trailing,
   className,
@@ -37,7 +41,7 @@ export function AitNavigation({
   const navigate = useNavigate()
   const shouldUseTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
 
-  if (shouldUseTossNavigation) {
+  if (shouldUseTossNavigation && !renderInToss) {
     return null
   }
 
@@ -57,7 +61,7 @@ export function AitNavigation({
       </div>
 
       <div className="ait-navigation-brand" aria-label={title}>
-        <img className="ait-navigation-logo" src={aniwhereIcon} alt="" aria-hidden="true" />
+        {showLogo && <img className="ait-navigation-logo" src={aniwhereIcon} alt="" aria-hidden="true" />}
         <span>{title}</span>
       </div>
 

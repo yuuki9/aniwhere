@@ -8,13 +8,14 @@ description: Work on Aniwhere as an Apps in Toss non-game WebView miniapp. Use f
 ## Start
 
 1. Read `GIT_CONVENTIONS.md`, `guard.md`, `README.md`, and `docs/product-decisions.md`.
-2. Inspect the relevant client files before editing:
+2. Read `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md` and apply its TDS notice, UTF-8, PR boundary, PR description, and review-feedback rules.
+3. Inspect the relevant client files before editing:
    - `client/package.json`
    - `client/granite.config.ts`
    - `client/src/shared/lib/*`
    - touched page/component files under `client/src`
-3. Treat Aniwhere as an Apps in Toss non-game partner WebView service, not a browser-only SPA.
-4. Prefer official Apps in Toss docs over assumptions. Browse official docs when SDK behavior, launch policy, or package guidance may have changed.
+4. Treat Aniwhere as an Apps in Toss non-game partner WebView service, not a browser-only SPA.
+5. Prefer official Apps in Toss docs over assumptions. Browse official docs when SDK behavior, launch policy, or package guidance may have changed.
 
 ## Project Defaults
 

@@ -15,8 +15,10 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 @Component
+@Transactional(readOnly = true)
 class ShopPersistenceAdapter(
     private val shopRepo: ShopRepository,
     private val regionRepo: RegionRepository,
@@ -28,6 +30,7 @@ class ShopPersistenceAdapter(
     override fun findAll(regionId: Short?, categoryName: String?, keyword: String?, workName: String?, pageable: Pageable): Page<Shop> =
         shopRepo.search(regionId, categoryName, keyword, workName, pageable).map(shopMapper::toDomain)
 
+    @Transactional
     override fun save(shop: Shop): Shop {
         val region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }
         val entity = ShopEntity(
@@ -41,6 +44,7 @@ class ShopPersistenceAdapter(
         return shopMapper.toDomain(shopRepo.save(entity))
     }
 
+    @Transactional
     override fun saveShopImageRecords(shopId: Long, rows: List<ShopImagePersistenceRow>) {
         val shop = shopRepo.findByIdOrNull(shopId) ?: throw EntityNotFoundException("Shop not found: $shopId")
         rows.forEach { row ->
@@ -56,6 +60,7 @@ class ShopPersistenceAdapter(
         shopRepo.save(shop)
     }
 
+    @Transactional
     override fun swapShopImageRecords(
         shopId: Long,
         newPrimaryRow: ShopImagePersistenceRow?,
@@ -90,6 +95,7 @@ class ShopPersistenceAdapter(
         sortOrder = row.sortOrder,
     )
 
+    @Transactional
     override fun update(id: Long, shop: Shop): Shop {
         val entity = shopRepo.findByIdOrNull(id) ?: throw EntityNotFoundException("Shop not found: $id")
         entity.name = shop.name
@@ -104,6 +110,7 @@ class ShopPersistenceAdapter(
         return shopMapper.toDomain(shopRepo.save(entity))
     }
 
+    @Transactional
     override fun deleteById(id: Long) {
         if (!shopRepo.existsById(id)) throw EntityNotFoundException("Shop not found: $id")
         shopRepo.deleteById(id)

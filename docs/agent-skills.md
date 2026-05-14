@@ -11,6 +11,18 @@ This repository carries project-local Codex skills under `.codex/skills`.
 
 For UI styling work, read `docs/design-tokens.md` and `docs/tds-compatible-ui-layer.md`, then use `client/src/shared/ui/ait` and `client/src/styles/tokens.css` before adding new raw CSS values.
 
+## PR-Level Launch/TDS Gate
+
+Before opening or handing off any PR that touches client UI, WebView behavior, routing, native/app-owned navigation, maps, permissions, external links, modals/notices, draft persistence, or CSS:
+
+1. Use `aniwhere-pr-preflight`.
+2. Use `aniwhere-launch-checklist` for the touched scope.
+3. Fill the `Apps in Toss / TDS 출시 리스크` section in `.github/PULL_REQUEST_TEMPLATE.md`.
+4. Classify findings as `Required`, `Recommended`, `Needs sandbox`, `Needs console value`, or `Follow-up PR`.
+5. Keep official Apps in Toss/TDS requirements separate from Aniwhere local TDS-compatible decisions.
+
+If a PR intentionally excludes a broader TDS audit, state the follow-up branch/PR scope in the PR body.
+
 ## Use On Another Machine
 
 After pulling this branch, copy the project skills into the Codex skills directory if the app does not auto-discover repo-local skills:
