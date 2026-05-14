@@ -47,3 +47,19 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   return payload.data
 }
+
+export async function requestForm<T>(path: string, body: FormData, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    ...init,
+    body,
+  })
+
+  const payload = (await response.json()) as ApiResponse<T>
+
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.message ?? '요청 처리에 실패했습니다.')
+  }
+
+  return payload.data
+}

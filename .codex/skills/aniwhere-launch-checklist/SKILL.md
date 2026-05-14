@@ -10,9 +10,10 @@ Run this as Aniwhere's final Apps in Toss non-game review. It adapts Robin's 11-
 ## Start
 
 1. Read `GIT_CONVENTIONS.md`, `guard.md`, `README.md`, and `docs/product-decisions.md`.
-2. Read `docs/agent-skills.md`, `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, and `docs/ux-mobile-research.md` when UI is in scope.
-3. Inspect `client/granite.config.ts`, `client/package.json`, `client/index.html`, and touched client files.
-4. Prefer official Apps in Toss docs when any checklist item is ambiguous or may have changed.
+2. Read `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md` before classifying TDS, PR-boundary, UTF-8, PR-description, or review-feedback risks.
+3. Read `docs/agent-skills.md`, `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, and `docs/ux-mobile-research.md` when UI is in scope.
+4. Inspect `client/granite.config.ts`, `client/package.json`, `client/index.html`, and touched client files.
+5. Prefer official Apps in Toss docs when any checklist item is ambiguous or may have changed.
 
 ## Evidence Rules
 

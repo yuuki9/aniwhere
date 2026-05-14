@@ -12,12 +12,13 @@ test('buildHomeQuickMenus keeps aggregate search terms out of home shortcuts', (
 
   assert.deepEqual(
     menus.map((menu) => menu.id),
-    ['stores', 'reviews', 'report'],
+    ['stores', 'reviews', 'admin'],
   )
   assert.equal(menus[0].href, '/explore')
+  assert.equal(menus[2].href, '/admin/shops')
   assert.deepEqual(
     menus.map((menu) => menu.label),
-    ['매장 찾기', '방문 후기', '제보하기'],
+    ['매장 찾기', '방문 후기', '매장 관리'],
   )
   assert.equal(menus.some((menu) => menu.href.startsWith('/search')), false)
 })
@@ -26,9 +27,9 @@ test('HomePage uses static user-facing pending cards without live region attribu
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
 
   assert.match(source, /home-pending-card/)
-  assert.match(source, /AitTop/)
-  assert.match(source, /어디부터 둘러볼까요\?/)
-  assert.match(source, /관심 있는 작품이나 가고 싶은 지역부터 시작해보세요/)
+  assert.doesNotMatch(source, /AitTop/)
+  assert.match(source, /HomeSearchEntry/)
+  assert.match(source, /HomeQuickMenuSection/)
   assert.match(source, /작품, 매장명, 지역으로 검색/)
   assert.match(source, /작품별 매장 찾기를 준비 중이에요/)
   assert.match(source, /첫 방문 후기를 기다리고 있어요/)

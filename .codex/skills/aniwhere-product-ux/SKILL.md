@@ -8,10 +8,11 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 ## Start
 
 1. Read `docs/product-decisions.md` before changing product scope.
-2. Read `docs/ux-mobile-research.md` before changing layout, navigation, or copy.
-3. Read `docs/design-tokens.md` before changing client CSS or UI styling.
-4. Preserve product decisions unless the task explicitly updates the decision document first.
-5. Optimize for Apps in Toss mobile WebView use, not desktop landing-page behavior.
+2. Read `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md` before changing UI, flow, PR scope, or review responses.
+3. Read `docs/ux-mobile-research.md` before changing layout, navigation, or copy.
+4. Read `docs/design-tokens.md` before changing client CSS or UI styling.
+5. Preserve product decisions unless the task explicitly updates the decision document first.
+6. Optimize for Apps in Toss mobile WebView use, not desktop landing-page behavior.
 
 ## Product Boundaries
 

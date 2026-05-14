@@ -10,11 +10,12 @@ Use this skill to turn repeatable Aniwhere work into concise Codex skills. Repos
 ## When Creating Or Updating A Skill
 
 1. Start from a concrete repeated workflow, not a vague category.
-2. Keep `SKILL.md` lean and procedural.
-3. Put long docs, examples, official links, or source-derived summaries in `references/`.
-4. Include `agents/openai.yaml` with a short display name, description, and default prompt.
-5. Avoid copying entire external documents into the skill; summarize and link where possible.
-6. Validate that the skill does not conflict with `AGENTS.md`, `guard.md`, or `docs/product-decisions.md`.
+2. Check `references/session-operating-guard.md` before adding cross-cutting rules; prefer extending that shared guard over creating another broad skill.
+3. Keep `SKILL.md` lean and procedural.
+4. Put long docs, examples, official links, or source-derived summaries in `references/`.
+5. Include `agents/openai.yaml` with a short display name, description, and default prompt.
+6. Avoid copying entire external documents into the skill; summarize and link where possible.
+7. Validate that the skill does not conflict with `AGENTS.md`, `guard.md`, or `docs/product-decisions.md`.
 
 ## Good Aniwhere Skill Candidates
 

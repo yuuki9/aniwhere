@@ -4,6 +4,7 @@ import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
@@ -38,6 +39,7 @@ class ShopController(private val useCase: ShopUseCase) {
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) workName: String?,
+        @RequestParam(required = false) status: String?,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<Page<Shop>> {
         val page = useCase.searchShops(
@@ -45,6 +47,7 @@ class ShopController(private val useCase: ShopUseCase) {
             category,
             keyword,
             workName?.trim()?.takeIf { it.isNotEmpty() },
+            status.toShopStatusOrNull(),
             pageable,
         )
         return if (page.totalElements == 0L) {
@@ -91,7 +94,8 @@ class ShopController(private val useCase: ShopUseCase) {
         @Valid @ModelAttribute request: ShopUpdateMultipartRequest,
     ): ApiResponse<Shop> {
         val galleryFiles = request.galleryImages.orEmpty().filter { !it.isEmpty }
-        if (!request.replaceGallery && galleryFiles.isNotEmpty()) {
+        val existingGalleryImageIds = request.existingGalleryImageIds.orEmpty()
+        if (!request.replaceGallery && (galleryFiles.isNotEmpty() || existingGalleryImageIds.isNotEmpty())) {
             throw BadRequestException("갤러리 파일은 replaceGallery=true 일 때만 전송할 수 있습니다.")
         }
         val coverUpload = request.coverImage?.takeUnless { it.isEmpty }?.requireImagePart()
@@ -101,7 +105,14 @@ class ShopController(private val useCase: ShopUseCase) {
             emptyList()
         }
         return ApiResponse.ok(
-            useCase.updateShopWithImages(id, request.toShop(), coverUpload, request.replaceGallery, galleryUploads),
+            useCase.updateShopWithImages(
+                id,
+                request.toShop(),
+                coverUpload,
+                request.replaceGallery,
+                galleryUploads,
+                existingGalleryImageIds,
+            ),
         )
     }
 
@@ -122,6 +133,12 @@ private fun MultipartFile.requireImagePart(): ImageUploadPart {
     val base = ct.substringBefore(';').trim().lowercase()
     if (!base.startsWith("image/")) throw BadRequestException("이미지 파일만 업로드할 수 있습니다.")
     return ImageUploadPart(bytes = bytes, contentType = ct)
+}
+
+private fun String?.toShopStatusOrNull(): ShopStatus? {
+    val normalized = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    return runCatching { ShopStatus.valueOf(normalized.uppercase()) }
+        .getOrElse { throw BadRequestException("Invalid shop status: $normalized") }
 }
 
 data class ShopRequest(
@@ -190,6 +207,8 @@ data class ShopUpdateMultipartRequest(
     val coverImage: MultipartFile? = null,
     @Schema(description = "true일 때만 galleryImages로 갤러리 통째 교체")
     val replaceGallery: Boolean = false,
+    @Schema(description = "replaceGallery=true일 때 유지할 기존 갤러리 이미지 ID 목록")
+    val existingGalleryImageIds: List<Long>? = null,
     val galleryImages: List<MultipartFile>? = null,
 ) {
     fun toShop(): Shop = ShopRequest(
