@@ -45,7 +45,7 @@ class ShopPersistenceAdapter(
             pageable,
         ).map(shopMapper::toDomain)
 
-    @Transactional
+    @Transactional(readOnly = false)
     override fun save(shop: Shop): Shop {
         val region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }
         val entity = ShopEntity(
@@ -59,7 +59,7 @@ class ShopPersistenceAdapter(
         return shopMapper.toDomain(shopRepo.save(entity))
     }
 
-    @Transactional
+    @Transactional(readOnly = false)
     override fun saveShopImageRecords(shopId: Long, rows: List<ShopImagePersistenceRow>) {
         val shop = shopRepo.findByIdOrNull(shopId) ?: throw EntityNotFoundException("Shop not found: $shopId")
         rows.forEach { row ->
@@ -75,11 +75,12 @@ class ShopPersistenceAdapter(
         shopRepo.save(shop)
     }
 
-    @Transactional
+    @Transactional(readOnly = false)
     override fun swapShopImageRecords(
         shopId: Long,
         newPrimaryRow: ShopImagePersistenceRow?,
         galleryReplacementRows: List<ShopImagePersistenceRow>?,
+        existingGalleryImageIds: List<Long>,
     ): List<String> {
         val shop = shopRepo.findByIdOrNull(shopId) ?: throw EntityNotFoundException("Shop not found: $shopId")
         val removedKeys = mutableListOf<String>()
@@ -93,9 +94,24 @@ class ShopPersistenceAdapter(
         }
         if (galleryReplacementRows != null) {
             val oldGallery = shop.images.filter { it.role == ShopImageRoleEnum.gallery }.toList()
+            val oldGalleryById = oldGallery.associateBy { it.id }
+            val existingGalleryRows = existingGalleryImageIds.mapNotNull { oldGalleryById[it] }
+            val existingGalleryIdSet = existingGalleryImageIds.toSet()
             oldGallery.forEach {
-                removedKeys.add(it.s3Key)
+                if (it.id !in existingGalleryIdSet) {
+                    removedKeys.add(it.s3Key)
+                }
                 shop.images.remove(it)
+            }
+            existingGalleryRows.forEachIndexed { index, image ->
+                shop.images.add(
+                    ShopImageEntity(
+                        shop = shop,
+                        s3Key = image.s3Key,
+                        role = ShopImageRoleEnum.gallery,
+                        sortOrder = index + 1,
+                    ),
+                )
             }
             galleryReplacementRows.forEach { shop.images.add(imageRowToEntity(shop, it)) }
         }
@@ -110,7 +126,7 @@ class ShopPersistenceAdapter(
         sortOrder = row.sortOrder,
     )
 
-    @Transactional
+    @Transactional(readOnly = false)
     override fun update(id: Long, shop: Shop): Shop {
         val entity = shopRepo.findByIdOrNull(id) ?: throw EntityNotFoundException("Shop not found: $id")
         entity.name = shop.name
@@ -125,7 +141,7 @@ class ShopPersistenceAdapter(
         return shopMapper.toDomain(shopRepo.save(entity))
     }
 
-    @Transactional
+    @Transactional(readOnly = false)
     override fun deleteById(id: Long) {
         if (!shopRepo.existsById(id)) throw EntityNotFoundException("Shop not found: $id")
         shopRepo.deleteById(id)

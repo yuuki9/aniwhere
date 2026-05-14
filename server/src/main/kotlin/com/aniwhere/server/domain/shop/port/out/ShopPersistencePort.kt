@@ -30,6 +30,7 @@ interface ShopPersistencePort {
         shopId: Long,
         newPrimaryRow: ShopImagePersistenceRow?,
         galleryReplacementRows: List<ShopImagePersistenceRow>?,
+        existingGalleryImageIds: List<Long> = emptyList(),
     ): List<String>
 
     fun update(id: Long, shop: Shop): Shop

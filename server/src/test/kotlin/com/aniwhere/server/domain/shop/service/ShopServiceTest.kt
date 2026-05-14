@@ -282,10 +282,11 @@ class ShopServiceTest {
                 ImageUploadPart(byteArrayOf(1, 2, 3), "image/jpeg"),
                 replaceGallery = false,
                 gallery = emptyList(),
+                existingGalleryImageIds = emptyList(),
             )
         }
         verify(exactly = 0) { port.update(any(), any()) }
-        verify(exactly = 0) { port.swapShopImageRecords(any(), any(), any()) }
+        verify(exactly = 0) { port.swapShopImageRecords(any(), any(), any(), any()) }
     }
 
     @Test
@@ -298,6 +299,7 @@ class ShopServiceTest {
                 coverImage = null,
                 replaceGallery = true,
                 gallery = listOf(ImageUploadPart(byteArrayOf(9, 9), "image/png")),
+                existingGalleryImageIds = emptyList(),
             )
         }
         verify(exactly = 0) { port.update(any(), any()) }
@@ -314,6 +316,7 @@ class ShopServiceTest {
                 coverImage = null,
                 replaceGallery = false,
                 gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+                existingGalleryImageIds = emptyList(),
             )
         }
         verify(exactly = 0) { port.update(any(), any()) }
@@ -330,6 +333,7 @@ class ShopServiceTest {
                 ImageUploadPart(tinyValidJpeg, "image/jpeg"),
                 replaceGallery = false,
                 gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+                existingGalleryImageIds = emptyList(),
             )
         }
         verify(exactly = 0) { port.update(any(), any()) }
@@ -342,11 +346,11 @@ class ShopServiceTest {
         every { port.update(1L, any()) } returns sampleShop
         val incoming = sampleShop.copy(name = "갱신된이름")
 
-        assertEquals(sampleShop.name, service.updateShopWithImages(1L, incoming, null, false, emptyList()).name)
+        assertEquals(sampleShop.name, service.updateShopWithImages(1L, incoming, null, false, emptyList(), emptyList()).name)
 
         verify { port.update(1L, incoming) }
         verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
-        verify(exactly = 0) { port.swapShopImageRecords(any(), any(), any()) }
+        verify(exactly = 0) { port.swapShopImageRecords(any(), any(), any(), any()) }
     }
 
     @Test
@@ -355,7 +359,7 @@ class ShopServiceTest {
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
-        every { port.swapShopImageRecords(1L, any(), null) } returns listOf("1/primary.jpg")
+        every { port.swapShopImageRecords(1L, any(), null, emptyList()) } returns listOf("1/primary.jpg")
 
         service.updateShopWithImages(
             1L,
@@ -363,6 +367,7 @@ class ShopServiceTest {
             ImageUploadPart(tinyValidJpeg, "image/jpeg"),
             replaceGallery = false,
             gallery = emptyList(),
+            existingGalleryImageIds = emptyList(),
         )
 
         verify {
@@ -373,6 +378,7 @@ class ShopServiceTest {
                 1L,
                 match { it.role == ShopImageRole.PRIMARY && primaryUploaded.matches(it.s3Key) },
                 null,
+                emptyList(),
             )
         }
         verify { imageStorage.deleteObject("1/primary.jpg") }
@@ -385,7 +391,7 @@ class ShopServiceTest {
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
-        every { port.swapShopImageRecords(1L, any(), null) } returns listOf("1/primary.png")
+        every { port.swapShopImageRecords(1L, any(), null, emptyList()) } returns listOf("1/primary.png")
 
         service.updateShopWithImages(
             1L,
@@ -393,6 +399,7 @@ class ShopServiceTest {
             ImageUploadPart(tinyValidJpeg, "image/jpeg"),
             replaceGallery = false,
             gallery = emptyList(),
+            existingGalleryImageIds = emptyList(),
         )
 
         verify { imageStorage.putObject(match { primaryUploaded.matches(it) }, any(), "image/jpeg") }
@@ -407,7 +414,7 @@ class ShopServiceTest {
         every { port.update(1L, any()) } returns sampleShop
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
         every {
-            port.swapShopImageRecords(1L, null, any())
+            port.swapShopImageRecords(1L, null, any(), emptyList())
         } returns listOf("1/gallery-1.png", "1/gallery-2.png")
 
         service.updateShopWithImages(
@@ -416,6 +423,7 @@ class ShopServiceTest {
             coverImage = null,
             replaceGallery = true,
             gallery = listOf(ImageUploadPart(minimalPngBytes, "image/png")),
+            existingGalleryImageIds = emptyList(),
         )
 
         verify { imageStorage.putObject(match { g1Uploaded.matches(it) }, any(), "image/png") }
@@ -428,7 +436,7 @@ class ShopServiceTest {
     fun `updateShopWithImages - replaceGallery true 에 갤러리 비우면 swap 만 호출`() {
         every { port.findById(1L) } returns sampleShop
         every { port.update(1L, any()) } returns sampleShop
-        every { port.swapShopImageRecords(1L, null, emptyList()) } returns listOf("1/gallery-1.png")
+        every { port.swapShopImageRecords(1L, null, emptyList(), emptyList()) } returns listOf("1/gallery-1.png")
 
         service.updateShopWithImages(
             1L,
@@ -436,10 +444,11 @@ class ShopServiceTest {
             coverImage = null,
             replaceGallery = true,
             gallery = emptyList(),
+            existingGalleryImageIds = emptyList(),
         )
 
         verify(exactly = 0) { imageStorage.putObject(any(), any(), any()) }
-        verify { port.swapShopImageRecords(1L, null, emptyList()) }
+        verify { port.swapShopImageRecords(1L, null, emptyList(), emptyList()) }
         verify { imageStorage.deleteObject("1/gallery-1.png") }
     }
 

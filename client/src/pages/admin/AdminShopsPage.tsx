@@ -16,6 +16,7 @@ import {
   clearPendingAdminShopFiles,
   readAdminShopDraft,
   readAdminShopSelectedLocation,
+  readPendingAdminShopFileCount,
   readPendingAdminShopFiles,
   writeAdminShopDraft,
   writePendingAdminShopFiles,
@@ -93,6 +94,9 @@ function buildShopRequest(form: ShopFormState): ShopRequest {
 
   if (firstError) {
     throw new Error(firstError)
+  }
+  if (form.px == null || form.py == null) {
+    throw new Error('주소 검색으로 위치를 선택해주세요.')
   }
 
   return {
@@ -189,6 +193,10 @@ function getShopSaveErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '매장 저장에 실패했습니다.'
 
   if (message.includes('AwsCredentialsProviderChain') || message.includes('Unable to load credentials')) {
+    if (!import.meta.env.DEV) {
+      return '사진 저장에 실패했습니다. 잠시 후 다시 시도해주세요.'
+    }
+
     return '이미지 저장소 인증 정보가 없어 사진을 저장하지 못했습니다. 서버 S3 설정을 확인해주세요.'
   }
 
@@ -244,8 +252,17 @@ async function buildUpdateImagePayload(originalShop: Shop, imageItems: EditableI
   return {
     coverImage: coverChanged ? await editableImageItemToFile(nextCover, 'primary') : null,
     replaceGallery: galleryChanged,
+    existingGalleryImageIds: galleryChanged
+      ? nextGallery.flatMap((item) => (item.imageId != null && !item.file ? [item.imageId] : []))
+      : [],
     galleryImages: galleryChanged
-      ? await Promise.all(nextGallery.map((item, index) => editableImageItemToFile(item, `gallery-${index + 1}`)))
+      ? await Promise.all(
+        nextGallery.flatMap((item, index) =>
+          item.imageId != null && !item.file
+            ? []
+            : [editableImageItemToFile(item, `gallery-${index + 1}`)],
+        ),
+      )
       : [],
   }
 }
@@ -295,6 +312,18 @@ export function AdminShopsPage() {
   useEffect(() => {
     clearAdminShopSelectedLocation()
   }, [])
+
+  useEffect(() => {
+    if (isEditMode) {
+      return
+    }
+
+    const pendingShopFileCount = readPendingAdminShopFileCount()
+
+    if (pendingShopFileCount > 0 && pendingFiles.length === 0) {
+      setNotice('페이지가 새로고침되어 선택한 사진이 초기화되었습니다. 다시 선택해주세요.')
+    }
+  }, [isEditMode, pendingFiles.length])
 
   useEffect(() => {
     if (isEditMode) {

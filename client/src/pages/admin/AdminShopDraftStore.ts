@@ -22,6 +22,7 @@ export type AdminShopSelectedLocation = {
 
 const ADMIN_SHOP_DRAFT_STORAGE_KEY = 'aniwhere.admin.shop-create-draft.v1'
 const ADMIN_SHOP_LOCATION_STORAGE_KEY = 'aniwhere.admin.shop-create-location.v1'
+const ADMIN_SHOP_FILE_COUNT_STORAGE_KEY = 'aniwhere.admin.shop-create-file-count.v1'
 
 let pendingShopFiles: File[] = []
 
@@ -61,6 +62,7 @@ export function clearAdminShopDraft() {
 
   window.sessionStorage.removeItem(ADMIN_SHOP_DRAFT_STORAGE_KEY)
   window.sessionStorage.removeItem(ADMIN_SHOP_LOCATION_STORAGE_KEY)
+  window.sessionStorage.removeItem(ADMIN_SHOP_FILE_COUNT_STORAGE_KEY)
 }
 
 export function readAdminShopSelectedLocation() {
@@ -83,10 +85,22 @@ export function readPendingAdminShopFiles() {
   return pendingShopFiles
 }
 
+export function readPendingAdminShopFileCount() {
+  const pendingShopFileCount = readJson<number>(ADMIN_SHOP_FILE_COUNT_STORAGE_KEY)
+
+  return pendingShopFileCount ?? 0
+}
+
 export function writePendingAdminShopFiles(files: File[]) {
   pendingShopFiles = files
+  writeJson(ADMIN_SHOP_FILE_COUNT_STORAGE_KEY, files.length)
 }
 
 export function clearPendingAdminShopFiles() {
   pendingShopFiles = []
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.sessionStorage.removeItem(ADMIN_SHOP_FILE_COUNT_STORAGE_KEY)
 }

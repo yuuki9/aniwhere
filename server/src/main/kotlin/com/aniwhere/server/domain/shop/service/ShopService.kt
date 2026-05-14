@@ -93,11 +93,25 @@ class ShopService(
         coverImage: ImageUploadPart?,
         replaceGallery: Boolean,
         gallery: List<ImageUploadPart>,
+        existingGalleryImageIds: List<Long>,
     ): Shop {
-        port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        val existingShop = port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
 
         if (gallery.isNotEmpty() && !replaceGallery) {
             throw BadRequestException("갤러리 파일은 replaceGallery=true 일 때만 전송할 수 있습니다.")
+        }
+        if (existingGalleryImageIds.isNotEmpty() && !replaceGallery) {
+            throw BadRequestException("기존 갤러리 이미지는 replaceGallery=true 일 때만 전송할 수 있습니다.")
+        }
+        if (existingGalleryImageIds.distinct().size != existingGalleryImageIds.size) {
+            throw BadRequestException("중복된 기존 갤러리 이미지 ID가 포함되어 있습니다.")
+        }
+        val existingGalleryIds = existingShop.images
+            .filter { it.role == ShopImageRole.GALLERY }
+            .mapNotNull { it.id }
+            .toSet()
+        if (!existingGalleryIds.containsAll(existingGalleryImageIds)) {
+            throw BadRequestException("기존 갤러리 이미지 ID가 올바르지 않습니다.")
         }
 
         val hasCoverChange = coverImage != null
@@ -110,7 +124,7 @@ class ShopService(
             return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
         }
 
-        if (hasGalleryReplace && gallery.size > MAX_GALLERY_IMAGES) {
+        if (hasGalleryReplace && existingGalleryImageIds.size + gallery.size > MAX_GALLERY_IMAGES) {
             throw BadRequestException("갤러리 이미지는 최대 ${MAX_GALLERY_IMAGES}장까지 등록할 수 있습니다.")
         }
 
@@ -136,16 +150,17 @@ class ShopService(
             }
             if (hasGalleryReplace) {
                 galleryRows = gallery.mapIndexed { index, part ->
-                    val key = "$id/gallery-${index + 1}.${UUID.randomUUID()}.${extensionFor(part.contentType)}"
+                    val sortOrder = existingGalleryImageIds.size + index + 1
+                    val key = "$id/gallery-$sortOrder.${UUID.randomUUID()}.${extensionFor(part.contentType)}"
                     imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
                     uploadedKeys.add(key)
-                    ShopImagePersistenceRow(key, ShopImageRole.GALLERY, index + 1)
+                    ShopImagePersistenceRow(key, ShopImageRole.GALLERY, sortOrder)
                 }
             }
 
             val oldKeysRemoved = transactionTemplate.execute {
                 port.update(id, shop)
-                port.swapShopImageRecords(id, newPrimaryRow, galleryRows)
+                port.swapShopImageRecords(id, newPrimaryRow, galleryRows, existingGalleryImageIds)
             } ?: emptyList()
 
             oldKeysRemoved.forEach { key ->

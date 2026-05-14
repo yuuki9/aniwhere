@@ -330,6 +330,8 @@
   --admin-shop-photo-remove-border: rgba(255, 255, 255, 0.72);
   --admin-shop-field-error-ring: rgba(239, 68, 68, 0.08);
   --admin-shop-sticky-surface: rgba(255, 255, 255, 0.96);
+  --admin-shop-z-sticky: 10;
+  --admin-shop-z-toast: 1100;
   width: min(var(--ait-size-content-compact), 100%);
   min-height: 100dvh;
   gap: 0;
@@ -1052,7 +1054,7 @@
 
 .admin-shop-location-search-page {
   position: sticky;
-  z-index: 10;
+  z-index: var(--admin-shop-z-sticky);
   top: 64px;
   display: grid;
   gap: var(--ait-space-3);
@@ -1171,7 +1173,7 @@
 
 .admin-shop-toast {
   position: fixed;
-  z-index: 1100;
+  z-index: var(--admin-shop-z-toast);
   bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
   left: 50%;
   width: max-content;

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+﻿import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { geocodeShopAddress, type ShopLocationCandidate } from '../../shared/lib/naverGeocoder'
 import { AitNavigation } from '../../shared/ui/ait'
@@ -15,7 +15,7 @@ function isLocationNoticeError(message: string) {
 export function AdminShopLocationPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const draft = useMemo(() => readAdminShopDraft(), [])
+  const draft = readAdminShopDraft()
   const [query, setQuery] = useState(draft?.addressQuery || draft?.address || '')
   const [candidates, setCandidates] = useState<ShopLocationCandidate[]>([])
   const [notice, setNotice] = useState<string | null>(null)

@@ -23,5 +23,17 @@ class ShopPersistenceAdapterTransactionTest {
             assertNotNull(methodTx, "$methodName should declare a write transaction")
             assertEquals(false, methodTx.readOnly, "$methodName should not be read-only")
         }
+
+        listOf("findById", "findAll").forEach { methodName ->
+            val method = ShopPersistenceAdapter::class.java.methods.firstOrNull { it.name == methodName }
+            assertNotNull(method, "$methodName method should exist")
+            val methodTx = method!!.getAnnotation(Transactional::class.java)
+
+            if (methodTx == null) {
+                assertEquals(true, classTx.readOnly, "$methodName should inherit class-level read-only transaction")
+            } else {
+                assertEquals(true, methodTx.readOnly, "$methodName should stay read-only")
+            }
+        }
     }
 }

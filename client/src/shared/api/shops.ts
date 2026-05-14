@@ -52,6 +52,7 @@ export function createShopWithImages(payload: ShopRequest, files: File[]) {
 type UpdateShopImagePayload = {
   coverImage?: File | null
   replaceGallery?: boolean
+  existingGalleryImageIds?: number[]
   galleryImages?: File[]
 }
 
@@ -66,6 +67,9 @@ export function updateShopWithImages(id: number, payload: ShopRequest, images: U
 
   if (images.replaceGallery) {
     formData.set('replaceGallery', 'true')
+    images.existingGalleryImageIds?.forEach((imageId) => {
+      formData.append('existingGalleryImageIds', String(imageId))
+    })
     images.galleryImages?.slice(0, 6).forEach((file) => {
       formData.append('galleryImages', file)
     })

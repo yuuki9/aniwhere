@@ -146,14 +146,14 @@ class ShopControllerTest {
                 .param("py", "37.4979462"),
         )
             .andExpect(status().isBadRequest)
-        verify(exactly = 0) { useCase.updateShopWithImages(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { useCase.updateShopWithImages(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `PUT shops_{id} multipart - replaceGallery 로 갤러리 업데이트`() {
         val gallery = MockMultipartFile("galleryImages", "a.png", "image/png", ShopServiceTest.minimalPngBytes)
         every {
-            useCase.updateShopWithImages(1L, any(), null, true, match { it.size == 1 })
+            useCase.updateShopWithImages(1L, any(), null, true, match { it.size == 1 }, emptyList())
         } returns sampleShop.copy()
 
         mvc.perform(
@@ -167,7 +167,7 @@ class ShopControllerTest {
         )
             .andExpect(status().isOk)
 
-        verify { useCase.updateShopWithImages(1L, any(), null, true, match { it.size == 1 }) }
+        verify { useCase.updateShopWithImages(1L, any(), null, true, match { it.size == 1 }, emptyList()) }
     }
 
     @Test

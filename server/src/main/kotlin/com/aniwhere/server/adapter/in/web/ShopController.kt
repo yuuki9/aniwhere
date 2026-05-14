@@ -94,7 +94,8 @@ class ShopController(private val useCase: ShopUseCase) {
         @Valid @ModelAttribute request: ShopUpdateMultipartRequest,
     ): ApiResponse<Shop> {
         val galleryFiles = request.galleryImages.orEmpty().filter { !it.isEmpty }
-        if (!request.replaceGallery && galleryFiles.isNotEmpty()) {
+        val existingGalleryImageIds = request.existingGalleryImageIds.orEmpty()
+        if (!request.replaceGallery && (galleryFiles.isNotEmpty() || existingGalleryImageIds.isNotEmpty())) {
             throw BadRequestException("갤러리 파일은 replaceGallery=true 일 때만 전송할 수 있습니다.")
         }
         val coverUpload = request.coverImage?.takeUnless { it.isEmpty }?.requireImagePart()
@@ -104,7 +105,14 @@ class ShopController(private val useCase: ShopUseCase) {
             emptyList()
         }
         return ApiResponse.ok(
-            useCase.updateShopWithImages(id, request.toShop(), coverUpload, request.replaceGallery, galleryUploads),
+            useCase.updateShopWithImages(
+                id,
+                request.toShop(),
+                coverUpload,
+                request.replaceGallery,
+                galleryUploads,
+                existingGalleryImageIds,
+            ),
         )
     }
 
@@ -199,6 +207,8 @@ data class ShopUpdateMultipartRequest(
     val coverImage: MultipartFile? = null,
     @Schema(description = "true일 때만 galleryImages로 갤러리 통째 교체")
     val replaceGallery: Boolean = false,
+    @Schema(description = "replaceGallery=true일 때 유지할 기존 갤러리 이미지 ID 목록")
+    val existingGalleryImageIds: List<Long>? = null,
     val galleryImages: List<MultipartFile>? = null,
 ) {
     fun toShop(): Shop = ShopRequest(

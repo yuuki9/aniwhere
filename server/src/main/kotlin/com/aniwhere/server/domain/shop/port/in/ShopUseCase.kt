@@ -33,6 +33,7 @@ interface ShopUseCase {
         coverImage: ImageUploadPart?,
         replaceGallery: Boolean,
         gallery: List<ImageUploadPart>,
+        existingGalleryImageIds: List<Long> = emptyList(),
     ): Shop
     fun deleteShop(id: Long)
 }
