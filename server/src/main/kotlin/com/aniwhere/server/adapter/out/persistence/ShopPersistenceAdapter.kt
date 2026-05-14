@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 @Component
 class ShopPersistenceAdapter(
@@ -23,8 +24,14 @@ class ShopPersistenceAdapter(
     private val shopMapper: ShopMapper,
 ) : ShopPersistencePort {
 
+    /**
+     * 조회 후 [ShopMapper.toDomain]에서 지연 컬렉션을 읽으므로,
+     * 호출부가 NOT_SUPPORTED 등으로 세션 밖에 있어도 매핑까지 같은 영속성 컨텍스트에서 끝나도록 한다.
+     */
+    @Transactional(readOnly = true)
     override fun findById(id: Long) = shopRepo.findByIdOrNull(id)?.let(shopMapper::toDomain)
 
+    @Transactional(readOnly = true)
     override fun findAll(regionId: Short?, categoryName: String?, keyword: String?, workName: String?, pageable: Pageable): Page<Shop> =
         shopRepo.search(regionId, categoryName, keyword, workName, pageable).map(shopMapper::toDomain)
 
