@@ -9,6 +9,7 @@ import com.aniwhere.server.adapter.out.persistence.repository.RegionRepository
 import com.aniwhere.server.adapter.out.persistence.repository.ShopRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
 import com.aniwhere.server.domain.shop.port.out.ShopPersistencePort
 import org.springframework.data.domain.Page
@@ -27,8 +28,22 @@ class ShopPersistenceAdapter(
 
     override fun findById(id: Long) = shopRepo.findByIdOrNull(id)?.let(shopMapper::toDomain)
 
-    override fun findAll(regionId: Short?, categoryName: String?, keyword: String?, workName: String?, pageable: Pageable): Page<Shop> =
-        shopRepo.search(regionId, categoryName, keyword, workName, pageable).map(shopMapper::toDomain)
+    override fun findAll(
+        regionId: Short?,
+        categoryName: String?,
+        keyword: String?,
+        workName: String?,
+        status: ShopStatus?,
+        pageable: Pageable,
+    ): Page<Shop> =
+        shopRepo.search(
+            regionId,
+            categoryName,
+            keyword,
+            workName,
+            status?.let { ShopStatusEnum.valueOf(it.name.lowercase()) },
+            pageable,
+        ).map(shopMapper::toDomain)
 
     @Transactional
     override fun save(shop: Shop): Shop {

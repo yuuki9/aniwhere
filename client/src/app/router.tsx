@@ -71,28 +71,28 @@ export const router = createBrowserRouter([
     element: <PostDetailPage />,
   },
   {
-    path: '/admin/shops',
-    element: <AdminShopManagePage />,
-  },
-  {
-    path: '/admin/shops/new',
-    element: <AdminShopsPage />,
-  },
-  {
-    path: '/admin/shops/:shopId/edit',
-    element: <AdminShopsPage />,
-  },
-  {
-    path: '/admin/shops/location',
-    element: <AdminShopLocationPage />,
-  },
-  {
     path: '/admin',
     element: <AdminAccessGate />,
     children: [
       {
         index: true,
         element: <AdminHomePage />,
+      },
+      {
+        path: 'shops',
+        element: <AdminShopManagePage />,
+      },
+      {
+        path: 'shops/new',
+        element: <AdminShopsPage />,
+      },
+      {
+        path: 'shops/:shopId/edit',
+        element: <AdminShopsPage />,
+      },
+      {
+        path: 'shops/location',
+        element: <AdminShopLocationPage />,
       },
       {
         path: 'rewards',

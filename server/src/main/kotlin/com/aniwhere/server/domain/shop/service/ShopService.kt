@@ -5,6 +5,7 @@ import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopImageRole
+import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
 import com.aniwhere.server.domain.shop.port.out.ShopImageStoragePort
@@ -28,8 +29,15 @@ class ShopService(
     override fun getShop(id: Long) =
         port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
 
-    override fun searchShops(regionId: Short?, categoryName: String?, keyword: String?, workName: String?, pageable: Pageable): Page<Shop> =
-        port.findAll(regionId, categoryName, keyword, workName, pageable)
+    override fun searchShops(
+        regionId: Short?,
+        categoryName: String?,
+        keyword: String?,
+        workName: String?,
+        status: ShopStatus?,
+        pageable: Pageable,
+    ): Page<Shop> =
+        port.findAll(regionId, categoryName, keyword, workName, status, pageable)
 
     @Transactional
     override fun createShop(shop: Shop) = port.save(shop)

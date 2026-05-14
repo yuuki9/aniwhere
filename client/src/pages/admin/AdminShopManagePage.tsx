@@ -47,26 +47,43 @@ export function AdminShopManagePage() {
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
 
   const shopsQuery = useQuery({
-    queryKey: ['shops', 'admin-shop-manage', appliedKeyword, currentPage],
+    queryKey: ['shops', 'admin-shop-manage', appliedKeyword, statusFilter, currentPage],
     queryFn: () =>
       getShops({
         page: currentPage,
         size: SHOP_MANAGE_PAGE_SIZE,
         keyword: appliedKeyword || undefined,
+        status: statusFilter === 'ALL' ? undefined : statusFilter,
       }),
   })
 
+  const summaryQueryParams = {
+    page: 0,
+    size: 1,
+    keyword: appliedKeyword || undefined,
+  }
+
+  const totalSummaryQuery = useQuery({
+    queryKey: ['shops', 'admin-shop-summary', appliedKeyword, 'ALL'],
+    queryFn: () => getShops(summaryQueryParams),
+  })
+
+  const activeSummaryQuery = useQuery({
+    queryKey: ['shops', 'admin-shop-summary', appliedKeyword, 'ACTIVE'],
+    queryFn: () => getShops({ ...summaryQueryParams, status: 'ACTIVE' }),
+  })
+
+  const pendingSummaryQuery = useQuery({
+    queryKey: ['shops', 'admin-shop-summary', appliedKeyword, 'UNVERIFIED'],
+    queryFn: () => getShops({ ...summaryQueryParams, status: 'UNVERIFIED' }),
+  })
+
+  const closedSummaryQuery = useQuery({
+    queryKey: ['shops', 'admin-shop-summary', appliedKeyword, 'CLOSED'],
+    queryFn: () => getShops({ ...summaryQueryParams, status: 'CLOSED' }),
+  })
+
   const shops = useMemo(() => shopsQuery.data?.content ?? [], [shopsQuery.data?.content])
-  const filteredShops = useMemo(
-    () => (statusFilter === 'ALL' ? shops : shops.filter((shop) => shop.status === statusFilter)),
-    [shops, statusFilter],
-  )
-  const activeCount = useMemo(() => shops.filter((shop) => shop.status === 'ACTIVE').length, [shops])
-  const pendingCount = useMemo(
-    () => shops.filter((shop) => shop.status === 'UNVERIFIED').length,
-    [shops],
-  )
-  const closedCount = useMemo(() => shops.filter((shop) => shop.status === 'CLOSED').length, [shops])
   const totalPages = shopsQuery.data?.totalPages ?? 0
   const canGoPrevious = currentPage > 0 && !shopsQuery.isFetching
   const canGoNext = !!shopsQuery.data && !shopsQuery.data.last && !shopsQuery.isFetching
@@ -135,19 +152,19 @@ export function AdminShopManagePage() {
         <section className="admin-shop-manage-summary" aria-label="매장 관리 요약">
           <div>
             <span>전체 매장</span>
-            <strong>{shopsQuery.data?.totalElements ?? 0}</strong>
+            <strong>{totalSummaryQuery.data?.totalElements ?? 0}</strong>
           </div>
           <div>
             <span>운영 중</span>
-            <strong>{activeCount}</strong>
+            <strong>{activeSummaryQuery.data?.totalElements ?? 0}</strong>
           </div>
           <div>
             <span>검증 필요</span>
-            <strong>{pendingCount}</strong>
+            <strong>{pendingSummaryQuery.data?.totalElements ?? 0}</strong>
           </div>
           <div>
             <span>영업 종료</span>
-            <strong>{closedCount}</strong>
+            <strong>{closedSummaryQuery.data?.totalElements ?? 0}</strong>
           </div>
         </section>
 
@@ -199,7 +216,7 @@ export function AdminShopManagePage() {
 
         <section className="admin-shop-manage-list-shell" aria-label="매장 목록">
           <div className="admin-shop-manage-list-head">
-            <span>총 {filteredShops.length}건</span>
+            <span>총 {shopsQuery.data?.totalElements ?? 0}건</span>
           </div>
 
           <div className="admin-shop-manage-list">
@@ -207,11 +224,11 @@ export function AdminShopManagePage() {
           {shopsQuery.isError ? (
             <p className="admin-shop-manage-state error-text">{(shopsQuery.error as Error).message}</p>
           ) : null}
-          {!shopsQuery.isLoading && filteredShops.length === 0 ? (
+          {!shopsQuery.isLoading && shops.length === 0 ? (
             <p className="admin-shop-manage-state">이 페이지에 표시할 매장이 없습니다.</p>
           ) : null}
 
-          {filteredShops.map((shop) => (
+          {shops.map((shop) => (
             <article className="admin-shop-manage-row" key={shop.id}>
               <div className="admin-shop-manage-row-copy">
                 <div className="admin-shop-manage-row-head">

@@ -4,6 +4,7 @@ import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
@@ -38,6 +39,7 @@ class ShopController(private val useCase: ShopUseCase) {
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) workName: String?,
+        @RequestParam(required = false) status: String?,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<Page<Shop>> {
         val page = useCase.searchShops(
@@ -45,6 +47,7 @@ class ShopController(private val useCase: ShopUseCase) {
             category,
             keyword,
             workName?.trim()?.takeIf { it.isNotEmpty() },
+            status.toShopStatusOrNull(),
             pageable,
         )
         return if (page.totalElements == 0L) {
@@ -122,6 +125,12 @@ private fun MultipartFile.requireImagePart(): ImageUploadPart {
     val base = ct.substringBefore(';').trim().lowercase()
     if (!base.startsWith("image/")) throw BadRequestException("이미지 파일만 업로드할 수 있습니다.")
     return ImageUploadPart(bytes = bytes, contentType = ct)
+}
+
+private fun String?.toShopStatusOrNull(): ShopStatus? {
+    val normalized = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    return runCatching { ShopStatus.valueOf(normalized.uppercase()) }
+        .getOrElse { throw BadRequestException("Invalid shop status: $normalized") }
 }
 
 data class ShopRequest(

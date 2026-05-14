@@ -152,6 +152,7 @@ export type ShopSearchParams = {
   regionId?: number
   category?: string
   keyword?: string
+  status?: ShopStatus
 }
 
 export type PagingParams = {

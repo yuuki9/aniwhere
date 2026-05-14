@@ -2,6 +2,7 @@ package com.aniwhere.server.domain.shop.port.out
 
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopImageRole
+import com.aniwhere.server.domain.shop.model.ShopStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
@@ -13,7 +14,14 @@ data class ShopImagePersistenceRow(
 
 interface ShopPersistencePort {
     fun findById(id: Long): Shop?
-    fun findAll(regionId: Short?, categoryName: String?, keyword: String?, workName: String?, pageable: Pageable): Page<Shop>
+    fun findAll(
+        regionId: Short?,
+        categoryName: String?,
+        keyword: String?,
+        workName: String?,
+        status: ShopStatus?,
+        pageable: Pageable,
+    ): Page<Shop>
     fun save(shop: Shop): Shop
     fun saveShopImageRecords(shopId: Long, rows: List<ShopImagePersistenceRow>)
 

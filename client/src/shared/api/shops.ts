@@ -15,6 +15,7 @@ export function getShops(params: ShopSearchParams = {}) {
     regionId: params.regionId,
     category: params.category,
     keyword: params.keyword,
+    status: params.status,
   })
 
   return request<PageResponse<Shop>>(`/api/v1/shops${query}`)
@@ -35,6 +36,10 @@ export function createShopWithImages(payload: ShopRequest, files: File[]) {
   const formData = new FormData()
 
   appendShopRequestFields(formData, payload)
+
+  if (files.length === 0) {
+    throw new Error('대표 이미지는 최소 1개가 필요합니다.')
+  }
 
   formData.set('coverImage', files[0])
   files.slice(1, 7).forEach((file) => {
@@ -87,7 +92,7 @@ function appendShopRequestFields(formData: FormData, payload: ShopRequest) {
   formData.set('address', payload.address)
   formData.set('px', String(payload.px))
   formData.set('py', String(payload.py))
-  if (payload.floor) {
+  if (payload.floor != null) {
     formData.set('floor', payload.floor)
   }
   if (payload.regionId != null) {
@@ -97,7 +102,7 @@ function appendShopRequestFields(formData: FormData, payload: ShopRequest) {
   if (payload.sellsIchibanKuji != null) {
     formData.set('sellsIchibanKuji', String(payload.sellsIchibanKuji))
   }
-  if (payload.visitTip) {
+  if (payload.visitTip != null) {
     formData.set('visitTip', payload.visitTip)
   }
 }

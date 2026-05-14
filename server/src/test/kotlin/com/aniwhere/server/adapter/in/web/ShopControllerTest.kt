@@ -50,7 +50,7 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - 샵 페이징 검색`() {
-        every { useCase.searchShops(any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("keyword", "테스트").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content.length()").value(1))
@@ -61,7 +61,7 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - workName 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(null, null, null, "원피스", any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(null, null, null, "원피스", null, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("workName", " 원피스 ")
@@ -69,13 +69,21 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, null, "원피스", any()) }
+        verify { useCase.searchShops(null, null, null, "원피스", null, any()) }
+    }
+
+    @Test
+    fun `GET shops - status 필터를 domain enum으로 전달`() {
+        every { useCase.searchShops(null, null, null, null, ShopStatus.ACTIVE, any()) } returns PageImpl(listOf(sampleShop))
+        mvc.perform(get("/api/v1/shops").param("status", "ACTIVE").param("page", "0").param("size", "20"))
+            .andExpect(status().isOk)
+        verify { useCase.searchShops(null, null, null, null, ShopStatus.ACTIVE, any()) }
     }
 
     @Test
     fun `GET shops - 검색 결과가 없으면 code 와 안내 메시지`() {
         val pageable = PageRequest.of(0, 20)
-        every { useCase.searchShops(any(), any(), any(), any(), any()) } returns PageImpl(emptyList(), pageable, 0)
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any()) } returns PageImpl(emptyList(), pageable, 0)
         mvc.perform(get("/api/v1/shops").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
@@ -86,11 +94,11 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - workName이 공백만이면 필터 미적용(null)`() {
-        every { useCase.searchShops(null, null, null, null, any()) } returns PageImpl(emptyList())
+        every { useCase.searchShops(null, null, null, null, null, any()) } returns PageImpl(emptyList())
         mvc.perform(get("/api/v1/shops").param("workName", "   ").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.code").value("EMPTY_RESULT"))
-        verify { useCase.searchShops(null, null, null, null, any()) }
+        verify { useCase.searchShops(null, null, null, null, null, any()) }
     }
 
     @Test
