@@ -38,7 +38,8 @@ class ShopPersistenceAdapter(
         regionId: Short?,
         categoryName: String?,
         keyword: String?,
-        workName: String?,
+        workKeyword: String?,
+        workId: Int?,
         status: ShopStatus?,
         pageable: Pageable,
     ): Page<Shop> =
@@ -46,7 +47,8 @@ class ShopPersistenceAdapter(
             regionId,
             categoryName,
             keyword,
-            workName,
+            workKeyword,
+            workId,
             status?.let { ShopStatusEnum.valueOf(it.name.lowercase()) },
             pageable,
         ).map(shopMapper::toDomain)

@@ -3,6 +3,7 @@ package com.aniwhere.server.adapter.out.persistence.mapper
 import com.aniwhere.server.adapter.out.persistence.entity.*
 import com.aniwhere.server.config.ShopImagesS3Properties
 import com.aniwhere.server.domain.shop.model.*
+import com.aniwhere.server.domain.work.model.WorkSummary
 import org.springframework.stereotype.Component
 
 @Component
@@ -22,7 +23,13 @@ class ShopMapper(
         sellsIchibanKuji = e.sellsIchibanKuji,
         visitTip = e.visitTip,
         categories = e.categories.map { it.name },
-        works = e.works.map { it.name },
+        works = e.works.map {
+            WorkSummary(
+                id = checkNotNull(it.id) { "work id absent" },
+                name = it.name,
+                coverUrl = it.coverUrl,
+            )
+        },
         links = e.links.map { ShopLink(it.id, LinkType.valueOf(it.type.name.uppercase()), it.url) },
         images = e.images
             .sortedWith(compareBy({ if (it.role == ShopImageRoleEnum.primary) 0 else 1 }, { it.sortOrder }))

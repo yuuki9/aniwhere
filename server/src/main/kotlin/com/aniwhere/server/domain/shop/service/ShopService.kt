@@ -33,11 +33,12 @@ class ShopService(
         regionId: Short?,
         categoryName: String?,
         keyword: String?,
-        workName: String?,
+        workKeyword: String?,
+        workId: Int?,
         status: ShopStatus?,
         pageable: Pageable,
     ): Page<Shop> =
-        port.findAll(regionId, categoryName, keyword, workName, status, pageable)
+        port.findAll(regionId, categoryName, keyword, workKeyword, workId, status, pageable)
 
     @Transactional
     override fun createShop(shop: Shop) = port.save(shop)

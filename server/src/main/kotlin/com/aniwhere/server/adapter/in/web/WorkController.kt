@@ -15,7 +15,7 @@ class WorkController(
     private val useCase: ListWorksUseCase,
 ) {
 
-    @Operation(summary = "등록된 작품 목록 (이름 순). 샵 검색 시 workName 과 동일한 문자열 사용")
+    @Operation(summary = "등록된 작품 목록 (이름 순). 샵 검색은 `keyword`(샵명)·`workKeyword`(작품명·한글표제)를 각각 사용")
     @GetMapping
     fun listWorks() = ApiResponse.ok(useCase.listWorks())
 }
