@@ -57,4 +57,12 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
 
 interface RegionRepository : JpaRepository<RegionEntity, Short>
 interface CategoryRepository : JpaRepository<CategoryEntity, Short>
-interface WorkRepository : JpaRepository<WorkEntity, Int>
+interface WorkRepository : JpaRepository<WorkEntity, Int> {
+    @Query(
+        """
+        SELECT w FROM WorkEntity w
+        ORDER BY w.popularity DESC NULLS LAST, w.name ASC
+        """,
+    )
+    fun findAllOrderByPopularityDesc(): List<WorkEntity>
+}

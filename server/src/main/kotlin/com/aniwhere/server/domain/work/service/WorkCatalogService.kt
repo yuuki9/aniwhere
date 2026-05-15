@@ -11,5 +11,5 @@ class WorkCatalogService(
     private val port: WorkCatalogPersistencePort,
 ) : ListWorksUseCase {
 
-    override fun listWorks() = port.findAllOrderedByName()
+    override fun listWorks() = port.findAllOrderedByPopularityDesc()
 }
