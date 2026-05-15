@@ -35,7 +35,7 @@
 ### Passed
 
 - `aniwhere.link` public web을 계속 유지한다.
-- public web 번들에서는 `@toss/tds-mobile` 직접 런타임 import를 피하고, local TDS-compatible layer를 유지한다.
+- public web 번들에서는 `@toss/tds-mobile` 직접 런타임 import를 피한다. page code는 프로젝트 TDS facade를 사용하고, public build에서만 local fallback으로 resolve한다.
 - `client/src/shared/ui/ait`와 `--ait-*` 토큰을 기준으로 Toss 스타일 화면을 흉내낼 수 있는 구조가 있다.
 
 ### Needs console value
@@ -89,8 +89,8 @@
 ### Phase 4. 화면 리빌드
 
 - 매장 상세는 현재 CSS 실험물을 그대로 이어 쓰지 않는다.
-- `aniwhere.link`는 local TDS-compatible UI를 유지한다.
-- Apps in Toss 출시 빌드는 공식 TDS 사용 가능 구조를 별도 task로 분리한다.
+- `aniwhere.link`는 프로젝트 TDS facade의 public fallback을 사용한다.
+- Apps in Toss 출시 빌드는 같은 page code가 공식 TDS facade로 resolve되는 구조를 사용한다.
 - 검색, 탐색, 상세 routing은 `/explore`, `/explore?shopId=...`, `/search?keyword=...` 기준으로 다시 정리한다.
 
 ### Phase 5. 출시 전 검증 리포트

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Toast } from '@aniwhere/tds-mobile'
+import { API_BASE_URL } from '../../shared/api/client'
 import {
   createShop,
   createShopWithImages,
@@ -55,6 +57,13 @@ type ShopFieldErrors = {
   location?: string
 }
 
+type SelectableImageFileResult = {
+  files: File[]
+  invalidTypeCount: number
+  oversizedCount: number
+  overflowCount: number
+}
+
 const EMPTY_SHOP_FORM: ShopFormState = {
   name: '',
   addressQuery: '',
@@ -69,20 +78,21 @@ const EMPTY_SHOP_FORM: ShopFormState = {
 }
 
 const MAX_SHOP_IMAGE_FILES = 7
-const SHOP_TOAST_VISIBLE_MS = 2800
-const SHOP_PHOTO_SEARCH_URL = 'https://search.naver.com/search.naver'
+const MAX_SHOP_IMAGE_FILE_SIZE_BYTES = 12 * 1024 * 1024
+const SHOP_TOAST_VISIBLE_MS = 3000
+const LEGACY_SHOP_IMAGE_PATH_PREFIX = '/img/shop/'
 
 function validateShopForm(form: ShopFormState): ShopFieldErrors {
   const errors: ShopFieldErrors = {}
 
   if (!form.name.trim()) {
-    errors.name = '매장명은 필수입니다.'
+    errors.name = '매장명을 입력해주세요.'
   }
 
   if (!form.address.trim() || form.px == null || form.py == null) {
     errors.location = '주소 검색으로 위치를 선택해주세요.'
   } else if (!Number.isFinite(form.px) || !Number.isFinite(form.py)) {
-    errors.location = '선택한 위치 좌표가 올바르지 않습니다.'
+    errors.location = '선택한 위치를 다시 확인해주세요.'
   }
 
   return errors
@@ -127,21 +137,6 @@ function buildShopFormFromShop(shop: Shop): ShopFormState {
   }
 }
 
-function buildPhotoCandidateSearchUrl(form: ShopFormState) {
-  const query = [form.name, form.address].map((value) => value.trim()).filter(Boolean).join(' ')
-
-  if (!query) {
-    return null
-  }
-
-  const params = new URLSearchParams({
-    where: 'image',
-    query,
-  })
-
-  return `${SHOP_PHOTO_SEARCH_URL}?${params.toString()}`
-}
-
 function getSortedShopImages(images: ShopImage[]) {
   return [...images].sort((a, b) => {
     if (a.role !== b.role) {
@@ -152,13 +147,94 @@ function getSortedShopImages(images: ShopImage[]) {
   })
 }
 
+function buildShopImageDisplayUrl(url: string) {
+  try {
+    const parsed = new URL(url)
+
+    if (parsed.hostname === 'aniwhere.link' && parsed.pathname.startsWith(LEGACY_SHOP_IMAGE_PATH_PREFIX)) {
+      const imageKey = parsed.pathname.slice(LEGACY_SHOP_IMAGE_PATH_PREFIX.length)
+      return `${API_BASE_URL}/api/v1/shop-images/${imageKey}`
+    }
+  } catch {
+    return url
+  }
+
+  return url
+}
+
 function buildEditableImageItems(shop: Shop): EditableImageItem[] {
   return getSortedShopImages(shop.images).map((image) => ({
     id: `existing-${image.id}`,
     name: image.role === 'PRIMARY' ? '대표사진' : `매장 사진 ${image.sortOrder}`,
-    url: image.url,
+    url: buildShopImageDisplayUrl(image.url),
     imageId: image.id,
   }))
+}
+
+function filterSelectableImageFiles(files: File[], availableSlots: number): SelectableImageFileResult {
+  const validFiles: File[] = []
+  let invalidTypeCount = 0
+  let oversizedCount = 0
+
+  files.forEach((file) => {
+    const isSupportedImageFile = file.type.toLowerCase().startsWith('image/')
+    const isAllowedImageSize = file.size <= MAX_SHOP_IMAGE_FILE_SIZE_BYTES
+
+    if (!isSupportedImageFile) {
+      invalidTypeCount += 1
+      return
+    }
+
+    if (!isAllowedImageSize) {
+      oversizedCount += 1
+      return
+    }
+
+    validFiles.push(file)
+  })
+
+  const nextSlotCount = Math.max(0, availableSlots)
+
+  return {
+    files: validFiles.slice(0, nextSlotCount),
+    invalidTypeCount,
+    oversizedCount,
+    overflowCount: Math.max(0, validFiles.length - nextSlotCount),
+  }
+}
+
+function getImageSelectionNotice(selection: SelectableImageFileResult) {
+  const messages: string[] = []
+
+  if (selection.invalidTypeCount > 0) {
+    messages.push('이미지 파일만 추가할 수 있어요.')
+  }
+
+  if (selection.oversizedCount > 0) {
+    messages.push('12MB 이하 이미지로 다시 선택해주세요.')
+  }
+
+  if (selection.overflowCount > 0) {
+    messages.push(`초과한 ${selection.overflowCount}장은 제외했어요.`)
+  }
+
+  return messages.join(' ')
+}
+
+function moveItemToFront<T>(items: T[], targetIndex: number): T[] {
+  if (targetIndex <= 0 || targetIndex >= items.length) {
+    return items
+  }
+
+  const nextItems = [...items]
+  const target = nextItems[targetIndex]
+
+  if (!target) {
+    return items
+  }
+
+  nextItems.splice(targetIndex, 1)
+  return [target, ...nextItems]
 }
 
 function createEditableImageItems(files: File[]): EditableImageItem[] {
@@ -179,28 +255,18 @@ function getPendingPreviewUrls(files: File[]): PendingPreviewItem[] {
   }))
 }
 
-function isNoticeError(message: string) {
-  return (
-    message.includes('실패') ||
-    message.includes('입력') ||
-    message.includes('확정') ||
-    message.includes('인증') ||
-    message.includes('필수')
-  )
-}
-
 function getShopSaveErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : '매장 저장에 실패했습니다.'
+  const message = error instanceof Error ? error.message : '매장을 저장하지 못했어요.'
 
   if (message.includes('AwsCredentialsProviderChain') || message.includes('Unable to load credentials')) {
-    if (!import.meta.env.DEV) {
-      return '사진 저장에 실패했습니다. 잠시 후 다시 시도해주세요.'
-    }
-
-    return '이미지 저장소 인증 정보가 없어 사진을 저장하지 못했습니다. 서버 S3 설정을 확인해주세요.'
+    return '사진을 저장하지 못했어요. 잠시 후 다시 시도해주세요.'
   }
 
   return message
+}
+
+function buildShopSavedNotice(shopName: string, isEditMode: boolean) {
+  return `${shopName} 매장을 ${isEditMode ? '수정' : '등록'}했어요.`
 }
 
 function getImageExtension(contentType: string) {
@@ -224,13 +290,18 @@ async function editableImageItemToFile(item: EditableImageItem, fallbackName: st
   const response = await fetch(item.url)
 
   if (!response.ok) {
-    throw new Error('기존 사진을 불러오지 못했습니다. 다시 시도해주세요.')
+    throw new Error('기존 사진을 불러오지 못했어요. 다시 시도해주세요.')
+  }
+
+  const contentType = response.headers.get('content-type')?.split(';')[0].trim() ?? ''
+  if (!contentType.toLowerCase().startsWith('image/')) {
+    throw new Error('기존 사진을 불러오지 못했어요. 다시 시도해주세요.')
   }
 
   const blob = await response.blob()
-  const contentType = blob.type || 'image/jpeg'
+  const fileContentType = blob.type || contentType
 
-  return new File([blob], `${fallbackName}.${getImageExtension(contentType)}`, { type: contentType })
+  return new File([blob], `${fallbackName}.${getImageExtension(fileContentType)}`, { type: fileContentType })
 }
 
 async function buildUpdateImagePayload(originalShop: Shop, imageItems: EditableImageItem[]) {
@@ -293,11 +364,17 @@ export function AdminShopsPage() {
   })
   const [pendingFiles, setPendingFiles] = useState<File[]>(() => readPendingAdminShopFiles())
   const [editImageItems, setEditImageItems] = useState<EditableImageItem[]>([])
-  const [isReadingClipboardImage, setIsReadingClipboardImage] = useState(false)
+  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set())
   const [fieldErrors, setFieldErrors] = useState<ShopFieldErrors>({})
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(() => {
+    if (!isEditMode && readPendingAdminShopFileCount() > 0 && pendingFiles.length === 0) {
+      return '사진 선택이 초기화됐어요. 다시 선택해주세요.'
+    }
+
+    return null
+  })
   const pendingPreviewItems = useMemo(() => getPendingPreviewUrls(pendingFiles), [pendingFiles])
-  const photoCandidateSearchUrl = useMemo(() => buildPhotoCandidateSearchUrl(shopForm), [shopForm])
+  const closeNotice = useCallback(() => setNotice(null), [])
   const editShopQuery = useQuery({
     queryKey: ['shops', 'admin-shop-edit', editingShopId],
     queryFn: () => getShop(editingShopId as number),
@@ -312,18 +389,6 @@ export function AdminShopsPage() {
   useEffect(() => {
     clearAdminShopSelectedLocation()
   }, [])
-
-  useEffect(() => {
-    if (isEditMode) {
-      return
-    }
-
-    const pendingShopFileCount = readPendingAdminShopFileCount()
-
-    if (pendingShopFileCount > 0 && pendingFiles.length === 0) {
-      setNotice('페이지가 새로고침되어 선택한 사진이 초기화되었습니다. 다시 선택해주세요.')
-    }
-  }, [isEditMode, pendingFiles.length])
 
   useEffect(() => {
     if (isEditMode) {
@@ -350,8 +415,10 @@ export function AdminShopsPage() {
 
     if (!selectedLocationOnOpen) {
       // Hydrate the editable form once the async shop record is available.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShopForm(nextForm)
       setEditImageItems(buildEditableImageItems(editShopQuery.data))
+      setFailedImageIds(new Set())
       return
     }
 
@@ -365,6 +432,7 @@ export function AdminShopsPage() {
       regionId: selectedLocationOnOpen.regionId,
     })
     setEditImageItems(buildEditableImageItems(editShopQuery.data))
+    setFailedImageIds(new Set())
   }, [editShopQuery.data, isEditMode, selectedLocationOnOpen])
 
   useEffect(() => {
@@ -372,16 +440,6 @@ export function AdminShopsPage() {
       pendingPreviewItems.forEach((item) => URL.revokeObjectURL(item.url))
     }
   }, [pendingPreviewItems])
-
-  useEffect(() => {
-    if (!notice) {
-      return undefined
-    }
-
-    const timeoutId = window.setTimeout(() => setNotice(null), SHOP_TOAST_VISIBLE_MS)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [notice])
 
   const resetForm = () => {
     setShopForm(EMPTY_SHOP_FORM)
@@ -392,12 +450,13 @@ export function AdminShopsPage() {
   }
 
   const updatePendingFiles = (files: File[]) => {
-    const nextFiles = files.slice(0, MAX_SHOP_IMAGE_FILES)
+    const selection = filterSelectableImageFiles(files, MAX_SHOP_IMAGE_FILES)
+    const selectionNotice = getImageSelectionNotice(selection)
 
-    setPendingFiles(nextFiles)
+    setPendingFiles(selection.files)
 
-    if (files.length > MAX_SHOP_IMAGE_FILES) {
-      setNotice('사진은 대표 1장과 갤러리 6장까지 등록할 수 있습니다.')
+    if (selectionNotice) {
+      setNotice(selectionNotice)
     }
   }
 
@@ -407,73 +466,34 @@ export function AdminShopsPage() {
     }
 
     setEditImageItems((current) => {
-      const nextFiles = files.slice(0, Math.max(0, MAX_SHOP_IMAGE_FILES - current.length))
-      const nextItems = [...current, ...createEditableImageItems(nextFiles)]
+      const selection = filterSelectableImageFiles(files, MAX_SHOP_IMAGE_FILES - current.length)
+      const selectionNotice = getImageSelectionNotice(selection)
+      const nextItems = [...current, ...createEditableImageItems(selection.files)]
 
-      if (files.length > nextFiles.length) {
-        setNotice('사진은 대표 1장과 갤러리 6장까지 등록할 수 있습니다.')
+      if (selectionNotice) {
+        setNotice(selectionNotice)
       }
 
       return nextItems
     })
   }
 
-  const openPhotoCandidateSearch = () => {
-    if (!photoCandidateSearchUrl) {
-      setNotice('매장명 또는 주소를 먼저 입력해주세요.')
-      return
-    }
-
-    window.open(photoCandidateSearchUrl, '_blank', 'noopener,noreferrer')
-  }
-
-  const readClipboardImage = async () => {
-    if (editImageItems.length >= MAX_SHOP_IMAGE_FILES) {
-      setNotice('사진은 대표 1장과 갤러리 6장까지 등록할 수 있습니다.')
-      return
-    }
-
-    if (!navigator.clipboard?.read) {
-      setNotice('이 브라우저에서는 클립보드 사진 추가를 지원하지 않습니다.')
-      return
-    }
-
-    setIsReadingClipboardImage(true)
-
-    try {
-      const clipboardItems = await navigator.clipboard.read()
-
-      for (const item of clipboardItems) {
-        const imageType = item.types.find((type) => type.toLowerCase().startsWith('image/'))
-
-        if (!imageType) {
-          continue
-        }
-
-        const blob = await item.getType(imageType)
-        const file = new File([blob], `clipboard-shop-photo.${getImageExtension(imageType)}`, { type: imageType })
-
-        updateEditImageFiles([file])
-        setNotice('클립보드 사진을 추가했습니다. 저장하면 매장 사진으로 등록됩니다.')
-        return
-      }
-
-      setNotice('클립보드에 복사된 이미지가 없습니다.')
-    } catch {
-      setNotice('클립보드 사진을 불러오지 못했습니다. 이미지를 복사한 뒤 다시 시도해주세요.')
-    } finally {
-      setIsReadingClipboardImage(false)
-    }
-  }
-
   const removePendingFile = (targetIndex: number) => {
     setPendingFiles((current) => current.filter((_, index) => index !== targetIndex))
+  }
+
+  const setPendingFileAsCover = (targetIndex: number) => {
+    setPendingFiles((current) => moveItemToFront(current, targetIndex))
+  }
+
+  const setEditImageItemAsCover = (targetIndex: number) => {
+    setEditImageItems((current) => moveItemToFront(current, targetIndex))
   }
 
   const removeEditImageItem = (targetIndex: number) => {
     setEditImageItems((current) => {
       if (current.length <= 1) {
-        setNotice('대표사진은 최소 1장 유지해주세요.')
+        setNotice('대표사진은 1장 이상 필요해요.')
         return current
       }
 
@@ -491,7 +511,7 @@ export function AdminShopsPage() {
       const payload = buildShopRequest(shopForm)
       if (isEditMode) {
         if (editImageItems.length === 0 && (editShopQuery.data?.images.length ?? 0) > 0) {
-          throw new Error('대표사진은 최소 1장 유지해주세요.')
+          throw new Error('대표사진은 1장 이상 필요해요.')
         }
 
         const imagePayload = editShopQuery.data
@@ -505,7 +525,7 @@ export function AdminShopsPage() {
 
       return pendingFiles.length > 0 ? createShopWithImages(payload, pendingFiles) : createShop(payload)
     },
-    onSuccess: async () => {
+    onSuccess: async (savedShop) => {
       await queryClient.invalidateQueries({ queryKey: ['shops'] })
       if (!isEditMode) {
         resetForm()
@@ -513,7 +533,7 @@ export function AdminShopsPage() {
       clearAdminShopSelectedLocation()
       navigate('/admin/shops', {
         replace: true,
-        state: { notice: isEditMode ? '매장을 수정했습니다.' : '새 매장을 등록했습니다.' },
+        state: { notice: buildShopSavedNotice(savedShop.name, isEditMode) },
       })
     },
     onError: (error) => {
@@ -526,7 +546,7 @@ export function AdminShopsPage() {
       <AitNavigation className="route-navigation" showBack title={isEditMode ? '매장 수정' : '매장 등록'} showLogo={false} />
 
       <section className="admin-shop-crud-layout">
-        {editShopQuery.isLoading ? <p className="admin-shop-manage-state">매장 정보를 불러오는 중입니다.</p> : null}
+        {editShopQuery.isLoading ? <p className="admin-shop-manage-state">매장 정보를 불러오고 있어요.</p> : null}
         {editShopQuery.isError ? (
           <p className="admin-shop-manage-state error-text">{(editShopQuery.error as Error).message}</p>
         ) : null}
@@ -556,7 +576,10 @@ export function AdminShopsPage() {
                       accept="image/*"
                       multiple
                       type="file"
-                      onChange={(event) => updateEditImageFiles(Array.from(event.target.files ?? []))}
+                      onChange={(event) => {
+                        updateEditImageFiles(Array.from(event.target.files ?? []))
+                        event.currentTarget.value = ''
+                      }}
                     />
                     <span aria-hidden="true" className="admin-shop-camera-icon" />
                     <strong>
@@ -566,7 +589,15 @@ export function AdminShopsPage() {
 
                   {editImageItems.map((photo, index) => (
                     <article className="admin-shop-photo-card admin-shop-photo-card-pending" key={photo.id}>
-                      <img alt={photo.name} src={photo.url} />
+                      {failedImageIds.has(photo.id) ? (
+                        <small className="admin-shop-photo-error">사진 확인 필요</small>
+                      ) : (
+                        <img
+                          alt={photo.name}
+                          src={photo.url}
+                          onError={() => setFailedImageIds((current) => new Set(current).add(photo.id))}
+                        />
+                      )}
                       <button
                         aria-label={`${photo.name} 사진 제거`}
                         className="admin-shop-photo-remove"
@@ -575,7 +606,18 @@ export function AdminShopsPage() {
                       >
                         ×
                       </button>
-                      {index === 0 ? <span>대표사진</span> : null}
+                      {index === 0 ? (
+                        <span className="admin-shop-photo-cover-badge">대표</span>
+                      ) : (
+                        <button
+                          aria-label={`${photo.name} 대표사진으로 설정`}
+                          className="admin-shop-photo-cover-action"
+                          type="button"
+                          onClick={() => setEditImageItemAsCover(index)}
+                        >
+                          대표 지정
+                        </button>
+                      )}
                     </article>
                   ))}
                 </>
@@ -586,7 +628,10 @@ export function AdminShopsPage() {
                       accept="image/*"
                       multiple
                       type="file"
-                      onChange={(event) => updatePendingFiles(Array.from(event.target.files ?? []))}
+                      onChange={(event) => {
+                        updatePendingFiles(Array.from(event.target.files ?? []))
+                        event.currentTarget.value = ''
+                      }}
                     />
                     <span aria-hidden="true" className="admin-shop-camera-icon" />
                     <strong>
@@ -605,31 +650,23 @@ export function AdminShopsPage() {
                       >
                         ×
                       </button>
-                      {photo.isCover ? <span>대표사진</span> : null}
+                      {photo.isCover ? (
+                        <span className="admin-shop-photo-cover-badge">대표</span>
+                      ) : (
+                        <button
+                          aria-label={`${photo.name} 대표사진으로 설정`}
+                          className="admin-shop-photo-cover-action"
+                          type="button"
+                          onClick={() => setPendingFileAsCover(index)}
+                        >
+                          대표 지정
+                        </button>
+                      )}
                     </article>
                   ))}
                 </>
               )}
             </div>
-            {isEditMode ? (
-              <div className="admin-shop-photo-candidate-actions">
-                <button
-                  className="admin-shop-photo-candidate-load"
-                  type="button"
-                  onClick={openPhotoCandidateSearch}
-                >
-                  사진 후보 찾기
-                </button>
-                <button
-                  className="admin-shop-photo-candidate-clipboard"
-                  disabled={isReadingClipboardImage}
-                  type="button"
-                  onClick={readClipboardImage}
-                >
-                  {isReadingClipboardImage ? '추가 중' : '클립보드 사진 추가'}
-                </button>
-              </div>
-            ) : null}
           </section>
 
           <section className="admin-shop-editor-section">
@@ -721,7 +758,7 @@ export function AdminShopsPage() {
               />
               <span>
                 <strong>이치방쿠지 취급 매장</strong>
-                <small>상세 화면에서 방문 판단 정보로 노출됩니다.</small>
+                <small>상세 화면에 방문 참고 정보로 보여요.</small>
               </span>
             </label>
 
@@ -745,14 +782,15 @@ export function AdminShopsPage() {
         </form>
       </section>
 
-      {notice ? (
-        <p
-          className={`admin-shop-toast ${isNoticeError(notice) ? 'admin-shop-toast-error' : 'admin-shop-toast-success'}`}
-          role="status"
-        >
-          {notice}
-        </p>
-      ) : null}
+      <Toast
+        aria-live="polite"
+        duration={SHOP_TOAST_VISIBLE_MS}
+        higherThanCTA
+        open={notice != null}
+        position="bottom"
+        text={notice ?? ''}
+        onClose={closeNotice}
+      />
     </main>
   )
 }

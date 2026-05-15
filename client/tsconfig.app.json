@@ -17,7 +17,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@aniwhere/tds-runtime": ["src/shared/ui/tdsRuntime/public.tsx"]
+      "@aniwhere/tds-runtime": ["src/shared/ui/tdsRuntime/public.tsx"],
+      "@aniwhere/tds-mobile": ["src/shared/ui/tdsMobile/public.tsx"]
     },
 
     /* Linting */

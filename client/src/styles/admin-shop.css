@@ -339,6 +339,10 @@
   background: var(--ait-color-gray-0);
 }
 
+.admin-shop-manage-shell.admin-shop-crud-shell {
+  padding-bottom: 0;
+}
+
 .admin-shop-draft-action {
   border: 0;
   background: transparent;
@@ -816,22 +820,50 @@
   object-fit: cover;
 }
 
-.admin-shop-photo-card span {
-  align-self: end;
-  justify-self: stretch;
-  position: relative;
-  z-index: 1;
-  padding: 5px 4px;
-  background: var(--admin-shop-photo-cover-bg);
-  color: var(--ait-color-gray-0);
+.admin-shop-photo-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: var(--ait-color-gray-100);
+  color: var(--ait-color-text-secondary);
   font-size: var(--ait-font-size-caption);
+  font-weight: 800;
   line-height: var(--ait-line-height-tight);
   text-align: center;
 }
 
-.admin-shop-photo-card-pending span {
-  color: var(--ait-color-gray-0);
-  font-weight: 700;
+.admin-shop-photo-cover-badge {
+  position: absolute;
+  z-index: 1;
+  top: 6px;
+  left: 6px;
+  padding: 3px 7px;
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-gray-800);
+  color: var(--ait-color-text-inverse);
+  font-size: var(--ait-font-size-caption);
+  font-weight: 800;
+  line-height: var(--ait-line-height-tight);
+  text-align: center;
+}
+
+.admin-shop-photo-cover-action {
+  align-self: end;
+  justify-self: stretch;
+  position: relative;
+  z-index: 1;
+  min-height: 26px;
+  padding: 5px 4px;
+  border: 0;
+  background: var(--admin-shop-brand-bg-strong);
+  color: var(--ait-color-brand-pressed);
+  font: inherit;
+  font-size: var(--ait-font-size-caption);
+  font-weight: 800;
+  line-height: var(--ait-line-height-tight);
+  text-align: center;
 }
 
 .admin-shop-photo-remove {
@@ -854,35 +886,47 @@
   line-height: 1;
 }
 
-.admin-shop-photo-candidate-actions {
-  display: grid;
-  gap: var(--ait-space-4);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (hover: hover) and (pointer: fine) {
+  .admin-shop-photo-remove {
+    opacity: 0.72;
+    transition: opacity 160ms ease;
+  }
+
+  .admin-shop-photo-card:hover .admin-shop-photo-remove,
+  .admin-shop-photo-card:focus-within .admin-shop-photo-remove {
+    opacity: 1;
+  }
 }
 
-.admin-shop-photo-candidate-load,
-.admin-shop-photo-candidate-clipboard {
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1px solid var(--admin-shop-brand-border);
-  border-radius: 12px;
-  background: var(--admin-shop-brand-bg-strong);
-  color: var(--ait-color-brand-pressed);
-  font: inherit;
-  font-size: var(--ait-font-size-body-md);
-  font-weight: 800;
-  white-space: nowrap;
+.ait-toast {
+  position: fixed;
+  left: 50%;
+  z-index: 60;
+  max-width: min(328px, calc(100vw - 32px));
+  min-height: 44px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(25, 31, 40, 0.94);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  transform: translateX(-50%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
 }
 
-.admin-shop-photo-candidate-clipboard {
-  border-color: var(--ait-color-border);
-  background: var(--ait-color-gray-50);
-  color: var(--ait-color-gray-900);
+.ait-toast-bottom {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
 
-.admin-shop-photo-candidate-load:disabled,
-.admin-shop-photo-candidate-clipboard:disabled {
-  opacity: 0.56;
+.ait-toast-top {
+  top: calc(env(safe-area-inset-top, 0px) + 24px);
+}
+
+.ait-toast-higher-than-cta {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
 }
 
 .admin-shop-field,
@@ -1169,36 +1213,6 @@
 
 .admin-shop-actions {
   padding-top: var(--ait-space-2);
-}
-
-.admin-shop-toast {
-  position: fixed;
-  z-index: var(--admin-shop-z-toast);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
-  left: 50%;
-  width: max-content;
-  max-width: min(340px, calc(100vw - 32px));
-  margin: 0;
-  padding: 10px 14px;
-  border: 1px solid var(--ait-color-border-strong);
-  border-radius: var(--ait-radius-full);
-  background: var(--ait-color-surface-raised);
-  box-shadow: var(--ait-shadow-lg);
-  color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-label);
-  font-weight: 700;
-  line-height: 1.35;
-  text-align: center;
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-.admin-shop-toast-error {
-  border-color: var(--admin-shop-danger-border);
-}
-
-.admin-shop-toast-success {
-  border-color: var(--ait-color-green-50);
 }
 
 .admin-shop-actions .ghost-action {

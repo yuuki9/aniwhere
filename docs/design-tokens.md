@@ -37,11 +37,17 @@ Legacy aliases remain available while the large existing stylesheet is migrated:
 
 New code should prefer the `--ait-*` tokens directly.
 
+## TDS Runtime Priority
+
+Apps in Toss/ads/local 우선 화면은 프로젝트 TDS facade를 통해 공식 `@toss/tds-mobile` 컴포넌트를 먼저 사용한다. page code는 `@toss/tds-mobile`을 직접 import하지 않는다. 공식 컴포넌트가 없거나 public/domain fallback이 필요한 영역에서만 `client/src/shared/ui/ait`와 local token layer를 사용한다.
+
+Public/domain 배포는 `main` 머지 후 자동 반영되므로, 기능 PR도 public fallback 경계를 함께 지켜야 한다. 공식 TDS runtime import는 adapter/fallback 경계 안에만 둔다.
+
 ## TDS-Compatible Local UI
 
-Aniwhere uses `client/src/shared/ui/ait` for local UI components that mirror common TDS structures without importing `@toss/tds-mobile` at runtime.
+Aniwhere uses `client/src/shared/ui/ait` for local UI components that mirror common TDS structures when official TDS is unavailable or when a public/domain fallback is explicitly in scope.
 
-Use these components before adding one-off screen markup:
+Do not add new `Ait*` imports casually. Existing usage is allowlisted by `client/scripts/assert-ait-usage-allowlist.mjs` and should shrink as route-level TDS migration progresses.
 
 - `AitTop`
 - `AitListRow`
