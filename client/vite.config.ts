@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
     appRuntime === 'public'
       ? './src/shared/ui/tdsRuntime/public.tsx'
       : './src/shared/ui/tdsRuntime/apps-in-toss.tsx'
+  const tdsMobileAdapter =
+    appRuntime === 'public' ? './src/shared/ui/tdsMobile/public.tsx' : './src/shared/ui/tdsMobile/apps-in-toss.tsx'
 
   return {
     base: '/',
@@ -20,6 +22,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@aniwhere/tds-runtime': fileURLToPath(new URL(tdsRuntimeAdapter, import.meta.url)),
+        '@aniwhere/tds-mobile': fileURLToPath(new URL(tdsMobileAdapter, import.meta.url)),
       },
     },
     server: {

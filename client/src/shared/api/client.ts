@@ -1,6 +1,6 @@
 import type { ApiResponse } from './types'
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'https://api.aniwhere.link'
 
 type QueryValue = string | number | boolean | undefined | null

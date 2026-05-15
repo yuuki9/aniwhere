@@ -19,5 +19,28 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@toss/tds-mobile',
+              message: 'Use @aniwhere/tds-mobile so public domain builds resolve to the local fallback.',
+            },
+            {
+              name: '@toss/tds-mobile-ait',
+              message: 'Import this only inside the Apps in Toss runtime adapter.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/shared/ui/tdsMobile/apps-in-toss.tsx', 'src/shared/ui/tdsRuntime/apps-in-toss.tsx'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
   },
 ])

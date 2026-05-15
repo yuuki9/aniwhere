@@ -143,9 +143,11 @@ TDS usage is recommended rather than an automatic rejection rule, but Aniwhere s
 
 - Prefer TDS components where practical.
 - When TDS packages are not used, app-owned UI should visually fit Toss-style mobile UX.
-- Use `@toss/tds-mobile` only when the deployed runtime is an approved Apps in Toss environment. For public web domains such as `aniwhere.link`, avoid runtime imports from that package and match TDS structure with local tokens instead.
+- Use official `@toss/tds-mobile` only through project facades such as `@aniwhere/tds-mobile`, so Apps in Toss builds resolve to official TDS and public web builds resolve to local fallbacks.
 - Keep colors, radii, spacing, typography, and shadows routed through Aniwhere tokens.
-- Prefer `client/src/shared/ui/ait` components for local TDS-compatible Top, ListRow, and Button patterns.
+- Treat `client/src/shared/ui/ait` components as public fallback/building-block UI, not as replacements for official TDS when official components are available.
+- Treat existing `Ait*` route imports as migration debt. New `Ait*` imports require explicit fallback rationale and an allowlist update.
+- Page code must not import `@toss/tds-mobile` or `@toss/tds-mobile-ait` directly; direct imports belong only inside adapter/facade boundaries.
 - Do not add a new visual system for one screen.
 
 ### 11. Sharing Rewards

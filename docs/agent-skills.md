@@ -9,7 +9,9 @@ This repository carries project-local Codex skills under `.codex/skills`.
 - `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
 - `aniwhere-launch-checklist`: final Apps in Toss non-game launch review for access/functions, navigation, login/auth/permissions, guide routing, UI/UX, brand text, payments, ads, external links, TDS, sharing rewards, and sandbox evidence.
 
-For UI styling work, read `docs/design-tokens.md` and `docs/tds-compatible-ui-layer.md`, then use `client/src/shared/ui/ait` and `client/src/styles/tokens.css` before adding new raw CSS values.
+For UI styling work, read `docs/design-tokens.md` and `docs/tds-compatible-ui-layer.md`. Use project TDS facades first when official components exist, use `client/src/shared/ui/ait` only as public fallback/building-block UI, and route reusable values through `client/src/styles/tokens.css` before adding new raw CSS values.
+
+New `Ait*` route/page imports are frozen by `client/scripts/assert-ait-usage-allowlist.mjs`. Add to that allowlist only with PR rationale explaining the public fallback boundary or missing official TDS component.
 
 ## PR-Level Launch/TDS Gate
 

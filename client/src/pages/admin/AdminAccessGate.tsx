@@ -31,7 +31,7 @@ export function AdminAccessGate() {
       return
     }
 
-    setUnlockError('관리자 코드가 일치하지 않습니다.')
+    setUnlockError('관리자 코드가 맞지 않아요.')
   }
 
   if (isUnlocked) {
@@ -45,13 +45,12 @@ export function AdminAccessGate() {
         <div className="admin-unlock-head">
           <div>
             <span className="eyebrow">ADMIN</span>
-            <h1>관리자 콘솔 잠금 해제</h1>
+            <h1>관리자 코드 입력</h1>
           </div>
         </div>
 
         <p>
-          샵 등록과 포인트 지급은 관리자 전용 작업입니다. 운영 환경에서는 관리자 코드가 설정된 경우에만
-          접근할 수 있습니다.
+          매장 등록과 포인트 지급은 관리자 전용 작업이에요. 관리자 코드가 있어야 접근할 수 있어요.
         </p>
 
         <form className="admin-unlock-form" onSubmit={submitUnlock}>
@@ -63,7 +62,7 @@ export function AdminAccessGate() {
             onChange={(event) => setUnlockCode(event.target.value)}
           />
           <button className="primary-action" type="submit">
-            관리자 열기
+            관리자 화면 열기
           </button>
         </form>
 
@@ -75,16 +74,16 @@ export function AdminAccessGate() {
               unlockAdminPreview()
               const unlocked = isAdminUnlocked()
               setIsUnlocked(unlocked)
-              setUnlockError(unlocked ? null : '관리자 잠금 해제에 실패했습니다.')
+              setUnlockError(unlocked ? null : '관리자 화면을 열지 못했어요.')
             }}
           >
-            개발 미리보기로 열기
+            개발 모드로 열기
           </button>
         ) : null}
 
         {!hasConfiguredAdminCode() && !previewUnlockAvailable ? (
           <p className="form-help-text">
-            실서비스에서는 `VITE_ADMIN_ACCESS_CODE`가 설정되어야 관리자 잠금 해제가 가능합니다.
+            관리자 코드가 설정되지 않았어요. 운영 환경에서는 접근할 수 없습니다.
           </p>
         ) : null}
 

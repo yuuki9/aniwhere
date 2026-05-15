@@ -27,6 +27,7 @@ tmp/
 # Java / Gradle artifacts (server/.gradle tracked intentionally)
 .gradle/
 build/
+server/bin/
 .project
 .classpath
 .settings/
