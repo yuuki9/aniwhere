@@ -13,6 +13,19 @@ class WorkCatalogPersistenceAdapter(
 
     override fun findAllOrderedByName(): List<WorkCatalogItem> =
         workRepo.findAll(Sort.by(Sort.Direction.ASC, "name")).map { e ->
-            WorkCatalogItem(id = checkNotNull(e.id) { "work id absent" }, name = e.name)
+            WorkCatalogItem(
+                id = checkNotNull(e.id) { "work id absent" },
+                name = e.name,
+                anilistId = e.anilistId,
+                titleRomaji = e.titleRomaji,
+                titleEnglish = e.titleEnglish,
+                titleNative = e.titleNative,
+                koreanTitle = e.koreanTitle,
+                genres = e.genres,
+                coverUrl = e.coverUrl,
+                tmdbLogoUrl = e.tmdbLogoUrl,
+                popularity = e.popularity,
+                anilistSyncedAt = e.anilistSyncedAt,
+            )
         }
 }

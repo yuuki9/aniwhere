@@ -17,28 +17,39 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
         LEFT JOIN s.categories c
         WHERE (:regionId IS NULL OR s.region.id = :regionId)
           AND (:categoryName IS NULL OR c.name = :categoryName)
-          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
           AND (:status IS NULL OR s.status = :status)
-          AND (:workName IS NULL OR EXISTS (
+          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+          AND (:workKeyword IS NULL OR EXISTS (
+                  SELECT 1 FROM ShopEntity s2 JOIN s2.works w
+                  WHERE s2.id = s.id AND (
+                       w.name LIKE CONCAT('%', :workKeyword, '%')
+                    OR w.koreanTitle LIKE CONCAT('%', :workKeyword, '%'))))
+          AND (:workId IS NULL OR EXISTS (
                 SELECT 1 FROM ShopEntity s2 JOIN s2.works w
-                WHERE s2.id = s.id AND w.name = :workName))
+                WHERE s2.id = s.id AND w.id = :workId))
     """,
     countQuery = """
         SELECT COUNT(DISTINCT s) FROM ShopEntity s
         LEFT JOIN s.categories c
         WHERE (:regionId IS NULL OR s.region.id = :regionId)
           AND (:categoryName IS NULL OR c.name = :categoryName)
-          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
           AND (:status IS NULL OR s.status = :status)
-          AND (:workName IS NULL OR EXISTS (
+          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+          AND (:workKeyword IS NULL OR EXISTS (
+                  SELECT 1 FROM ShopEntity s2 JOIN s2.works w
+                  WHERE s2.id = s.id AND (
+                       w.name LIKE CONCAT('%', :workKeyword, '%')
+                    OR w.koreanTitle LIKE CONCAT('%', :workKeyword, '%'))))
+          AND (:workId IS NULL OR EXISTS (
                 SELECT 1 FROM ShopEntity s2 JOIN s2.works w
-                WHERE s2.id = s.id AND w.name = :workName))
+                WHERE s2.id = s.id AND w.id = :workId))
     """)
     fun search(
         regionId: Short?,
         categoryName: String?,
         keyword: String?,
-        workName: String?,
+        workKeyword: String?,
+        workId: Int?,
         status: ShopStatusEnum?,
         pageable: Pageable,
     ): Page<ShopEntity>

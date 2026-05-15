@@ -18,7 +18,8 @@ interface ShopPersistencePort {
         regionId: Short?,
         categoryName: String?,
         keyword: String?,
-        workName: String?,
+        workKeyword: String?,
+        workId: Int?,
         status: ShopStatus?,
         pageable: Pageable,
     ): Page<Shop>

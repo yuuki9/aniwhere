@@ -32,21 +32,31 @@ class ShopController(private val useCase: ShopUseCase) {
     @GetMapping("/{id}")
     fun getShop(@PathVariable id: Long) = ApiResponse.ok(useCase.getShop(id))
 
-    @Operation(summary = "샵 검색 (페이징). 결과가 없을 때 `code`·`message` 로 안내. workName 지정 시 `works.name` 과 정확히 일치하는 작품을 취급하는 매장만 포함")
+    @Operation(
+        summary = "샵 검색 (페이징). 결과가 없을 때 `code`·`message` 로 안내. " +
+            "`keyword`: 샵 이름(`shops.name`) 부분 일치(LIKE). " +
+            "`workKeyword`: 취급 작품 `works.name` / `works.korean_title` 부분 일치(LIKE, 두 컬럼 OR). " +
+            "`workId`: 해당 `works.id` 취급 매장만. " +
+            "문자열·`workId` 필터는 함께 주면 AND.",
+    )
     @GetMapping
     fun searchShops(
         @RequestParam(required = false) regionId: Short?,
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) keyword: String?,
-        @RequestParam(required = false) workName: String?,
+        @RequestParam(required = false) workKeyword: String?,
+        @RequestParam(required = false) workId: Int?,
         @RequestParam(required = false) status: String?,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<Page<Shop>> {
+        val kw = keyword?.trim()?.takeIf { it.isNotEmpty() }
+        val workKw = workKeyword?.trim()?.takeIf { it.isNotEmpty() }
         val page = useCase.searchShops(
             regionId,
             category,
-            keyword,
-            workName?.trim()?.takeIf { it.isNotEmpty() },
+            kw,
+            workKw,
+            workId,
             status.toShopStatusOrNull(),
             pageable,
         )
