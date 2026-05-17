@@ -34,10 +34,20 @@ test('SearchPage does not build recommendations by fetching an aggregate shop pa
 test('SearchPage renders shop results from API fields without inferred fallback copy', () => {
   const source = searchPageSource()
 
-  assert.match(source, /keyword:\s*currentKeyword \|\| undefined/)
+  assert.match(source, /keyword:\s*currentSearchScope === 'shop' \? currentKeyword \|\| undefined : undefined/)
   assert.doesNotMatch(source, /regionId \?\? '-'/)
   assert.doesNotMatch(source, /shop\.works\.length/)
   assert.doesNotMatch(source, /작품 \{shop\.works\.length\}/)
+})
+
+test('SearchPage sends work-scoped searches to the shop search API workKeyword parameter', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /const currentSearchScope = searchParams\.get\('scope'\) === 'work' \? 'work' : 'shop'/)
+  assert.match(source, /queryKey: \['shops', 'search-page-results', currentSearchScope, currentKeyword, currentPage\]/)
+  assert.match(source, /workKeyword:\s*currentSearchScope === 'work' \? currentKeyword \|\| undefined : undefined/)
+  assert.match(source, /if \(currentSearchScope === 'work'\) \{/)
+  assert.match(source, /next\.set\('scope', 'work'\)/)
 })
 
 test('SearchPage exposes an explicit nearby CTA through geolocation instead of silent permission prompts', () => {
@@ -96,7 +106,7 @@ test('SearchPage treats keyword changes as replaceable search state instead of b
   const source = searchPageSource()
 
   assert.match(source, /const handleSearchBack = \(\) =>/)
-  assert.match(source, /setSearchParams\(new URLSearchParams\(\), \{ replace: true \}\)/)
+  assert.match(source, /const next = new URLSearchParams\(\)/)
   assert.match(source, /setSearchParams\(next, \{ replace: true \}\)/)
   assert.match(source, /onBack=\{handleSearchBack\}/)
 })

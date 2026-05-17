@@ -72,13 +72,21 @@ function HomePendingCard({ title, description }: { title: string; description: s
   )
 }
 
+function buildHomeWorkSearchHref(workName: string) {
+  const params = new URLSearchParams()
+  params.set('scope', 'work')
+  params.set('keyword', workName)
+  params.set('returnTo', '/home')
+
+  return `/search?${params.toString()}`
+}
+
 function HomeWorkPosterCard({ work }: { work: HomeWorkPreviewItem }) {
   return (
     <Link
       aria-label={`${work.name} 취급 매장 보기`}
       className="home-work-poster-card"
-      state={{ returnTo: '/home' }}
-      to={`/explore?workId=${work.id}&view=list`}
+      to={buildHomeWorkSearchHref(work.name)}
     >
       <span className="home-work-poster-art">
         {work.coverUrl ? (

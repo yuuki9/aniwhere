@@ -36,6 +36,7 @@ const buildShopAddress = (shop: Shop) => [shop.address, shop.floor].filter(Boole
 export function SearchPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword') ?? ''
   const currentPage = Number(searchParams.get('page') ?? '0')
   const returnTo = searchParams.get('returnTo')
@@ -53,12 +54,13 @@ export function SearchPage() {
   }, [])
 
   const resultQuery = useQuery({
-    queryKey: ['shops', 'search-page-results', currentKeyword, currentPage],
+    queryKey: ['shops', 'search-page-results', currentSearchScope, currentKeyword, currentPage],
     queryFn: () =>
       getShops({
         page: currentPage,
         size: SEARCH_PAGE_SIZE,
-        keyword: currentKeyword || undefined,
+        keyword: currentSearchScope === 'shop' ? currentKeyword || undefined : undefined,
+        workKeyword: currentSearchScope === 'work' ? currentKeyword || undefined : undefined,
       }),
     placeholderData: keepPreviousData,
     enabled: currentKeyword.trim().length > 0,
@@ -70,6 +72,10 @@ export function SearchPage() {
 
     if (safeReturnTo) {
       next.set('returnTo', safeReturnTo)
+    }
+
+    if (currentSearchScope === 'work') {
+      next.set('scope', 'work')
     }
 
     if (trimmed) {
@@ -97,6 +103,10 @@ export function SearchPage() {
 
       if (safeReturnTo) {
         next.set('returnTo', safeReturnTo)
+      }
+
+      if (currentSearchScope === 'work') {
+        next.set('scope', 'work')
       }
 
       setSearchParams(next, { replace: true })
