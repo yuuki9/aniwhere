@@ -18,6 +18,7 @@
 - 릴리스: `release/v1.2.0`, `release/hotfix-payment`
 
 자동화나 보조 작업이 있더라도, 기본 작업 브랜치는 `feature/*`, `fix/*`, `chore/*`로 통일합니다.
+Aniwhere 저장소에서는 AI 도구가 만든 브랜치라도 `codex/*` 같은 도구명 prefix를 사용하지 않습니다.
 
 ## 커밋 메시지
 

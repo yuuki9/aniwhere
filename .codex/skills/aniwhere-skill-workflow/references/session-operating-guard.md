@@ -54,6 +54,11 @@ Use a `Notice:` when the current change is becoming a separate PR concern. Good 
 
 Phrase it as a recommendation, not a hard stop: identify the current PR unit, propose the follow-up PR scope, and keep working only on the agreed slice.
 
+## Branch Naming
+
+For Aniwhere, do not use tool-name branch prefixes such as `codex/*`.
+Use the repository convention instead: `feature/*`, `fix/*`, `chore/*`, or `docs/*` depending on the work type, even when Codex creates the branch.
+
 ## Engineering Feedback Loops
 
 Use small, observable loops before broad edits. This adapts external engineering-skill patterns to Aniwhere's launch workflow.
