@@ -6,13 +6,11 @@ const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const srcDir = path.join(projectRoot, 'src')
 
 const allowedAitImportFiles = new Set([
-  'src/pages/AdminPage.tsx',
   'src/pages/ExplorePage.tsx',
   'src/pages/PostDetailPage.tsx',
   'src/pages/SearchPage.tsx',
   'src/pages/ShopPage.tsx',
   'src/pages/admin/AdminAccessGate.tsx',
-  'src/pages/admin/AdminHomePage.tsx',
   'src/pages/admin/AdminShopLocationPage.tsx',
   'src/pages/admin/AdminShopManagePage.tsx',
   'src/pages/admin/AdminShopsPage.tsx',

@@ -63,14 +63,17 @@ function pickWorkSubtitle(work: WorkCatalogItem) {
 }
 
 export const buildHomeWorkPreviewItems = (works: WorkCatalogItem[]): HomeWorkPreviewItem[] =>
-  works.slice(0, 20).map((work, index) => ({
-    id: work.id,
-    rank: index + 1,
-    name: work.name,
-    subtitle: pickWorkSubtitle(work),
-    coverUrl: work.coverUrl,
-    badgeLabel: '취급 매장 보기',
-  }))
+  [...works]
+    .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    .slice(0, 20)
+    .map((work, index) => ({
+      id: work.id,
+      rank: index + 1,
+      name: work.name,
+      subtitle: pickWorkSubtitle(work),
+      coverUrl: work.coverUrl,
+      badgeLabel: '취급 매장 보기',
+    }))
 
 export const buildHomeReviewPreviewItems = (posts: Post[]): HomeReviewPreviewItem[] =>
   posts.slice(0, 2).map((post) => ({

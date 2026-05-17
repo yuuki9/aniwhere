@@ -138,8 +138,16 @@ export function ExplorePage() {
   const location = useLocation()
   const routeState = location.state as ExploreLocationState
   const [searchParams, setSearchParams] = useSearchParams()
-  const regionId = Number(searchParams.get('regionId') ?? '') || undefined
-  const workId = Number(searchParams.get('workId') ?? '') || undefined
+  const parsePositiveInt = (value: string | null) => {
+    if (value == null || !/^\d+$/.test(value)) {
+      return undefined
+    }
+
+    const parsed = Number(value)
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
+  }
+  const regionId = parsePositiveInt(searchParams.get('regionId'))
+  const workId = parsePositiveInt(searchParams.get('workId'))
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
@@ -490,7 +498,7 @@ export function ExplorePage() {
     const shouldReturnToSourceList = routeState?.returnTo != null && isListSheetOpen
 
     if (shouldReturnToSourceList) {
-      navigate(routeState.returnTo)
+      navigate(routeState.returnTo, { replace: true })
       return
     }
 
