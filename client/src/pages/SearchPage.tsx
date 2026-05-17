@@ -33,6 +33,44 @@ const buildShopMeta = (shop: Shop) =>
 
 const buildShopAddress = (shop: Shop) => [shop.address, shop.floor].filter(Boolean).join(' · ')
 
+type SearchScope = 'shop' | 'work'
+
+async function searchShopsFromSearchBar({
+  currentSearchScope,
+  currentKeyword,
+  currentPage,
+}: {
+  currentSearchScope: SearchScope
+  currentKeyword: string
+  currentPage: number
+}) {
+  const searchKeyword = currentKeyword || undefined
+
+  if (currentSearchScope === 'work') {
+    return getShops({
+      page: currentPage,
+      size: SEARCH_PAGE_SIZE,
+      workKeyword: searchKeyword,
+    })
+  }
+
+  const shopResults = await getShops({
+    page: currentPage,
+    size: SEARCH_PAGE_SIZE,
+    keyword: searchKeyword,
+  })
+
+  if (shopResults.content.length > 0 || currentPage > 0) {
+    return shopResults
+  }
+
+  return getShops({
+    page: currentPage,
+    size: SEARCH_PAGE_SIZE,
+    workKeyword: searchKeyword,
+  })
+}
+
 export function SearchPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -55,13 +93,7 @@ export function SearchPage() {
 
   const resultQuery = useQuery({
     queryKey: ['shops', 'search-page-results', currentSearchScope, currentKeyword, currentPage],
-    queryFn: () =>
-      getShops({
-        page: currentPage,
-        size: SEARCH_PAGE_SIZE,
-        keyword: currentSearchScope === 'shop' ? currentKeyword || undefined : undefined,
-        workKeyword: currentSearchScope === 'work' ? currentKeyword || undefined : undefined,
-      }),
+    queryFn: () => searchShopsFromSearchBar({ currentSearchScope, currentKeyword, currentPage }),
     placeholderData: keepPreviousData,
     enabled: currentKeyword.trim().length > 0,
   })

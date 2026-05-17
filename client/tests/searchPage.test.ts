@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const searchPageSource = () => fs.readFileSync(new URL('../src/pages/SearchPage.tsx', import.meta.url), 'utf8')
+const shopsApiSource = () => fs.readFileSync(new URL('../src/shared/api/shops.ts', import.meta.url), 'utf8')
+const apiTypesSource = () => fs.readFileSync(new URL('../src/shared/api/types.ts', import.meta.url), 'utf8')
 const filterSheetSource = () => fs.readFileSync(new URL('../src/shared/ui/SearchFilterSheet.tsx', import.meta.url), 'utf8')
 const appCssSource = () =>
   ['../src/App.css', '../src/styles/explore-search.css']
@@ -34,7 +36,7 @@ test('SearchPage does not build recommendations by fetching an aggregate shop pa
 test('SearchPage renders shop results from API fields without inferred fallback copy', () => {
   const source = searchPageSource()
 
-  assert.match(source, /keyword:\s*currentSearchScope === 'shop' \? currentKeyword \|\| undefined : undefined/)
+  assert.match(source, /keyword:\s*searchKeyword/)
   assert.doesNotMatch(source, /regionId \?\? '-'/)
   assert.doesNotMatch(source, /shop\.works\.length/)
   assert.doesNotMatch(source, /작품 \{shop\.works\.length\}/)
@@ -42,12 +44,25 @@ test('SearchPage renders shop results from API fields without inferred fallback 
 
 test('SearchPage sends work-scoped searches to the shop search API workKeyword parameter', () => {
   const source = searchPageSource()
+  const shopsApi = shopsApiSource()
+  const apiTypes = apiTypesSource()
 
   assert.match(source, /const currentSearchScope = searchParams\.get\('scope'\) === 'work' \? 'work' : 'shop'/)
   assert.match(source, /queryKey: \['shops', 'search-page-results', currentSearchScope, currentKeyword, currentPage\]/)
-  assert.match(source, /workKeyword:\s*currentSearchScope === 'work' \? currentKeyword \|\| undefined : undefined/)
+  assert.match(source, /if \(currentSearchScope === 'work'\) \{[\s\S]*workKeyword: searchKeyword/)
   assert.match(source, /if \(currentSearchScope === 'work'\) \{/)
   assert.match(source, /next\.set\('scope', 'work'\)/)
+  assert.match(shopsApi, /workKeyword:\s*params\.workKeyword/)
+  assert.match(apiTypes, /workKeyword\?: string/)
+})
+
+test('SearchPage default search bar falls back to workKeyword when shop-name search is empty', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /async function searchShopsFromSearchBar/)
+  assert.match(source, /const shopResults = await getShops\(\{[\s\S]*keyword: searchKeyword/)
+  assert.match(source, /if \(shopResults\.content\.length > 0 \|\| currentPage > 0\) \{/)
+  assert.match(source, /return getShops\(\{[\s\S]*workKeyword: searchKeyword/)
 })
 
 test('SearchPage exposes an explicit nearby CTA through geolocation instead of silent permission prompts', () => {

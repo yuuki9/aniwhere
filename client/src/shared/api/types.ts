@@ -170,6 +170,7 @@ export type ShopSearchParams = {
   regionId?: number
   category?: string
   keyword?: string
+  workKeyword?: string
   workId?: number
   status?: ShopStatus
 }

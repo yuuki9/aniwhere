@@ -15,6 +15,7 @@ export function getShops(params: ShopSearchParams = {}) {
     regionId: params.regionId,
     category: params.category,
     keyword: params.keyword,
+    workKeyword: params.workKeyword,
     workId: params.workId,
     status: params.status,
   })
