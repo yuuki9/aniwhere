@@ -37,6 +37,35 @@
   - 필터 칩의 결과 수와 실제 검색 결과가 일치한다.
   - 지원하지 않는 필터는 응답에 포함하지 않는다.
 
+### 2026-05-17 facet 항목 보강
+
+- 기준 데이터: `GET /api/v1/shops`와 `GET /api/v1/shops/{id}`가 제공하는 Shop 필드
+- 요청 파라미터:
+  - `keyword`: 매장명 검색어
+  - `workKeyword`: 작품명 검색어
+  - `workId`: 작품 ID
+  - `regionId`: 지역 ID
+  - `category`: 카테고리명
+  - `status`: `ACTIVE | UNVERIFIED | CLOSED`
+  - `sellsIchibanKuji`: 이치방쿠지 취급 여부
+- 응답 필드:
+  - `regions`: `{ id, name, count }[]`
+  - `works`: `{ id, name, count }[]`
+  - `categories`: `{ value, label, count }[]`
+  - `statuses`: `{ value, label, count }[]`
+  - `flags`: `{ key, label, count }[]`
+    - 1차 대상: `sellsIchibanKuji`, `hasImages`, `hasPrimaryImage`
+  - `totalElements`: 현재 조건의 전체 결과 수
+- 제외 항목:
+  - `openNow`: 현재 Shop 스키마에 영업시간 필드가 없으므로 facet에 포함하지 않는다.
+  - `floor`: 자유 문자열 품질이 안정되기 전까지 1차 facet에서 제외한다.
+  - `links.type`: 링크 보유 여부는 상세 신뢰도 보조 정보에 가깝기 때문에 1차 facet에서 제외한다.
+- 완료 기준:
+  - facet의 `count`는 같은 조건으로 `/api/v1/shops`를 호출했을 때의 결과 수와 일치한다.
+  - 지원하지 않는 필터는 응답에 포함하지 않는다.
+  - `keyword`와 `workKeyword`는 서로 다른 검색 축으로 처리한다.
+  - `/search?scope=work&keyword=...` 흐름에서 프론트엔드가 `workKeyword`로 변환해 호출할 수 있다.
+
 ## Jira 3. 상품 검색 API
 
 - 제목: `GET /api/v1/products/search` 또는 `GET /api/v1/search/products` 제공

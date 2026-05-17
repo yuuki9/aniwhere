@@ -1,11 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
 import introFeatureReviewIcon from '../assets/icons/intro-feature-review.webp'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
-import { isAppsInTossRuntime } from '../shared/lib/auth'
+import { isAppsInTossRuntime, startServiceEntry } from '../shared/lib/auth'
 import { Button } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
@@ -69,11 +69,13 @@ function IntroNavigation() {
 
 type EntryRouteState =
   {
-    entryMode: 'preview'
+    entryMode: 'preview' | 'toss'
   }
 
 export function IntroPage() {
   const navigate = useNavigate()
+  const [isEntering, setIsEntering] = useState(false)
+  const [entryError, setEntryError] = useState<string | null>(null)
 
   useEffect(() => {
     document.body.classList.add('intro-route-body')
@@ -83,9 +85,19 @@ export function IntroPage() {
     }
   }, [])
 
-  const handleStart = () => {
-    const state: EntryRouteState = { entryMode: 'preview' }
-    navigate('/home', { state })
+  const handleStart = async () => {
+    setIsEntering(true)
+    setEntryError(null)
+
+    try {
+      const entry = await startServiceEntry()
+      const state: EntryRouteState = { entryMode: entry.mode === 'preview' ? 'preview' : 'toss' }
+      navigate('/home', { state })
+    } catch {
+      setEntryError('로그인을 완료하지 못했어요. 다시 시도해 주세요.')
+    } finally {
+      setIsEntering(false)
+    }
   }
 
   return (
@@ -126,12 +138,14 @@ export function IntroPage() {
           <Button
             color="primary"
             display="block"
+            disabled={isEntering}
             onClick={handleStart}
             size="xlarge"
             variant="fill"
           >
-            입장하기
+            {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
           </Button>
+          {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
         </div>
       </section>
     </main>

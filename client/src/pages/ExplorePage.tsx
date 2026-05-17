@@ -47,6 +47,9 @@ type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
 type ViewMode = 'map' | 'list'
 type SheetMode = 'peek' | 'expanded'
 type SelectionOrigin = 'map' | 'list' | null
+type ExploreLocationState = {
+  returnTo?: '/home'
+} | null
 type DetailMediaTone = (typeof DETAIL_MEDIA_TONES)[number]
 type DetailMediaItem = {
   id: string
@@ -133,8 +136,18 @@ function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
 export function ExplorePage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const routeState = location.state as ExploreLocationState
   const [searchParams, setSearchParams] = useSearchParams()
-  const regionId = Number(searchParams.get('regionId') ?? '') || undefined
+  const parsePositiveInt = (value: string | null) => {
+    if (value == null || !/^\d+$/.test(value)) {
+      return undefined
+    }
+
+    const parsed = Number(value)
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
+  }
+  const regionId = parsePositiveInt(searchParams.get('regionId'))
+  const workId = parsePositiveInt(searchParams.get('workId'))
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
@@ -192,8 +205,8 @@ export function ExplorePage() {
   const searchHref = `/search?returnTo=${encodeURIComponent(searchReturnTo)}`
 
   const shopsQuery = useQuery({
-    queryKey: ['shops', 'explore-map-source'],
-    queryFn: () => getShops({ page: 0, size: MAP_FETCH_SIZE }),
+    queryKey: ['shops', 'explore-map-source', regionId, workId],
+    queryFn: () => getShops({ page: 0, size: MAP_FETCH_SIZE, regionId, workId }),
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -479,6 +492,13 @@ export function ExplorePage() {
   const handleExploreBack = () => {
     if (sheetMode === 'expanded') {
       shrinkExpandedSheet()
+      return
+    }
+
+    const shouldReturnToSourceList = routeState?.returnTo != null && isListSheetOpen
+
+    if (shouldReturnToSourceList) {
+      navigate(routeState.returnTo, { replace: true })
       return
     }
 
