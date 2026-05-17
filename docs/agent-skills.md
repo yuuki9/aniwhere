@@ -9,9 +9,32 @@ This repository carries project-local Codex skills under `.codex/skills`.
 - `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
 - `aniwhere-launch-checklist`: final Apps in Toss non-game launch review for access/functions, navigation, login/auth/permissions, guide routing, UI/UX, brand text, payments, ads, external links, TDS, sharing rewards, and sandbox evidence.
 
-For UI styling work, read `docs/design-tokens.md` and `docs/tds-compatible-ui-layer.md`. Use project TDS facades first when official components exist, use `client/src/shared/ui/ait` only as public fallback/building-block UI, and route reusable values through `client/src/styles/tokens.css` before adding new raw CSS values.
+For UI styling work, read `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, and `docs/tds-route-audit.md`. Apps in Toss launch is the product priority: use project TDS facades first when official components exist, treat `client/src/shared/ui/ait` as migration debt to remove, and route reusable values through `client/src/styles/tokens.css` before adding new raw CSS values.
 
-New `Ait*` route/page imports are frozen by `client/scripts/assert-ait-usage-allowlist.mjs`. Add to that allowlist only with PR rationale explaining the public fallback boundary or missing official TDS component.
+Route-level TDS work must start by classifying the route and searching official TDS Mobile docs with the Apps in Toss MCP. Do not wait for the user to provide links for Button, Typography, Top, ListRow, BottomCTA, BottomSheet, SearchField, Toast, Dialog, or other touched primitives.
+
+`@aniwhere/tds-mobile` is the page-code import boundary for TDS work. Apps in Toss builds must resolve it to official `@toss/tds-mobile`; public/domain builds may resolve it to local fallback only to avoid Toss-only runtime leakage. Do not treat the facade as permission to bypass official TDS when an official component fits.
+
+New `Ait*` route/page imports are frozen by `client/scripts/assert-ait-usage-allowlist.mjs`. Do not expand that allowlist; reducing it is the normal direction.
+
+## Codex Apps In Toss MCP
+
+Aniwhere uses Codex rather than Claude Code for the primary agent workflow. Follow the Apps in Toss vibe-coding guide through the `ax` install step, then connect it to Codex instead of running `claude mcp add`.
+
+Example Windows setup (adapt paths to your environment):
+
+- `ax` is installed with Scoop at `%USERPROFILE%\scoop\shims\ax.exe`.
+- Codex MCP config lives in `%USERPROFILE%\.codex\config.toml`.
+- The primary agent is Codex Desktop. Do not require `claude mcp add`; also do not depend on a separate npm-installed `codex` CLI for Aniwhere work unless it is explicitly repaired and verified.
+- The Apps in Toss server is registered as:
+
+```toml
+[mcp_servers.apps-in-toss]
+command = "C:\\Users\\<your-user>\\scoop\\shims\\ax.exe"
+args = ["mcp", "start"]
+```
+
+Replace `<your-user>` with your Windows account name, or point `command` to the actual `ax.exe` path in your environment. After changing this config, restart Codex or start a new Codex session before relying on the MCP tools. The CLI fallback is `ax search docs --query "<topic>"`, `ax search tds-web --query "<topic>"`, and `ax list examples`.
 
 ## PR-Level Launch/TDS Gate
 
@@ -19,9 +42,10 @@ Before opening or handing off any PR that touches client UI, WebView behavior, r
 
 1. Use `aniwhere-pr-preflight`.
 2. Use `aniwhere-launch-checklist` for the touched scope.
-3. Fill the `Apps in Toss / TDS 출시 리스크` section in `.github/PULL_REQUEST_TEMPLATE.md`.
-4. Classify findings as `Required`, `Recommended`, `Needs sandbox`, `Needs console value`, or `Follow-up PR`.
-5. Keep official Apps in Toss/TDS requirements separate from Aniwhere local TDS-compatible decisions.
+3. Complete `docs/tds-route-audit.md` for touched routes and include the official docs checked.
+4. Fill the Apps in Toss / TDS section in `.github/PULL_REQUEST_TEMPLATE.md`.
+5. Classify findings as `Required`, `Recommended`, `Needs sandbox`, `Needs console value`, or `Follow-up PR`.
+6. Keep official Apps in Toss/TDS requirements separate from Aniwhere local TDS-compatible decisions.
 
 If a PR intentionally excludes a broader TDS audit, state the follow-up branch/PR scope in the PR body.
 
@@ -55,5 +79,5 @@ The skill split is based on:
 - `docs/product-decisions.md`
 - `docs/ux-mobile-research.md`
 - Apps in Toss final review skill PDF: `앱인토스 웨비나 _ 미니앱 최종 검수 스킬 공유.pdf`
-- Robin launch checklist skill folder: `C:/Users/jdhn2/Downloads/appsintoss-nongame-launch-checklist-by-robin`
+- Robin launch checklist skill folder: local Downloads path such as `%USERPROFILE%/Downloads/appsintoss-nongame-launch-checklist-by-robin`
 - Apps in Toss webinar PDF: `[가이드] 앱인토스 웨비나 _ 바이브코딩으로 만든 앱, 앱인토스에 출시하기.pdf`

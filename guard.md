@@ -32,6 +32,11 @@
 
 ## Practical UI Rule
 
+### Route-level TDS Audit
+
+- Route-level TDS work must follow `docs/tds-route-audit.md` before editing. Classify the route, discover the relevant official TDS docs with the Apps in Toss MCP, record the docs checked, then classify each visible delta as `TDS-required`, `Product-approved`, or `Regression`.
+- Do not wait for the user to provide official TDS links. If a route uses buttons, typography, lists, top/title areas, bottom CTAs, sheets, search, toasts, or dialogs, search the matching official TDS docs first.
+
 - 메인 UI에는 와이어프레임성 설명문, 기능 안내문, 내부 검토용 플레이버 텍스트를 남기지 않습니다.
 - 모든 화면 카피는 실사용자 기준의 짧고 직접적인 문장으로 정리합니다.
 - 홈은 진입과 발견에, 검색은 검색 결과에, 지도는 위치 비교에 집중하도록 역할을 분리합니다.
@@ -48,7 +53,12 @@
   - 특히 textarea/마지막 필드 아래에 서버 오류가 붙어 해당 필드 오류처럼 보이게 만들지 않습니다.
   - 하단 CTA 근처의 독립 상태 표시, app-owned notice, 또는 승인된 TDS 패턴을 사용합니다.
 - `alert()`/`confirm()` 같은 브라우저 기본 모달은 사용하지 않습니다.
-- 신규 UI는 `--ait-*` 토큰과 `client/src/shared/ui/ait` 계층을 우선 사용합니다.
+- 신규 UI는 Apps in Toss 출시 기준을 우선하며, 공식 TDS facade 또는 출시 기준 app-owned UI로 구현합니다.
+- 기존 `--ait-*` 토큰과 `client/src/shared/ui/ait` 계층은 제거 대상의 migration debt로 취급하고, 새 `Ait*` route/page import는 추가하지 않습니다.
+- Page code는 `@toss/tds-mobile` 또는 `@toss/tds-mobile-ait`를 직접 import하지 않고 `@aniwhere/tds-mobile` facade를 사용합니다.
+  - Apps in Toss 빌드에서는 facade가 공식 `@toss/tds-mobile` 컴포넌트로 resolve되어야 합니다.
+  - Public/domain 빌드에서만 Toss runtime 누수를 막기 위해 local fallback으로 resolve합니다.
+  - 이 규칙은 공식 TDS 회피가 아니라 `.ait` 출시 빌드와 `aniwhere.link` public build를 동시에 보호하기 위한 adapter 경계입니다.
 
 ## 입력 폼 상태 보존
 

@@ -13,6 +13,7 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 4. Read `docs/design-tokens.md` before changing client CSS or UI styling.
 5. Preserve product decisions unless the task explicitly updates the decision document first.
 6. Optimize for Apps in Toss mobile WebView use, not desktop landing-page behavior.
+7. For SDK-dependent UX, including ads, Toss login, permissions, review requests, and sharing, treat Apps in Toss sandbox behavior as the product reality.
 
 ## Product Boundaries
 
@@ -33,6 +34,8 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 - Avoid admin-table feel in user-facing screens.
 - Keep CTA count low: one primary CTA, two at most when genuinely needed.
 - Use `client/src/styles/tokens.css` tokens for color, spacing, radius, typography, shadow, and repeated component sizing.
+- For route migrations, compare the current main screen first. Preserve intentional visual affordances unless the change is required by TDS guidance or explicitly approved as a product/design change.
+- Do not remove navigation/header affordances merely to make a component adapter migration compile.
 
 ## Screen Guidance
 
@@ -64,3 +67,4 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 7. Does the screen still work when location permission is denied?
 8. Is the flow usable at a 375px mobile width?
 9. Does the UI feel like a Toss-style information exploration service rather than an admin console?
+10. If SDK behavior is involved, has the UX been verified in Apps in Toss sandbox or clearly marked `Needs sandbox`?

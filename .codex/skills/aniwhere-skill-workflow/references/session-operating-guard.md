@@ -5,7 +5,15 @@ Use this guard in every Aniwhere session after the required project documents. I
 ## TDS And Apps In Toss Baseline
 
 - Treat Aniwhere as an Apps in Toss non-game WebView service before treating it as a generic React app.
+- Treat the Apps in Toss sandbox as the deciding environment for SDK-dependent behavior. Local browser, static build, and public web checks are useful feedback loops, but they cannot prove ads, Toss login, promotion rewards, navigation bar behavior, permissions, review requests, or share APIs.
+- For ads work, default to the Apps in Toss ADS sandbox path. Do not mark ad integration as passed from mocks, desktop browser behavior, or code inspection alone.
+- Treat `@aniwhere/tds-mobile` as the required page-code facade for TDS imports. Page code must not import `@toss/tds-mobile` or `@toss/tds-mobile-ait` directly.
+- The facade is not a TDS avoidance layer: Apps in Toss/ads/local builds must resolve it to official `@toss/tds-mobile`; public/domain builds may resolve it to local fallback only to prevent Toss-only runtime leakage.
+- If official TDS component structure creates a visible regression against a product-approved 375px main/public screen, route-specific app-owned UI plus `--ait-*` token compatibility is allowed only with a `TDS-required`, `Product-approved`, or `Regression` classification and follow-up/removal plan.
+- Route-level TDS work must follow `docs/tds-route-audit.md` before editing. The agent must classify the route, search official TDS Mobile docs with the Apps in Toss MCP, record the docs checked, and only then classify deltas as `TDS-required`, `Product-approved`, or `Regression`.
+- Do not wait for the user to supply official TDS links. Discover route-appropriate docs first for buttons, typography, lists, top/title areas, bottom CTAs, bottom sheets, search fields, toasts, dialogs, and other touched primitives.
 - For UI, routing, navigation, permission, modal/notice, storage/draft, map, share, external-link, CSS, or TDS-adjacent work, read the relevant local docs first:
+  - `docs/tds-route-audit.md`
   - `docs/tds-compatible-ui-layer.md`
   - `docs/design-tokens.md`
   - `docs/ux-mobile-research.md`
@@ -42,8 +50,19 @@ Use a `Notice:` when the current change is becoming a separate PR concern. Good 
 - Refactor mixed with product behavior changes.
 - More than one route/surface changing without a shared user story.
 - A CodeRabbit or launch finding requires broad follow-up beyond the current task.
+- Ads/TDS/SDK adapter work starts changing unrelated product UI to make screenshots pass.
 
 Phrase it as a recommendation, not a hard stop: identify the current PR unit, propose the follow-up PR scope, and keep working only on the agreed slice.
+
+## Engineering Feedback Loops
+
+Use small, observable loops before broad edits. This adapts external engineering-skill patterns to Aniwhere's launch workflow.
+
+- For bugs or visual regressions: reproduce first, capture the exact symptom, make 3-5 falsifiable hypotheses, then change one variable at a time.
+- Prefer behavior-level checks: route rendering, user-visible DOM, mobile screenshot, SDK event sequence, build artifact, or sandbox event log.
+- For UI/TDS changes, compare against the current main behavior and the relevant TDS/local token docs before inventing new CSS values.
+- For feature work, move in vertical slices: one user-visible behavior, one focused check, minimal implementation, then the next slice.
+- If no local test can prove the behavior because it depends on Apps in Toss runtime, mark it `Needs sandbox` and keep the local checks as supporting evidence only.
 
 ## PR Description And Handoff
 
