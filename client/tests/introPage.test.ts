@@ -52,6 +52,24 @@ const loadIntroPage = async () => {
   }>
 }
 
+const loadTdsPublic = async () => {
+  viteServer ??= await createServer({
+    appType: 'custom',
+    logLevel: 'error',
+    mode: 'public',
+    root: fileURLToPath(new URL('..', import.meta.url)),
+    server: { middlewareMode: true },
+  })
+
+  return viteServer.ssrLoadModule('/src/shared/ui/tdsMobile/public.tsx') as Promise<{
+    ListRow: React.ComponentType<{
+      left?: React.ReactNode
+      contents?: React.ReactNode
+      right?: React.ReactNode
+    }>
+  }>
+}
+
 test.after(async () => {
   await viteServer?.close()
 })
@@ -213,6 +231,24 @@ test('TDS public fallback preserves rounded block button behavior', () => {
   assert.doesNotMatch(source, /void verticalPadding/)
   assert.doesNotMatch(source, /void lowerGap/)
   assert.doesNotMatch(source, /void upperGap/)
+})
+
+test('TDS public ListRow renders zero and empty string slots', async () => {
+  const { ListRow } = await loadTdsPublic()
+  const { container, dom, previousGlobals } = setupDom()
+  const root = createRoot(container)
+
+  try {
+    await act(async () => {
+      root.render(React.createElement('ul', null, React.createElement(ListRow, { left: 0, contents: '', right: 0 })))
+    })
+
+    assert.equal(container.querySelector('.ait-list-row-asset')?.textContent, '0')
+    assert.ok(container.querySelector('.ait-list-row-copy'), 'empty contents should keep the copy slot')
+    assert.equal(container.querySelector('.ait-list-row-right')?.textContent, '0')
+  } finally {
+    cleanupDom(dom, previousGlobals, root)
+  }
 })
 
 test('IntroPage is reachable from the documented intro route', () => {
