@@ -78,9 +78,9 @@ export function ListRow({
       style={listRowStyle}
       {...props}
     >
-      {left ? <span className="ait-list-row-asset">{left}</span> : null}
-      {contents ? <span className="ait-list-row-copy">{contents}</span> : null}
-      {right ? <span className="ait-list-row-right">{right}</span> : null}
+      {left != null ? <span className="ait-list-row-asset">{left}</span> : null}
+      {contents != null ? <span className="ait-list-row-copy">{contents}</span> : null}
+      {right != null ? <span className="ait-list-row-right">{right}</span> : null}
     </li>
   )
 }
@@ -111,17 +111,17 @@ export function Top({
 }: PublicTopProps) {
   return (
     <div className={['ait-top', className].filter(Boolean).join(' ')} {...props}>
-      {upper ? (
+      {upper != null ? (
         <div className="ait-top-brand" style={upperGap != null ? { marginBottom: upperGap } : undefined}>
           {upper}
         </div>
       ) : null}
       <div className="ait-top-copy">
         <h1>{title}</h1>
-        {subtitleBottom ? <p>{subtitleBottom}</p> : null}
+        {subtitleBottom != null ? <p>{subtitleBottom}</p> : null}
       </div>
-      {right ? <div>{right}</div> : null}
-      {lower ? <div style={lowerGap != null ? { marginTop: lowerGap } : undefined}>{lower}</div> : null}
+      {right != null ? <div>{right}</div> : null}
+      {lower != null ? <div style={lowerGap != null ? { marginTop: lowerGap } : undefined}>{lower}</div> : null}
     </div>
   )
 }

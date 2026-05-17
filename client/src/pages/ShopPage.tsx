@@ -162,8 +162,8 @@ export function ShopPage() {
               </div>
               <div className="chip-row">
                 {shop.works.map((work) => (
-                  <span className="mini-tag" key={work}>
-                    {work}
+                  <span className="mini-tag" key={work.id}>
+                    {work.name}
                   </span>
                 ))}
               </div>

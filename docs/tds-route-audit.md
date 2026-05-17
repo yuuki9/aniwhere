@@ -70,6 +70,36 @@ Official docs checked:
 | Bottom CTA | Partial / Needs follow-up | Official BottomCTA is the documented bottom call-to-action primitive. Current intro uses official `Button` inside an app-owned bottom action area to preserve the approved single-viewport rhythm. Before PR, classify this as `Product-approved` or migrate to `BottomCTA.Single` with visual verification. |
 | Runtime verification | Needs sandbox | Local browser and build verification do not prove Apps in Toss common navigation, safe area, large-text scaling, or runtime font behavior. |
 
+## Current Home Audit
+
+Route role: `/home` is a discovery hub and shortcut entry.
+
+Official docs checked:
+
+- Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- ListHeader: https://tossmini-docs.toss.im/tds-mobile/components/list-header/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- Asset frame: https://tossmini-docs.toss.im/tds-mobile/components/Asset/frame/
+
+MCP note: `search_tds_web_docs("ListHeader SearchField Typography ListRow 가로 스크롤")` was checked on 2026-05-17. `ListHeader` and `Typography` full docs were opened through the Apps in Toss MCP; the remaining entries were checked by official `tossmini-docs.toss.im` URLs.
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| TDS import boundary | Passed | `/home` does not import `@toss/tds-mobile`, `@toss/tds-mobile-ait`, or new `Ait*` route UI. |
+| Search entry | Product-approved | Official `SearchField` is the documented search-input primitive, but `/home` intentionally provides a button-like entry to the dedicated `/search` focus route instead of accepting input inline. |
+| Quick shortcuts | Product-approved / Follow-up PR | Store and community shortcuts remain app-owned icon links using token-compatible sizing and Asset-shaped metadata. Admin entry is intentionally not mixed into the user-facing quick menu in this `/home` slice until Toss login and server-side role detection are implemented. |
+| Section headers | Product-approved / Needs follow-up | Official `ListHeader` is the documented section header primitive and supports right-side actions. Current headings use app-owned markup with UX writing, while the work rail places the "더보기" action as an end-cap card to preserve the horizontal curation rhythm. Migrate headers to official `ListHeader` only if the visible 375px rhythm is preserved. |
+| Work preview | Product-approved | `GET /api/v1/works` now provides the fields needed for a factual "작품으로 매장 찾기" preview. The preview is a horizontal work carousel, avoids duplicate title/subtitle text, does not render genre metadata, keeps up to 12 items, includes a "더보기" end cap, and links work cards to `/explore?workId=...&view=list`, which uses the shop API `workId` filter. |
+| Review preview | Product-approved / Needs backend follow-up | Swagger currently exposes `GET /api/v1/posts`, not a review-only endpoint or post category. `/home` labels the section as "최근 방문 후기" per product direction and renders only latest post title/content/author/date; backend still needs a review-specific contract if reports and visit reviews must be separated. |
+| Empty and error cards | Product-approved / Needs follow-up | Empty/error cards stay short and factual, and user-facing home copy avoids "제보" wording in the pending state. A future data-backed list can move to official `ListRow` if the 375px rhythm is preserved. |
+| Runtime verification | Needs sandbox | Local browser and build verification do not prove Apps in Toss common navigation, safe area, runtime font behavior, or native large-text behavior. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

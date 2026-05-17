@@ -49,12 +49,29 @@ test('ExplorePage shares the search bar and filter sheet pattern with SearchPage
   assert.match(source, /SearchFilterSheet/)
   assert.match(source, /<AitNavigation/)
   assert.doesNotMatch(source, /title="지도"/)
-  assert.match(source, /onBack=\{\(\) => navigate\('\/home'\)\}/)
+  assert.match(source, /onBack=\{handleExploreBack\}/)
   assert.doesNotMatch(topSearchSource, /map-search-home-button/)
   assert.doesNotMatch(source, /onHomeClick=/)
   assert.match(topSearchSource, /className="search-screen-bar map-search-field"/)
   assert.match(topSearchSource, /className="search-filter-button map-filter-button"/)
   assert.match(topSearchSource, /aria-label=\{appliedFilterCount > 0 \? `/)
+})
+
+test('ExplorePage passes workId route filters to the shops API', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /const workId = Number\(searchParams\.get\('workId'\) \?\? ''\) \|\| undefined/)
+  assert.match(source, /queryKey: \['shops', 'explore-map-source', regionId, workId\]/)
+  assert.match(source, /getShops\(\{ page: 0, size: MAP_FETCH_SIZE, regionId, workId \}\)/)
+})
+
+test('ExplorePage returns home from the home carousel list route before toggling map view', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /type ExploreLocationState = \{[\s\S]*returnTo\?: '\/home'/)
+  assert.match(source, /const routeState = location\.state as ExploreLocationState/)
+  assert.match(source, /const shouldReturnHomeFromHomeList = routeState\?\.returnTo === '\/home' && isListSheetOpen/)
+  assert.match(source, /if \(shouldReturnHomeFromHomeList\) \{\s*navigate\('\/home'\)\s*return\s*\}[\s\S]*?if \(isListSheetOpen\)/)
 })
 
 test('ExplorePage removes the map hamburger navigation trigger from the top search row', () => {

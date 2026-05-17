@@ -11,6 +11,7 @@ import { createServer, type ViteDevServer } from 'vite'
 
 const introPageSource = () => fs.readFileSync(new URL('../src/pages/IntroPage.tsx', import.meta.url), 'utf8')
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+const authSource = () => fs.readFileSync(new URL('../src/shared/lib/auth.ts', import.meta.url), 'utf8')
 const routerSource = () => fs.readFileSync(new URL('../src/app/router.tsx', import.meta.url), 'utf8')
 const tdsPublicSource = () => fs.readFileSync(new URL('../src/shared/ui/tdsMobile/public.tsx', import.meta.url), 'utf8')
 
@@ -49,6 +50,24 @@ const loadIntroPage = async () => {
 
   return viteServer.ssrLoadModule('/src/pages/IntroPage.tsx') as Promise<{
     IntroPage: React.ComponentType
+  }>
+}
+
+const loadTdsPublic = async () => {
+  viteServer ??= await createServer({
+    appType: 'custom',
+    logLevel: 'error',
+    mode: 'public',
+    root: fileURLToPath(new URL('..', import.meta.url)),
+    server: { middlewareMode: true },
+  })
+
+  return viteServer.ssrLoadModule('/src/shared/ui/tdsMobile/public.tsx') as Promise<{
+    ListRow: React.ComponentType<{
+      left?: React.ReactNode
+      contents?: React.ReactNode
+      right?: React.ReactNode
+    }>
   }>
 }
 
@@ -201,6 +220,15 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
   assert.match(actionsRule, /align-items:\s*center;/)
 })
 
+test('auth runtime helper does not expose Toss login entry before server auth exists', () => {
+  const source = authSource()
+
+  assert.match(source, /getOperationalEnvironment/)
+  assert.doesNotMatch(source, /appLogin/)
+  assert.doesNotMatch(source, /startServiceEntry/)
+  assert.doesNotMatch(source, /EntryFlowResult/)
+})
+
 test('TDS public fallback preserves rounded block button behavior', () => {
   const source = tdsPublicSource()
 
@@ -213,6 +241,24 @@ test('TDS public fallback preserves rounded block button behavior', () => {
   assert.doesNotMatch(source, /void verticalPadding/)
   assert.doesNotMatch(source, /void lowerGap/)
   assert.doesNotMatch(source, /void upperGap/)
+})
+
+test('TDS public ListRow renders zero and empty string slots', async () => {
+  const { ListRow } = await loadTdsPublic()
+  const { container, dom, previousGlobals } = setupDom()
+  const root = createRoot(container)
+
+  try {
+    await act(async () => {
+      root.render(React.createElement('ul', null, React.createElement(ListRow, { left: 0, contents: '', right: 0 })))
+    })
+
+    assert.equal(container.querySelector('.ait-list-row-asset')?.textContent, '0')
+    assert.ok(container.querySelector('.ait-list-row-copy'), 'empty contents should keep the copy slot')
+    assert.equal(container.querySelector('.ait-list-row-right')?.textContent, '0')
+  } finally {
+    cleanupDom(dom, previousGlobals, root)
+  }
 })
 
 test('IntroPage is reachable from the documented intro route', () => {

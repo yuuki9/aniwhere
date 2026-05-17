@@ -8,6 +8,10 @@ type MapAssistantRequest = {
   selectedShop?: Shop | null
 }
 
+function getWorkName(work: Shop['works'][number]) {
+  return work.name
+}
+
 function buildLocalReason(shop: Shop, question: string) {
   const lowerQuestion = question.toLowerCase()
 
@@ -15,9 +19,9 @@ function buildLocalReason(shop: Shop, question: string) {
     return '매장명이 질문과 직접 일치합니다.'
   }
 
-  const matchedWork = shop.works.find((work) => lowerQuestion.includes(work.toLowerCase()))
+  const matchedWork = shop.works.find((work) => lowerQuestion.includes(getWorkName(work).toLowerCase()))
   if (matchedWork) {
-    return `${matchedWork} 관련 작품을 취급합니다.`
+    return `${getWorkName(matchedWork)} 관련 작품을 취급합니다.`
   }
 
   const matchedCategory = shop.categories.find((category) => lowerQuestion.includes(category.toLowerCase()))
@@ -52,7 +56,7 @@ function searchLocalMatches(question: string, shops: Shop[]) {
         shop.description ?? '',
         shop.visitTip ?? '',
         ...shop.categories,
-        ...shop.works,
+        ...shop.works.map(getWorkName),
       ]
         .join(' ')
         .toLowerCase()
@@ -61,7 +65,7 @@ function searchLocalMatches(question: string, shops: Shop[]) {
         if (shop.name.toLowerCase().includes(token)) {
           return acc + 5
         }
-        if (shop.works.some((work) => work.toLowerCase().includes(token))) {
+        if (shop.works.some((work) => getWorkName(work).toLowerCase().includes(token))) {
           return acc + 4
         }
         if (shop.categories.some((category) => category.toLowerCase().includes(token))) {
@@ -134,7 +138,11 @@ export async function askMapAssistant({
           regionName: shop.regionName,
           address: shop.address,
           categories: shop.categories,
-          works: shop.works,
+          works: shop.works.map((work) => ({
+            id: work.id,
+            name: work.name,
+            coverUrl: work.coverUrl,
+          })),
           status: shop.status,
           sellsIchibanKuji: shop.sellsIchibanKuji,
           visitTip: shop.visitTip,
