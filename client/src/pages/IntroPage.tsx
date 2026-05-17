@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
 import introFeatureReviewIcon from '../assets/icons/intro-feature-review.webp'
+import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
-import { AitButton, AitListRow, AitNavigation, AitTop } from '../shared/ui/ait'
+import { isAppsInTossRuntime } from '../shared/lib/auth'
+import { Button } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
 type IntroFeatureIconName = 'icon-star-mono' | 'icon-pin-mono' | 'icon-pencil-mono'
@@ -50,6 +52,21 @@ function IntroFeatureIcon({ name, type }: { name: IntroFeatureIconName; type: In
   )
 }
 
+function IntroNavigation() {
+  if (isAppsInTossRuntime()) {
+    return null
+  }
+
+  return (
+    <header className="intro-navigation">
+      <div className="intro-navigation-brand" aria-label="애니웨어">
+        <img className="intro-navigation-logo" src={aniwhereIcon} alt="" aria-hidden="true" />
+        <span>애니웨어</span>
+      </div>
+    </header>
+  )
+}
+
 type EntryRouteState =
   {
     entryMode: 'preview'
@@ -73,7 +90,7 @@ export function IntroPage() {
 
   return (
     <main className="app-shell intro-mobile-shell">
-      <AitNavigation />
+      <IntroNavigation />
       <section className="section intro-mobile-panel">
         <figure className="intro-guide-figure">
           <img
@@ -83,34 +100,38 @@ export function IntroPage() {
           />
         </figure>
 
-        <AitTop
-          className="intro-top"
-          title={
-            <>
-              흩어진 굿즈샵 정보,
-              <br />
-              <span className="intro-title-accent">애니웨어</span>에 모아뒀어요
-            </>
-          }
-        />
+        <div className="intro-top">
+          <h1 className="intro-top-title">
+            흩어진 굿즈샵 정보,
+            <br />
+            <span className="intro-title-accent">애니웨어</span>에 모아뒀어요
+          </h1>
+        </div>
 
         <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
           {featureItems.map((item) => (
-            <AitListRow
-              asset={<IntroFeatureIcon name={item.iconName} type={item.icon} />}
-              border="none"
-              className={`intro-chain-row intro-chain-row-${item.icon}`}
-              description={item.body}
-              key={item.title}
-              title={item.title}
-            />
+            <li className={`ait-list-row intro-chain-row intro-chain-row-${item.icon}`} key={item.title}>
+              <span className="ait-list-row-asset">
+                <IntroFeatureIcon name={item.iconName} type={item.icon} />
+              </span>
+              <span className="ait-list-row-copy intro-feature-copy">
+                <strong>{item.title}</strong>
+                <span>{item.body}</span>
+              </span>
+            </li>
           ))}
         </ul>
 
         <div className="intro-mobile-actions">
-          <AitButton className="intro-primary-action" display="full" onClick={handleStart}>
+          <Button
+            color="primary"
+            display="block"
+            onClick={handleStart}
+            size="xlarge"
+            variant="fill"
+          >
             입장하기
-          </AitButton>
+          </Button>
         </div>
       </section>
     </main>

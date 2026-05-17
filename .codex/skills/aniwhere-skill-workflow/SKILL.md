@@ -22,7 +22,7 @@ Use this skill to turn repeatable Aniwhere work into concise Codex skills. Repos
 - Apps in Toss login implementation.
 - Apps in Toss promotion reward implementation.
 - Ads integration and mock replacement.
-- TDS/mobile UI migration.
+- TDS/mobile UI migration, especially route-level official-doc audits.
 - Non-game launch checklist.
 - Admin/reward policy review.
 
@@ -48,6 +48,18 @@ The Apps in Toss webinar suggests this sequence:
 7. Verify with a mobile device through Apps in Toss sandbox/console.
 
 Adapt this for Aniwhere by preserving existing product scope and adding only the skills that reduce repeated work.
+
+For TDS route migration work, keep `docs/tds-route-audit.md` as the reusable workflow. Future skills or guard updates should require official TDS doc discovery through the Apps in Toss MCP before editing route UI, instead of relying on the user to supply component/foundation links.
+
+Aniwhere uses Codex as the primary AI agent, not Claude Code. When following Apps in Toss vibe-coding setup docs, replace the Claude MCP step with Codex MCP configuration in `C:\Users\jdhn2\.codex\config.toml`:
+
+```toml
+[mcp_servers.apps-in-toss]
+command = "C:\\Users\\jdhn2\\scoop\\shims\\ax.exe"
+args = ["mcp", "start"]
+```
+
+Restart Codex or start a new session after changing MCP configuration. If the MCP tools are not loaded in the current session, use `ax search docs --query "<topic>"`, `ax search tds-web --query "<topic>"`, or `ax list examples` as the CLI fallback.
 
 ## Launch Skill Source
 

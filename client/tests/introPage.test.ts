@@ -12,6 +12,7 @@ import { createServer, type ViteDevServer } from 'vite'
 const introPageSource = () => fs.readFileSync(new URL('../src/pages/IntroPage.tsx', import.meta.url), 'utf8')
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 const routerSource = () => fs.readFileSync(new URL('../src/app/router.tsx', import.meta.url), 'utf8')
+const tdsPublicSource = () => fs.readFileSync(new URL('../src/shared/ui/tdsMobile/public.tsx', import.meta.url), 'utf8')
 
 let viteServer: ViteDevServer | undefined
 type DomGlobalName =
@@ -41,6 +42,7 @@ const loadIntroPage = async () => {
   viteServer ??= await createServer({
     appType: 'custom',
     logLevel: 'error',
+    mode: 'public',
     root: fileURLToPath(new URL('..', import.meta.url)),
     server: { middlewareMode: true },
   })
@@ -194,7 +196,16 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
     cleanupDom(dom, previousGlobals, root)
   }
 
+  assert.match(introPageSource(), /display="block"/)
+  assert.doesNotMatch(introPageSource(), /display="full"/)
   assert.match(actionsRule, /align-items:\s*center;/)
+})
+
+test('TDS public fallback preserves rounded block button behavior', () => {
+  const source = tdsPublicSource()
+
+  assert.match(source, /display !== 'inline' \? 'ait-button-full'/)
+  assert.match(source, /data-display=\{display\}/)
 })
 
 test('IntroPage is reachable from the documented intro route', () => {
@@ -237,21 +248,19 @@ test('IntroPage paints a full white ADS viewport instead of exposing the global 
   assert.match(bodyRule, /background:\s*var\(--ait-color-gray-0\);/)
 })
 
-test('IntroPage uses compact TDS-like top and list row text rhythm', () => {
+test('IntroPage preserves the domain intro feature-list rhythm', () => {
   const styles = appCssSource()
-  const titleRule = cssRuleBody(styles, '.intro-top .ait-top-copy h1')
+  const titleRule = cssRuleBody(styles, '.intro-top-title')
   const accentRule = cssRuleBody(styles, '.intro-title-accent')
   const figureRule = cssRuleBody(styles, '.intro-guide-figure')
   const listRule = cssRuleBody(styles, '.intro-feature-list')
-  const iconRule = cssRuleBody(styles, '.intro-feature-icon')
-  const iconSvgRule = cssRuleBody(styles, '.intro-feature-icon-svg')
-  const curationIconSvgRule = cssRuleBody(styles, '.intro-feature-icon-curation .intro-feature-icon-svg')
-  const reviewIconSvgRule = cssRuleBody(styles, '.intro-feature-icon-review .intro-feature-icon-svg')
+  const iconRule = cssRuleBodies(styles, '.intro-feature-icon').at(-1) ?? ''
+  const iconImageRule = cssRuleBody(styles, '.intro-feature-icon-image')
   const connectorRule = cssRuleBody(styles, '.intro-chain-row:not(:last-child) .ait-list-row-asset::after')
-  const rowRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row')
-  const rowTitleRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row-copy strong')
-  const curationRowTitleRule = cssRuleBody(styles, '.intro-chain-row-curation .ait-list-row-copy strong')
-  const rowBodyRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row-copy span')
+  const rowRule = cssRuleBody(styles, '.intro-feature-list .intro-chain-row')
+  const rowTitleRule = cssRuleBody(styles, '.intro-feature-copy strong')
+  const curationRowTitleRule = cssRuleBody(styles, '.intro-chain-row-curation .intro-feature-copy strong')
+  const rowBodyRule = cssRuleBody(styles, '.intro-feature-copy span')
 
   assert.match(titleRule, /font-size:\s*var\(--ait-font-size-display-md\);/)
   assert.match(titleRule, /font-weight:\s*700;/)
@@ -262,16 +271,14 @@ test('IntroPage uses compact TDS-like top and list row text rhythm', () => {
   assert.match(listRule, /gap:\s*var\(--ait-component-intro-chain-row-gap\);/)
   assert.match(listRule, /margin:\s*var\(--ait-space-12\) var\(--ait-space-0\) var\(--ait-space-0\);/)
   assert.match(connectorRule, /height:\s*var\(--ait-component-intro-chain-connector-height\);/)
+  assert.match(connectorRule, /repeating-linear-gradient\(/)
   assert.match(connectorRule, /transparent\s+var\(--ait-space-2\),\s*transparent\s+var\(--ait-space-5\)/)
   assert.match(iconRule, /width:\s*var\(--ait-component-intro-feature-asset-size\);/)
   assert.match(iconRule, /height:\s*var\(--ait-component-intro-feature-asset-size\);/)
-  assert.match(iconSvgRule, /width:\s*var\(--ait-component-intro-feature-icon-size\);/)
-  assert.match(iconSvgRule, /height:\s*var\(--ait-component-intro-feature-icon-size\);/)
-  assert.match(iconSvgRule, /stroke-width:\s*2\.2;/)
-  assert.match(curationIconSvgRule, /scale\(var\(--ait-component-intro-feature-icon-scale-curation\)\)/)
-  assert.match(reviewIconSvgRule, /scale\(var\(--ait-component-intro-feature-icon-scale-review\)\)/)
+  assert.match(iconImageRule, /width:\s*var\(--ait-component-intro-feature-icon-size\);/)
+  assert.match(iconImageRule, /height:\s*var\(--ait-component-intro-feature-icon-size\);/)
   assert.match(rowRule, /padding:\s*var\(--ait-space-3\) var\(--ait-space-0\);/)
-  assert.match(cssRuleBody(styles, '.intro-feature-list .ait-list-row-asset'), /align-items:\s*center;/)
+  assert.match(cssRuleBody(styles, '.intro-feature-list .intro-feature-icon'), /align-items:\s*center;/)
   assert.match(rowTitleRule, /font-size:\s*var\(--ait-font-size-title-sm\);/)
   assert.match(rowTitleRule, /font-weight:\s*600;/)
   assert.match(rowTitleRule, /letter-spacing:\s*0;/)
@@ -282,12 +289,12 @@ test('IntroPage uses compact TDS-like top and list row text rhythm', () => {
 test('IntroPage aligns its coral accent with the feature icon scale', () => {
   const tokens = fs.readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
   const styles = appCssSource()
-  const copyRule = cssRuleBody(styles, '.intro-feature-list .ait-list-row-copy')
+  const copyRule = cssRuleBody(styles, '.intro-feature-copy')
 
   assert.match(tokens, /--ait-color-aniwhere-text-coral:\s*var\(--ait-color-aniwhere-icon-coral\);/)
   assert.match(tokens, /--ait-color-intro-title-highlight:\s*rgba\(255,\s*103,\s*79,\s*0\.2\);/)
-  assert.match(tokens, /--ait-component-intro-feature-asset-size:\s*40px;/)
-  assert.match(tokens, /--ait-component-intro-feature-icon-size:\s*28px;/)
+  assert.match(tokens, /--ait-component-intro-feature-asset-size:\s*48px;/)
+  assert.match(tokens, /--ait-component-intro-feature-icon-size:\s*44px;/)
   assert.match(tokens, /--ait-component-intro-feature-icon-scale-curation:\s*1\.14;/)
   assert.match(tokens, /--ait-component-intro-feature-icon-scale-review:\s*0\.92;/)
   assert.match(copyRule, /gap:\s*var\(--ait-space-1\);/)

@@ -11,7 +11,7 @@ Run this as Aniwhere's final Apps in Toss non-game review. It adapts Robin's 11-
 
 1. Read `GIT_CONVENTIONS.md`, `guard.md`, `README.md`, and `docs/product-decisions.md`.
 2. Read `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md` before classifying TDS, PR-boundary, UTF-8, PR-description, or review-feedback risks.
-3. Read `docs/agent-skills.md`, `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, and `docs/ux-mobile-research.md` when UI is in scope.
+3. Read `docs/agent-skills.md`, `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, `docs/tds-route-audit.md`, and `docs/ux-mobile-research.md` when UI is in scope.
 4. Inspect `client/granite.config.ts`, `client/package.json`, `client/index.html`, and touched client files.
 5. Prefer official Apps in Toss docs when any checklist item is ambiguous or may have changed.
 
@@ -20,6 +20,7 @@ Run this as Aniwhere's final Apps in Toss non-game review. It adapts Robin's 11-
 - Run `npm.cmd run build` in `client/` before any "ready" claim.
 - Verify the generated `client/aniwhere-client.ait` exists.
 - Use sandbox/mobile-device evidence for SDK-only behavior: Toss login, permissions, navigation bar, ads, payments, promotion rewards, review request, and sharing.
+- Treat ADS sandbox evidence as mandatory for ad readiness. Desktop browser, public web, static build, and mocked ad behavior are not enough to classify ads as passed.
 - Mark unverifiable items as `Needs sandbox` or `Needs console value`; never mark them passed from code inspection alone.
 
 ## 11-Step Checklist
@@ -117,6 +118,9 @@ Apply only if payments are active.
 
 Apply only if ads are active.
 
+- Apps in Toss ADS sandbox is the source of truth for readiness.
+- Console-issued ad group IDs are configured for the correct environment.
+- Mock ad paths are removed or clearly gated away from sandbox/production behavior.
 - IntegratedAd v2 is preferred when available.
 - Full-screen ads call load before show.
 - Banner ads use the Apps in Toss banner attach flow.
@@ -124,6 +128,7 @@ Apply only if ads are active.
 - Rewarded ads grant rewards only after the reward-earned event.
 - Ads do not appear on intro, loading, cutscene, or temporary modal screens.
 - Duplicate ad rewards are prevented.
+- Sandbox evidence includes the event sequence used by the feature, especially reward-earned for rewarded ads.
 
 ### 9. External Links And App-Install Policy
 
@@ -139,16 +144,21 @@ Read `references/external-link-rules.md` when links are in scope.
 
 ### 10. TDS Design System
 
-TDS usage is recommended rather than an automatic rejection rule, but Aniwhere should follow the TDS/design-token direction.
+Apps in Toss launch is the product priority, so Aniwhere should follow the official TDS/design-token direction strictly for launch-facing UI.
 
-- Prefer TDS components where practical.
+- Prefer TDS components wherever an official component fits.
 - When TDS packages are not used, app-owned UI should visually fit Toss-style mobile UX.
-- Use official `@toss/tds-mobile` only through project facades such as `@aniwhere/tds-mobile`, so Apps in Toss builds resolve to official TDS and public web builds resolve to local fallbacks.
+- Use official `@toss/tds-mobile` only through project facades such as `@aniwhere/tds-mobile`, so Apps in Toss builds resolve to official TDS and public web builds do not import Toss-only runtime code.
+- Treat `@aniwhere/tds-mobile` as an adapter boundary, not a substitute design system: Apps in Toss/ads/local builds must resolve it to official `@toss/tds-mobile`; public/domain builds may resolve it to a local fallback only to keep Toss-only runtime markers out of `aniwhere.link`.
 - Keep colors, radii, spacing, typography, and shadows routed through Aniwhere tokens.
-- Treat `client/src/shared/ui/ait` components as public fallback/building-block UI, not as replacements for official TDS when official components are available.
-- Treat existing `Ait*` route imports as migration debt. New `Ait*` imports require explicit fallback rationale and an allowlist update.
+- Treat `client/src/shared/ui/ait` components as migration debt to remove, not as replacements for official TDS when official components are available.
+- Treat existing `Ait*` route imports as migration debt. New `Ait*` imports are not allowed; do not expand the allowlist.
 - Page code must not import `@toss/tds-mobile` or `@toss/tds-mobile-ait` directly; direct imports belong only inside adapter/facade boundaries.
 - Do not add a new visual system for one screen.
+- Before editing a route, follow `docs/tds-route-audit.md`: classify the route, search official TDS Mobile docs with the Apps in Toss MCP, record the docs checked, then classify each visible delta as `TDS-required`, `Product-approved`, or `Regression`.
+- Do not rely on the user to provide the TDS links. The agent should discover route-appropriate official docs for buttons, typography, lists, top/title areas, bottom CTAs, sheets, search fields, toasts, dialogs, and any other touched primitive.
+- When migrating a page off `Ait*`, compare against the current main route and the TDS/local token docs before changing typography, spacing, navigation, or row connectors. Classify any visible delta as either `TDS-required`, `Product-approved`, or `Regression`.
+- If official TDS component structure creates a visible regression against a product-approved 375px main/public screen, route-specific app-owned UI plus `--ait-*` token compatibility is allowed only with the above classification and a follow-up/removal plan.
 
 ### 11. Sharing Rewards
 
@@ -176,6 +186,7 @@ Return a concise report with:
 - `Risks`
 - `Recommended fixes before submission`
 - Exact commands run and key output lines.
+- For ads, include `ADS sandbox status` with the tested environment, ad unit/ad group placeholder status, event sequence, and reward duplicate-guard status.
 
 ## References
 

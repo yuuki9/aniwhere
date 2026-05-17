@@ -36,7 +36,9 @@
 
 - `aniwhere.link` public web을 계속 유지한다.
 - public web 번들에서는 `@toss/tds-mobile` 직접 런타임 import를 피한다. page code는 프로젝트 TDS facade를 사용하고, public build에서만 local fallback으로 resolve한다.
-- `client/src/shared/ui/ait`와 `--ait-*` 토큰을 기준으로 Toss 스타일 화면을 흉내낼 수 있는 구조가 있다.
+- `client/src/shared/ui/ait`와 `--ait-*` 토큰을 기준으로 Toss 스타일 화면을 흉내낼 수 있는 구조가 있었지만, Apps in Toss 출시 우선 결정 이후에는 제거 대상의 migration debt로 본다.
+- `@aniwhere/tds-mobile` facade는 공식 TDS를 피하기 위한 우회가 아니라 빌드 타깃 경계다. Apps in Toss 출시 빌드에서는 공식 `@toss/tds-mobile`로 resolve되어야 하고, public/domain 빌드에서만 Toss runtime marker를 막기 위해 local fallback으로 resolve한다.
+- 기존 main/public 화면에서 제품적으로 승인된 375px visual rhythm은 TDS migration의 regression 기준값으로 삼는다. TDS 기본 DOM, padding, typography가 승인 UX를 깨면 route-specific app-owned UI와 `--ait-*` token compatibility layer로 복원하되, visible delta를 `TDS-required`, `Product-approved`, `Regression` 중 하나로 기록한다.
 
 ### Needs console value
 
@@ -60,7 +62,7 @@
 - 현재 매장 상세 UI 실험물은 TDS 컴포넌트 구조보다 지도 서비스 UI 복제에 가까워 출시 기준 PR의 기반으로 쓰기 어렵다.
 - 자체 상단 내비게이션, 뒤로가기, 햄버거 메뉴가 Apps in Toss 공통 내비게이션과 중복될 수 있다.
 - 네이버 지도, 네이버 플레이스, 빠른길찾기 링크는 외부 이동 정책 검토가 필요하다.
-- public web과 Apps in Toss 출시 빌드가 같은 UI 구현체를 공유하면 공식 TDS npm 적용과 public web 안정성이 충돌할 수 있다.
+- public web과 Apps in Toss 출시 빌드가 같은 UI 구현체를 공유하면 공식 TDS npm 적용과 public web 안정성이 충돌할 수 있다. 현재는 Apps in Toss 출시 기준을 우선하고, 웹 도메인용 별도 CSS/product surface는 출시 이후 니즈가 확인되면 분리한다.
 - Deus/Figma 초안 없이 코드에서 상세 화면을 계속 조정하면 TDS 기준과 제품 UX가 다시 어긋날 가능성이 높다.
 
 ## Phase
@@ -75,7 +77,7 @@
 
 - `granite.config.ts`를 콘솔 기준값에 맞춘다.
 - `brand.displayName`, `brand.icon`, `brand.primaryColor`, `navigationBar`, `webViewProps.type`를 명시한다.
-- 자체 상단 내비게이션은 Toss 런타임에서 숨기고, public web fallback에서만 보이도록 분리한다.
+- 자체 상단 내비게이션은 Apps in Toss 공통 내비게이션과 중복되지 않게 제거하거나 임시 gap으로만 유지한다.
 - 검증은 `npm run lint`, `npm run build`, `npm run build:static`, `client/aniwhere-client.ait` 생성 확인으로 진행한다.
 
 ### Phase 3. Deus/Figma TDS 초안 검토
@@ -89,8 +91,12 @@
 ### Phase 4. 화면 리빌드
 
 - 매장 상세는 현재 CSS 실험물을 그대로 이어 쓰지 않는다.
-- `aniwhere.link`는 프로젝트 TDS facade의 public fallback을 사용한다.
+- `aniwhere.link`는 public build 안정성만 유지하며, 웹 도메인 전용 UX/CSS는 출시 이후 별도 확장 범위로 둔다.
 - Apps in Toss 출시 빌드는 같은 page code가 공식 TDS facade로 resolve되는 구조를 사용한다.
+- 기존 `Ait*` route/page usage는 제거 대상으로 보고, 공식 TDS facade 또는 출시 기준 app-owned UI로 대체한다.
+- Page code는 `@toss/tds-mobile` 또는 `@toss/tds-mobile-ait`를 직접 import하지 않는다. 이 조건은 공식 TDS 미사용을 뜻하지 않으며, facade가 `.ait` 빌드에서 공식 TDS로 resolve되는지와 public build에서 Toss-only runtime이 누수되지 않는지를 함께 검증한다.
+- Route-level TDS migration follows `docs/tds-route-audit.md`: classify the route, search official TDS Mobile docs with the Apps in Toss MCP, record the docs checked, and classify each visible delta as `TDS-required`, `Product-approved`, or `Regression` before editing.
+- `/intro` current audit is recorded in `docs/tds-route-audit.md`. Button is passed through the official facade; Top/ListRow-like chain rows, hero typography, and the non-BottomCTA action area are compatibility decisions that need explicit `Product-approved` or follow-up classification in the PR.
 - 검색, 탐색, 상세 routing은 `/explore`, `/explore?shopId=...`, `/search?keyword=...` 기준으로 다시 정리한다.
 
 ### Phase 5. 출시 전 검증 리포트
@@ -113,7 +119,7 @@
 ## 다음 작업 후보
 
 1. `granite.config.ts` 콘솔 기준값 정렬
-2. Toss 런타임과 public web runtime 판별 지점 추가
-3. 공통 내비게이션과 자체 내비게이션 중복 제거
+2. 공통 내비게이션과 자체 내비게이션 중복 제거
+3. `/intro`부터 기존 `AitTop`, `AitListRow`, `AitButton` 제거
 4. Deus/Figma 375px TDS 초안 리뷰
 5. 확정된 초안 기반 매장 상세 화면 재구현

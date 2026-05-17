@@ -8,7 +8,6 @@ const srcDir = path.join(projectRoot, 'src')
 const allowedAitImportFiles = new Set([
   'src/pages/AdminPage.tsx',
   'src/pages/ExplorePage.tsx',
-  'src/pages/IntroPage.tsx',
   'src/pages/PostDetailPage.tsx',
   'src/pages/SearchPage.tsx',
   'src/pages/ShopPage.tsx',

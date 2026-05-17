@@ -712,16 +712,21 @@ p {
 .intro-top {
   padding: 0;
   text-align: center;
+  width: 100%;
 }
 
-.intro-top .ait-top-copy {
-  gap: var(--ait-space-4);
-}
-
-.intro-top .ait-top-copy h1 {
+.intro-top-title {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  color: var(--ait-color-text-primary);
   font-size: var(--ait-font-size-display-md);
   font-weight: 700;
   letter-spacing: 0;
+  line-height: var(--ait-line-height-title);
+  overflow-wrap: normal;
+  word-break: keep-all;
 }
 
 .intro-title-accent {
@@ -738,12 +743,6 @@ p {
     );
   color: var(--ait-color-aniwhere-text-coral);
   font-weight: 800;
-}
-
-.intro-top .ait-top-copy p {
-  color: var(--ait-color-text-tertiary);
-  font-size: var(--ait-font-size-body-lg);
-  line-height: var(--ait-line-height-body);
 }
 
 .ait-top {
@@ -831,6 +830,40 @@ p {
   height: 24px;
 }
 
+.intro-navigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: var(--ait-component-navigation-height);
+  align-items: center;
+}
+
+.intro-navigation-brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ait-space-4);
+  color: var(--ait-color-text-primary);
+  font-size: var(--ait-font-size-body-lg);
+  font-weight: 800;
+  line-height: var(--ait-line-height-tight);
+}
+
+.intro-navigation-brand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.intro-navigation-logo {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--ait-radius-sm);
+  background: var(--ait-color-intro-brand-surface);
+  object-fit: cover;
+}
+
 .ait-top-copy {
   display: flex;
   flex-direction: column;
@@ -883,7 +916,7 @@ p {
   position: relative;
 }
 
-.intro-feature-list .ait-list-row {
+.intro-feature-list .intro-chain-row {
   display: flex;
   align-items: center;
   gap: var(--ait-space-8);
@@ -897,11 +930,16 @@ p {
   padding: var(--ait-space-3) var(--ait-space-0);
 }
 
-.intro-feature-list .ait-list-row[data-border='indented'] {
-  border-top: 1px solid var(--ait-color-border);
+.intro-feature-list .ait-list-row-asset {
+  display: inline-flex;
+  width: var(--ait-component-intro-feature-asset-size);
+  height: var(--ait-component-intro-feature-asset-size);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 }
 
-.intro-feature-list .ait-list-row-asset {
+.intro-feature-list .intro-feature-icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -938,6 +976,7 @@ p {
   align-items: center;
   justify-content: center;
   overflow: visible;
+  z-index: 1;
 }
 
 .intro-feature-icon-image {
@@ -947,7 +986,7 @@ p {
   object-fit: contain;
 }
 
-.intro-feature-list .ait-list-row-copy {
+.intro-feature-copy {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -955,7 +994,7 @@ p {
   min-width: 0;
 }
 
-.intro-feature-list .ait-list-row-copy strong {
+.intro-feature-copy strong {
   color: var(--ait-color-text-primary);
   font-size: var(--ait-font-size-title-sm);
   font-weight: 600;
@@ -963,14 +1002,14 @@ p {
   line-height: var(--ait-line-height-title);
 }
 
-.intro-chain-row-curation .ait-list-row-copy strong {
+.intro-chain-row-curation .intro-feature-copy strong {
   display: inline-block;
   align-self: flex-start;
   transform: scaleX(var(--ait-component-intro-feature-title-compact-scale));
   transform-origin: left center;
 }
 
-.intro-feature-list .ait-list-row-copy span {
+.intro-feature-copy span {
   color: var(--ait-color-text-tertiary);
   font-size: var(--ait-font-size-body-md);
   line-height: var(--ait-line-height-body);
@@ -1005,6 +1044,10 @@ p {
   width: 100%;
 }
 
+.ait-button[data-size='xlarge'] {
+  min-height: var(--ait-component-intro-action-height);
+}
+
 .intro-start-note {
   display: flex;
   flex-direction: column;
@@ -1021,14 +1064,7 @@ p {
   align-items: center;
   gap: var(--ait-space-3);
   margin-top: auto;
-  padding-top: var(--ait-space-6);
-}
-
-.intro-primary-action {
-  width: 100%;
-  min-height: var(--ait-component-intro-action-height);
-  border-radius: var(--ait-radius-xl);
-  font-size: var(--ait-font-size-title-sm);
+  padding-top: 0;
 }
 
 .intro-footer-actions {
@@ -2607,7 +2643,7 @@ p {
     border-radius: 0;
   }
 
-  .intro-top .ait-top-copy h1 {
+  .intro-top-title {
     font-size: var(--ait-font-size-display-sm);
   }
 

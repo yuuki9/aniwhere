@@ -9,8 +9,11 @@
 3. `README.md`
 4. `docs/product-decisions.md`
 5. `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md`
+6. `docs/tds-route-audit.md` when client UI/TDS work is in scope
 
 ## Mandatory Rules
+
+- Client UI/TDS work must follow `docs/tds-route-audit.md`: classify the route, search official TDS Mobile docs with the Apps in Toss MCP, record checked docs, and classify visible deltas as `TDS-required`, `Product-approved`, or `Regression` before editing.
 
 - 브랜치, 커밋, 태그 규칙은 항상 `GIT_CONVENTIONS.md`를 기준으로 따릅니다.
 - 작업 전 현재 브랜치와 최근 변경사항을 확인합니다.
