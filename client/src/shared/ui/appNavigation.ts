@@ -1,5 +1,5 @@
 export type AppNavigationItem = {
-  key: 'discover' | 'explore' | 'community' | 'admin'
+  key: 'discover' | 'explore' | 'community'
   to: string
   label: string
   showInTabBar?: boolean
@@ -24,12 +24,6 @@ export const APP_NAV_ITEMS: AppNavigationItem[] = [
     to: '/community',
     label: '커뮤니티',
     match: (pathname) => pathname === '/community' || pathname.startsWith('/community/'),
-  },
-  {
-    key: 'admin',
-    to: '/admin',
-    label: '관리',
-    match: (pathname) => pathname.startsWith('/admin'),
   },
 ]
 

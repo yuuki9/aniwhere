@@ -53,6 +53,24 @@ export type ShopImage = {
   sortOrder: number
 }
 
+export type WorkSummary = {
+  id: number
+  name: string
+  coverUrl: string | null
+}
+
+export type WorkCatalogItem = WorkSummary & {
+  anilistId: number | null
+  titleRomaji: string | null
+  titleEnglish: string | null
+  titleNative: string | null
+  koreanTitle: string | null
+  genres: string[] | null
+  tmdbLogoUrl: string | null
+  popularity: number | null
+  anilistSyncedAt: string | null
+}
+
 export type Shop = {
   id: number
   name: string
@@ -152,6 +170,7 @@ export type ShopSearchParams = {
   regionId?: number
   category?: string
   keyword?: string
+  workId?: number
   status?: ShopStatus
 }
 
