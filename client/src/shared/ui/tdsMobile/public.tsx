@@ -11,19 +11,23 @@ type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({
   className,
+  color,
   display = 'inline',
   loading = false,
   size = 'xlarge',
   type = 'button',
   disabled,
   children,
+  variant,
   ...props
 }: PublicButtonProps) {
   return (
     <button
       className={['ait-button', display !== 'inline' ? 'ait-button-full' : null, className].filter(Boolean).join(' ')}
+      data-color={color}
       data-display={display}
       data-size={size}
+      data-variant={variant}
       disabled={disabled || loading}
       type={type}
       {...props}
@@ -49,14 +53,31 @@ export function ListRow({
   horizontalPadding,
   left,
   right,
+  style,
   verticalPadding,
   ...props
 }: PublicListRowProps) {
-  void horizontalPadding
-  void verticalPadding
+  const listRowStyle: CSSProperties = {
+    ...(horizontalPadding != null ? { paddingInline: `var(--ait-space-${horizontalPadding === 'small' ? '4' : '6'})` } : {}),
+    ...(verticalPadding != null
+      ? {
+          paddingBlock: `var(--ait-space-${
+            verticalPadding === 'small' ? '3' : verticalPadding === 'medium' ? '4' : verticalPadding === 'large' ? '5' : '6'
+          })`,
+        }
+      : {}),
+    ...style,
+  }
 
   return (
-    <li className={['ait-list-row', className].filter(Boolean).join(' ')} data-border={border} {...props}>
+    <li
+      className={['ait-list-row', className].filter(Boolean).join(' ')}
+      data-border={border}
+      data-horizontal-padding={horizontalPadding}
+      data-vertical-padding={verticalPadding}
+      style={listRowStyle}
+      {...props}
+    >
       {left ? <span className="ait-list-row-asset">{left}</span> : null}
       {contents ? <span className="ait-list-row-copy">{contents}</span> : null}
       {right ? <span className="ait-list-row-right">{right}</span> : null}
@@ -88,18 +109,19 @@ export function Top({
   upperGap,
   ...props
 }: PublicTopProps) {
-  void lowerGap
-  void upperGap
-
   return (
     <div className={['ait-top', className].filter(Boolean).join(' ')} {...props}>
-      {upper ? <div className="ait-top-brand">{upper}</div> : null}
+      {upper ? (
+        <div className="ait-top-brand" style={upperGap != null ? { marginBottom: upperGap } : undefined}>
+          {upper}
+        </div>
+      ) : null}
       <div className="ait-top-copy">
         <h1>{title}</h1>
         {subtitleBottom ? <p>{subtitleBottom}</p> : null}
       </div>
       {right ? <div>{right}</div> : null}
-      {lower ? <div>{lower}</div> : null}
+      {lower ? <div style={lowerGap != null ? { marginTop: lowerGap } : undefined}>{lower}</div> : null}
     </div>
   )
 }

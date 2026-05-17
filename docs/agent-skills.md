@@ -21,20 +21,20 @@ New `Ait*` route/page imports are frozen by `client/scripts/assert-ait-usage-all
 
 Aniwhere uses Codex rather than Claude Code for the primary agent workflow. Follow the Apps in Toss vibe-coding guide through the `ax` install step, then connect it to Codex instead of running `claude mcp add`.
 
-Current Windows setup:
+Example Windows setup (adapt paths to your environment):
 
-- `ax` is installed with Scoop at `C:\Users\jdhn2\scoop\shims\ax.exe`.
-- Codex MCP config lives in `C:\Users\jdhn2\.codex\config.toml`.
+- `ax` is installed with Scoop at `%USERPROFILE%\scoop\shims\ax.exe`.
+- Codex MCP config lives in `%USERPROFILE%\.codex\config.toml`.
 - The primary agent is Codex Desktop. Do not require `claude mcp add`; also do not depend on a separate npm-installed `codex` CLI for Aniwhere work unless it is explicitly repaired and verified.
 - The Apps in Toss server is registered as:
 
 ```toml
 [mcp_servers.apps-in-toss]
-command = "C:\\Users\\jdhn2\\scoop\\shims\\ax.exe"
+command = "C:\\Users\\<your-user>\\scoop\\shims\\ax.exe"
 args = ["mcp", "start"]
 ```
 
-After changing this config, restart Codex or start a new Codex session before relying on the MCP tools. The CLI fallback is `ax search docs --query "<topic>"`, `ax search tds-web --query "<topic>"`, and `ax list examples`.
+Replace `<your-user>` with your Windows account name, or point `command` to the actual `ax.exe` path in your environment. After changing this config, restart Codex or start a new Codex session before relying on the MCP tools. The CLI fallback is `ax search docs --query "<topic>"`, `ax search tds-web --query "<topic>"`, and `ax list examples`.
 
 ## PR-Level Launch/TDS Gate
 
@@ -79,5 +79,5 @@ The skill split is based on:
 - `docs/product-decisions.md`
 - `docs/ux-mobile-research.md`
 - Apps in Toss final review skill PDF: `앱인토스 웨비나 _ 미니앱 최종 검수 스킬 공유.pdf`
-- Robin launch checklist skill folder: `C:/Users/jdhn2/Downloads/appsintoss-nongame-launch-checklist-by-robin`
+- Robin launch checklist skill folder: local Downloads path such as `%USERPROFILE%/Downloads/appsintoss-nongame-launch-checklist-by-robin`
 - Apps in Toss webinar PDF: `[가이드] 앱인토스 웨비나 _ 바이브코딩으로 만든 앱, 앱인토스에 출시하기.pdf`

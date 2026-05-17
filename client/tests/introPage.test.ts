@@ -205,7 +205,14 @@ test('TDS public fallback preserves rounded block button behavior', () => {
   const source = tdsPublicSource()
 
   assert.match(source, /display !== 'inline' \? 'ait-button-full'/)
+  assert.match(source, /data-color=\{color\}/)
   assert.match(source, /data-display=\{display\}/)
+  assert.match(source, /data-size=\{size\}/)
+  assert.match(source, /data-variant=\{variant\}/)
+  assert.doesNotMatch(source, /void horizontalPadding/)
+  assert.doesNotMatch(source, /void verticalPadding/)
+  assert.doesNotMatch(source, /void lowerGap/)
+  assert.doesNotMatch(source, /void upperGap/)
 })
 
 test('IntroPage is reachable from the documented intro route', () => {

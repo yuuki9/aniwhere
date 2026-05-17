@@ -41,7 +41,7 @@ New code should prefer the `--ait-*` tokens directly.
 
 ## TDS Runtime Priority
 
-Apps in Toss/ads/local 출시 기준 화면은 프로젝트 TDS facade를 통해 공식 `@toss/tds-mobile` 컴포넌트를 먼저 사용한다. page code는 `@toss/tds-mobile`을 직접 import하지 않는다. 기존 `client/src/shared/ui/ait`와 local token layer는 제거 대상의 migration debt로 취급한다.
+Apps in Toss/ads/local 출시 기준 화면은 프로젝트 TDS facade를 통해 공식 `@toss/tds-mobile` 컴포넌트를 먼저 사용한다. page code는 `@toss/tds-mobile`을 직접 import하지 않는다. 기존 legacy AIT component layer(`client/src/shared/ui/ait`)는 제거 대상의 migration debt로 취급하되, 검증된 `--ait-*` token usage는 TDS compatibility layer로 보존한다.
 
 Public/domain 배포는 `main` 머지 후 자동 반영되므로, 기능 PR도 public build가 깨지지 않게 해야 한다. 다만 제품/UX 기준은 Apps in Toss 출시를 우선하며, 웹 도메인용 별도 CSS나 product surface는 출시 이후 니즈가 확인되면 별도 범위로 확장한다. 공식 TDS runtime import는 adapter/fallback 경계 안에만 둔다.
 
