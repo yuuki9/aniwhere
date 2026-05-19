@@ -105,9 +105,6 @@ function appendShopRequestFields(formData: FormData, payload: ShopRequest) {
     formData.set('regionId', String(payload.regionId))
   }
   formData.set('status', payload.status)
-  if (payload.sellsIchibanKuji != null) {
-    formData.set('sellsIchibanKuji', String(payload.sellsIchibanKuji))
-  }
   if (payload.visitTip != null) {
     formData.set('visitTip', payload.visitTip)
   }

@@ -20,7 +20,6 @@ class ShopMapper(
         regionId = e.region?.id,
         regionName = e.region?.name,
         status = ShopStatus.valueOf(e.status.name.uppercase()),
-        sellsIchibanKuji = e.sellsIchibanKuji,
         visitTip = e.visitTip,
         categories = e.categories.map { it.name },
         works = e.works.map {

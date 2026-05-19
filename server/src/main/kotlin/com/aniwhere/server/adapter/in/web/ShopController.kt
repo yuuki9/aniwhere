@@ -159,14 +159,12 @@ data class ShopRequest(
     val floor: String? = null,
     val regionId: Short? = null,
     val status: String = "UNVERIFIED",
-    val sellsIchibanKuji: Boolean? = null,
     val visitTip: String? = null,
 ) {
     fun toDomain() = Shop(
         name = name, address = address, px = px, py = py,
         floor = floor, regionId = regionId,
         status = com.aniwhere.server.domain.shop.model.ShopStatus.valueOf(status.uppercase()),
-        sellsIchibanKuji = sellsIchibanKuji,
         visitTip = visitTip,
     )
 }
@@ -181,7 +179,6 @@ data class ShopCreateMultipartRequest(
     @Schema(example = "1") val regionId: Short? = null,
     @Schema(example = "UNVERIFIED", allowableValues = ["ACTIVE", "CLOSED", "UNVERIFIED"])
     val status: String = "UNVERIFIED",
-    val sellsIchibanKuji: Boolean? = null,
     val visitTip: String? = null,
     val coverImage: MultipartFile,
     val galleryImages: List<MultipartFile>? = null,
@@ -194,7 +191,6 @@ data class ShopCreateMultipartRequest(
         floor = floor,
         regionId = regionId,
         status = status,
-        sellsIchibanKuji = sellsIchibanKuji,
         visitTip = visitTip,
     ).toDomain()
 }
@@ -211,7 +207,6 @@ data class ShopUpdateMultipartRequest(
     @Schema(example = "1") val regionId: Short? = null,
     @Schema(example = "UNVERIFIED", allowableValues = ["ACTIVE", "CLOSED", "UNVERIFIED"])
     val status: String = "UNVERIFIED",
-    val sellsIchibanKuji: Boolean? = null,
     val visitTip: String? = null,
     @Schema(description = "비워두거나 생략하면 대표 이미지 유지")
     val coverImage: MultipartFile? = null,
@@ -229,7 +224,6 @@ data class ShopUpdateMultipartRequest(
         floor = floor,
         regionId = regionId,
         status = status,
-        sellsIchibanKuji = sellsIchibanKuji,
         visitTip = visitTip,
     ).toDomain()
 }

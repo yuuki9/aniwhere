@@ -32,7 +32,7 @@
 - 응답 필드:
   - `regions`: 지역명, 지역 ID, 결과 수
   - `categories`: 카테고리명, 결과 수
-  - `flags`: `openNow`, `sellsIchibanKuji` 등 지원 가능한 boolean 필터와 결과 수
+  - `flags`: `hasImages`, `hasPrimaryImage` 등 지원 가능한 boolean 필터와 결과 수
 - 완료 기준:
   - 필터 칩의 결과 수와 실제 검색 결과가 일치한다.
   - 지원하지 않는 필터는 응답에 포함하지 않는다.
@@ -47,14 +47,13 @@
   - `regionId`: 지역 ID
   - `category`: 카테고리명
   - `status`: `ACTIVE | UNVERIFIED | CLOSED`
-  - `sellsIchibanKuji`: 이치방쿠지 취급 여부
 - 응답 필드:
   - `regions`: `{ id, name, count }[]`
   - `works`: `{ id, name, count }[]`
   - `categories`: `{ value, label, count }[]`
   - `statuses`: `{ value, label, count }[]`
   - `flags`: `{ key, label, count }[]`
-    - 1차 대상: `sellsIchibanKuji`, `hasImages`, `hasPrimaryImage`
+    - 1차 대상: `hasImages`, `hasPrimaryImage`
   - `totalElements`: 현재 조건의 전체 결과 수
 - 제외 항목:
   - `openNow`: 현재 Shop 스키마에 영업시간 필드가 없으므로 facet에 포함하지 않는다.

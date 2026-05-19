@@ -23,9 +23,6 @@ class ShopEntity(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false) var status: ShopStatusEnum = ShopStatusEnum.unverified,
 
-    @Column(name = "sells_ichiban_kuji")
-    var sellsIchibanKuji: Boolean? = null,
-
     @Column(name = "visit_tip", columnDefinition = "TEXT")
     var visitTip: String? = null,
 

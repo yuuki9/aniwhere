@@ -61,7 +61,6 @@ class ShopPersistenceAdapter(
             px = shop.px, py = shop.py, floor = shop.floor,
             region = region,
             status = ShopStatusEnum.valueOf(shop.status.name.lowercase()),
-            sellsIchibanKuji = shop.sellsIchibanKuji,
             visitTip = shop.visitTip,
         )
         return shopMapper.toDomain(shopRepo.save(entity))
@@ -143,7 +142,6 @@ class ShopPersistenceAdapter(
         entity.py = shop.py
         entity.floor = shop.floor
         entity.status = ShopStatusEnum.valueOf(shop.status.name.lowercase())
-        entity.sellsIchibanKuji = shop.sellsIchibanKuji
         entity.visitTip = shop.visitTip
         entity.region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }
         return shopMapper.toDomain(shopRepo.save(entity))

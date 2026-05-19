@@ -293,8 +293,6 @@ test('admin shops route is a standalone TDS-style CRUD screen after role verific
   assert.doesNotMatch(shops, /선택한 위치를 변경하려면 눌러주세요/)
   assert.doesNotMatch(shops, /위치 확정/)
   assert.doesNotMatch(shops, /geocodeShopAddress/)
-  assert.match(shops, /이치방쿠지 취급 매장/)
-  assert.doesNotMatch(shops, /일번쿠지 취급/)
   assert.match(shops, /admin-shop-textarea-field/)
   assert.match(styles, /\.admin-shop-textarea-field\s*\{[\s\S]*gap:\s*var\(--ait-space-5\);/)
   assert.match(styles, /\.admin-shop-toggle\s*\{[\s\S]*column-gap:\s*var\(--ait-space-6\);/)

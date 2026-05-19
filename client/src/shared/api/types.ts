@@ -53,6 +53,8 @@ export type ShopImage = {
   sortOrder: number
 }
 
+export type WorkType = 'ANIMATION' | 'GAME'
+
 export type WorkSummary = {
   id: number
   name: string
@@ -60,6 +62,7 @@ export type WorkSummary = {
 }
 
 export type WorkCatalogItem = WorkSummary & {
+  type: WorkType
   anilistId: number | null
   titleRomaji: string | null
   titleEnglish: string | null
@@ -81,10 +84,9 @@ export type Shop = {
   regionId: number | null
   regionName: string | null
   status: ShopStatus
-  sellsIchibanKuji: boolean | null
   visitTip: string | null
   categories: string[]
-  works: string[]
+  works: WorkSummary[]
   links: ShopLink[]
   images: ShopImage[]
   description: string | null
@@ -100,7 +102,6 @@ export type ShopRequest = {
   floor?: string | null
   regionId?: number | null
   status: ShopStatus
-  sellsIchibanKuji?: boolean | null
   visitTip?: string | null
 }
 

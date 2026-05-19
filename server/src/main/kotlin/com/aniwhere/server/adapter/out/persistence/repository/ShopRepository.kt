@@ -1,10 +1,11 @@
 package com.aniwhere.server.adapter.out.persistence.repository
 
+import com.aniwhere.server.adapter.out.persistence.entity.AnimationWorkEntity
 import com.aniwhere.server.adapter.out.persistence.entity.CategoryEntity
+import com.aniwhere.server.adapter.out.persistence.entity.GameWorkEntity
 import com.aniwhere.server.adapter.out.persistence.entity.RegionEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopStatusEnum
-import com.aniwhere.server.adapter.out.persistence.entity.WorkEntity
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -23,7 +24,7 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
                   SELECT 1 FROM ShopEntity s2 JOIN s2.works w
                   WHERE s2.id = s.id AND (
                        w.name LIKE CONCAT('%', :workKeyword, '%')
-                    OR w.koreanTitle LIKE CONCAT('%', :workKeyword, '%'))))
+                    OR (TYPE(w) = AnimationWorkEntity AND TREAT(w AS AnimationWorkEntity).koreanTitle LIKE CONCAT('%', :workKeyword, '%')))))
           AND (:workId IS NULL OR EXISTS (
                 SELECT 1 FROM ShopEntity s2 JOIN s2.works w
                 WHERE s2.id = s.id AND w.id = :workId))
@@ -39,7 +40,7 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
                   SELECT 1 FROM ShopEntity s2 JOIN s2.works w
                   WHERE s2.id = s.id AND (
                        w.name LIKE CONCAT('%', :workKeyword, '%')
-                    OR w.koreanTitle LIKE CONCAT('%', :workKeyword, '%'))))
+                    OR (TYPE(w) = AnimationWorkEntity AND TREAT(w AS AnimationWorkEntity).koreanTitle LIKE CONCAT('%', :workKeyword, '%')))))
           AND (:workId IS NULL OR EXISTS (
                 SELECT 1 FROM ShopEntity s2 JOIN s2.works w
                 WHERE s2.id = s.id AND w.id = :workId))
@@ -57,12 +58,17 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
 
 interface RegionRepository : JpaRepository<RegionEntity, Short>
 interface CategoryRepository : JpaRepository<CategoryEntity, Short>
-interface WorkRepository : JpaRepository<WorkEntity, Int> {
+interface AnimationWorkRepository : JpaRepository<AnimationWorkEntity, Int> {
     @Query(
         """
-        SELECT w FROM WorkEntity w
-        ORDER BY w.popularity DESC NULLS LAST, w.name ASC
+        SELECT a FROM AnimationWorkEntity a
+        ORDER BY a.popularity DESC NULLS LAST, a.name ASC
         """,
     )
-    fun findAllOrderByPopularityDesc(): List<WorkEntity>
+    fun findAllOrderByPopularityDesc(): List<AnimationWorkEntity>
+}
+
+interface GameWorkRepository : JpaRepository<GameWorkEntity, Int> {
+    @Query("SELECT g FROM GameWorkEntity g ORDER BY g.name ASC")
+    fun findAllOrderByNameAsc(): List<GameWorkEntity>
 }
