@@ -8,6 +8,9 @@
 #   AWS_S3_SHOP_IMAGES_BUCKET  (상점 이미지 업로드 버킷 — 비우면 앱 기동 시 ShopImagesS3StartupValidator 가 실패함)
 #   AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL  (선택, CloudFront 등 퍼블릭 URL 접두사)
 #   AWS_REGION 은 위 configure-aws 와 동일 secret 사용 권장(EC2 .env 에도 전달)
+#   APP_AUTH_JWT_SECRET  (JWT HMAC 키 — 32자 이상 필수, 미설정 시 기본값 29자로 WeakKeyException)
+#   APP_TOSS_CLIENT_ID, APP_TOSS_CLIENT_SECRET  (토스 로그인)
+#   APP_TOSS_UNLINK_BASIC_AUTH  (선택, 연동 해제 Basic Auth)
 #
 # EC2 needs outbound HTTPS to S3 (presigned URL) — NAT, IGW, or VPC endpoint.
 #
@@ -94,11 +97,15 @@ jobs:
           AWS_S3_SHOP_IMAGES_BUCKET: ${{ secrets.AWS_S3_SHOP_IMAGES_BUCKET }}
           AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL: ${{ secrets.AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL }}
           DEPLOY_AWS_REGION: ${{ secrets.AWS_REGION }}
+          APP_AUTH_JWT_SECRET: ${{ secrets.APP_AUTH_JWT_SECRET }}
+          APP_TOSS_CLIENT_ID: ${{ secrets.APP_TOSS_CLIENT_ID }}
+          APP_TOSS_CLIENT_SECRET: ${{ secrets.APP_TOSS_CLIENT_SECRET }}
+          APP_TOSS_UNLINK_BASIC_AUTH: ${{ secrets.APP_TOSS_UNLINK_BASIC_AUTH }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: PRESIGN_B64,DB_HOST,DB_PORT,DB_NAME,DB_USERNAME,DB_PASSWORD,AWS_S3_SHOP_IMAGES_BUCKET,AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL,DEPLOY_AWS_REGION
+          envs: PRESIGN_B64,DB_HOST,DB_PORT,DB_NAME,DB_USERNAME,DB_PASSWORD,AWS_S3_SHOP_IMAGES_BUCKET,AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL,DEPLOY_AWS_REGION,APP_AUTH_JWT_SECRET,APP_TOSS_CLIENT_ID,APP_TOSS_CLIENT_SECRET,APP_TOSS_UNLINK_BASIC_AUTH
           script_stop: true
           command_timeout: 30m
           script: |
@@ -110,10 +117,12 @@ jobs:
             sudo docker load -i /tmp/aniwhere-image.tar
             rm -f /tmp/aniwhere-image.tar
             umask 077
-            printf 'DB_HOST=%s\nDB_PORT=%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nAPP_PUBLIC_URL=%s\nAWS_S3_SHOP_IMAGES_BUCKET=%s\nAWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL=%s\nAWS_REGION=%s\n' \
+            printf 'DB_HOST=%s\nDB_PORT=%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nAPP_PUBLIC_URL=%s\nAWS_S3_SHOP_IMAGES_BUCKET=%s\nAWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL=%s\nAWS_REGION=%s\nAPP_AUTH_JWT_SECRET=%s\nAPP_TOSS_CLIENT_ID=%s\nAPP_TOSS_CLIENT_SECRET=%s\nAPP_TOSS_UNLINK_BASIC_AUTH=%s\n' \
               "$DB_HOST" "$DB_PORT" "$DB_NAME" "$DB_USERNAME" "$DB_PASSWORD" \
               "https://api.aniwhere.link" \
               "${AWS_S3_SHOP_IMAGES_BUCKET:-}" "${AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL:-}" "${DEPLOY_AWS_REGION:-ap-northeast-2}" \
+              "${APP_AUTH_JWT_SECRET:?APP_AUTH_JWT_SECRET is required (32+ chars)}" \
+              "${APP_TOSS_CLIENT_ID:-}" "${APP_TOSS_CLIENT_SECRET:-}" "${APP_TOSS_UNLINK_BASIC_AUTH:-}" \
               > "$REMOTE_DIR/.env"
             chmod 600 "$REMOTE_DIR/.env" || true
             compose() {
