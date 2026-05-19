@@ -23,3 +23,14 @@
 - 운영 계정과 개발 계정 분리
 - 변경 작업 전 대상 리전/계정 재확인
 - 필요 시 CloudTrail/로그 기반 사후 검증 수행
+
+## Skills 운영 규칙
+
+- 팀 공용 스킬 엔트리는 `.cursor/skills/` 경로를 기준으로 관리합니다.
+- MCP 관심사별 문서/훅/참고 스킬은 `.cursor/mcp/<name>/` 경로에서 관리합니다.
+- 신규 스킬 추가 시 `.cursor/skills/README.md`의 discovery check를 통과해야 합니다.
+
+## Hooks 운영 규칙
+
+- 기본 훅 스크립트는 cross-platform 실행을 위해 Node.js 스크립트를 우선 사용합니다.
+- 훅 네이밍/실패 정책/검증 절차는 `.cursor/mcp/shared/docs/hook-governance.md`를 따릅니다.

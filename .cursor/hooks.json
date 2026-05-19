@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "node .cursor/mcp/agentmemory/hooks/tag-session-marker.js"
+      }
+    ]
+  }
+}
