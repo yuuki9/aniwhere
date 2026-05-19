@@ -6,6 +6,7 @@ import com.aniwhere.server.adapter.out.persistence.entity.GameWorkEntity
 import com.aniwhere.server.adapter.out.persistence.entity.RegionEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopStatusEnum
+import com.aniwhere.server.domain.region.model.RegionListItem
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -56,7 +57,20 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
     ): Page<ShopEntity>
 }
 
-interface RegionRepository : JpaRepository<RegionEntity, Short>
+interface RegionRepository : JpaRepository<RegionEntity, Short> {
+    @Query(
+        """
+        SELECT new com.aniwhere.server.domain.region.model.RegionListItem(
+            r.id, r.name, r.city, COUNT(DISTINCT s)
+        )
+        FROM RegionEntity r
+        LEFT JOIN ShopEntity s ON s.region = r
+        GROUP BY r.id, r.name, r.city
+        ORDER BY r.name ASC
+        """,
+    )
+    fun findAllWithShopCount(): List<RegionListItem>
+}
 interface CategoryRepository : JpaRepository<CategoryEntity, Short>
 interface AnimationWorkRepository : JpaRepository<AnimationWorkEntity, Int> {
     @Query(
