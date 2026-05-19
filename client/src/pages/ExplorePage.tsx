@@ -40,7 +40,7 @@ const MAP_QUICK_CHIPS: MapQuickChipItem[] = [
   { id: 'favorite', label: '관심매장' },
   { id: 'active', label: '영업중' },
 ]
-const ASSISTANT_SUGGESTIONS = ['홍대에서 일번쿠지 있는 곳', '피규어 종류가 많은 매장', '초행자에게 추천할 만한 곳']
+const ASSISTANT_SUGGESTIONS = ['홍대에서 피규어 많은 곳', '피규어 종류가 많은 매장', '초행자에게 추천할 만한 곳']
 const ASSISTANT_RETRY_HINT = '현재 데이터 기준으로 바로 맞는 후보를 찾지 못했어요. 작품명, 지역명, 매장명을 조금 더 구체적으로 입력해보세요.'
 
 type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
@@ -181,7 +181,7 @@ export function ExplorePage() {
     {
       id: 'assistant-welcome',
       role: 'assistant',
-      content: '작품명, 지역명, 일번쿠지 여부를 물어보면 지금 보이는 매장 기준으로 바로 추려드릴게요.',
+      content: '작품명, 지역명, 카테고리를 물어보면 지금 보이는 매장 기준으로 바로 추려드릴게요.',
     },
   ])
   const listScrollRef = useRef<HTMLDivElement | null>(null)

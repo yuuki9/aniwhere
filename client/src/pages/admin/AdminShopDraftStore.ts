@@ -9,7 +9,6 @@ export type AdminShopDraft = {
   floor: string
   regionId: number | null
   status: ShopStatus
-  sellsIchibanKuji: boolean
   visitTip: string
 }
 

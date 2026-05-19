@@ -33,7 +33,6 @@ type ShopFormState = {
   floor: string
   regionId: number | null
   status: ShopStatus
-  sellsIchibanKuji: boolean
   visitTip: string
 }
 
@@ -73,7 +72,6 @@ const EMPTY_SHOP_FORM: ShopFormState = {
   floor: '',
   regionId: null,
   status: 'UNVERIFIED',
-  sellsIchibanKuji: false,
   visitTip: '',
 }
 
@@ -117,7 +115,6 @@ function buildShopRequest(form: ShopFormState): ShopRequest {
     floor: form.floor.trim() || null,
     regionId: form.regionId,
     status: form.status,
-    sellsIchibanKuji: form.sellsIchibanKuji,
     visitTip: form.visitTip.trim() || null,
   }
 }
@@ -132,7 +129,6 @@ function buildShopFormFromShop(shop: Shop): ShopFormState {
     floor: shop.floor ?? '',
     regionId: shop.regionId,
     status: shop.status,
-    sellsIchibanKuji: !!shop.sellsIchibanKuji,
     visitTip: shop.visitTip ?? '',
   }
 }
@@ -746,20 +742,6 @@ export function AdminShopsPage() {
                 <option value="ACTIVE">운영 중</option>
                 <option value="CLOSED">영업 종료</option>
               </select>
-            </label>
-
-            <label className="admin-shop-toggle">
-              <input
-                checked={shopForm.sellsIchibanKuji}
-                type="checkbox"
-                onChange={(event) =>
-                  setShopForm((current) => ({ ...current, sellsIchibanKuji: event.target.checked }))
-                }
-              />
-              <span>
-                <strong>이치방쿠지 취급 매장</strong>
-                <small>상세 화면에 방문 참고 정보로 보여요.</small>
-              </span>
             </label>
 
             <label className="admin-shop-field admin-shop-field-wide admin-shop-textarea-field">

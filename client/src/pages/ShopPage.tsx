@@ -111,7 +111,6 @@ export function ShopPage() {
                 <h1>{shop.name}</h1>
                 <p>
                   {shop.categories.length > 0 ? shop.categories.join(' · ') : '카테고리 확인 중'}
-                  {shop.sellsIchibanKuji ? ' · 일번쿠지 취급' : ''}
                 </p>
               </div>
               <StatusPill status={shop.status} />
@@ -162,8 +161,8 @@ export function ShopPage() {
               </div>
               <div className="chip-row">
                 {shop.works.map((work) => (
-                  <span className="mini-tag" key={work}>
-                    {work}
+                  <span className="mini-tag" key={work.id}>
+                    {work.name}
                   </span>
                 ))}
               </div>

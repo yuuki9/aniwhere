@@ -23,8 +23,8 @@ export function MapDetailSupplementSections({
         {shop.works.length > 0 ? (
           <div className="map-sheet-token-cloud">
             {shop.works.map((work) => (
-              <span className="map-sheet-token-chip" key={work}>
-                {work}
+              <span className="map-sheet-token-chip" key={work.id}>
+                {work.name}
               </span>
             ))}
           </div>

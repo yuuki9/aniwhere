@@ -27,8 +27,7 @@ const buildExploreHref = (shopId: number, shopRegionId: number | null) => {
 }
 
 const buildShopMeta = (shop: Shop) =>
-  [shop.regionName, ...shop.categories.slice(0, 2), shop.sellsIchibanKuji ? '이치방쿠지' : null]
-    .filter(Boolean)
+  [shop.regionName, ...shop.categories.slice(0, 2)].filter(Boolean)
     .join(' · ')
 
 const buildShopAddress = (shop: Shop) => [shop.address, shop.floor].filter(Boolean).join(' · ')

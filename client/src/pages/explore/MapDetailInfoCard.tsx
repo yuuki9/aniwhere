@@ -58,7 +58,6 @@ export function MapDetailInfoCard({ shop, floorLabel, distanceLabel, onOpenDirec
 
       <MapDetailRow icon="clock" label="운영 상태">
         {statusToLabel(shop.status)}
-        {shop.sellsIchibanKuji ? ' · 이치방쿠지 취급' : ''}
       </MapDetailRow>
 
       <MapDetailRow icon="tag" label="취급 정보">
