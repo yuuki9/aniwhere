@@ -1,6 +1,7 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.domain.work.model.WorkCatalogItem
+import com.aniwhere.server.domain.work.model.WorkType
 import com.aniwhere.server.domain.work.port.`in`.ListWorksUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -32,6 +33,7 @@ class WorkControllerTest {
             WorkCatalogItem(
                 id = 1,
                 name = "원피스",
+                type = WorkType.ANIMATION,
                 anilistId = 21L,
                 titleRomaji = "ONE PIECE",
                 titleEnglish = "One Piece",
@@ -43,7 +45,7 @@ class WorkControllerTest {
                 popularity = 100,
                 anilistSyncedAt = synced,
             ),
-            WorkCatalogItem(id = 2, name = "주술회전"),
+            WorkCatalogItem(id = 2, name = "젤다", type = WorkType.GAME),
         )
         mvc.perform(get("/api/v1/works"))
             .andExpect(status().isOk)
@@ -55,7 +57,9 @@ class WorkControllerTest {
             .andExpect(jsonPath("$.data[0].titleRomaji").value("ONE PIECE"))
             .andExpect(jsonPath("$.data[0].genres[0]").value("Action"))
             .andExpect(jsonPath("$.data[0].anilistSyncedAt").value("2026-05-01T12:00:00"))
-            .andExpect(jsonPath("$.data[1].name").value("주술회전"))
+            .andExpect(jsonPath("$.data[0].type").value("ANIMATION"))
+            .andExpect(jsonPath("$.data[1].name").value("젤다"))
+            .andExpect(jsonPath("$.data[1].type").value("GAME"))
             .andExpect(jsonPath("$.data[1].anilistId").value(nullValue()))
     }
 }

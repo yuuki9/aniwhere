@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 data class WorkCatalogItem(
     val id: Int,
     val name: String,
+    val type: WorkType = WorkType.ANIMATION,
     val anilistId: Long? = null,
     val titleRomaji: String? = null,
     val titleEnglish: String? = null,
