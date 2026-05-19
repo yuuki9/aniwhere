@@ -14,7 +14,6 @@ data class Shop(
     val regionId: Short? = null,
     val regionName: String? = null,
     val status: ShopStatus = ShopStatus.UNVERIFIED,
-    val sellsIchibanKuji: Boolean? = null,
     val visitTip: String? = null,
     val categories: List<String> = emptyList(),
     val works: List<WorkSummary> = emptyList(),
