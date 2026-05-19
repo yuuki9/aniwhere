@@ -33,6 +33,14 @@
 - 최초 사용자 인증 근거는 `appLogin` 인가코드 플로우로 고정한다.
 - 토스 연결 끊기 이벤트(`UNLINK`, `WITHDRAWAL_TERMS`, `WITHDRAWAL_TOSS`)를 서비스 후처리에 반영한다.
 
+### M0 공식 문서 구현 체크리스트
+
+구현·코드리뷰·QA 전에 아래를 순서대로 확인하고, 변경 시 본 설계서와 API 계약을 함께 갱신한다.
+
+- [ ] [이해하기](https://developers-apps-in-toss.toss.im/login/intro.html): 로그인 UX·인가코드 흐름이 제품 플로우와 일치
+- [ ] [개발하기](https://developers-apps-in-toss.toss.im/login/develop.html): 클라이언트→서버 전달 필드·토스 API 호출 순서 반영
+- [ ] [콘솔 가이드](https://developers-apps-in-toss.toss.im/login/console.html): 앱/콜백 URL·시크릿·환경 분리 반영
+
 ## 설계 결정사항
 
 1. 인증 접근 방식: **토스 OAuth 연동 + 내부 JWT 발급**
@@ -198,3 +206,12 @@
 - 토스 업스트림 장애: timeout/retry 정책과 표준 에러 매핑 적용
 - refresh 탈취: rotation, access TTL 단축, 비정상 재발급 탐지
 - 권한 오판단: `admins` 변경 이력 관리 및 운영 감사 로그 확보
+
+## 구현 상태
+
+- [x] 구현 계획 문서 작성 완료 (`server/docs/superpowers/plans/2026-05-16-toss-login-auth-implementation.md`)
+- [x] M0 공식 문서 체크리스트 본문 반영
+- [x] QA 체크리스트 초안 (`server/docs/superpowers/plans/2026-05-16-toss-login-auth-qa-checklist.md`)
+- [x] 인증 코드 구현 (Tasks 1–7: 설정·영속·JWT·Toss 클라이언트·REST API·Security·unlink Basic Auth)
+- [ ] Task 8 통합 검증·운영 문서 마무리(전체 회귀·커밋 등 필요 시)
+- [ ] 샌드박스 실기기 검증

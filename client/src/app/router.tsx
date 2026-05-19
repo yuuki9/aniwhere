@@ -1,9 +1,7 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { AdminAccessGate } from '../pages/admin/AdminAccessGate'
-import { AdminHomePage } from '../pages/admin/AdminHomePage'
 import { AdminShopManagePage } from '../pages/admin/AdminShopManagePage'
 import { AdminShopLocationPage } from '../pages/admin/AdminShopLocationPage'
-import { AdminRewardsPage } from '../pages/admin/AdminRewardsPage'
 import { AdminShopsPage } from '../pages/admin/AdminShopsPage'
 import { CommunityPage } from '../pages/CommunityPage'
 import { ExplorePage } from '../pages/ExplorePage'
@@ -76,7 +74,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <AdminHomePage />,
+        element: <Navigate replace to="/admin/shops" />,
       },
       {
         path: 'shops',
@@ -93,10 +91,6 @@ export const router = createBrowserRouter([
       {
         path: 'shops/location',
         element: <AdminShopLocationPage />,
-      },
-      {
-        path: 'rewards',
-        element: <AdminRewardsPage />,
       },
     ],
   },

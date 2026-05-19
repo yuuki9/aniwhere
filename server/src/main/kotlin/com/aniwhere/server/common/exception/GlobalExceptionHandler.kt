@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.multipart.MultipartException
 
@@ -58,6 +60,36 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.message ?: "Bad request"))
     }
 
+    @ExceptionHandler(UnauthorizedException::class)
+    fun handleUnauthorized(e: UnauthorizedException, request: HttpServletRequest): ResponseEntity<ApiResponse<Unit>> {
+        log.warn(
+            "Unauthorized request={} message={}",
+            request.describeForLog(),
+            e.message,
+        )
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.message ?: "Unauthorized"))
+    }
+
+    @ExceptionHandler(ForbiddenException::class)
+    fun handleForbidden(e: ForbiddenException, request: HttpServletRequest): ResponseEntity<ApiResponse<Unit>> {
+        log.warn(
+            "Forbidden request={} message={}",
+            request.describeForLog(),
+            e.message,
+        )
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(e.message ?: "Forbidden"))
+    }
+
+    @ExceptionHandler(UpstreamAuthException::class)
+    fun handleUpstreamAuth(e: UpstreamAuthException, request: HttpServletRequest): ResponseEntity<ApiResponse<Unit>> {
+        log.warn(
+            "Upstream auth request={} message={}",
+            request.describeForLog(),
+            e.message,
+        )
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(e.message ?: "Auth upstream error"))
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(e: MethodArgumentNotValidException, request: HttpServletRequest): ResponseEntity<ApiResponse<Unit>> {
         val msg = e.bindingResult.fieldErrors.joinToString("; ") { "${it.field}: ${it.defaultMessage}" }
@@ -94,6 +126,26 @@ class GlobalExceptionHandler {
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("파일 업로드 처리에 실패했습니다."))
         }
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFound(e: NoResourceFoundException, request: HttpServletRequest): ResponseEntity<ApiResponse<Unit>> {
+        log.warn(
+            "No resource request={} message={}",
+            request.describeForLog(),
+            e.message,
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Not found"))
+    }
+
+    @ExceptionHandler(NoHandlerFoundException::class)
+    fun handleNoHandlerFound(e: NoHandlerFoundException, request: HttpServletRequest): ResponseEntity<ApiResponse<Unit>> {
+        log.warn(
+            "No handler request={} message={}",
+            request.describeForLog(),
+            e.message,
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Not found"))
+    }
 
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception, request: HttpServletRequest): ResponseEntity<ApiResponse<Unit>> {

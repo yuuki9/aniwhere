@@ -33,9 +33,48 @@ const buildShopMeta = (shop: Shop) =>
 
 const buildShopAddress = (shop: Shop) => [shop.address, shop.floor].filter(Boolean).join(' · ')
 
+type SearchScope = 'shop' | 'work'
+
+async function searchShopsFromSearchBar({
+  currentSearchScope,
+  currentKeyword,
+  currentPage,
+}: {
+  currentSearchScope: SearchScope
+  currentKeyword: string
+  currentPage: number
+}) {
+  const searchKeyword = currentKeyword || undefined
+
+  if (currentSearchScope === 'work') {
+    return getShops({
+      page: currentPage,
+      size: SEARCH_PAGE_SIZE,
+      workKeyword: searchKeyword,
+    })
+  }
+
+  const shopResults = await getShops({
+    page: currentPage,
+    size: SEARCH_PAGE_SIZE,
+    keyword: searchKeyword,
+  })
+
+  if (shopResults.content.length > 0 || currentPage > 0) {
+    return shopResults
+  }
+
+  return getShops({
+    page: currentPage,
+    size: SEARCH_PAGE_SIZE,
+    workKeyword: searchKeyword,
+  })
+}
+
 export function SearchPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword') ?? ''
   const currentPage = Number(searchParams.get('page') ?? '0')
   const returnTo = searchParams.get('returnTo')
@@ -53,13 +92,8 @@ export function SearchPage() {
   }, [])
 
   const resultQuery = useQuery({
-    queryKey: ['shops', 'search-page-results', currentKeyword, currentPage],
-    queryFn: () =>
-      getShops({
-        page: currentPage,
-        size: SEARCH_PAGE_SIZE,
-        keyword: currentKeyword || undefined,
-      }),
+    queryKey: ['shops', 'search-page-results', currentSearchScope, currentKeyword, currentPage],
+    queryFn: () => searchShopsFromSearchBar({ currentSearchScope, currentKeyword, currentPage }),
     placeholderData: keepPreviousData,
     enabled: currentKeyword.trim().length > 0,
   })
@@ -70,6 +104,10 @@ export function SearchPage() {
 
     if (safeReturnTo) {
       next.set('returnTo', safeReturnTo)
+    }
+
+    if (currentSearchScope === 'work') {
+      next.set('scope', 'work')
     }
 
     if (trimmed) {
@@ -97,6 +135,10 @@ export function SearchPage() {
 
       if (safeReturnTo) {
         next.set('returnTo', safeReturnTo)
+      }
+
+      if (currentSearchScope === 'work') {
+        next.set('scope', 'work')
       }
 
       setSearchParams(next, { replace: true })

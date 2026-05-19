@@ -54,6 +54,11 @@ Use a `Notice:` when the current change is becoming a separate PR concern. Good 
 
 Phrase it as a recommendation, not a hard stop: identify the current PR unit, propose the follow-up PR scope, and keep working only on the agreed slice.
 
+## Branch Naming
+
+For Aniwhere, do not use tool-name branch prefixes such as `codex/*`.
+Use the repository convention instead: `feature/*`, `fix/*`, `chore/*`, or `docs/*` depending on the work type, even when Codex creates the branch.
+
 ## Engineering Feedback Loops
 
 Use small, observable loops before broad edits. This adapts external engineering-skill patterns to Aniwhere's launch workflow.
@@ -70,6 +75,8 @@ When creating, updating, or handing off a PR:
 
 - Read `.github/PULL_REQUEST_TEMPLATE.md`.
 - Provide a Korean PR title and body.
+- If GitHub connector or `gh` authentication prevents direct PR creation, do not hand off only a PR URL or repeat the auth/403 blocker as the main answer. Briefly note the blocker, then provide the PR creation URL plus the exact Korean PR title and template-shaped PR body the user can paste in the GitHub web UI.
+- Write the handoff PR body in a copy/paste-friendly form. Unless the user explicitly asks for a code block, do not wrap the whole description in fenced code blocks, and avoid unnecessary triple backticks inside the description.
 - Include changed scope, verification commands and results, Apps in Toss/TDS classification, sandbox or console gaps, and follow-up PR scope.
 - Never leave the Apps in Toss/TDS section blank when client UI, WebView, navigation, permissions, external links, modals/notices, storage/draft, maps, SDK loader, or CSS changed.
 - Keep PR descriptions factual; do not claim sandbox, mobile-device, or CodeRabbit resolution unless verified.
