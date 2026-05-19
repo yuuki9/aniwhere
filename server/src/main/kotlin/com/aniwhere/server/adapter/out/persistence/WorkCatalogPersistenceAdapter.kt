@@ -16,11 +16,16 @@ class WorkCatalogPersistenceAdapter(
     private val gameRepo: GameWorkRepository,
 ) : WorkCatalogPersistencePort {
 
-    override fun findAllOrderedByPopularityDesc(): List<WorkCatalogItem> {
-        val animations: List<WorkCatalogItem> =
-            animationRepo.findAllOrderByPopularityDesc().map { toCatalogItem(it) }
-        val games: List<WorkCatalogItem> =
-            gameRepo.findAllOrderByNameAsc().map { toCatalogItem(it) }
+    override fun findAllOrderedByPopularityDesc(type: WorkType?): List<WorkCatalogItem> =
+        when (type) {
+            WorkType.ANIMATION -> animationRepo.findAllOrderByPopularityDesc().map { toCatalogItem(it) }
+            WorkType.GAME -> gameRepo.findAllOrderByNameAsc().map { toCatalogItem(it) }
+            null -> findAllCombined()
+        }
+
+    private fun findAllCombined(): List<WorkCatalogItem> {
+        val animations = animationRepo.findAllOrderByPopularityDesc().map { toCatalogItem(it) }
+        val games = gameRepo.findAllOrderByNameAsc().map { toCatalogItem(it) }
         return animations + games
     }
 
