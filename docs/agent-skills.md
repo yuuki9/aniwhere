@@ -8,6 +8,7 @@ This repository carries project-local Codex skills under `.codex/skills`.
 - `aniwhere-product-ux`: product decisions, mobile UX, screen scope, permission timing, Toss-style information exploration, and design-token usage.
 - `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
 - `aniwhere-launch-checklist`: final Apps in Toss non-game launch review for access/functions, navigation, login/auth/permissions, guide routing, UI/UX, brand text, payments, ads, external links, TDS, sharing rewards, and sandbox evidence.
+- `session-task-branch-bootstrap`: session-start helper that asks for a task name and creates/switches a branch name aligned with Aniwhere branch conventions.
 
 For UI styling work, read `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, and `docs/tds-route-audit.md`. Apps in Toss launch is the product priority: use project TDS facades first when official components exist, treat `client/src/shared/ui/ait` as migration debt to remove, and route reusable values through `client/src/styles/tokens.css` before adding new raw CSS values.
 
