@@ -1,5 +1,6 @@
 package com.aniwhere.server.domain.work.service
 
+import com.aniwhere.server.domain.work.model.WorkType
 import com.aniwhere.server.domain.work.port.`in`.ListWorksUseCase
 import com.aniwhere.server.domain.work.port.out.WorkCatalogPersistencePort
 import org.springframework.stereotype.Service
@@ -11,5 +12,5 @@ class WorkCatalogService(
     private val port: WorkCatalogPersistencePort,
 ) : ListWorksUseCase {
 
-    override fun listWorks() = port.findAllOrderedByPopularityDesc()
+    override fun listWorks(type: WorkType?) = port.findAllOrderedByPopularityDesc(type)
 }

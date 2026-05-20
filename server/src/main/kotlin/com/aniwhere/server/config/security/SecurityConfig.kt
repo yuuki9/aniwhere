@@ -22,6 +22,8 @@ class SecurityConfig(
             .authorizeHttpRequests {
                 it.requestMatchers("/api/v1/auth/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/shops/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/v1/regions/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/works/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/shop-images/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll()
