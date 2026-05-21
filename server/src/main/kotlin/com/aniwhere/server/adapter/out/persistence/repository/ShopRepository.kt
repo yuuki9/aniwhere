@@ -6,6 +6,7 @@ import com.aniwhere.server.adapter.out.persistence.entity.GameWorkEntity
 import com.aniwhere.server.adapter.out.persistence.entity.RegionEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopStatusEnum
+import com.aniwhere.server.adapter.out.persistence.entity.WorkEntity
 import com.aniwhere.server.domain.category.model.CategoryListItem
 import com.aniwhere.server.domain.region.model.RegionListItem
 import org.springframework.data.domain.Page
@@ -104,3 +105,5 @@ interface GameWorkRepository : JpaRepository<GameWorkEntity, Int> {
     @Query("SELECT g FROM GameWorkEntity g ORDER BY g.name ASC")
     fun findAllOrderByNameAsc(): List<GameWorkEntity>
 }
+
+interface WorkRepository : JpaRepository<WorkEntity, Int>

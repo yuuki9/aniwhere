@@ -158,12 +158,16 @@ data class ShopRequest(
     val py: BigDecimal,
     val floor: String? = null,
     val regionId: Short? = null,
+    val categoryIds: List<Short> = emptyList(),
+    val workIds: List<Int> = emptyList(),
     val status: String = "UNVERIFIED",
     val visitTip: String? = null,
 ) {
     fun toDomain() = Shop(
         name = name, address = address, px = px, py = py,
         floor = floor, regionId = regionId,
+        categoryIds = categoryIds,
+        workIds = workIds,
         status = com.aniwhere.server.domain.shop.model.ShopStatus.valueOf(status.uppercase()),
         visitTip = visitTip,
     )
@@ -177,6 +181,8 @@ data class ShopCreateMultipartRequest(
     @Schema(example = "37.4979462") val py: BigDecimal,
     @Schema(example = "2F") val floor: String? = null,
     @Schema(example = "1") val regionId: Short? = null,
+    val categoryIds: List<Short>? = null,
+    val workIds: List<Int>? = null,
     @Schema(example = "UNVERIFIED", allowableValues = ["ACTIVE", "CLOSED", "UNVERIFIED"])
     val status: String = "UNVERIFIED",
     val visitTip: String? = null,
@@ -190,6 +196,8 @@ data class ShopCreateMultipartRequest(
         py = py,
         floor = floor,
         regionId = regionId,
+        categoryIds = categoryIds.orEmpty(),
+        workIds = workIds.orEmpty(),
         status = status,
         visitTip = visitTip,
     ).toDomain()
@@ -205,6 +213,8 @@ data class ShopUpdateMultipartRequest(
     @Schema(example = "37.4979462") val py: BigDecimal,
     @Schema(example = "2F") val floor: String? = null,
     @Schema(example = "1") val regionId: Short? = null,
+    val categoryIds: List<Short>? = null,
+    val workIds: List<Int>? = null,
     @Schema(example = "UNVERIFIED", allowableValues = ["ACTIVE", "CLOSED", "UNVERIFIED"])
     val status: String = "UNVERIFIED",
     val visitTip: String? = null,
@@ -223,6 +233,8 @@ data class ShopUpdateMultipartRequest(
         py = py,
         floor = floor,
         regionId = regionId,
+        categoryIds = categoryIds.orEmpty(),
+        workIds = workIds.orEmpty(),
         status = status,
         visitTip = visitTip,
     ).toDomain()
