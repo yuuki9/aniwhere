@@ -5,8 +5,11 @@ import com.aniwhere.server.adapter.out.persistence.entity.ShopImageEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopImageRoleEnum
 import com.aniwhere.server.adapter.out.persistence.entity.ShopStatusEnum
 import com.aniwhere.server.adapter.out.persistence.mapper.ShopMapper
+import com.aniwhere.server.adapter.out.persistence.repository.CategoryRepository
 import com.aniwhere.server.adapter.out.persistence.repository.RegionRepository
 import com.aniwhere.server.adapter.out.persistence.repository.ShopRepository
+import com.aniwhere.server.adapter.out.persistence.repository.WorkRepository
+import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
@@ -23,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional
 class ShopPersistenceAdapter(
     private val shopRepo: ShopRepository,
     private val regionRepo: RegionRepository,
+    private val categoryRepo: CategoryRepository,
+    private val workRepo: WorkRepository,
     private val shopMapper: ShopMapper,
 ) : ShopPersistencePort {
 
@@ -56,6 +61,8 @@ class ShopPersistenceAdapter(
     @Transactional(readOnly = false)
     override fun save(shop: Shop): Shop {
         val region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }
+        val categories = resolveCategories(shop.categoryIds)
+        val works = resolveWorks(shop.workIds)
         val entity = ShopEntity(
             name = shop.name, address = shop.address,
             px = shop.px, py = shop.py, floor = shop.floor,
@@ -63,6 +70,8 @@ class ShopPersistenceAdapter(
             status = ShopStatusEnum.valueOf(shop.status.name.lowercase()),
             visitTip = shop.visitTip,
         )
+        entity.categories.addAll(categories)
+        entity.works.addAll(works)
         return shopMapper.toDomain(shopRepo.save(entity))
     }
 
@@ -136,6 +145,8 @@ class ShopPersistenceAdapter(
     @Transactional(readOnly = false)
     override fun update(id: Long, shop: Shop): Shop {
         val entity = shopRepo.findByIdOrNull(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        val categories = resolveCategories(shop.categoryIds)
+        val works = resolveWorks(shop.workIds)
         entity.name = shop.name
         entity.address = shop.address
         entity.px = shop.px
@@ -144,6 +155,10 @@ class ShopPersistenceAdapter(
         entity.status = ShopStatusEnum.valueOf(shop.status.name.lowercase())
         entity.visitTip = shop.visitTip
         entity.region = shop.regionId?.let { regionRepo.findByIdOrNull(it) }
+        entity.categories.clear()
+        entity.categories.addAll(categories)
+        entity.works.clear()
+        entity.works.addAll(works)
         return shopMapper.toDomain(shopRepo.save(entity))
     }
 
@@ -151,5 +166,47 @@ class ShopPersistenceAdapter(
     override fun deleteById(id: Long) {
         if (!shopRepo.existsById(id)) throw EntityNotFoundException("Shop not found: $id")
         shopRepo.deleteById(id)
+    }
+
+    private fun resolveCategories(categoryIds: List<Short>) =
+        resolveRelatedIds(
+            ids = categoryIds,
+            fieldName = "categoryIds",
+            findAll = categoryRepo::findAllById,
+            idOf = { checkNotNull(it.id) { "category id absent" } },
+        )
+
+    private fun resolveWorks(workIds: List<Int>) =
+        resolveRelatedIds(
+            ids = workIds,
+            fieldName = "workIds",
+            findAll = workRepo::findAllById,
+            idOf = { checkNotNull(it.id) { "work id absent" } },
+        )
+
+    private fun <T, E> resolveRelatedIds(
+        ids: List<T>,
+        fieldName: String,
+        findAll: (Iterable<T>) -> Iterable<E>,
+        idOf: (E) -> T,
+    ): Set<E> {
+        assertNoDuplicateIds(ids, fieldName)
+        if (ids.isEmpty()) return emptySet()
+        val found = findAll(ids).toList()
+        if (found.size != ids.size) {
+            val foundIds = found.map(idOf).toSet()
+            val missing = ids.first { it !in foundIds }
+            throw BadRequestException("Unknown $fieldName: $missing")
+        }
+        return found.toSet()
+    }
+
+    private fun <T> assertNoDuplicateIds(ids: List<T>, fieldName: String) {
+        val seen = mutableSetOf<T>()
+        for (id in ids) {
+            if (!seen.add(id)) {
+                throw BadRequestException("Duplicate $fieldName: $id")
+            }
+        }
     }
 }

@@ -4,11 +4,14 @@ import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import com.aniwhere.server.domain.shop.service.ShopServiceTest
+import com.aniwhere.server.domain.category.model.CategorySummary
 import com.aniwhere.server.domain.work.model.WorkSummary
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.slot
 import io.mockk.verify
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -40,8 +43,20 @@ class ShopControllerTest {
         id = 1L, name = "테스트샵", address = "서울시 강남구",
         px = BigDecimal("127.0276368"), py = BigDecimal("37.4979462"),
         status = ShopStatus.ACTIVE,
+        categories = listOf(CategorySummary(id = 1, name = "피규어")),
         works = listOf(WorkSummary(id = 1, name = "원피스", coverUrl = "https://example.com/c.jpg")),
     )
+
+    @Test
+    fun `GET shops_{id} - categories는 id와 name 객체 배열`() {
+        every { useCase.getShop(1L) } returns sampleShop
+        mvc.perform(get("/api/v1/shops/1"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.categories[0].id").value(1))
+            .andExpect(jsonPath("$.data.categories[0].name").value("피규어"))
+            .andExpect(jsonPath("$.data.categoryIds").doesNotExist())
+            .andExpect(jsonPath("$.data.workIds").doesNotExist())
+    }
 
     @Test
     fun `GET shops_{id} - 샵 단건 조회`() {
@@ -135,6 +150,57 @@ class ShopControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.code").value("EMPTY_RESULT"))
         verify { useCase.searchShops(null, null, null, null, null, null, any()) }
+    }
+
+    @Test
+    fun `POST shops - categoryIds와 workIds를 useCase에 전달`() {
+        every { useCase.createShop(any()) } returns sampleShop
+        val req = ShopRequest(
+            name = "테스트샵",
+            address = "서울시 강남구",
+            px = BigDecimal("127.0276368"),
+            py = BigDecimal("37.4979462"),
+            categoryIds = listOf(1, 2),
+            workIds = listOf(10, 20),
+        )
+        val captured = slot<Shop>()
+        every { useCase.createShop(capture(captured)) } returns sampleShop
+
+        mvc.perform(
+            post("/api/v1/shops")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(req)),
+        )
+            .andExpect(status().isCreated)
+
+        assertEquals(listOf<Short>(1, 2), captured.captured.categoryIds)
+        assertEquals(listOf(10, 20), captured.captured.workIds)
+    }
+
+    @Test
+    fun `PUT shops_{id} - categoryIds와 workIds를 useCase에 전달`() {
+        val updated = sampleShop.copy(name = "수정된샵")
+        val req = ShopRequest(
+            name = "수정된샵",
+            address = "서울시 강남구",
+            px = BigDecimal("127.0276368"),
+            py = BigDecimal("37.4979462"),
+            categoryIds = listOf(3),
+            workIds = listOf(42),
+        )
+        val captured = slot<Shop>()
+        every { useCase.updateShop(1L, capture(captured)) } returns updated
+
+        mvc.perform(
+            put("/api/v1/shops/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(req)),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.name").value("수정된샵"))
+
+        assertEquals(listOf<Short>(3), captured.captured.categoryIds)
+        assertEquals(listOf(42), captured.captured.workIds)
     }
 
     @Test

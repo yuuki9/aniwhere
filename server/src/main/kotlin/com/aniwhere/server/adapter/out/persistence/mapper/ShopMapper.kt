@@ -2,6 +2,7 @@ package com.aniwhere.server.adapter.out.persistence.mapper
 
 import com.aniwhere.server.adapter.out.persistence.entity.*
 import com.aniwhere.server.config.ShopImagesS3Properties
+import com.aniwhere.server.domain.category.model.CategorySummary
 import com.aniwhere.server.domain.shop.model.*
 import com.aniwhere.server.domain.work.model.WorkSummary
 import org.springframework.stereotype.Component
@@ -21,7 +22,12 @@ class ShopMapper(
         regionName = e.region?.name,
         status = ShopStatus.valueOf(e.status.name.uppercase()),
         visitTip = e.visitTip,
-        categories = e.categories.map { it.name },
+        categories = e.categories.map {
+            CategorySummary(
+                id = checkNotNull(it.id) { "category id absent" },
+                name = it.name,
+            )
+        }.sortedBy { it.name },
         works = e.works.map {
             WorkSummary(
                 id = checkNotNull(it.id) { "work id absent" },
