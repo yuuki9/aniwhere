@@ -62,7 +62,7 @@ export function MapDetailInfoCard({ shop, floorLabel, distanceLabel, onOpenDirec
 
       <MapDetailRow icon="tag" label="취급 정보">
         {shop.categories.length > 0
-          ? shop.categories.slice(0, 6).join(' · ')
+          ? shop.categories.slice(0, 6).map((category) => category.name).join(' · ')
           : '등록된 분류 정보가 없어요.'}
       </MapDetailRow>
 

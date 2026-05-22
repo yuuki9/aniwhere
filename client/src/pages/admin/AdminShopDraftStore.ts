@@ -8,6 +8,8 @@ export type AdminShopDraft = {
   py: number | null
   floor: string
   regionId: number | null
+  categoryIds: number[]
+  workIds: number[]
   status: ShopStatus
   visitTip: string
 }
@@ -47,7 +49,23 @@ function writeJson<T>(key: string, value: T) {
 }
 
 export function readAdminShopDraft() {
-  return readJson<AdminShopDraft>(ADMIN_SHOP_DRAFT_STORAGE_KEY)
+  const draft = readJson<Partial<AdminShopDraft>>(ADMIN_SHOP_DRAFT_STORAGE_KEY)
+
+  if (!draft) {
+    return null
+  }
+
+  const normalizedDraft = {
+    ...draft,
+    categoryIds: Array.isArray(draft.categoryIds) ? draft.categoryIds : [],
+    workIds: Array.isArray(draft.workIds) ? draft.workIds : [],
+  } as AdminShopDraft
+
+  if (draft.categoryIds !== normalizedDraft.categoryIds || draft.workIds !== normalizedDraft.workIds) {
+    writeAdminShopDraft(normalizedDraft)
+  }
+
+  return normalizedDraft
 }
 
 export function writeAdminShopDraft(draft: AdminShopDraft) {

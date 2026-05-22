@@ -51,3 +51,10 @@ test('HomePage sends work poster searches to SearchPage with work scope and retu
   assert.match(source, /to=\{buildHomeWorkSearchHref\(work\.name\)\}/)
   assert.doesNotMatch(source, /to=\{`\/explore\?workId=\$\{work\.id\}&view=list`\}/)
 })
+
+test('HomePage exposes the admin entry during local preview unlock', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+
+  assert.match(source, /canUseAdminPreview/)
+  assert.match(source, /includeAdmin: isAdminUnlocked\(\) \|\| canUseAdminPreview\(\)/)
+})

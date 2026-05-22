@@ -32,6 +32,14 @@ cd client
 npm run build
 ```
 
+## Backend API Contract
+
+- Swagger UI: https://api.aniwhere.link/swagger-ui/index.html
+- OpenAPI JSON: https://api.aniwhere.link/v3/api-docs
+- Frontend contract sync guide: `docs/backend-api-contract.md`
+
+Server branches merged into `main` are assumed to be automatically deployed to `https://api.aniwhere.link`; use the deployed Swagger UI above as the first reference for frontend API contract comparison.
+
 ## 현재 범위
 
 - 샵 목록/상세 조회

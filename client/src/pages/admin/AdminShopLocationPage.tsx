@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { geocodeShopAddress, type ShopLocationCandidate } from '../../shared/lib/naverGeocoder'
-import { AitNavigation } from '../../shared/ui/ait'
+import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 import {
   readAdminShopDraft,
   writeAdminShopDraft,
@@ -81,7 +81,7 @@ export function AdminShopLocationPage() {
 
   return (
     <main className="app-shell admin-shell admin-shop-crud-shell admin-shop-location-shell">
-      <AitNavigation
+      <AppTopNavigation
         className="route-navigation"
         showBack
         title="주소 검색"

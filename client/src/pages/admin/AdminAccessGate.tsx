@@ -8,13 +8,14 @@ import {
   unlockAdminPreview,
   unlockAdminSession,
 } from '../../shared/lib/adminAccess'
-import { AitNavigation } from '../../shared/ui/ait'
+import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 
 export function AdminAccessGate() {
   const [isUnlocked, setIsUnlocked] = useState(isAdminUnlocked())
   const [unlockCode, setUnlockCode] = useState('')
   const [unlockError, setUnlockError] = useState<string | null>(null)
   const previewUnlockAvailable = canUseAdminPreview()
+  const isPreviewUnlocked = previewUnlockAvailable || isUnlocked
 
   const lockAdmin = () => {
     clearAdminSession()
@@ -34,13 +35,13 @@ export function AdminAccessGate() {
     setUnlockError('관리자 코드가 맞지 않아요.')
   }
 
-  if (isUnlocked) {
+  if (isPreviewUnlocked) {
     return <Outlet context={{ lockAdmin }} />
   }
 
   return (
     <main className="app-shell admin-shell">
-      <AitNavigation />
+      <AppTopNavigation />
       <section className="section admin-unlock-card">
         <div className="admin-unlock-head">
           <div>

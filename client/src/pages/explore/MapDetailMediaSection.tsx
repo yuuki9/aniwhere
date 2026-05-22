@@ -61,7 +61,7 @@ export function MapDetailMediaSection({
             <img className="map-sheet-media-image" src={detailMediaItems[0].src} alt={detailMediaItems[0].alt} />
             <div className="map-sheet-media-image-overlay">
               <span className="map-sheet-media-badge">{shop.regionName ?? 'ANIWHERE'}</span>
-              <strong>{shop.categories[0] ?? '매장 이미지'}</strong>
+              <strong>{shop.categories[0]?.name ?? '매장 이미지'}</strong>
             </div>
           </article>
 

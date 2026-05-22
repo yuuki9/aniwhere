@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Toast } from '@aniwhere/tds-mobile'
+import { Button, Toast } from '@aniwhere/tds-mobile'
 import { deleteShop, getShops } from '../../shared/api/shops'
 import type { Shop, ShopStatus } from '../../shared/api/types'
 import { formatRelativeUpdated } from '../../shared/lib/format'
-import { AitButton, AitNavigation } from '../../shared/ui/ait'
+import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 import { StatusPill } from '../../shared/ui/StatusPill'
 
 type AdminShopManageLocationState = {
@@ -148,7 +148,7 @@ export function AdminShopManagePage() {
 
   return (
     <main className="app-shell admin-shell admin-shop-crud-shell admin-shop-manage-shell">
-      <AitNavigation className="route-navigation" showBack title="매장 관리" showLogo={false} />
+      <AppTopNavigation className="route-navigation" showBack title="매장 관리" showLogo={false} />
 
       <section className="admin-shop-crud-layout">
         <section className="admin-shop-manage-summary" aria-label="매장 관리 요약">
@@ -170,11 +170,11 @@ export function AdminShopManagePage() {
           </div>
         </section>
 
-        <Link className="admin-shop-create-link" to="/admin/shops/new">
-          <AitButton display="full" type="button">
+        <div className="admin-shop-create-link">
+          <Button display="full" type="button" onClick={() => navigate('/admin/shops/new')}>
             매장 등록
-          </AitButton>
-        </Link>
+          </Button>
+        </div>
 
         <section className="admin-shop-manage-tools" aria-label="매장 검색과 필터">
           <form

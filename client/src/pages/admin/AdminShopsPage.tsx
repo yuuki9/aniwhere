@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Toast } from '@aniwhere/tds-mobile'
+import { Button, Toast } from '@aniwhere/tds-mobile'
 import { API_BASE_URL } from '../../shared/api/client'
+import { getCategories } from '../../shared/api/categories'
 import {
   createShop,
   createShopWithImages,
@@ -10,8 +11,9 @@ import {
   updateShop,
   updateShopWithImages,
 } from '../../shared/api/shops'
-import type { Shop, ShopImage, ShopRequest, ShopStatus } from '../../shared/api/types'
-import { AitButton, AitNavigation } from '../../shared/ui/ait'
+import type { CategoryListItem, Shop, ShopImage, ShopRequest, ShopStatus, WorkCatalogItem } from '../../shared/api/types'
+import { getWorks } from '../../shared/api/works'
+import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 import {
   clearAdminShopDraft,
   clearAdminShopSelectedLocation,
@@ -32,6 +34,8 @@ type ShopFormState = {
   py: number | null
   floor: string
   regionId: number | null
+  categoryIds: number[]
+  workIds: number[]
   status: ShopStatus
   visitTip: string
 }
@@ -71,6 +75,8 @@ const EMPTY_SHOP_FORM: ShopFormState = {
   py: null,
   floor: '',
   regionId: null,
+  categoryIds: [],
+  workIds: [],
   status: 'UNVERIFIED',
   visitTip: '',
 }
@@ -114,6 +120,8 @@ function buildShopRequest(form: ShopFormState): ShopRequest {
     py: form.py,
     floor: form.floor.trim() || null,
     regionId: form.regionId,
+    categoryIds: form.categoryIds,
+    workIds: form.workIds,
     status: form.status,
     visitTip: form.visitTip.trim() || null,
   }
@@ -128,6 +136,8 @@ function buildShopFormFromShop(shop: Shop): ShopFormState {
     py: shop.py,
     floor: shop.floor ?? '',
     regionId: shop.regionId,
+    categoryIds: shop.categoryIds ?? shop.categories.map((category) => category.id),
+    workIds: shop.workIds ?? shop.works.map((work) => work.id),
     status: shop.status,
     visitTip: shop.visitTip ?? '',
   }
@@ -278,6 +288,61 @@ function getImageExtension(contentType: string) {
   }
 }
 
+function toggleSelectedId(selectedIds: number[], targetId: number) {
+  return selectedIds.includes(targetId)
+    ? selectedIds.filter((selectedId) => selectedId !== targetId)
+    : [...selectedIds, targetId]
+}
+
+function CatalogSelectionSection({
+  emptyLabel,
+  isError,
+  isLoading,
+  onToggle,
+  options,
+  selectedIds,
+  title,
+}: {
+  emptyLabel: string
+  isError: boolean
+  isLoading: boolean
+  onToggle: (id: number) => void
+  options: Array<CategoryListItem | WorkCatalogItem>
+  selectedIds: number[]
+  title: string
+}) {
+  return (
+    <section className="admin-shop-catalog-group" aria-label={title}>
+      <div className="admin-shop-catalog-head">
+        <strong>{title}</strong>
+        <small>{selectedIds.length}개 선택</small>
+      </div>
+
+      {isLoading ? <small className="meta-text">{title} 목록을 불러오고 있습니다.</small> : null}
+      {isError ? <small className="error-text">{title} 목록을 불러오지 못했습니다.</small> : null}
+      {!isLoading && !isError && options.length === 0 ? <small className="meta-text">{emptyLabel}</small> : null}
+
+      {options.length > 0 ? (
+        <div className="admin-shop-catalog-options">
+          {options.map((option) => {
+            const selected = selectedIds.includes(option.id)
+            const count = 'count' in option ? option.count : null
+
+            return (
+              <label className="admin-shop-catalog-option" data-selected={selected} key={option.id}>
+                <input checked={selected} type="checkbox" onChange={() => onToggle(option.id)} />
+                <span className="admin-shop-catalog-check" aria-hidden="true" />
+                <span>{option.name}</span>
+                {count != null ? <small>{count}</small> : null}
+              </label>
+            )
+          })}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 async function editableImageItemToFile(item: EditableImageItem, fallbackName: string) {
   if (item.file) {
     return item.file
@@ -375,6 +440,14 @@ export function AdminShopsPage() {
     queryKey: ['shops', 'admin-shop-edit', editingShopId],
     queryFn: () => getShop(editingShopId as number),
     enabled: isEditMode,
+  })
+  const categoriesQuery = useQuery({
+    queryKey: ['categories', 'admin-shop-form'],
+    queryFn: getCategories,
+  })
+  const worksQuery = useQuery({
+    queryKey: ['works', 'admin-shop-form'],
+    queryFn: () => getWorks(),
   })
   const openLocationSearch = () => {
     setFieldErrors((current) => ({ ...current, location: undefined }))
@@ -486,6 +559,20 @@ export function AdminShopsPage() {
     setEditImageItems((current) => moveItemToFront(current, targetIndex))
   }
 
+  const toggleCategory = (categoryId: number) => {
+    setShopForm((current) => ({
+      ...current,
+      categoryIds: toggleSelectedId(current.categoryIds, categoryId),
+    }))
+  }
+
+  const toggleWork = (workId: number) => {
+    setShopForm((current) => ({
+      ...current,
+      workIds: toggleSelectedId(current.workIds, workId),
+    }))
+  }
+
   const removeEditImageItem = (targetIndex: number) => {
     setEditImageItems((current) => {
       if (current.length <= 1) {
@@ -539,7 +626,7 @@ export function AdminShopsPage() {
 
   return (
     <main className="app-shell admin-shell admin-shop-crud-shell">
-      <AitNavigation className="route-navigation" showBack title={isEditMode ? '매장 수정' : '매장 등록'} showLogo={false} />
+      <AppTopNavigation className="route-navigation" showBack title={isEditMode ? '매장 수정' : '매장 등록'} showLogo={false} />
 
       <section className="admin-shop-crud-layout">
         {editShopQuery.isLoading ? <p className="admin-shop-manage-state">매장 정보를 불러오고 있어요.</p> : null}
@@ -756,10 +843,31 @@ export function AdminShopsPage() {
             </label>
           </section>
 
+          <section className="admin-shop-editor-section admin-shop-catalog-section">
+            <CatalogSelectionSection
+              emptyLabel="등록된 카테고리가 없습니다."
+              isError={categoriesQuery.isError}
+              isLoading={categoriesQuery.isLoading}
+              options={categoriesQuery.data ?? []}
+              selectedIds={shopForm.categoryIds}
+              title="카테고리"
+              onToggle={toggleCategory}
+            />
+            <CatalogSelectionSection
+              emptyLabel="등록된 작품이 없습니다."
+              isError={worksQuery.isError}
+              isLoading={worksQuery.isLoading}
+              options={worksQuery.data ?? []}
+              selectedIds={shopForm.workIds}
+              title="취급 작품"
+              onToggle={toggleWork}
+            />
+          </section>
+
           <div className="admin-shop-actions">
-            <AitButton display="full" disabled={saveShopMutation.isPending || editShopQuery.isLoading} type="submit">
+            <Button display="full" disabled={saveShopMutation.isPending || editShopQuery.isLoading} type="submit">
               {saveShopMutation.isPending ? '저장 중...' : isEditMode ? '수정하기' : '등록하기'}
-            </AitButton>
+            </Button>
           </div>
         </form>
       </section>

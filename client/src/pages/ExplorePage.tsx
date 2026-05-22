@@ -18,7 +18,7 @@ import {
 } from '../shared/lib/naverDirections'
 import { isAppsInTossRuntime } from '../shared/lib/auth'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
-import { AitNavigation } from '../shared/ui/ait'
+import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
@@ -815,7 +815,7 @@ export function ExplorePage() {
             .join(' ')}
         >
           {!usesTossNavigation ? (
-            <AitNavigation className="map-route-navigation" showBack onBack={handleExploreBack} />
+            <AppTopNavigation className="map-route-navigation" showBack onBack={handleExploreBack} />
           ) : null}
 
           {!isListSheetOpen ? (

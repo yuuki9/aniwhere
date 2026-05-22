@@ -74,6 +74,24 @@ export type WorkCatalogItem = WorkSummary & {
   anilistSyncedAt: string | null
 }
 
+export type RegionListItem = {
+  id: number
+  city: string | null
+  name: string
+  count: number
+}
+
+export type CategoryListItem = {
+  id: number
+  name: string
+  count: number
+}
+
+export type CategorySummary = {
+  id: number
+  name: string
+}
+
 export type Shop = {
   id: number
   name: string
@@ -83,9 +101,11 @@ export type Shop = {
   floor: string | null
   regionId: number | null
   regionName: string | null
+  categoryIds?: number[]
+  workIds?: number[]
   status: ShopStatus
   visitTip: string | null
-  categories: string[]
+  categories: CategorySummary[]
   works: WorkSummary[]
   links: ShopLink[]
   images: ShopImage[]
@@ -101,6 +121,8 @@ export type ShopRequest = {
   py: number
   floor?: string | null
   regionId?: number | null
+  categoryIds: number[]
+  workIds: number[]
   status: ShopStatus
   visitTip?: string | null
 }
