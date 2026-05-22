@@ -10,12 +10,15 @@
 2. `guard.md`
 3. `README.md`
 4. `docs/product-decisions.md`
+5. `docs/agent-hooks.md`
+6. `docs/agent-skills.md`
 
 ## Automation Baseline
 
 - 브랜치 전략, 커밋 형식, 태그 정책은 `GIT_CONVENTIONS.md`를 그대로 따릅니다.
 - 자동화가 변경사항을 제안할 때는 현재 브랜치와 대상 브랜치를 먼저 확인합니다.
 - 프론트엔드 자동화는 Apps in Toss 스타일, 서비스 UX, 접근성, 구조 최적화 기준을 함께 봅니다.
+- 자연어 기반 자동화는 `docs/agent-hooks.md`의 trigger 기준으로 필요한 skill과 공식 문서를 먼저 고릅니다.
 - 백엔드 변경과 프론트 영향도를 연결해서 기록합니다.
 - 제품 정책을 다루는 자동화는 `docs/product-decisions.md`를 읽고 확정 범위를 벗어나지 않도록 합니다.
 

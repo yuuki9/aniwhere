@@ -1,0 +1,6 @@
+interface:
+  display_name: "Aniwhere Work Planning"
+  short_description: "Plan Aniwhere branches, PR scope, task slices, prototypes, and memory use."
+  default_prompt: "Use $aniwhere-work-planning to plan Aniwhere work before implementation."
+policy:
+  allow_implicit_invocation: true

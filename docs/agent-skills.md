@@ -8,7 +8,11 @@ This repository carries project-local Codex skills under `.codex/skills`.
 - `aniwhere-product-ux`: product decisions, mobile UX, screen scope, permission timing, Toss-style information exploration, and design-token usage.
 - `aniwhere-skill-workflow`: creating and maintaining project skills using Apps in Toss webinar guidance and Superpowers practices.
 - `aniwhere-launch-checklist`: final Apps in Toss non-game launch review for access/functions, navigation, login/auth/permissions, guide routing, UI/UX, brand text, payments, ads, external links, TDS, sharing rewards, and sandbox evidence.
-- `session-task-branch-bootstrap`: session-start helper that asks for a task name and creates/switches a branch name aligned with Aniwhere branch conventions.
+- `aniwhere-debug-loop`: bug/regression diagnosis for tests, builds, API, WebView sandbox, login, permission, ad, reward, image, and map failures.
+- `aniwhere-work-planning`: planning branches, PR boundaries, task slices, prototypes, and durable follow-up decisions.
+- `aniwhere-pr-preflight`: PR creation/update/handoff checks, CodeRabbit-style risk pass, and Korean PR title/body preparation.
+
+Use `docs/agent-hooks.md` as the natural-language trigger map. The user can say "UI 개선", "PR 단계", "앱인토스 확인", "API 명세 반영", or "버그 원인 확인" without naming a skill.
 
 For UI styling work, read `docs/design-tokens.md`, `docs/tds-compatible-ui-layer.md`, and `docs/tds-route-audit.md`. Apps in Toss launch is the product priority: use project TDS facades first when official components exist, treat `client/src/shared/ui/ait` as migration debt to remove, and route reusable values through `client/src/styles/tokens.css` before adding new raw CSS values.
 
@@ -49,6 +53,20 @@ Before opening or handing off any PR that touches client UI, WebView behavior, r
 6. Keep official Apps in Toss/TDS requirements separate from Aniwhere local TDS-compatible decisions.
 
 If a PR intentionally excludes a broader TDS audit, state the follow-up branch/PR scope in the PR body.
+
+PR creation handoff rule:
+
+- The server maintainer owns final merge authority.
+- Codex must provide the PR creation URL or created PR URL, the exact PR title, and a `.github/PULL_REQUEST_TEMPLATE.md`-shaped PR description the user can paste into GitHub.
+- If connector or `gh` auth fails, do not stop at the permission error; treat it as a handoff and provide the URL plus copy/paste-ready title/body.
+
+## Hook Management
+
+- Durable rules should live in tracked repo docs or tracked project skills whenever they affect every Aniwhere session.
+- Local/global Codex hooks or user-profile skills may enforce the rule in the current machine, but the tracked source of truth should still be `AGENTS.md`, `GIT_CONVENTIONS.md`, `guard.md`, `docs/agent-hooks.md`, `docs/agent-skills.md`, or a repo-local skill.
+- When a workflow is promoted to a hook, remove obsolete read-order docs and update every skill that referenced them so new sessions do not follow stale instructions.
+- Guard files should state policy and boundaries. Hook docs should state trigger conditions and required preflight. Skills should stay procedural.
+- `tds-react-native` and Unity official docs are non-target references for Aniwhere unless a request explicitly targets those platforms.
 
 ## Use On Another Machine
 

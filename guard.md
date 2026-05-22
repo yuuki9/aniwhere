@@ -15,6 +15,7 @@
 - 화면 구조는 Toss 스타일의 정보 탐색형 UX를 기본으로 둡니다.
 - API 구조를 따르는 UI도 단순 관리 화면처럼 보이지 않게 다듬습니다.
 - 지도는 메인 기능이 아니라 탐색 목적에 맞는 화면에서만 강하게 사용합니다.
+- 사용자는 skill 이름을 외우지 않아도 됩니다. 자연어 요청은 `docs/agent-hooks.md`의 trigger 기준으로 Codex가 해석합니다.
 
 ## 현재 프로젝트 해석
 
@@ -22,6 +23,15 @@
 - 프레임워크: `@apps-in-toss/web-framework`
 - 설정 파일: `client/granite.config.ts`
 - 게임형 앱이 아니라 서비스형 WebView 앱으로 간주합니다.
+- 기본 준수 대상은 Apps in Toss WebView/비게임 공식 문서와 TDS Mobile 문서입니다.
+- `tds-react-native`와 Unity 문서는 Aniwhere WebView 작업의 기본 준수 대상이 아닙니다. 해당 플랫폼을 직접 다루는 요청이 아니라면 참고 또는 비적용 문서로 분류합니다.
+
+## Guard / Hook / Skill 분리
+
+- Guard는 지켜야 할 정책과 금지선을 정의합니다.
+- Hook은 자연어 요청을 어떤 문서와 skill로 라우팅할지 정의합니다.
+- Skill은 특정 작업을 어떻게 실행할지 정의합니다.
+- 반복되는 실수가 hook으로 승격되면 `docs/agent-hooks.md`에 기록하고, 오래된 별도 guard 문서는 남기지 않습니다.
 
 ## UX 방향
 
@@ -36,6 +46,7 @@
 
 - Route-level TDS work must follow `docs/tds-route-audit.md` before editing. Classify the route, discover the relevant official TDS docs with the Apps in Toss MCP, record the docs checked, then classify each visible delta as `TDS-required`, `Product-approved`, or `Regression`.
 - Do not wait for the user to provide official TDS links. If a route uses buttons, typography, lists, top/title areas, bottom CTAs, sheets, search, toasts, or dialogs, search the matching official TDS docs first.
+- UI/UX 개선 요청은 `docs/agent-hooks.md`의 UI/TDS hook을 먼저 적용합니다.
 
 - 메인 UI에는 와이어프레임성 설명문, 기능 안내문, 내부 검토용 플레이버 텍스트를 남기지 않습니다.
 - 모든 화면 카피는 실사용자 기준의 짧고 직접적인 문장으로 정리합니다.

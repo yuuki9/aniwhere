@@ -1,6 +1,6 @@
 ---
 name: aniwhere-toss-webview
-description: Work on Aniwhere as an Apps in Toss non-game WebView miniapp. Use for @apps-in-toss/web-framework, granite.config.ts, Toss login, geolocation permissions, ads, promotion rewards, TDS/mobile design-system work, sandbox verification, deployment readiness, and launch checklist tasks in this repository.
+description: Use when Aniwhere work mentions Apps in Toss, WebView, sandbox, @apps-in-toss/web-framework, granite.config.ts, Toss login, permissions, ads, rewards, TDS/mobile UI, deployment readiness, or launch checks.
 ---
 
 # Aniwhere Toss WebView
@@ -8,7 +8,7 @@ description: Work on Aniwhere as an Apps in Toss non-game WebView miniapp. Use f
 ## Start
 
 1. Read `GIT_CONVENTIONS.md`, `guard.md`, `README.md`, and `docs/product-decisions.md`.
-2. Read `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md` and apply its TDS notice, UTF-8, PR boundary, PR description, and review-feedback rules.
+2. Apply the natural-language hooks from `docs/agent-hooks.md` plus the TDS notice, UTF-8, PR boundary, PR description, and review-feedback rules from `GIT_CONVENTIONS.md`, `guard.md`, `docs/agent-skills.md`, and task-specific skills.
 3. Inspect the relevant client files before editing:
    - `client/package.json`
    - `client/granite.config.ts`

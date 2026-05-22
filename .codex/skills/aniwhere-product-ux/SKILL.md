@@ -1,6 +1,6 @@
 ---
 name: aniwhere-product-ux
-description: Apply Aniwhere product decisions and mobile UX rules. Use when changing screens, navigation, copy, search/explore/detail flows, admin or reward scope, location permission timing, Toss-style mobile UI, or user-facing client behavior.
+description: Use when changing Aniwhere screens, UI, UX, navigation, copy, search/explore/detail flows, admin or reward scope, location permission timing, Toss-style mobile UI, or user-facing client behavior.
 ---
 
 # Aniwhere Product UX
@@ -8,7 +8,7 @@ description: Apply Aniwhere product decisions and mobile UX rules. Use when chan
 ## Start
 
 1. Read `docs/product-decisions.md` before changing product scope.
-2. Read `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md` before changing UI, flow, PR scope, or review responses.
+2. Apply natural-language hooks from `docs/agent-hooks.md` and the PR boundary, PR handoff, UTF-8, and review-response rules from `GIT_CONVENTIONS.md`, `guard.md`, and `docs/agent-skills.md`.
 3. Read `docs/ux-mobile-research.md` before changing layout, navigation, or copy.
 4. Read `docs/design-tokens.md` before changing client CSS or UI styling.
 5. Preserve product decisions unless the task explicitly updates the decision document first.

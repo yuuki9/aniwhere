@@ -2,6 +2,8 @@
 
 Aniwhere route UI work must start from official Apps in Toss/TDS evidence, then compare the current implementation against that evidence. This prevents a route from looking visually acceptable while drifting away from the launch review basis.
 
+UI/UX 자연어 요청은 `docs/agent-hooks.md`의 UI/TDS hook을 먼저 적용합니다. Aniwhere WebView 화면의 기본 UI 준수 대상은 TDS Mobile docs (`https://tossmini-docs.toss.im/tds-mobile`)입니다. `tds-react-native`와 Unity docs는 해당 플랫폼을 직접 다루는 작업이 아니라면 `Non-target reference`로 분류합니다.
+
 ## Mandatory Workflow
 
 1. Classify the route by product role before editing.

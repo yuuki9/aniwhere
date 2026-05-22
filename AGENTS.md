@@ -8,12 +8,14 @@
 2. `guard.md`
 3. `README.md`
 4. `docs/product-decisions.md`
-5. `.codex/skills/aniwhere-skill-workflow/references/session-operating-guard.md`
-6. `docs/tds-route-audit.md` when client UI/TDS work is in scope
+5. `docs/agent-hooks.md`
+6. `docs/agent-skills.md`
+7. `docs/tds-route-audit.md` when client UI/TDS work is in scope
 
 ## Mandatory Rules
 
 - Client UI/TDS work must follow `docs/tds-route-audit.md`: classify the route, search official TDS Mobile docs with the Apps in Toss MCP, record checked docs, and classify visible deltas as `TDS-required`, `Product-approved`, or `Regression` before editing.
+- Natural-language requests must be routed through `docs/agent-hooks.md`. The user does not need to name a skill; Codex must infer the work type and load the matching docs/skills.
 
 - 브랜치, 커밋, 태그 규칙은 항상 `GIT_CONVENTIONS.md`를 기준으로 따릅니다.
 - 작업 전 현재 브랜치와 최근 변경사항을 확인합니다.
@@ -33,4 +35,4 @@
 - 프로젝트 전용 Codex 스킬은 `.codex/skills/`에 둡니다.
 - 스킬 사용/설치 방법은 `docs/agent-skills.md`를 기준으로 확인합니다.
 - Apps in Toss WebView, 제품 UX, 스킬 제작 워크플로우는 가능한 경우 프로젝트 전용 스킬을 우선 참고합니다.
-- 모든 세션은 공통 운영 가드(`session-operating-guard.md`)를 기준으로 TDS/Apps in Toss 이탈, UTF-8 위험, PR 경계, PR 설명, CodeRabbit 리뷰 확인 필요성을 판단합니다.
+- 모든 세션은 `GIT_CONVENTIONS.md`, `guard.md`, `docs/agent-hooks.md`, `docs/agent-skills.md`, 관련 Codex skill hook을 기준으로 TDS/Apps in Toss 이탈, UTF-8 위험, PR 경계, PR 설명, CodeRabbit 리뷰 확인 필요성을 판단합니다.
