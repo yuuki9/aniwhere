@@ -1,11 +1,18 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopFacetQuery
+import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopStatus
+import com.aniwhere.server.domain.shop.model.FacetCategoryItem
+import com.aniwhere.server.domain.shop.model.FacetRegionItem
+import com.aniwhere.server.domain.shop.model.FacetStatusItem
+import com.aniwhere.server.domain.shop.model.FacetWorkItem
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.aniwhere.server.domain.category.model.CategorySummary
 import com.aniwhere.server.domain.work.model.WorkSummary
+import com.aniwhere.server.domain.work.model.WorkType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -72,7 +79,7 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - 샵 페이징 검색`() {
-        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("keyword", "테스트").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content.length()").value(1))
@@ -81,12 +88,12 @@ class ShopControllerTest {
             .andExpect(jsonPath("$.data.totalElements").value(1))
             .andExpect(jsonPath("$.code").doesNotExist())
             .andExpect(jsonPath("$.message").doesNotExist())
-        verify { useCase.searchShops(null, null, "테스트", null, null, null, any()) }
+        verify { useCase.searchShops(null, null, emptySet(), "테스트", null, null, null, any()) }
     }
 
     @Test
     fun `GET shops - keyword 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(null, null, "원피스", null, null, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(null, null, emptySet(), "원피스", null, null, null, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("keyword", " 원피스 ")
@@ -94,12 +101,12 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, "원피스", null, null, null, any()) }
+        verify { useCase.searchShops(null, null, emptySet(), "원피스", null, null, null, any()) }
     }
 
     @Test
     fun `GET shops - workId 를 그대로 유스케이스에 전달`() {
-        every { useCase.searchShops(null, null, null, null, 42, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(null, null, emptySet(), null, null, 42, null, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("workId", "42")
@@ -107,12 +114,12 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, null, null, 42, null, any()) }
+        verify { useCase.searchShops(null, null, emptySet(), null, null, 42, null, any()) }
     }
 
     @Test
     fun `GET shops - workKeyword 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(null, null, null, "주술회전", null, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(null, null, emptySet(), null, "주술회전", null, null, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("workKeyword", " 주술회전 ")
@@ -120,21 +127,21 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, null, "주술회전", null, null, any()) }
+        verify { useCase.searchShops(null, null, emptySet(), null, "주술회전", null, null, any()) }
     }
 
     @Test
     fun `GET shops - status 필터를 domain enum으로 전달`() {
-        every { useCase.searchShops(null, null, null, null, null, ShopStatus.ACTIVE, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(null, null, emptySet(), null, null, null, ShopStatus.ACTIVE, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("status", "ACTIVE").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, null, null, null, ShopStatus.ACTIVE, any()) }
+        verify { useCase.searchShops(null, null, emptySet(), null, null, null, ShopStatus.ACTIVE, any()) }
     }
 
     @Test
     fun `GET shops - 검색 결과가 없으면 code 와 안내 메시지`() {
         val pageable = PageRequest.of(0, 20)
-        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(emptyList(), pageable, 0)
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(emptyList(), pageable, 0)
         mvc.perform(get("/api/v1/shops").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
@@ -145,11 +152,139 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - keyword 가 공백만이면 필터 미적용(null)`() {
-        every { useCase.searchShops(null, null, null, null, null, null, any()) } returns PageImpl(emptyList())
+        every { useCase.searchShops(null, null, emptySet(), null, null, null, null, any()) } returns PageImpl(emptyList())
         mvc.perform(get("/api/v1/shops").param("keyword", "   ").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.code").value("EMPTY_RESULT"))
-        verify { useCase.searchShops(null, null, null, null, null, null, any()) }
+        verify { useCase.searchShops(null, null, emptySet(), null, null, null, null, any()) }
+    }
+
+    @Test
+    fun `GET shops - category와 categoryIds를 함께 전달하면 둘 다 유스케이스로 전달`() {
+        every {
+            useCase.searchShops(
+                null,
+                "피규어",
+                setOf<Short>(1, 2),
+                null,
+                null,
+                null,
+                null,
+                any(),
+            )
+        } returns PageImpl(listOf(sampleShop))
+
+        mvc.perform(
+            get("/api/v1/shops")
+                .param("category", "피규어")
+                .param("categoryIds", "1", "2")
+                .param("page", "0")
+                .param("size", "20"),
+        )
+            .andExpect(status().isOk)
+
+        verify {
+            useCase.searchShops(
+                null,
+                "피규어",
+                setOf<Short>(1, 2),
+                null,
+                null,
+                null,
+                null,
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `GET shops_facets - 쿼리 파라미터를 trim과 enum 파싱 후 전달`() {
+        val captured = slot<ShopFacetQuery>()
+        every { useCase.getShopFacets(capture(captured)) } returns ShopFacetResponse()
+
+        mvc.perform(
+            get("/api/v1/shops/facets")
+                .param("keyword", " 원피스 ")
+                .param("regionIds", "1,2")
+                .param("categoryIds", "3,4")
+                .param("workIds", "10,20")
+                .param("status", "active")
+                .param("swLat", "37.1")
+                .param("swLng", "127.1")
+                .param("neLat", "37.9")
+                .param("neLng", "127.9")
+                .param("type", " game "),
+        )
+            .andExpect(status().isOk)
+
+        assertEquals("원피스", captured.captured.keyword)
+        assertEquals(setOf<Short>(1, 2), captured.captured.regionIds)
+        assertEquals(setOf<Short>(3, 4), captured.captured.categoryIds)
+        assertEquals(setOf(10, 20), captured.captured.workIds)
+        assertEquals(ShopStatus.ACTIVE, captured.captured.status)
+        assertEquals(BigDecimal("37.1"), captured.captured.swLat)
+        assertEquals(BigDecimal("127.1"), captured.captured.swLng)
+        assertEquals(BigDecimal("37.9"), captured.captured.neLat)
+        assertEquals(BigDecimal("127.9"), captured.captured.neLng)
+        assertEquals(WorkType.GAME, captured.captured.type)
+    }
+
+    @Test
+    fun `GET shops_facets - 멀티 선택 파라미터 미전달 시 empty set으로 전달`() {
+        val captured = slot<ShopFacetQuery>()
+        every { useCase.getShopFacets(capture(captured)) } returns ShopFacetResponse()
+
+        mvc.perform(get("/api/v1/shops/facets"))
+            .andExpect(status().isOk)
+
+        assertEquals(emptySet<Short>(), captured.captured.regionIds)
+        assertEquals(emptySet<Short>(), captured.captured.categoryIds)
+        assertEquals(emptySet<Int>(), captured.captured.workIds)
+    }
+
+    @Test
+    fun `GET shops_facets - 응답은 regions categories works statuses 배열을 포함`() {
+        every { useCase.getShopFacets(any()) } returns ShopFacetResponse(
+            regions = listOf(FacetRegionItem(id = 1, name = "홍대")),
+            categories = listOf(FacetCategoryItem(id = 2, name = "굿즈")),
+            works = listOf(FacetWorkItem(id = 10, name = "원피스")),
+            statuses = listOf(FacetStatusItem(value = ShopStatus.ACTIVE.name, label = "운영중")),
+        )
+
+        mvc.perform(get("/api/v1/shops/facets"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.regions[0].id").value(1))
+            .andExpect(jsonPath("$.data.categories[0].id").value(2))
+            .andExpect(jsonPath("$.data.works[0].id").value(10))
+            .andExpect(jsonPath("$.data.statuses[0].value").value("ACTIVE"))
+    }
+
+    @Test
+    fun `GET shops_facets - type 이 잘못되면 400`() {
+        mvc.perform(get("/api/v1/shops/facets").param("type", "novel"))
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `GET shops_facets - bounds 값은 4개를 모두 주거나 모두 비워야 한다`() {
+        mvc.perform(
+            get("/api/v1/shops/facets")
+                .param("swLat", "37.1")
+                .param("swLng", "127.1"),
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `GET shops_facets - bounds 최소값이 최대값보다 크면 400`() {
+        mvc.perform(
+            get("/api/v1/shops/facets")
+                .param("swLat", "38.0")
+                .param("swLng", "128.0")
+                .param("neLat", "37.0")
+                .param("neLng", "127.0"),
+        )
+            .andExpect(status().isBadRequest)
     }
 
     @Test

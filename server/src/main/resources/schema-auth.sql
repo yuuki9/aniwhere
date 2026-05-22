@@ -42,3 +42,19 @@ CREATE TABLE IF NOT EXISTS toss_unlink_events (
     PRIMARY KEY (id),
     KEY idx_unlink_user_key (user_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_favorite_works (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    -- NOTE: works catalog is managed outside this auth schema, so we intentionally avoid FK(work_id -> works.id) here.
+    -- Integrity for work_id is validated at application/service boundary.
+    work_id INT NOT NULL,
+    source VARCHAR(20) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_favorite_works_user_id_work_id (user_id, work_id),
+    KEY idx_user_favorite_works_user_id (user_id),
+    KEY idx_user_favorite_works_work_id (work_id),
+    CONSTRAINT fk_user_favorite_works_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

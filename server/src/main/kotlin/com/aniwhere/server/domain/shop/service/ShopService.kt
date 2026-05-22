@@ -4,6 +4,8 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopFacetQuery
+import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
@@ -15,8 +17,13 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 @Transactional(readOnly = true)
@@ -25,23 +32,43 @@ class ShopService(
     private val imageStorage: ShopImageStoragePort,
     private val transactionTemplate: TransactionTemplate,
 ) : ShopUseCase {
+    private val facetCache = ConcurrentHashMap<ShopFacetQuery, CachedFacetResponse>()
 
     override fun getShop(id: Long) =
         port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
 
+    override fun getShopFacets(query: ShopFacetQuery): ShopFacetResponse {
+        val cacheKey = normalizeForCacheKey(query)
+        val cachedOrFresh = facetCache.compute(cacheKey) { _, existing ->
+            val now = System.currentTimeMillis()
+            if (existing != null && now - existing.cachedAtMillis <= FACET_CACHE_TTL_MILLIS) {
+                existing
+            } else {
+                CachedFacetResponse(response = port.findFacets(query), cachedAtMillis = now)
+            }
+        } ?: error("Facet cache compute failed")
+
+        return cachedOrFresh.response
+    }
+
     override fun searchShops(
         regionId: Short?,
         categoryName: String?,
+        categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
         workId: Int?,
         status: ShopStatus?,
         pageable: Pageable,
     ): Page<Shop> =
-        port.findAll(regionId, categoryName, keyword, workKeyword, workId, status, pageable)
+        port.findAll(regionId, categoryName, categoryIds, keyword, workKeyword, workId, status, pageable)
 
     @Transactional
-    override fun createShop(shop: Shop) = port.save(shop)
+    override fun createShop(shop: Shop): Shop {
+        val created = port.save(shop)
+        invalidateFacetCache()
+        return created
+    }
 
     @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
     override fun createShopWithImages(shop: Shop, cover: ImageUploadPart, gallery: List<ImageUploadPart>): Shop {
@@ -81,11 +108,17 @@ class ShopService(
             throw e
         }
 
-        return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        val updatedShop = port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        invalidateFacetCache()
+        return updatedShop
     }
 
     @Transactional
-    override fun updateShop(id: Long, shop: Shop) = port.update(id, shop)
+    override fun updateShop(id: Long, shop: Shop): Shop {
+        val updated = port.update(id, shop)
+        invalidateFacetCache()
+        return updated
+    }
 
     @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
     override fun updateShopWithImages(
@@ -122,7 +155,9 @@ class ShopService(
             transactionTemplate.execute {
                 port.update(id, shop)
             }
-            return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+            val updatedShop = port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+            invalidateFacetCache()
+            return updatedShop
         }
 
         if (hasGalleryReplace && existingGalleryImageIds.size + gallery.size > MAX_GALLERY_IMAGES) {
@@ -174,11 +209,16 @@ class ShopService(
             throw e
         }
 
-        return port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        val updatedShop = port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+        invalidateFacetCache()
+        return updatedShop
     }
 
     @Transactional
-    override fun deleteShop(id: Long) = port.deleteById(id)
+    override fun deleteShop(id: Long) {
+        port.deleteById(id)
+        invalidateFacetCache()
+    }
 
     /**
      * 업로드/메타 저장 실패 후 보장 정리. 전부 best-effort이며, 어떤 단계든 실패해도 다음 단계는 시도한다.
@@ -208,6 +248,8 @@ class ShopService(
 
     private companion object {
         const val MAX_GALLERY_IMAGES = 6
+        const val FACET_CACHE_TTL_MILLIS = 30_000L
+        const val FACET_BOUNDS_SCALE = 6
         private val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
 
         fun normalizeContentType(raw: String): String {
@@ -223,4 +265,44 @@ class ShopService(
             else -> "bin"
         }
     }
+
+    internal fun putFacetCacheForTest(query: ShopFacetQuery, response: ShopFacetResponse, cachedAtMillis: Long) {
+        facetCache[normalizeForCacheKey(query)] = CachedFacetResponse(response = response, cachedAtMillis = cachedAtMillis)
+    }
+
+    private fun clearFacetCache() {
+        facetCache.clear()
+    }
+
+    private fun invalidateFacetCache() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                object : TransactionSynchronization {
+                    override fun afterCommit() {
+                        clearFacetCache()
+                    }
+                },
+            )
+            return
+        }
+        clearFacetCache()
+    }
+
+    private fun normalizeForCacheKey(query: ShopFacetQuery): ShopFacetQuery = query.copy(
+        regionIds = query.regionIds.toSet(),
+        categoryIds = query.categoryIds.toSet(),
+        workIds = query.workIds.toSet(),
+        swLat = normalizeBound(query.swLat),
+        swLng = normalizeBound(query.swLng),
+        neLat = normalizeBound(query.neLat),
+        neLng = normalizeBound(query.neLng),
+    )
+
+    private fun normalizeBound(value: BigDecimal?): BigDecimal? =
+        value?.setScale(FACET_BOUNDS_SCALE, RoundingMode.HALF_UP)
+
+    private data class CachedFacetResponse(
+        val response: ShopFacetResponse,
+        val cachedAtMillis: Long,
+    )
 }

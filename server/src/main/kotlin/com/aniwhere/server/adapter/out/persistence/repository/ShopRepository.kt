@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import java.math.BigDecimal
 
 interface ShopRepository : JpaRepository<ShopEntity, Long> {
     @Query("""
@@ -21,6 +22,9 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
         LEFT JOIN s.categories c
         WHERE (:regionId IS NULL OR s.region.id = :regionId)
           AND (:categoryName IS NULL OR c.name = :categoryName)
+          AND (:applyCategoryIds = false OR EXISTS (
+                SELECT 1 FROM ShopEntity s3 JOIN s3.categories c3
+                WHERE s3.id = s.id AND c3.id IN :categoryIds))
           AND (:status IS NULL OR s.status = :status)
           AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
           AND (:workKeyword IS NULL OR EXISTS (
@@ -37,6 +41,9 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
         LEFT JOIN s.categories c
         WHERE (:regionId IS NULL OR s.region.id = :regionId)
           AND (:categoryName IS NULL OR c.name = :categoryName)
+          AND (:applyCategoryIds = false OR EXISTS (
+                SELECT 1 FROM ShopEntity s3 JOIN s3.categories c3
+                WHERE s3.id = s.id AND c3.id IN :categoryIds))
           AND (:status IS NULL OR s.status = :status)
           AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
           AND (:workKeyword IS NULL OR EXISTS (
@@ -51,13 +58,307 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
     fun search(
         regionId: Short?,
         categoryName: String?,
+        applyCategoryIds: Boolean,
+        categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
         workId: Int?,
         status: ShopStatusEnum?,
         pageable: Pageable,
     ): Page<ShopEntity>
+
+    @Query(
+        """
+        SELECT new com.aniwhere.server.adapter.out.persistence.repository.RegionFacetCountRow(
+            r.id,
+            r.name,
+            COALESCE((
+                SELECT COUNT(DISTINCT s.id)
+                FROM ShopEntity s
+                WHERE (s.region.id = r.id OR s.region.id IN :selectedRegionIds)
+                  AND (:applyCategory = false OR EXISTS (
+                      SELECT 1 FROM ShopEntity sc JOIN sc.categories c
+                      WHERE sc.id = s.id AND c.id IN :categoryIds
+                  ))
+                  AND (:applyWork = false OR EXISTS (
+                      SELECT 1 FROM ShopEntity sw JOIN sw.works w
+                      WHERE sw.id = s.id AND w.id IN :workIds
+                  ))
+                  AND (:status IS NULL OR s.status = :status)
+                  AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+                  AND (:swLat IS NULL OR (s.py BETWEEN :swLat AND :neLat AND s.px BETWEEN :swLng AND :neLng))
+            ), 0)
+        )
+        FROM RegionEntity r
+        ORDER BY r.name ASC
+        """,
+    )
+    fun findRegionFacetCounts(
+        keyword: String?,
+        selectedRegionIds: Set<Short>,
+        applyCategory: Boolean,
+        categoryIds: Set<Short>,
+        applyWork: Boolean,
+        workIds: Set<Int>,
+        status: ShopStatusEnum?,
+        swLat: BigDecimal?,
+        swLng: BigDecimal?,
+        neLat: BigDecimal?,
+        neLng: BigDecimal?,
+    ): List<RegionFacetCountRow>
+
+    @Query(
+        """
+        SELECT new com.aniwhere.server.adapter.out.persistence.repository.CategoryFacetCountRow(
+            c.id,
+            c.name,
+            COALESCE((
+                SELECT COUNT(DISTINCT s.id)
+                FROM ShopEntity s
+                WHERE (:applyRegion = false OR s.region.id IN :regionIds)
+                  AND EXISTS (
+                      SELECT 1 FROM ShopEntity sc JOIN sc.categories c2
+                      WHERE sc.id = s.id AND (
+                          c2.id = c.id
+                          OR (:applySelectedCategory = true AND c2.id IN :selectedCategoryIds)
+                      )
+                  )
+                  AND (:applyWork = false OR EXISTS (
+                      SELECT 1 FROM ShopEntity sw JOIN sw.works w
+                      WHERE sw.id = s.id AND w.id IN :workIds
+                  ))
+                  AND (:status IS NULL OR s.status = :status)
+                  AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+                  AND (:swLat IS NULL OR (s.py BETWEEN :swLat AND :neLat AND s.px BETWEEN :swLng AND :neLng))
+            ), 0)
+        )
+        FROM CategoryEntity c
+        ORDER BY c.name ASC
+        """,
+    )
+    fun findCategoryFacetCounts(
+        keyword: String?,
+        applyRegion: Boolean,
+        regionIds: Set<Short>,
+        applySelectedCategory: Boolean,
+        selectedCategoryIds: Set<Short>,
+        applyWork: Boolean,
+        workIds: Set<Int>,
+        status: ShopStatusEnum?,
+        swLat: BigDecimal?,
+        swLng: BigDecimal?,
+        neLat: BigDecimal?,
+        neLng: BigDecimal?,
+    ): List<CategoryFacetCountRow>
+
+    @Query(
+        """
+        SELECT new com.aniwhere.server.adapter.out.persistence.repository.WorkFacetCatalogRow(
+            w.id,
+            w.name,
+            w.coverUrl
+        )
+        FROM WorkEntity w
+        WHERE (
+            :workType IS NULL
+            OR (:workType = 'ANIMATION' AND TYPE(w) = AnimationWorkEntity)
+            OR (:workType = 'GAME' AND TYPE(w) = GameWorkEntity)
+        )
+        ORDER BY w.name ASC
+        """,
+    )
+    fun findWorkFacetCatalog(workType: String?): List<WorkFacetCatalogRow>
+
+    @Query(
+        """
+        SELECT new com.aniwhere.server.adapter.out.persistence.repository.WorkFacetGroupCountRow(
+            w.id,
+            COUNT(DISTINCT s.id)
+        )
+        FROM ShopEntity s
+        JOIN s.works w
+        WHERE (:applyRegion = false OR s.region.id IN :regionIds)
+          AND (:applyCategory = false OR EXISTS (
+              SELECT 1 FROM ShopEntity sc JOIN sc.categories c
+              WHERE sc.id = s.id AND c.id IN :categoryIds
+          ))
+          AND (:status IS NULL OR s.status = :status)
+          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+          AND (:swLat IS NULL OR (s.py BETWEEN :swLat AND :neLat AND s.px BETWEEN :swLng AND :neLng))
+          AND (
+              :workType IS NULL
+              OR (:workType = 'ANIMATION' AND TYPE(w) = AnimationWorkEntity)
+              OR (:workType = 'GAME' AND TYPE(w) = GameWorkEntity)
+          )
+        GROUP BY w.id
+        """,
+    )
+    fun findWorkFacetCandidateCounts(
+        keyword: String?,
+        applyRegion: Boolean,
+        regionIds: Set<Short>,
+        applyCategory: Boolean,
+        categoryIds: Set<Short>,
+        status: ShopStatusEnum?,
+        swLat: BigDecimal?,
+        swLng: BigDecimal?,
+        neLat: BigDecimal?,
+        neLng: BigDecimal?,
+        workType: String?,
+    ): List<WorkFacetGroupCountRow>
+
+    @Query(
+        """
+        SELECT COUNT(DISTINCT s.id)
+        FROM ShopEntity s
+        WHERE (:applyRegion = false OR s.region.id IN :regionIds)
+          AND (:applyCategory = false OR EXISTS (
+              SELECT 1 FROM ShopEntity sc JOIN sc.categories c
+              WHERE sc.id = s.id AND c.id IN :categoryIds
+          ))
+          AND (:status IS NULL OR s.status = :status)
+          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+          AND (:swLat IS NULL OR (s.py BETWEEN :swLat AND :neLat AND s.px BETWEEN :swLng AND :neLng))
+          AND (:applySelectedWork = false OR EXISTS (
+              SELECT 1 FROM ShopEntity sw JOIN sw.works w
+              WHERE sw.id = s.id AND w.id IN :selectedWorkIds
+          ))
+        """,
+    )
+    fun countWorkFacetSelectedBase(
+        keyword: String?,
+        applyRegion: Boolean,
+        regionIds: Set<Short>,
+        applyCategory: Boolean,
+        categoryIds: Set<Short>,
+        status: ShopStatusEnum?,
+        swLat: BigDecimal?,
+        swLng: BigDecimal?,
+        neLat: BigDecimal?,
+        neLng: BigDecimal?,
+        applySelectedWork: Boolean,
+        selectedWorkIds: Set<Int>,
+    ): Long
+
+    /**
+     * Intermediate optimization for work union semantics:
+     * compute per-work overlap with selected works in a grouped query
+     * to avoid per-candidate correlated COUNT subqueries.
+     */
+    @Query(
+        """
+        SELECT new com.aniwhere.server.adapter.out.persistence.repository.WorkFacetGroupCountRow(
+            w.id,
+            COUNT(DISTINCT s.id)
+        )
+        FROM ShopEntity s
+        JOIN s.works w
+        WHERE (:applyRegion = false OR s.region.id IN :regionIds)
+          AND (:applyCategory = false OR EXISTS (
+              SELECT 1 FROM ShopEntity sc JOIN sc.categories c
+              WHERE sc.id = s.id AND c.id IN :categoryIds
+          ))
+          AND (:status IS NULL OR s.status = :status)
+          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+          AND (:swLat IS NULL OR (s.py BETWEEN :swLat AND :neLat AND s.px BETWEEN :swLng AND :neLng))
+          AND (:applySelectedWork = false OR EXISTS (
+              SELECT 1 FROM ShopEntity sw JOIN sw.works ws
+              WHERE sw.id = s.id AND ws.id IN :selectedWorkIds
+          ))
+          AND (
+              :workType IS NULL
+              OR (:workType = 'ANIMATION' AND TYPE(w) = AnimationWorkEntity)
+              OR (:workType = 'GAME' AND TYPE(w) = GameWorkEntity)
+          )
+        GROUP BY w.id
+        """,
+    )
+    fun findWorkFacetSelectedIntersections(
+        keyword: String?,
+        applyRegion: Boolean,
+        regionIds: Set<Short>,
+        applyCategory: Boolean,
+        categoryIds: Set<Short>,
+        status: ShopStatusEnum?,
+        swLat: BigDecimal?,
+        swLng: BigDecimal?,
+        neLat: BigDecimal?,
+        neLng: BigDecimal?,
+        applySelectedWork: Boolean,
+        selectedWorkIds: Set<Int>,
+        workType: String?,
+    ): List<WorkFacetGroupCountRow>
+
+    @Query(
+        """
+        SELECT new com.aniwhere.server.adapter.out.persistence.repository.StatusFacetCountRow(
+            s.status,
+            COUNT(DISTINCT s.id)
+        )
+        FROM ShopEntity s
+        WHERE (:applyRegion = false OR s.region.id IN :regionIds)
+          AND (:applyCategory = false OR EXISTS (
+              SELECT 1 FROM ShopEntity sc JOIN sc.categories c
+              WHERE sc.id = s.id AND c.id IN :categoryIds
+          ))
+          AND (:applyWork = false OR EXISTS (
+              SELECT 1 FROM ShopEntity sw JOIN sw.works w
+              WHERE sw.id = s.id AND w.id IN :workIds
+          ))
+          AND (:keyword IS NULL OR s.name LIKE CONCAT('%', :keyword, '%'))
+          AND (:swLat IS NULL OR (s.py BETWEEN :swLat AND :neLat AND s.px BETWEEN :swLng AND :neLng))
+        GROUP BY s.status
+        """,
+    )
+    fun findStatusFacetCounts(
+        keyword: String?,
+        applyRegion: Boolean,
+        regionIds: Set<Short>,
+        applyCategory: Boolean,
+        categoryIds: Set<Short>,
+        applyWork: Boolean,
+        workIds: Set<Int>,
+        swLat: BigDecimal?,
+        swLng: BigDecimal?,
+        neLat: BigDecimal?,
+        neLng: BigDecimal?,
+    ): List<StatusFacetCountRow>
 }
+
+data class RegionFacetCountRow(
+    val id: Short,
+    val name: String,
+    val count: Long,
+)
+
+data class CategoryFacetCountRow(
+    val id: Short,
+    val name: String,
+    val count: Long,
+)
+
+data class WorkFacetCountRow(
+    val id: Int,
+    val name: String,
+    val coverUrl: String?,
+    val count: Long,
+)
+
+data class WorkFacetCatalogRow(
+    val id: Int,
+    val name: String,
+    val coverUrl: String?,
+)
+
+data class WorkFacetGroupCountRow(
+    val workId: Int,
+    val count: Long,
+)
+
+data class StatusFacetCountRow(
+    val status: ShopStatusEnum,
+    val count: Long,
+)
 
 interface RegionRepository : JpaRepository<RegionEntity, Short> {
     @Query(
