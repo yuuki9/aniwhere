@@ -1,6 +1,8 @@
 package com.aniwhere.server.domain.shop.port.`in`
 
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
+import com.aniwhere.server.domain.shop.model.ShopFacetQuery
+import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import org.springframework.data.domain.Page
@@ -8,9 +10,11 @@ import org.springframework.data.domain.Pageable
 
 interface ShopUseCase {
     fun getShop(id: Long): Shop
+    fun getShopFacets(query: ShopFacetQuery): ShopFacetResponse
     fun searchShops(
         regionId: Short?,
         categoryName: String?,
+        categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
         workId: Int?,

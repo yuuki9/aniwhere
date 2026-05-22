@@ -20,6 +20,42 @@ class UserEntity(
     var updatedAt: LocalDateTime = LocalDateTime.now(),
 )
 
+enum class FavoriteWorkSource {
+    ONBOARDING,
+    MANUAL,
+}
+
+@Entity
+@Table(
+    name = "user_favorite_works",
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uk_user_favorite_works_user_id_work_id",
+            columnNames = ["user_id", "work_id"],
+        ),
+    ],
+    indexes = [
+        Index(name = "idx_user_favorite_works_user_id", columnList = "user_id"),
+        Index(name = "idx_user_favorite_works_work_id", columnList = "work_id"),
+    ],
+)
+class UserFavoriteWorkEntity(
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    val user: UserEntity,
+    @Column(name = "work_id", nullable = false)
+    val workId: Int,
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    val source: FavoriteWorkSource,
+    @Column(name = "created_at", nullable = false, updatable = false)
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+)
+
 @Entity
 @Table(name = "admins")
 class AdminEntity(

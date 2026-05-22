@@ -4,6 +4,8 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopFacetQuery
+import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
@@ -13,6 +15,7 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.junit.jupiter.api.Assertions.*
@@ -75,10 +78,11 @@ class ShopServiceTest {
     @Test
     fun `searchShops - 페이징 검색`() {
         val pageable = PageRequest.of(0, 20)
-        every { port.findAll(any(), any(), any(), any(), any(), any(), pageable) } returns PageImpl(listOf(sampleShop))
+        every { port.findAll(any(), any(), any(), any(), any(), any(), any(), pageable) } returns PageImpl(listOf(sampleShop))
         val result = service.searchShops(
             regionId = 1,
             categoryName = null,
+            categoryIds = emptySet(),
             keyword = "테스트",
             workKeyword = null,
             workId = null,
@@ -86,13 +90,91 @@ class ShopServiceTest {
             pageable = pageable,
         )
         assertEquals(1, result.totalElements)
-        verify { port.findAll(1, null, "테스트", null, null, ShopStatus.ACTIVE, pageable) }
+        verify { port.findAll(1, null, emptySet(), "테스트", null, null, ShopStatus.ACTIVE, pageable) }
     }
 
     @Test
     fun `createShop - 샵 생성 성공`() {
         every { port.save(any()) } returns sampleShop
         assertNotNull(service.createShop(sampleShop.copy(id = null)).id)
+    }
+
+    @Test
+    fun `getShopFacets - 동일 쿼리는 TTL 내 캐시를 사용해 한 번만 조회한다`() {
+        val query = ShopFacetQuery(keyword = "원피스")
+        val expected = ShopFacetResponse()
+        every { port.findFacets(query) } returns expected
+
+        val firstResult = service.getShopFacets(query)
+        val secondResult = service.getShopFacets(query)
+
+        assertSame(expected, firstResult)
+        assertSame(expected, secondResult)
+        verify(exactly = 1) { port.findFacets(query) }
+    }
+
+    @Test
+    fun `getShopFacets - bounds 스케일만 다른 동일 좌표 쿼리는 캐시를 재사용한다`() {
+        val originalPrecisionQuery = ShopFacetQuery(
+            swLat = BigDecimal("37.1"),
+            swLng = BigDecimal("127.1"),
+            neLat = BigDecimal("37.2"),
+            neLng = BigDecimal("127.2"),
+        )
+        val semanticallySameQueryWithDifferentScale = originalPrecisionQuery.copy(
+            swLat = BigDecimal("37.10"),
+            swLng = BigDecimal("127.10"),
+            neLat = BigDecimal("37.20"),
+            neLng = BigDecimal("127.20"),
+        )
+        val expected = ShopFacetResponse()
+        val capturedQuery = slot<ShopFacetQuery>()
+        every { port.findFacets(capture(capturedQuery)) } returns expected
+
+        val firstResult = service.getShopFacets(originalPrecisionQuery)
+        val secondResult = service.getShopFacets(semanticallySameQueryWithDifferentScale)
+
+        assertSame(expected, firstResult)
+        assertSame(expected, secondResult)
+        assertEquals(originalPrecisionQuery, capturedQuery.captured)
+        assertEquals(BigDecimal("37.1"), capturedQuery.captured.swLat)
+        verify(exactly = 1) { port.findFacets(any()) }
+    }
+
+    @Test
+    fun `getShopFacets - 캐시 만료 후에는 persistence port를 다시 조회한다`() {
+        val query = ShopFacetQuery(keyword = "나루토")
+        val staleCached = ShopFacetResponse()
+        val fresh = ShopFacetResponse(statuses = listOf())
+        service.putFacetCacheForTest(
+            query = query,
+            response = staleCached,
+            cachedAtMillis = System.currentTimeMillis() - 60_000L,
+        )
+        every { port.findFacets(query) } returns fresh
+
+        val result = service.getShopFacets(query)
+
+        assertSame(fresh, result)
+        verify(exactly = 1) { port.findFacets(query) }
+    }
+
+    @Test
+    fun `createShop - 쓰기 이후 facet 캐시를 비워 다음 조회는 다시 조회한다`() {
+        val query = ShopFacetQuery(keyword = "코난")
+        val firstResponse = ShopFacetResponse()
+        val secondResponse = ShopFacetResponse(regions = listOf())
+        every { port.findFacets(query) } returns firstResponse andThen secondResponse
+        every { port.save(any()) } returns sampleShop
+
+        val beforeWrite = service.getShopFacets(query)
+        service.createShop(sampleShop.copy(id = null))
+        val afterWrite = service.getShopFacets(query)
+
+        assertSame(firstResponse, beforeWrite)
+        assertSame(secondResponse, afterWrite)
+        verify(exactly = 2) { port.findFacets(query) }
+        verify { port.save(any()) }
     }
 
     @Test

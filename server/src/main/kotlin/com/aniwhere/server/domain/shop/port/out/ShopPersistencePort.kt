@@ -1,6 +1,8 @@
 package com.aniwhere.server.domain.shop.port.out
 
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopFacetQuery
+import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import org.springframework.data.domain.Page
@@ -14,9 +16,11 @@ data class ShopImagePersistenceRow(
 
 interface ShopPersistencePort {
     fun findById(id: Long): Shop?
+    fun findFacets(query: ShopFacetQuery): ShopFacetResponse
     fun findAll(
         regionId: Short?,
         categoryName: String?,
+        categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
         workId: Int?,
