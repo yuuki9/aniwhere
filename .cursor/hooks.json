@@ -4,6 +4,9 @@
     "beforeSubmitPrompt": [
       {
         "command": "node .cursor/mcp/agentmemory/hooks/tag-session-marker.js"
+      },
+      {
+        "command": "node .cursor/hooks/session-task-branch-bootstrap.js"
       }
     ]
   }
