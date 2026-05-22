@@ -170,11 +170,11 @@ export function AdminShopManagePage() {
           </div>
         </section>
 
-        <Link className="admin-shop-create-link" to="/admin/shops/new">
-          <Button display="full" type="button">
+        <div className="admin-shop-create-link">
+          <Button display="full" type="button" onClick={() => navigate('/admin/shops/new')}>
             매장 등록
           </Button>
-        </Link>
+        </div>
 
         <section className="admin-shop-manage-tools" aria-label="매장 검색과 필터">
           <form

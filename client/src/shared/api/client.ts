@@ -33,6 +33,7 @@ export function toQueryString(params: QueryParams) {
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers)
 
+  // Keep body-less GET/HEAD calls simple so the API does not receive an unnecessary CORS preflight.
   if (init?.body != null && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
