@@ -8,6 +8,8 @@ export type AdminShopDraft = {
   py: number | null
   floor: string
   regionId: number | null
+  categoryIds: number[]
+  workIds: number[]
   status: ShopStatus
   visitTip: string
 }

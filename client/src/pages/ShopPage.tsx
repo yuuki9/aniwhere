@@ -5,7 +5,7 @@ import { getShopPhotos } from '../shared/api/admin'
 import { getShop } from '../shared/api/shops'
 import { formatDateTime, formatRelativeUpdated, linkTypeToLabel, statusToLabel } from '../shared/lib/format'
 import { StatusPill } from '../shared/ui/StatusPill'
-import { AitNavigation } from '../shared/ui/ait'
+import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 
 function formatFloorLabel(floor: string | null) {
   if (!floor) {
@@ -65,7 +65,7 @@ export function ShopPage() {
   if (!Number.isFinite(parsedId)) {
     return (
       <main className="app-shell shop-detail-shell">
-        <AitNavigation showBack />
+        <AppTopNavigation showBack />
         <section className="section">
           <h1>잘못된 매장 경로입니다.</h1>
           <Link className="text-link" to="/explore">
@@ -80,7 +80,7 @@ export function ShopPage() {
 
   return (
     <main className="app-shell shop-detail-shell">
-      <AitNavigation showBack />
+      <AppTopNavigation showBack />
 
       {shopQuery.isLoading ? <p className="section">매장 정보를 불러오는 중입니다.</p> : null}
       {shopQuery.isError ? <p className="section error-text">{(shopQuery.error as Error).message}</p> : null}
@@ -110,7 +110,7 @@ export function ShopPage() {
                 <span className="eyebrow">{shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}</span>
                 <h1>{shop.name}</h1>
                 <p>
-                  {shop.categories.length > 0 ? shop.categories.join(' · ') : '카테고리 확인 중'}
+                  {shop.categories.length > 0 ? shop.categories.map((category) => category.name).join(' · ') : '카테고리 확인 중'}
                 </p>
               </div>
               <StatusPill status={shop.status} />

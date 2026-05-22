@@ -105,7 +105,7 @@ test('SearchPage header uses brand navigation and compact icon proportions', () 
   const iconSvgRule = cssRuleBody(styles, '.search-screen-icon svg')
   const searchBarRules = cssRuleBodies(styles, '.search-screen-bar')
 
-  assert.match(source, /<AitNavigation/)
+  assert.match(source, /<AppTopNavigation/)
   assert.doesNotMatch(source, /title="검색"/)
   assert.doesNotMatch(source, /search-page-titlebar/)
   assert.doesNotMatch(source, /search-mode-tabs/)

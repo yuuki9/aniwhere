@@ -99,6 +99,31 @@ Official docs checked with Apps in Toss MCP on 2026-05-17:
 | Explore return | Product-approved | Work poster links pass route state so the Explore list back action can return to `/home` instead of dropping to the base `/explore` screen. |
 | Runtime verification | Needs sandbox | Local build/lint/test verification does not prove Apps in Toss safe area, webview navigation, or Toss runtime font scaling. |
 
+## Current Full Route Import Audit
+
+Official docs checked on 2026-05-22 with web fallback because Apps in Toss MCP was not loaded in this session:
+
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Checkbox: https://tossmini-docs.toss.im/tds-mobile/components/checkbox/
+- AgreementV4: https://tossmini-docs.toss.im/tds-mobile/components/Agreement/v4/
+- Grid List: https://tossmini-docs.toss.im/tds-mobile/components/grid-list/
+- Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
+- TextArea: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-area/
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- Segmented Control: https://tossmini-docs.toss.im/tds-mobile/components/segmented-control/
+- BottomCTA.Single: https://tossmini-docs.toss.im/tds-mobile/components/BottomCTA/Single/
+- useBottomSheet: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-bottom-sheet/
+- useToast: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-toast/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Route/page Ait import boundary | TDS-required | `/`, `/intro`, `/home`, `/explore`, `/search`, `/shop/detail/:shopId`, `/community`, `/community/:postId`, and `/admin/**` no longer import `client/src/shared/ui/ait` directly. `client/scripts/assert-ait-usage-allowlist.mjs` now has an empty allowlist. |
+| Temporary local top navigation | Product-approved / Follow-up | `AppTopNavigation` preserves the approved local/public top bar behavior and hides itself in Apps in Toss runtime. It intentionally reuses existing CSS classes to avoid visual churn; replacing the app-owned public shell with a fuller official `Top`/native navigation model remains a separate visual PR. |
+| Admin taxonomy selectors | Product-approved | Admin create/edit now uses Swagger-backed category/work IDs. The selector is app-owned because the current public facade exports only the proven TDS primitives in this repo; it follows the checked Checkbox, AgreementV4, Grid List, TextField, Button, ListRow, and segmented selection references without adding new `Ait*` usage. |
+| Runtime verification | Needs sandbox | `tsc`, lint, and public bundle verification passed locally, but Apps in Toss native navigation, safe area, and Pixel 8a sandbox behavior still need device confirmation. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

@@ -6,7 +6,7 @@ import type { Shop } from '../shared/api/types'
 import { formatRelativeUpdated } from '../shared/lib/format'
 import { requestCurrentLocation } from '../shared/lib/location'
 import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
-import { AitNavigation } from '../shared/ui/ait'
+import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { StatusPill } from '../shared/ui/StatusPill'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
@@ -27,7 +27,7 @@ const buildExploreHref = (shopId: number, shopRegionId: number | null) => {
 }
 
 const buildShopMeta = (shop: Shop) =>
-  [shop.regionName, ...shop.categories.slice(0, 2)].filter(Boolean)
+  [shop.regionName, ...shop.categories.slice(0, 2).map((category) => category.name)].filter(Boolean)
     .join(' · ')
 
 const buildShopAddress = (shop: Shop) => [shop.address, shop.floor].filter(Boolean).join(' · ')
@@ -172,7 +172,7 @@ export function SearchPage() {
 
   return (
     <main className="search-screen-shell">
-      <AitNavigation className="search-route-navigation" showBack onBack={handleSearchBack} />
+      <AppTopNavigation className="search-route-navigation" showBack onBack={handleSearchBack} />
       <section className="search-screen search-screen-v2">
         <header className="search-screen-top search-screen-top-v2">
           <div className="search-screen-toolrow">

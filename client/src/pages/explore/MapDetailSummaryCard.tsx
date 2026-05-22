@@ -22,7 +22,7 @@ export function MapDetailSummaryCard({
   const [shouldShowKeywordMore, setShouldShowKeywordMore] = useState(false)
   const [isAiSummaryExpanded, setIsAiSummaryExpanded] = useState(false)
   const keywordListRef = useRef<HTMLDivElement>(null)
-  const keywords = shop.categories.filter(Boolean)
+  const keywords = shop.categories.map((category) => category.name).filter(Boolean)
   const keywordSignature = keywords.join('\u0001')
   const isKeywordExpanded = keywordExpansion.signature === keywordSignature && keywordExpansion.isExpanded
   const aiSummary = description?.replace(/\s+/g, ' ').trim() ?? null

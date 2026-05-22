@@ -7,7 +7,7 @@ import homeQuickStoreIcon from '../assets/icons/home-quick-store.webp'
 import { getPosts } from '../shared/api/community'
 import { getWorks } from '../shared/api/works'
 import { formatDateTime } from '../shared/lib/format'
-import { isAdminUnlocked } from '../shared/lib/adminAccess'
+import { canUseAdminPreview, isAdminUnlocked } from '../shared/lib/adminAccess'
 import {
   buildHomeQuickMenus,
   buildHomeReviewPreviewItems,
@@ -175,7 +175,10 @@ function HomeReviewPreviewSection({ posts, isLoading, isError }: {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const quickMenus = useMemo(() => buildHomeQuickMenus({ includeAdmin: isAdminUnlocked() }), [])
+  const quickMenus = useMemo(
+    () => buildHomeQuickMenus({ includeAdmin: isAdminUnlocked() || canUseAdminPreview() }),
+    [],
+  )
   const worksQuery = useQuery({
     queryKey: ['works', 'home-preview'],
     queryFn: getWorks,

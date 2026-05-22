@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { createComment, getComments, getPost } from '../shared/api/community'
 import { formatDateTime } from '../shared/lib/format'
-import { AitNavigation } from '../shared/ui/ait'
+import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 
 export function PostDetailPage() {
   const { postId } = useParams()
@@ -40,7 +40,7 @@ export function PostDetailPage() {
   if (!Number.isFinite(parsedId)) {
     return (
       <main className="app-shell">
-        <AitNavigation showBack />
+        <AppTopNavigation showBack />
         <section className="section">
           <h1>잘못된 게시글 경로입니다.</h1>
           <Link className="text-link" to="/community">
@@ -56,7 +56,7 @@ export function PostDetailPage() {
 
   return (
     <main className="app-shell">
-      <AitNavigation showBack />
+      <AppTopNavigation showBack />
       <section className="section top-bar">
         <Link className="text-link" to="/community">
           목록으로

@@ -12,6 +12,10 @@ function workNames(shop: Shop) {
   return shop.works.map((work) => work.name)
 }
 
+function categoryNames(shop: Shop) {
+  return shop.categories.map((category) => category.name)
+}
+
 function buildLocalReason(shop: Shop, question: string) {
   const lowerQuestion = question.toLowerCase()
 
@@ -24,7 +28,7 @@ function buildLocalReason(shop: Shop, question: string) {
     return `${matchedWork} 관련 작품을 취급합니다.`
   }
 
-  const matchedCategory = shop.categories.find((category) => lowerQuestion.includes(category.toLowerCase()))
+  const matchedCategory = categoryNames(shop).find((category) => lowerQuestion.includes(category.toLowerCase()))
   if (matchedCategory) {
     return `${matchedCategory} 카테고리와 맞는 매장입니다.`
   }
@@ -46,13 +50,14 @@ function searchLocalMatches(question: string, shops: Shop[]) {
   return shops
     .map((shop) => {
       const names = workNames(shop)
+      const categories = categoryNames(shop)
       const haystack = [
         shop.name,
         shop.address,
         shop.regionName ?? '',
         shop.description ?? '',
         shop.visitTip ?? '',
-        ...shop.categories,
+        ...categories,
         ...names,
       ]
         .join(' ')
@@ -65,7 +70,7 @@ function searchLocalMatches(question: string, shops: Shop[]) {
         if (names.some((work) => work.toLowerCase().includes(token))) {
           return acc + 4
         }
-        if (shop.categories.some((category) => category.toLowerCase().includes(token))) {
+        if (categories.some((category) => category.toLowerCase().includes(token))) {
           return acc + 3
         }
         if (haystack.includes(token)) {
@@ -134,7 +139,7 @@ export async function askMapAssistant({
           name: shop.name,
           regionName: shop.regionName,
           address: shop.address,
-          categories: shop.categories,
+          categories: categoryNames(shop),
           works: shop.works,
           status: shop.status,
           visitTip: shop.visitTip,

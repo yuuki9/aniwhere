@@ -30,7 +30,7 @@ export function getShop(id: number) {
 export function createShop(payload: ShopRequest) {
   return request<Shop>('/api/v1/shops', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(toShopRequestBody(payload)),
   })
 }
 
@@ -83,7 +83,7 @@ export function updateShopWithImages(id: number, payload: ShopRequest, images: U
 export function updateShop(id: number, payload: ShopRequest) {
   return request<Shop>(`/api/v1/shops/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(toShopRequestBody(payload)),
   })
 }
 
@@ -104,8 +104,29 @@ function appendShopRequestFields(formData: FormData, payload: ShopRequest) {
   if (payload.regionId != null) {
     formData.set('regionId', String(payload.regionId))
   }
+  payload.categoryIds.forEach((categoryId) => {
+    formData.append('categoryIds', String(categoryId))
+  })
+  payload.workIds.forEach((workId) => {
+    formData.append('workIds', String(workId))
+  })
   formData.set('status', payload.status)
   if (payload.visitTip != null) {
     formData.set('visitTip', payload.visitTip)
+  }
+}
+
+function toShopRequestBody(payload: ShopRequest) {
+  return {
+    name: payload.name,
+    address: payload.address,
+    px: payload.px,
+    py: payload.py,
+    floor: payload.floor,
+    regionId: payload.regionId,
+    categoryIds: payload.categoryIds,
+    workIds: payload.workIds,
+    status: payload.status,
+    visitTip: payload.visitTip,
   }
 }
