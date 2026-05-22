@@ -24,6 +24,7 @@ abstract class WorkEntity(
 )
 
 @Entity
+@Table(name = "works_animation")
 @DiscriminatorValue("ANIMATION")
 @PrimaryKeyJoinColumn(name = "work_id")
 class AnimationWorkEntity(
@@ -53,6 +54,7 @@ class AnimationWorkEntity(
 ) : WorkEntity(name = name, coverUrl = coverUrl, createdAt = createdAt, updatedAt = updatedAt)
 
 @Entity
+@Table(name = "works_game")
 @DiscriminatorValue("GAME")
 @PrimaryKeyJoinColumn(name = "work_id")
 class GameWorkEntity(
