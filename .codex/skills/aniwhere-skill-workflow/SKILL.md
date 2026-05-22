@@ -10,7 +10,7 @@ Use this skill to turn repeatable Aniwhere work into concise Codex skills. Repos
 ## When Creating Or Updating A Skill
 
 1. Start from a concrete repeated workflow, not a vague category.
-2. Check `references/session-operating-guard.md` before adding cross-cutting rules; prefer extending that shared guard over creating another broad skill.
+2. Put policy rules in `AGENTS.md`, `guard.md`, `GIT_CONVENTIONS.md`, or `docs/agent-skills.md`; put natural-language triggers in `docs/agent-hooks.md`; do not recreate the old shared guard reference file.
 3. Keep `SKILL.md` lean and procedural.
 4. Put long docs, examples, official links, or source-derived summaries in `references/`.
 5. Include `agents/openai.yaml` with a short display name, description, and default prompt.

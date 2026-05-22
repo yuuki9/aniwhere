@@ -68,6 +68,8 @@ type(scope): 짧은 설명 (한 줄, 명령형 또는 현재형)
 - PR 설명은 항상 `.github/PULL_REQUEST_TEMPLATE.md`를 먼저 읽고 그 구조를 유지해 작성합니다.
 - PR 설명에는 실제 변경 범위, 검증 결과, 머지 후 확인할 사항만 기록합니다.
 - 임의의 줄 수 기준은 PR 생성 조건이나 설명에 적지 않습니다.
+- 최종 merge 권한은 서버관리자에게 있다고 보고, Codex는 브랜치 push와 PR 생성/핸드오프까지만 책임집니다.
+- PR 생성 단계의 필수 산출물은 `PR 생성 URL`, `PR title`, `.github/PULL_REQUEST_TEMPLATE.md` 구조를 그대로 따른 copy/paste 가능한 PR description입니다.
 - 사용자는 GitHub 웹 로그인 흐름으로 PR을 만드는 경우가 많습니다. GitHub connector나 `gh` 인증 문제로 PR을 직접 만들 수 없더라도 URL만 전달하지 말고, PR title과 `.github/PULL_REQUEST_TEMPLATE.md` 구조를 따른 PR description을 항상 복사/붙여넣기 가능한 형태로 함께 제공합니다.
 - PR description을 사용자가 그대로 전체 복사할 수 있게 작성합니다. 특별한 요청이 없으면 설명 전체를 fenced code block(``` … ```)으로 감싸지 말고, 본문 안에도 불필요한 triple backtick을 넣지 않습니다.
 

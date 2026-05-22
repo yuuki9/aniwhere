@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aniwhere PR Preflight"
+  short_description: "PR 전 반복 리뷰 리스크를 점검"
+  default_prompt: "Use $aniwhere-pr-preflight to inspect the current Aniwhere branch before opening or updating a PR."

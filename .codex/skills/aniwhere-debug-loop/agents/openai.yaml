@@ -1,0 +1,6 @@
+interface:
+  display_name: "Aniwhere Debug Loop"
+  short_description: "Diagnose Aniwhere bugs with WebView, API, sandbox, and regression evidence."
+  default_prompt: "Use $aniwhere-debug-loop to debug an Aniwhere failure or regression."
+policy:
+  allow_implicit_invocation: true
