@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS toss_unlink_events (
 CREATE TABLE IF NOT EXISTS user_favorite_works (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
+    -- NOTE: works catalog is managed outside this auth schema, so we intentionally avoid FK(work_id -> works.id) here.
+    -- Integrity for work_id is validated at application/service boundary.
     work_id INT NOT NULL,
     source VARCHAR(20) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

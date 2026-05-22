@@ -17,6 +17,8 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -64,7 +66,7 @@ class ShopService(
     @Transactional
     override fun createShop(shop: Shop): Shop {
         val created = port.save(shop)
-        clearFacetCache()
+        invalidateFacetCache()
         return created
     }
 
@@ -107,14 +109,14 @@ class ShopService(
         }
 
         val updatedShop = port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
-        clearFacetCache()
+        invalidateFacetCache()
         return updatedShop
     }
 
     @Transactional
     override fun updateShop(id: Long, shop: Shop): Shop {
         val updated = port.update(id, shop)
-        clearFacetCache()
+        invalidateFacetCache()
         return updated
     }
 
@@ -154,7 +156,7 @@ class ShopService(
                 port.update(id, shop)
             }
             val updatedShop = port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
-            clearFacetCache()
+            invalidateFacetCache()
             return updatedShop
         }
 
@@ -208,14 +210,14 @@ class ShopService(
         }
 
         val updatedShop = port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
-        clearFacetCache()
+        invalidateFacetCache()
         return updatedShop
     }
 
     @Transactional
     override fun deleteShop(id: Long) {
         port.deleteById(id)
-        clearFacetCache()
+        invalidateFacetCache()
     }
 
     /**
@@ -270,6 +272,20 @@ class ShopService(
 
     private fun clearFacetCache() {
         facetCache.clear()
+    }
+
+    private fun invalidateFacetCache() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                object : TransactionSynchronization {
+                    override fun afterCommit() {
+                        clearFacetCache()
+                    }
+                },
+            )
+            return
+        }
+        clearFacetCache()
     }
 
     private fun normalizeForCacheKey(query: ShopFacetQuery): ShopFacetQuery = query.copy(

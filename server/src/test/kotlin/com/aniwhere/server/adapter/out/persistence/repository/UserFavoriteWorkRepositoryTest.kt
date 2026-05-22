@@ -92,4 +92,37 @@ class UserFavoriteWorkRepositoryTest {
         assertEquals(second.id, result[0].id)
         assertEquals(first.id, result[1].id)
     }
+
+    @Test
+    fun `createdAt 동률이면 id 내림차순으로 조회`() {
+        val user = entityManager.persist(UserEntity(userKey = 301L))
+        val sameCreatedAt = LocalDateTime.of(2026, 5, 21, 9, 0, 0)
+
+        val first = repository.save(
+            UserFavoriteWorkEntity(
+                user = user,
+                workId = 3001,
+                source = FavoriteWorkSource.ONBOARDING,
+                createdAt = sameCreatedAt,
+                updatedAt = sameCreatedAt,
+            ),
+        )
+        val second = repository.save(
+            UserFavoriteWorkEntity(
+                user = user,
+                workId = 3002,
+                source = FavoriteWorkSource.MANUAL,
+                createdAt = sameCreatedAt,
+                updatedAt = sameCreatedAt,
+            ),
+        )
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = repository.findAllByUserIdOrderByCreatedAtDesc(user.id!!)
+
+        assertEquals(2, result.size)
+        assertEquals(second.id, result[0].id)
+        assertEquals(first.id, result[1].id)
+    }
 }

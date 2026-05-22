@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.SimpleTransactionStatus
 import org.springframework.transaction.support.TransactionTemplate
 import java.awt.image.BufferedImage
@@ -175,6 +176,34 @@ class ShopServiceTest {
         assertSame(secondResponse, afterWrite)
         verify(exactly = 2) { port.findFacets(query) }
         verify { port.save(any()) }
+    }
+
+    @Test
+    fun `createShop - 트랜잭션 동기화 활성 상태에서는 afterCommit 후 facet 캐시를 비운다`() {
+        val query = ShopFacetQuery(keyword = "슬램덩크")
+        val firstResponse = ShopFacetResponse()
+        val secondResponse = ShopFacetResponse(works = listOf())
+        every { port.findFacets(query) } returns firstResponse andThen secondResponse
+        every { port.save(any()) } returns sampleShop
+
+        TransactionSynchronizationManager.initSynchronization()
+        try {
+            val beforeWrite = service.getShopFacets(query)
+            service.createShop(sampleShop.copy(id = null))
+            val beforeAfterCommit = service.getShopFacets(query)
+
+            TransactionSynchronizationManager.getSynchronizations().forEach { it.afterCommit() }
+
+            val afterAfterCommit = service.getShopFacets(query)
+
+            assertSame(firstResponse, beforeWrite)
+            assertSame(firstResponse, beforeAfterCommit)
+            assertSame(secondResponse, afterAfterCommit)
+            verify(exactly = 2) { port.findFacets(query) }
+            verify { port.save(any()) }
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization()
+        }
     }
 
     @Test
