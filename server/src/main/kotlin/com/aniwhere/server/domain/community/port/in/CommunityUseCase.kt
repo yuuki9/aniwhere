@@ -11,6 +11,8 @@ interface PostUseCase {
     fun createPost(authorUserId: Long, post: Post): Post
     fun updatePost(actorUserId: Long, id: Long, post: Post): Post
     fun deletePost(actorUserId: Long, id: Long)
+    fun likePost(postId: Long, userId: Long)
+    fun unlikePost(postId: Long, userId: Long)
 }
 
 interface CommentUseCase {

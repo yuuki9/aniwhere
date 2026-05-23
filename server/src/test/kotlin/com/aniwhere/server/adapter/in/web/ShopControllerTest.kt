@@ -9,6 +9,8 @@ import com.aniwhere.server.domain.shop.model.FacetRegionItem
 import com.aniwhere.server.domain.shop.model.FacetStatusItem
 import com.aniwhere.server.domain.shop.model.FacetWorkItem
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
+import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
+import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.aniwhere.server.domain.category.model.CategorySummary
 import com.aniwhere.server.domain.work.model.WorkSummary
@@ -19,6 +21,7 @@ import io.mockk.every
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -28,6 +31,9 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -45,6 +51,14 @@ class ShopControllerTest {
 
     @MockkBean
     private lateinit var useCase: ShopUseCase
+
+    @MockkBean
+    private lateinit var favoriteUseCase: UserFavoriteUseCase
+
+    @AfterEach
+    fun clearContext() {
+        SecurityContextHolder.clearContext()
+    }
 
     private val sampleShop = Shop(
         id = 1L, name = "테스트샵", address = "서울시 강남구",
@@ -417,6 +431,30 @@ class ShopControllerTest {
     }
 
     @Test
+    fun `POST shops_{id}_favorite - 샵 즐겨찾기 추가`() {
+        mockAuthenticatedUser(88L)
+        every { favoriteUseCase.addFavoriteShop(88L, 1L) } returns Unit
+
+        mvc.perform(post("/api/v1/shops/1/favorite"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { favoriteUseCase.addFavoriteShop(88L, 1L) }
+    }
+
+    @Test
+    fun `DELETE shops_{id}_favorite - 샵 즐겨찾기 삭제`() {
+        mockAuthenticatedUser(88L)
+        every { favoriteUseCase.removeFavoriteShop(88L, 1L) } returns Unit
+
+        mvc.perform(delete("/api/v1/shops/1/favorite"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { favoriteUseCase.removeFavoriteShop(88L, 1L) }
+    }
+
+    @Test
     fun `POST shops - validation 실패시 400`() {
         val req = mapOf("name" to "", "address" to "", "px" to 0, "py" to 0)
         mvc.perform(
@@ -425,5 +463,11 @@ class ShopControllerTest {
                 .content(mapper.writeValueAsString(req))
         )
             .andExpect(status().isBadRequest)
+    }
+
+    private fun mockAuthenticatedUser(userId: Long) {
+        val principal = SecurityPrincipal(userId = userId, role = "ROLE_USER")
+        val auth = UsernamePasswordAuthenticationToken(principal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+        SecurityContextHolder.getContext().authentication = auth
     }
 }

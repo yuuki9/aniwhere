@@ -10,6 +10,7 @@ object CommunityMapper {
         id = e.id, title = e.title, content = e.content,
         authorUserId = e.author.id!!,
         authorNickname = e.authorNickname, viewCount = e.viewCount,
+        likeCount = e.likeCount,
         createdAt = e.createdAt, updatedAt = e.updatedAt,
     )
 

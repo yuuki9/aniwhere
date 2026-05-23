@@ -58,3 +58,16 @@ CREATE TABLE IF NOT EXISTS user_favorite_works (
     KEY idx_user_favorite_works_work_id (work_id),
     CONSTRAINT fk_user_favorite_works_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_favorite_shops (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    shop_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_favorite_shops_user_id_shop_id (user_id, shop_id),
+    KEY idx_user_favorite_shops_user_id (user_id),
+    KEY idx_user_favorite_shops_shop_id (shop_id),
+    CONSTRAINT fk_user_favorite_shops_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

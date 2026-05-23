@@ -15,6 +15,7 @@ class PostEntity(
     @JoinColumn(name = "author_user_id", nullable = false) val author: UserEntity,
     @Column(name = "author_nickname", nullable = false, length = 50) var authorNickname: String,
     @Column(name = "view_count", nullable = false) var viewCount: Long = 0,
+    @Column(name = "like_count", nullable = false) var likeCount: Long = 0,
 
     @OneToMany(mappedBy = "post", cascade = [CascadeType.ALL], orphanRemoval = true)
     var comments: MutableList<CommentEntity> = mutableListOf(),
@@ -23,6 +24,35 @@ class PostEntity(
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),
+)
+
+@Entity
+@Table(
+    name = "post_likes",
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uk_post_likes_post_id_user_id",
+            columnNames = ["post_id", "user_id"],
+        ),
+    ],
+    indexes = [
+        Index(name = "idx_post_likes_post_id", columnList = "post_id"),
+        Index(name = "idx_post_likes_user_id", columnList = "user_id"),
+    ],
+)
+class PostLikeEntity(
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    val post: PostEntity,
+
+    @Column(name = "user_id", nullable = false)
+    val userId: Long,
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    val createdAt: LocalDateTime = LocalDateTime.now(),
 )
 
 @Entity

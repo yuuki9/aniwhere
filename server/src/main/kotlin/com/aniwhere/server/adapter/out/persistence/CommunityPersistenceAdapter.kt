@@ -1,9 +1,11 @@
 package com.aniwhere.server.adapter.out.persistence
 
 import com.aniwhere.server.adapter.out.persistence.entity.CommentEntity
+import com.aniwhere.server.adapter.out.persistence.entity.PostLikeEntity
 import com.aniwhere.server.adapter.out.persistence.entity.PostEntity
 import com.aniwhere.server.adapter.out.persistence.mapper.CommunityMapper
 import com.aniwhere.server.adapter.out.persistence.repository.CommentRepository
+import com.aniwhere.server.adapter.out.persistence.repository.PostLikeRepository
 import com.aniwhere.server.adapter.out.persistence.repository.PostRepository
 import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
@@ -20,9 +22,17 @@ import org.springframework.stereotype.Component
 class PostPersistenceAdapter(
     private val repo: PostRepository,
     private val userRepo: UserRepository,
+    private val postLikeRepo: PostLikeRepository,
 ) : PostPersistencePort {
 
     override fun findById(id: Long) = repo.findByIdOrNull(id)?.let(CommunityMapper::toDomain)
+
+    override fun findByIdAndIncreaseViewCount(id: Long): Post? {
+        if (repo.incrementViewCount(id) == 0) {
+            return null
+        }
+        return repo.findByIdOrNull(id)?.let(CommunityMapper::toDomain)
+    }
 
     override fun findAll(pageable: Pageable): Page<Post> = repo.findAll(pageable).map(CommunityMapper::toDomain)
 
@@ -48,6 +58,23 @@ class PostPersistenceAdapter(
     override fun deleteById(id: Long) {
         if (!repo.existsById(id)) throw EntityNotFoundException("Post not found: $id")
         repo.deleteById(id)
+    }
+
+    override fun like(postId: Long, userId: Long) {
+        val post = repo.findByIdOrNull(postId) ?: throw EntityNotFoundException("Post not found: $postId")
+        if (postLikeRepo.existsByPost_IdAndUserId(postId, userId)) {
+            return
+        }
+        postLikeRepo.save(PostLikeEntity(post = post, userId = userId))
+        repo.incrementLikeCount(postId)
+    }
+
+    override fun unlike(postId: Long, userId: Long) {
+        if (!repo.existsById(postId)) throw EntityNotFoundException("Post not found: $postId")
+        val deleted = postLikeRepo.deleteByPost_IdAndUserId(postId, userId)
+        if (deleted > 0) {
+            repo.decrementLikeCount(postId)
+        }
     }
 }
 

@@ -27,6 +27,8 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.GET, "/api/v1/works/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/shop-images/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll()
+                it.requestMatchers(HttpMethod.POST, "/api/v1/shops/*/favorite").authenticated()
+                it.requestMatchers(HttpMethod.DELETE, "/api/v1/shops/*/favorite").authenticated()
                 it.requestMatchers(HttpMethod.POST, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
                 it.requestMatchers(HttpMethod.PUT, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
                 it.requestMatchers(HttpMethod.DELETE, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")

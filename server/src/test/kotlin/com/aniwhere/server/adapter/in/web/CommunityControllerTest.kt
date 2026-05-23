@@ -17,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.data.domain.PageImpl
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
@@ -26,12 +27,6 @@ import java.time.LocalDateTime
 @WebMvcTest(PostController::class, CommentController::class)
 @AutoConfigureMockMvc(addFilters = false)
 class CommunityControllerTest {
-    @AfterEach
-    fun clearSecurityContext() {
-        SecurityContextHolder.clearContext()
-    }
-
-
     @Autowired
     private lateinit var mvc: MockMvc
 
@@ -43,6 +38,11 @@ class CommunityControllerTest {
 
     @MockkBean
     private lateinit var commentUseCase: CommentUseCase
+
+    @AfterEach
+    fun clearContext() {
+        SecurityContextHolder.clearContext()
+    }
 
     private val samplePost = Post(
         id = 1L, title = "테스트 글", content = "내용",
@@ -141,9 +141,33 @@ class CommunityControllerTest {
         verify { commentUseCase.deleteComment(10L, 1L) }
     }
 
+    @Test
+    fun `POST posts_{id}_likes - 좋아요 추가`() {
+        mockAuthenticatedUser(77L)
+        every { postUseCase.likePost(1L, 77L) } returns Unit
+
+        mvc.perform(post("/api/v1/posts/1/likes"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { postUseCase.likePost(1L, 77L) }
+    }
+
+    @Test
+    fun `DELETE posts_{id}_likes - 좋아요 취소`() {
+        mockAuthenticatedUser(77L)
+        every { postUseCase.unlikePost(1L, 77L) } returns Unit
+
+        mvc.perform(delete("/api/v1/posts/1/likes"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { postUseCase.unlikePost(1L, 77L) }
+    }
+
     private fun mockAuthenticatedUser(userId: Long) {
         val principal = SecurityPrincipal(userId = userId, role = "ROLE_USER")
-        val authentication = UsernamePasswordAuthenticationToken(principal, null, emptyList())
-        SecurityContextHolder.getContext().authentication = authentication
+        val auth = UsernamePasswordAuthenticationToken(principal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+        SecurityContextHolder.getContext().authentication = auth
     }
 }

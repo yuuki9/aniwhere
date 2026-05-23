@@ -36,13 +36,13 @@ class PostServiceTest {
 
     @Test
     fun `getPost - 존재하는 게시글 조회 성공`() {
-        every { port.findById(1L) } returns samplePost
+        every { port.findByIdAndIncreaseViewCount(1L) } returns samplePost
         assertEquals("테스트 글", service.getPost(1L).title)
     }
 
     @Test
     fun `getPost - 존재하지 않는 게시글 조회시 예외`() {
-        every { port.findById(999L) } returns null
+        every { port.findByIdAndIncreaseViewCount(999L) } returns null
         assertThrows<EntityNotFoundException> { service.getPost(999L) }
     }
 
@@ -87,6 +87,20 @@ class PostServiceTest {
     fun `deletePost - 작성자가 아니면 예외`() {
         every { port.findById(1L) } returns samplePost
         assertThrows<ForbiddenException> { service.deletePost(11L, 1L) }
+    }
+
+    @Test
+    fun `likePost - 게시글 좋아요`() {
+        every { port.like(1L, 10L) } returns Unit
+        service.likePost(1L, 10L)
+        verify { port.like(1L, 10L) }
+    }
+
+    @Test
+    fun `unlikePost - 게시글 좋아요 취소`() {
+        every { port.unlike(1L, 10L) } returns Unit
+        service.unlikePost(1L, 10L)
+        verify { port.unlike(1L, 10L) }
     }
 }
 

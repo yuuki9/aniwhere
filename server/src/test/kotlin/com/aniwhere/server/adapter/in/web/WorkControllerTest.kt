@@ -1,19 +1,28 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.exception.GlobalExceptionHandler
+import com.aniwhere.server.config.security.SecurityPrincipal
+import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
 import com.aniwhere.server.domain.work.model.WorkCatalogItem
 import com.aniwhere.server.domain.work.model.WorkType
 import com.aniwhere.server.domain.work.port.`in`.ListWorksUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.verify
 import org.hamcrest.Matchers.nullValue
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDateTime
@@ -28,6 +37,14 @@ class WorkControllerTest {
 
     @MockkBean
     private lateinit var useCase: ListWorksUseCase
+
+    @MockkBean
+    private lateinit var favoriteUseCase: UserFavoriteUseCase
+
+    @AfterEach
+    fun clearContext() {
+        SecurityContextHolder.clearContext()
+    }
 
     @Test
     fun `GET works - 카탈로그 목록`() {
@@ -96,5 +113,35 @@ class WorkControllerTest {
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.message").value("type must be ANIMATION or GAME"))
+    }
+
+    @Test
+    fun `POST works_{id}_favorite - 작품 즐겨찾기 추가`() {
+        mockAuthenticatedUser(101L)
+        every { favoriteUseCase.addFavoriteWork(101L, 5) } returns Unit
+
+        mvc.perform(post("/api/v1/works/5/favorite"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { favoriteUseCase.addFavoriteWork(101L, 5) }
+    }
+
+    @Test
+    fun `DELETE works_{id}_favorite - 작품 즐겨찾기 삭제`() {
+        mockAuthenticatedUser(101L)
+        every { favoriteUseCase.removeFavoriteWork(101L, 5) } returns Unit
+
+        mvc.perform(delete("/api/v1/works/5/favorite"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { favoriteUseCase.removeFavoriteWork(101L, 5) }
+    }
+
+    private fun mockAuthenticatedUser(userId: Long) {
+        val principal = SecurityPrincipal(userId = userId, role = "ROLE_USER")
+        val auth = UsernamePasswordAuthenticationToken(principal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+        SecurityContextHolder.getContext().authentication = auth
     }
 }

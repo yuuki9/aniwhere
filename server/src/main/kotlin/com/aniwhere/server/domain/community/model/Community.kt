@@ -9,6 +9,7 @@ data class Post(
     val authorUserId: Long,
     val authorNickname: String,
     val viewCount: Long = 0,
+    val likeCount: Long = 0,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
 )
