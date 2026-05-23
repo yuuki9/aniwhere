@@ -14,6 +14,7 @@ interface PostPersistencePort {
 }
 
 interface CommentPersistencePort {
+    fun findById(id: Long): Comment?
     fun findByPostId(postId: Long): List<Comment>
     fun save(comment: Comment): Comment
     fun deleteById(id: Long)

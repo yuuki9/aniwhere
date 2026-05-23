@@ -1,6 +1,8 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.dto.ApiResponse
+import com.aniwhere.server.common.exception.UnauthorizedException
+import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.community.model.Comment
 import com.aniwhere.server.domain.community.model.Post
 import com.aniwhere.server.domain.community.port.`in`.CommentUseCase
@@ -13,6 +15,7 @@ import jakarta.validation.constraints.NotBlank
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "Community - Post", description = "커뮤니티 게시판 API")
@@ -33,16 +36,20 @@ class PostController(private val useCase: PostUseCase) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createPost(@Valid @RequestBody req: PostRequest) =
-        ApiResponse.ok(useCase.createPost(req.toDomain()))
+        ApiResponse.ok(useCase.createPost(currentUserId(), req.toDomain()))
 
     @Operation(summary = "게시글 수정")
     @PutMapping("/{id}")
-    fun updatePost(@PathVariable id: Long, @Valid @RequestBody req: PostRequest) =
-        ApiResponse.ok(useCase.updatePost(id, req.toDomain()))
+    fun updatePost(@PathVariable id: Long, @Valid @RequestBody req: PostUpdateRequest) =
+        ApiResponse.ok(useCase.updatePost(currentUserId(), id, req.toDomain()))
 
     @Operation(summary = "게시글 삭제")
     @DeleteMapping("/{id}")
-    fun deletePost(@PathVariable id: Long) = run { useCase.deletePost(id); ApiResponse.ok() }
+    fun deletePost(@PathVariable id: Long) = run { useCase.deletePost(currentUserId(), id); ApiResponse.ok() }
+
+    private fun currentUserId(): Long =
+        (SecurityContextHolder.getContext().authentication?.principal as? SecurityPrincipal)?.userId
+            ?: throw UnauthorizedException("Authentication required")
 }
 
 @Tag(name = "Community - Comment", description = "댓글 API")
@@ -59,12 +66,16 @@ class CommentController(private val useCase: CommentUseCase) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createComment(@PathVariable postId: Long, @Valid @RequestBody req: CommentRequest) =
-        ApiResponse.ok(useCase.createComment(req.toDomain(postId)))
+        ApiResponse.ok(useCase.createComment(currentUserId(), req.toDomain(postId)))
 
     @Operation(summary = "댓글 삭제")
     @DeleteMapping("/{commentId}")
     fun deleteComment(@PathVariable commentId: Long) =
-        run { useCase.deleteComment(commentId); ApiResponse.ok() }
+        run { useCase.deleteComment(currentUserId(), commentId); ApiResponse.ok() }
+
+    private fun currentUserId(): Long =
+        (SecurityContextHolder.getContext().authentication?.principal as? SecurityPrincipal)?.userId
+            ?: throw UnauthorizedException("Authentication required")
 }
 
 data class PostRequest(
@@ -72,12 +83,19 @@ data class PostRequest(
     @field:NotBlank val content: String,
     @field:NotBlank val authorNickname: String,
 ) {
-    fun toDomain() = Post(title = title, content = content, authorNickname = authorNickname)
+    fun toDomain() = Post(title = title, content = content, authorUserId = 0, authorNickname = authorNickname)
+}
+
+data class PostUpdateRequest(
+    @field:NotBlank val title: String,
+    @field:NotBlank val content: String,
+) {
+    fun toDomain() = Post(title = title, content = content, authorUserId = 0, authorNickname = "")
 }
 
 data class CommentRequest(
     @field:NotBlank val content: String,
     @field:NotBlank val authorNickname: String,
 ) {
-    fun toDomain(postId: Long) = Comment(postId = postId, content = content, authorNickname = authorNickname)
+    fun toDomain(postId: Long) = Comment(postId = postId, content = content, authorUserId = 0, authorNickname = authorNickname)
 }
