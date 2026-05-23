@@ -3,11 +3,13 @@ package com.aniwhere.server.adapter.out.persistence
 import com.aniwhere.server.adapter.out.persistence.entity.CommentEntity
 import com.aniwhere.server.adapter.out.persistence.entity.PostLikeEntity
 import com.aniwhere.server.adapter.out.persistence.entity.PostEntity
+import com.aniwhere.server.adapter.out.persistence.entity.UserEntity
 import com.aniwhere.server.adapter.out.persistence.mapper.CommunityMapper
 import com.aniwhere.server.adapter.out.persistence.repository.CommentRepository
 import com.aniwhere.server.adapter.out.persistence.repository.PostLikeRepository
 import com.aniwhere.server.adapter.out.persistence.repository.PostRepository
 import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
+import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.community.model.Comment
 import com.aniwhere.server.domain.community.model.Post
@@ -39,11 +41,12 @@ class PostPersistenceAdapter(
     override fun save(post: Post): Post {
         val author = userRepo.findByIdOrNull(post.authorUserId)
             ?: throw EntityNotFoundException("User not found: ${post.authorUserId}")
+        val authorNickname = resolveOrInitializeNickname(author, post.authorNickname)
         val entity = PostEntity(
             title = post.title,
             content = post.content,
             author = author,
-            authorNickname = post.authorNickname,
+            authorNickname = authorNickname,
         )
         return CommunityMapper.toDomain(repo.save(entity))
     }
@@ -95,11 +98,12 @@ class CommentPersistenceAdapter(
             ?: throw EntityNotFoundException("Post not found: ${comment.postId}")
         val author = userRepo.findByIdOrNull(comment.authorUserId)
             ?: throw EntityNotFoundException("User not found: ${comment.authorUserId}")
+        val authorNickname = resolveOrInitializeNickname(author, comment.authorNickname)
         val entity = CommentEntity(
             post = post,
             author = author,
             content = comment.content,
-            authorNickname = comment.authorNickname,
+            authorNickname = authorNickname,
         )
         return CommunityMapper.toDomain(commentRepo.save(entity))
     }
@@ -108,4 +112,22 @@ class CommentPersistenceAdapter(
         if (!commentRepo.existsById(id)) throw EntityNotFoundException("Comment not found: $id")
         commentRepo.deleteById(id)
     }
+}
+
+private fun resolveOrInitializeNickname(author: UserEntity, requestedNickname: String): String {
+    val normalizedRequestedNickname = requestedNickname.trim()
+    if (normalizedRequestedNickname.isBlank()) {
+        throw BadRequestException("authorNickname must not be blank")
+    }
+
+    val normalizedStoredNickname = author.nickname?.trim().orEmpty()
+    if (normalizedStoredNickname.isBlank()) {
+        author.nickname = normalizedRequestedNickname
+        return normalizedRequestedNickname
+    }
+
+    if (normalizedStoredNickname != normalizedRequestedNickname) {
+        throw BadRequestException("authorNickname does not match user profile nickname")
+    }
+    return normalizedStoredNickname
 }

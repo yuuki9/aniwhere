@@ -10,6 +10,7 @@ import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -64,9 +65,26 @@ class PostServiceTest {
     @Test
     fun `updatePost - 게시글 수정 성공`() {
         val updated = samplePost.copy(title = "수정된 글")
+        val captured = slot<Post>()
+        val request = Post(
+            title = "수정된 글",
+            content = "새 내용",
+            authorUserId = 999L,
+            authorNickname = "다른닉네임",
+            viewCount = 999,
+            likeCount = 999,
+            createdAt = LocalDateTime.of(2000, 1, 1, 0, 0),
+            updatedAt = LocalDateTime.of(2000, 1, 1, 0, 0),
+        )
         every { port.findById(1L) } returns samplePost
-        every { port.update(1L, any()) } returns updated
-        assertEquals("수정된 글", service.updatePost(10L, 1L, updated).title)
+        every { port.update(1L, capture(captured)) } returns updated
+        assertEquals("수정된 글", service.updatePost(10L, 1L, request).title)
+        assertEquals(samplePost.authorUserId, captured.captured.authorUserId)
+        assertEquals(samplePost.authorNickname, captured.captured.authorNickname)
+        assertEquals(samplePost.viewCount, captured.captured.viewCount)
+        assertEquals(samplePost.likeCount, captured.captured.likeCount)
+        assertEquals(samplePost.createdAt, captured.captured.createdAt)
+        assertEquals(samplePost.updatedAt, captured.captured.updatedAt)
     }
 
     @Test
