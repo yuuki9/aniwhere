@@ -47,6 +47,16 @@ class PostController(private val useCase: PostUseCase) {
     @DeleteMapping("/{id}")
     fun deletePost(@PathVariable id: Long) = run { useCase.deletePost(currentUserId(), id); ApiResponse.ok() }
 
+    @Operation(summary = "게시글 좋아요")
+    @PostMapping("/{id}/likes")
+    fun likePost(@PathVariable id: Long) =
+        run { useCase.likePost(id, currentUserId()); ApiResponse.ok() }
+
+    @Operation(summary = "게시글 좋아요 취소")
+    @DeleteMapping("/{id}/likes")
+    fun unlikePost(@PathVariable id: Long) =
+        run { useCase.unlikePost(id, currentUserId()); ApiResponse.ok() }
+
     private fun currentUserId(): Long =
         (SecurityContextHolder.getContext().authentication?.principal as? SecurityPrincipal)?.userId
             ?: throw UnauthorizedException("Authentication required")

@@ -7,10 +7,13 @@ import org.springframework.data.domain.Pageable
 
 interface PostPersistencePort {
     fun findById(id: Long): Post?
+    fun findByIdAndIncreaseViewCount(id: Long): Post?
     fun findAll(pageable: Pageable): Page<Post>
     fun save(post: Post): Post
     fun update(id: Long, post: Post): Post
     fun deleteById(id: Long)
+    fun like(postId: Long, userId: Long)
+    fun unlike(postId: Long, userId: Long)
 }
 
 interface CommentPersistencePort {

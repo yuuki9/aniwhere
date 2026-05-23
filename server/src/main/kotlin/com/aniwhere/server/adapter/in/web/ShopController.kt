@@ -2,6 +2,9 @@ package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.BadRequestException
+import com.aniwhere.server.common.exception.UnauthorizedException
+import com.aniwhere.server.config.security.SecurityPrincipal
+import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
 import com.aniwhere.server.domain.shop.model.ShopFacetQuery
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
@@ -20,6 +23,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.validation.annotation.Validated
@@ -29,7 +33,10 @@ import java.math.BigDecimal
 @RestController
 @RequestMapping("/api/v1/shops")
 @Validated
-class ShopController(private val useCase: ShopUseCase) {
+class ShopController(
+    private val useCase: ShopUseCase,
+    private val favoriteUseCase: UserFavoriteUseCase,
+) {
 
     @Operation(summary = "샵 단건 조회")
     @GetMapping("/{id}")
@@ -168,10 +175,24 @@ class ShopController(private val useCase: ShopUseCase) {
     @DeleteMapping("/{id}")
     fun deleteShop(@PathVariable id: Long) = run { useCase.deleteShop(id); ApiResponse.ok() }
 
+    @Operation(summary = "샵 즐겨찾기 추가")
+    @PostMapping("/{id}/favorite")
+    fun addFavoriteShop(@PathVariable id: Long) =
+        run { favoriteUseCase.addFavoriteShop(currentUserId(), id); ApiResponse.ok() }
+
+    @Operation(summary = "샵 즐겨찾기 삭제")
+    @DeleteMapping("/{id}/favorite")
+    fun removeFavoriteShop(@PathVariable id: Long) =
+        run { favoriteUseCase.removeFavoriteShop(currentUserId(), id); ApiResponse.ok() }
+
     private companion object {
         const val EMPTY_SHOP_SEARCH_CODE = "EMPTY_RESULT"
         const val EMPTY_SHOP_SEARCH_MESSAGE = "선택하신 필터 조건에 맞는 굿즈샵이 없습니다."
     }
+
+    private fun currentUserId(): Long =
+        (SecurityContextHolder.getContext().authentication?.principal as? SecurityPrincipal)?.userId
+            ?: throw UnauthorizedException("Authentication required")
 }
 
 private fun MultipartFile.requireImagePart(): ImageUploadPart {

@@ -17,8 +17,9 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class PostService(private val port: PostPersistencePort) : PostUseCase {
 
+    @Transactional
     override fun getPost(id: Long) =
-        port.findById(id) ?: throw EntityNotFoundException("Post not found: $id")
+        port.findByIdAndIncreaseViewCount(id) ?: throw EntityNotFoundException("Post not found: $id")
 
     override fun listPosts(pageable: Pageable): Page<Post> = port.findAll(pageable)
 
@@ -44,6 +45,12 @@ class PostService(private val port: PostPersistencePort) : PostUseCase {
             throw ForbiddenException("Only the author can modify this post")
         }
     }
+
+    @Transactional
+    override fun likePost(postId: Long, userId: Long) = port.like(postId, userId)
+
+    @Transactional
+    override fun unlikePost(postId: Long, userId: Long) = port.unlike(postId, userId)
 }
 
 @Service
