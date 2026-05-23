@@ -11,6 +11,8 @@ import java.time.LocalDateTime
 
 interface UserRepository : JpaRepository<UserEntity, Long> {
     fun findByUserKey(userKey: Long): UserEntity?
+    fun existsByNicknameIgnoreCase(nickname: String): Boolean
+    fun existsByNicknameIgnoreCaseAndIdNot(nickname: String, id: Long): Boolean
 }
 
 interface AdminRepository : JpaRepository<AdminEntity, Long> {

@@ -1,0 +1,45 @@
+package com.aniwhere.server.adapter.out.persistence
+
+import com.aniwhere.server.adapter.out.persistence.entity.UserEntity
+import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
+import com.aniwhere.server.common.exception.EntityNotFoundException
+import com.aniwhere.server.domain.user.model.UserSummary
+import com.aniwhere.server.domain.user.port.out.UserPersistencePort
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.repository.findByIdOrNull
+import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+
+@Component
+class UserPersistenceAdapter(
+    private val userRepo: UserRepository,
+) : UserPersistencePort {
+    override fun listUsers(pageable: Pageable): Page<UserSummary> = userRepo.findAll(pageable).map { it.toSummary() }
+
+    override fun findUser(userId: Long): UserSummary? = userRepo.findByIdOrNull(userId)?.toSummary()
+
+    override fun isNicknameTaken(nickname: String, excludeUserId: Long?): Boolean =
+        if (excludeUserId == null) {
+            userRepo.existsByNicknameIgnoreCase(nickname)
+        } else {
+            userRepo.existsByNicknameIgnoreCaseAndIdNot(nickname, excludeUserId)
+        }
+
+    @Transactional
+    override fun updateNickname(userId: Long, nickname: String): UserSummary {
+        val user = userRepo.findByIdOrNull(userId) ?: throw EntityNotFoundException("User not found: $userId")
+        user.nickname = nickname
+        return userRepo.save(user).toSummary()
+    }
+}
+
+private fun UserEntity.toSummary() =
+    UserSummary(
+        id = id ?: error("User id must not be null"),
+        userKey = userKey,
+        nickname = nickname,
+        status = status,
+        lastLoginAt = lastLoginAt,
+        createdAt = createdAt,
+    )
