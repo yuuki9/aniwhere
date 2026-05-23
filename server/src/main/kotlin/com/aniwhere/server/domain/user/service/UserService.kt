@@ -6,8 +6,10 @@ import com.aniwhere.server.domain.user.model.NicknameAvailabilityResult
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
 import com.aniwhere.server.domain.user.port.out.UserPersistencePort
+import org.hibernate.exception.ConstraintViolationException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,10 +27,14 @@ class UserService(
     override fun updateNickname(userId: Long, nickname: String): UserSummary {
         val user = getExistingUser(userId)
         val normalized = normalizeNickname(nickname)
-        if (persistence.isNicknameTaken(normalized, user.id)) {
-            throw BadRequestException("이미 사용 중인 닉네임입니다.")
+        try {
+            return persistence.updateNickname(user.id, normalized)
+        } catch (e: DataIntegrityViolationException) {
+            if (isNicknameUniqueViolation(e)) {
+                throw BadRequestException("이미 사용 중인 닉네임입니다.")
+            }
+            throw e
         }
-        return persistence.updateNickname(user.id, normalized)
     }
 
     override fun checkNicknameAvailability(requesterUserId: Long?, nickname: String): NicknameAvailabilityResult {
@@ -46,4 +52,20 @@ class UserService(
 
     private fun getExistingUser(userId: Long): UserSummary =
         persistence.findUser(userId) ?: throw EntityNotFoundException("User not found: $userId")
+
+    private fun isNicknameUniqueViolation(e: DataIntegrityViolationException): Boolean {
+        var cause: Throwable? = e
+        while (cause != null) {
+            if (cause is ConstraintViolationException) {
+                val constraintName = cause.constraintName?.lowercase().orEmpty()
+                if (constraintName.contains("nickname")) {
+                    return true
+                }
+            }
+            cause = cause.cause
+        }
+        val normalizedMessage = e.message?.lowercase().orEmpty()
+        return normalizedMessage.contains("nickname") &&
+            (normalizedMessage.contains("unique") || normalizedMessage.contains("duplicate"))
+    }
 }

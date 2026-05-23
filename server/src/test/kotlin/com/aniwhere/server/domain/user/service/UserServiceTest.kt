@@ -6,9 +6,12 @@ import com.aniwhere.server.domain.user.port.out.UserPersistencePort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.hibernate.exception.ConstraintViolationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.springframework.dao.DataIntegrityViolationException
+import java.sql.SQLException
 import java.time.LocalDateTime
 
 class UserServiceTest {
@@ -16,9 +19,12 @@ class UserServiceTest {
     private val service = UserService(persistence)
 
     @Test
-    fun `닉네임 중복이면 수정 실패`() {
+    fun `닉네임 unique 제약 위반이면 수정 실패`() {
         every { persistence.findUser(1L) } returns sampleUser(userId = 1L, nickname = "기존닉네임")
-        every { persistence.isNicknameTaken("중복닉네임", 1L) } returns true
+        every { persistence.updateNickname(1L, "중복닉네임") } throws DataIntegrityViolationException(
+            "duplicate key value violates unique constraint",
+            ConstraintViolationException("duplicate key", SQLException("duplicate"), "uk_users_nickname_ci"),
+        )
 
         assertThatThrownBy { service.updateNickname(1L, "중복닉네임") }
             .isInstanceOf(BadRequestException::class.java)
@@ -28,7 +34,6 @@ class UserServiceTest {
     @Test
     fun `닉네임 수정 성공`() {
         every { persistence.findUser(1L) } returns sampleUser(userId = 1L, nickname = null)
-        every { persistence.isNicknameTaken("새닉네임", 1L) } returns false
         every { persistence.updateNickname(1L, "새닉네임") } returns sampleUser(userId = 1L, nickname = "새닉네임")
 
         val result = service.updateNickname(1L, "  새닉네임 ")
