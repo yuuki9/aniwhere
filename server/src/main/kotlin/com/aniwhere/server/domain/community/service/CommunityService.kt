@@ -30,7 +30,15 @@ class PostService(private val port: PostPersistencePort) : PostUseCase {
     override fun updatePost(actorUserId: Long, id: Long, post: Post): Post {
         val existing = port.findById(id) ?: throw EntityNotFoundException("Post not found: $id")
         requireOwnership(actorUserId, existing.authorUserId)
-        return port.update(id, post.copy(authorUserId = existing.authorUserId, authorNickname = existing.authorNickname))
+        val mergedPost = post.copy(
+            authorUserId = existing.authorUserId,
+            authorNickname = existing.authorNickname,
+            viewCount = existing.viewCount,
+            likeCount = existing.likeCount,
+            createdAt = existing.createdAt,
+            updatedAt = existing.updatedAt,
+        )
+        return port.update(id, mergedPost)
     }
 
     @Transactional

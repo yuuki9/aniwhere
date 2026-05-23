@@ -10,6 +10,8 @@ class UserEntity(
     val id: Long? = null,
     @Column(name = "user_key", nullable = false, unique = true)
     var userKey: Long,
+    @Column(name = "nickname", length = 50)
+    var nickname: String? = null,
     @Column(nullable = false, length = 20)
     var status: String = "ACTIVE",
     @Column(name = "last_login_at")
