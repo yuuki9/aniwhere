@@ -8,13 +8,13 @@ import org.springframework.data.domain.Pageable
 interface PostUseCase {
     fun getPost(id: Long): Post
     fun listPosts(pageable: Pageable): Page<Post>
-    fun createPost(post: Post): Post
-    fun updatePost(id: Long, post: Post): Post
-    fun deletePost(id: Long)
+    fun createPost(authorUserId: Long, post: Post): Post
+    fun updatePost(actorUserId: Long, id: Long, post: Post): Post
+    fun deletePost(actorUserId: Long, id: Long)
 }
 
 interface CommentUseCase {
     fun listComments(postId: Long): List<Comment>
-    fun createComment(comment: Comment): Comment
-    fun deleteComment(id: Long)
+    fun createComment(authorUserId: Long, comment: Comment): Comment
+    fun deleteComment(actorUserId: Long, id: Long)
 }

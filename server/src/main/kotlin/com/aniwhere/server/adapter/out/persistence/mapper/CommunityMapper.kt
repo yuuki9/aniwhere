@@ -8,12 +8,14 @@ import com.aniwhere.server.domain.community.model.Post
 object CommunityMapper {
     fun toDomain(e: PostEntity) = Post(
         id = e.id, title = e.title, content = e.content,
+        authorUserId = e.author.id!!,
         authorNickname = e.authorNickname, viewCount = e.viewCount,
         createdAt = e.createdAt, updatedAt = e.updatedAt,
     )
 
     fun toDomain(e: CommentEntity) = Comment(
         id = e.id, postId = e.post.id!!, content = e.content,
+        authorUserId = e.author.id!!,
         authorNickname = e.authorNickname, createdAt = e.createdAt,
     )
 }

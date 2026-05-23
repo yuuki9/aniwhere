@@ -11,6 +11,8 @@ class PostEntity(
 
     @Column(nullable = false, length = 200) var title: String,
     @Column(nullable = false, columnDefinition = "TEXT") var content: String,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_user_id", nullable = false) val author: UserEntity,
     @Column(name = "author_nickname", nullable = false, length = 50) var authorNickname: String,
     @Column(name = "view_count", nullable = false) var viewCount: Long = 0,
 
@@ -31,6 +33,8 @@ class CommentEntity(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false) val post: PostEntity,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_user_id", nullable = false) val author: UserEntity,
 
     @Column(nullable = false, columnDefinition = "TEXT") var content: String,
     @Column(name = "author_nickname", nullable = false, length = 50) var authorNickname: String,

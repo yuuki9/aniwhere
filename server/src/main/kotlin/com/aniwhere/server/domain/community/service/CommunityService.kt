@@ -1,6 +1,7 @@
 package com.aniwhere.server.domain.community.service
 
 import com.aniwhere.server.common.exception.EntityNotFoundException
+import com.aniwhere.server.common.exception.ForbiddenException
 import com.aniwhere.server.domain.community.model.Comment
 import com.aniwhere.server.domain.community.model.Post
 import com.aniwhere.server.domain.community.port.`in`.CommentUseCase
@@ -22,13 +23,27 @@ class PostService(private val port: PostPersistencePort) : PostUseCase {
     override fun listPosts(pageable: Pageable): Page<Post> = port.findAll(pageable)
 
     @Transactional
-    override fun createPost(post: Post) = port.save(post)
+    override fun createPost(authorUserId: Long, post: Post) = port.save(post.copy(authorUserId = authorUserId))
 
     @Transactional
-    override fun updatePost(id: Long, post: Post) = port.update(id, post)
+    override fun updatePost(actorUserId: Long, id: Long, post: Post): Post {
+        val existing = port.findById(id) ?: throw EntityNotFoundException("Post not found: $id")
+        requireOwnership(actorUserId, existing.authorUserId)
+        return port.update(id, post.copy(authorUserId = existing.authorUserId, authorNickname = existing.authorNickname))
+    }
 
     @Transactional
-    override fun deletePost(id: Long) = port.deleteById(id)
+    override fun deletePost(actorUserId: Long, id: Long) {
+        val existing = port.findById(id) ?: throw EntityNotFoundException("Post not found: $id")
+        requireOwnership(actorUserId, existing.authorUserId)
+        port.deleteById(id)
+    }
+
+    private fun requireOwnership(actorUserId: Long, ownerUserId: Long) {
+        if (actorUserId != ownerUserId) {
+            throw ForbiddenException("Only the author can modify this post")
+        }
+    }
 }
 
 @Service
@@ -38,8 +53,15 @@ class CommentService(private val port: CommentPersistencePort) : CommentUseCase 
     override fun listComments(postId: Long) = port.findByPostId(postId)
 
     @Transactional
-    override fun createComment(comment: Comment) = port.save(comment)
+    override fun createComment(authorUserId: Long, comment: Comment) =
+        port.save(comment.copy(authorUserId = authorUserId))
 
     @Transactional
-    override fun deleteComment(id: Long) = port.deleteById(id)
+    override fun deleteComment(actorUserId: Long, id: Long) {
+        val existing = port.findById(id) ?: throw EntityNotFoundException("Comment not found: $id")
+        if (actorUserId != existing.authorUserId) {
+            throw ForbiddenException("Only the author can delete this comment")
+        }
+        port.deleteById(id)
+    }
 }

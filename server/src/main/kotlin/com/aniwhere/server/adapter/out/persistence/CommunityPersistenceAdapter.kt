@@ -5,6 +5,7 @@ import com.aniwhere.server.adapter.out.persistence.entity.PostEntity
 import com.aniwhere.server.adapter.out.persistence.mapper.CommunityMapper
 import com.aniwhere.server.adapter.out.persistence.repository.CommentRepository
 import com.aniwhere.server.adapter.out.persistence.repository.PostRepository
+import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.community.model.Comment
 import com.aniwhere.server.domain.community.model.Post
@@ -16,15 +17,23 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 
 @Component
-class PostPersistenceAdapter(private val repo: PostRepository) : PostPersistencePort {
+class PostPersistenceAdapter(
+    private val repo: PostRepository,
+    private val userRepo: UserRepository,
+) : PostPersistencePort {
 
     override fun findById(id: Long) = repo.findByIdOrNull(id)?.let(CommunityMapper::toDomain)
 
     override fun findAll(pageable: Pageable): Page<Post> = repo.findAll(pageable).map(CommunityMapper::toDomain)
 
     override fun save(post: Post): Post {
+        val author = userRepo.findByIdOrNull(post.authorUserId)
+            ?: throw EntityNotFoundException("User not found: ${post.authorUserId}")
         val entity = PostEntity(
-            title = post.title, content = post.content, authorNickname = post.authorNickname,
+            title = post.title,
+            content = post.content,
+            author = author,
+            authorNickname = post.authorNickname,
         )
         return CommunityMapper.toDomain(repo.save(entity))
     }
@@ -46,7 +55,10 @@ class PostPersistenceAdapter(private val repo: PostRepository) : PostPersistence
 class CommentPersistenceAdapter(
     private val commentRepo: CommentRepository,
     private val postRepo: PostRepository,
+    private val userRepo: UserRepository,
 ) : CommentPersistencePort {
+
+    override fun findById(id: Long) = commentRepo.findByIdOrNull(id)?.let(CommunityMapper::toDomain)
 
     override fun findByPostId(postId: Long) =
         commentRepo.findByPostIdOrderByCreatedAtAsc(postId).map(CommunityMapper::toDomain)
@@ -54,8 +66,13 @@ class CommentPersistenceAdapter(
     override fun save(comment: Comment): Comment {
         val post = postRepo.findByIdOrNull(comment.postId)
             ?: throw EntityNotFoundException("Post not found: ${comment.postId}")
+        val author = userRepo.findByIdOrNull(comment.authorUserId)
+            ?: throw EntityNotFoundException("User not found: ${comment.authorUserId}")
         val entity = CommentEntity(
-            post = post, content = comment.content, authorNickname = comment.authorNickname,
+            post = post,
+            author = author,
+            content = comment.content,
+            authorNickname = comment.authorNickname,
         )
         return CommunityMapper.toDomain(commentRepo.save(entity))
     }
