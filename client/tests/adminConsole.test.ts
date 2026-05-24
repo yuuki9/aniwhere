@@ -282,7 +282,7 @@ test('admin shops route is a standalone TDS-style CRUD screen after role verific
   assert.match(shopsApi, /slice\(1, 7\)[\s\S]*formData\.append\('galleryImages'/)
   assert.match(shopsApi, /payload\.floor != null/)
   assert.match(shopsApi, /payload\.visitTip != null/)
-  assert.match(apiClient, /requestForm<T>\(path: string, body: FormData, init\?: RequestInit\)/)
+  assert.match(apiClient, /requestForm<T>\(path: string, body: FormData, init\?: ApiRequestInit\)/)
   assert.match(apiClient, /export const API_BASE_URL/)
   assert.match(shops, /매장명/)
   assert.match(shops, /admin-shop-required/)

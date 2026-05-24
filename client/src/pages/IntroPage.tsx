@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
@@ -6,6 +6,8 @@ import introFeatureReviewIcon from '../assets/icons/intro-feature-review.webp'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry } from '../shared/lib/auth'
+import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
+import type { AuthSession } from '../shared/lib/authSession'
 import { Button } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
@@ -75,7 +77,10 @@ type EntryRouteState =
 export function IntroPage() {
   const navigate = useNavigate()
   const [isEntering, setIsEntering] = useState(false)
+  const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
+  const [pendingNicknameSession, setPendingNicknameSession] = useState<AuthSession | null>(null)
+  const [nicknameInput, setNicknameInput] = useState('')
 
   useEffect(() => {
     document.body.classList.add('intro-route-body')
@@ -91,12 +96,38 @@ export function IntroPage() {
 
     try {
       const entry = await startServiceEntry()
-      const state: EntryRouteState = { entryMode: entry.mode === 'preview' ? 'preview' : 'toss' }
+      const result = await completeServiceEntry(entry)
+      const state: EntryRouteState = { entryMode: result.mode === 'preview' ? 'preview' : 'toss' }
+      if (result.mode === 'needsNickname') {
+        setPendingNicknameSession(result.session)
+        setNicknameInput(result.user.nickname ?? '')
+        return
+      }
       navigate('/home', { state })
-    } catch {
+    } catch (error) {
+      console.error('[aniwhere:intro] service entry failed', error)
       setEntryError('로그인을 완료하지 못했어요. 다시 시도해 주세요.')
     } finally {
       setIsEntering(false)
+    }
+  }
+
+  const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (pendingNicknameSession == null) {
+      return
+    }
+
+    setIsSavingNickname(true)
+    setEntryError(null)
+
+    try {
+      await saveAniwhereNickname(nicknameInput, pendingNicknameSession.accessToken)
+      navigate('/home', { state: { entryMode: 'toss' } satisfies EntryRouteState })
+    } catch (error) {
+      setEntryError(error instanceof Error ? error.message : '닉네임을 저장하지 못했어요. 다시 시도해 주세요.')
+    } finally {
+      setIsSavingNickname(false)
     }
   }
 
@@ -135,16 +166,45 @@ export function IntroPage() {
         </ul>
 
         <div className="intro-mobile-actions">
-          <Button
-            color="primary"
-            display="block"
-            disabled={isEntering}
-            onClick={handleStart}
-            size="xlarge"
-            variant="fill"
-          >
-            {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
-          </Button>
+          {pendingNicknameSession == null ? (
+            <Button
+              color="primary"
+              display="block"
+              disabled={isEntering}
+              onClick={handleStart}
+              size="xlarge"
+              variant="fill"
+            >
+              {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
+            </Button>
+          ) : (
+            <form className="intro-nickname-card" onSubmit={handleNicknameSubmit}>
+              <label className="intro-nickname-label" htmlFor="intro-nickname">
+                애니웨어에서 사용할 닉네임
+              </label>
+              <input
+                className="intro-nickname-input"
+                id="intro-nickname"
+                inputMode="text"
+                maxLength={50}
+                onChange={(event) => setNicknameInput(event.target.value)}
+                placeholder="예: 굿즈탐험가"
+                type="text"
+                value={nicknameInput}
+              />
+              <p className="intro-nickname-help">후기와 댓글에 표시되는 이름이에요. 나중에 다시 바꿀 수 있어요.</p>
+              <Button
+                color="primary"
+                display="block"
+                disabled={isSavingNickname}
+                size="xlarge"
+                type="submit"
+                variant="fill"
+              >
+                {isSavingNickname ? '저장 중이에요' : '닉네임 저장하기'}
+              </Button>
+            </form>
+          )}
           {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
         </div>
       </section>
