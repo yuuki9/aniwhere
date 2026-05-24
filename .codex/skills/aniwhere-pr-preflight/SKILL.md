@@ -45,6 +45,20 @@ npm.cmd run build:static
    - If direct PR creation succeeds, return the PR URL, title, and a concise summary of the submitted body.
    - If GitHub connector or `gh` authentication prevents direct PR creation, return the PR creation URL plus the exact title and full `.github/PULL_REQUEST_TEMPLATE.md`-shaped description in a copy/paste-friendly form.
    - Do not stop with only an auth/403 explanation or only a PR creation URL.
+   - Fail closed before the final response: when direct PR creation failed, scan the outgoing answer and confirm it contains all three artifacts: PR URL, exact PR title, and a fenced Markdown body with every top-level section from `.github/PULL_REQUEST_TEMPLATE.md`. If any artifact is missing, do not send the answer yet.
+   - Never replace the template-shaped body with a summary, "key points", or abbreviated bullets. The user should be able to paste the body into GitHub without reconstructing sections.
+
+## Failed PR Creation Output Gate
+
+When a PR cannot be created directly because of connector permissions, `gh` auth, fork permissions, or any other error, the final answer must include this shape:
+
+1. The permission/auth failure in one sentence.
+2. The PR creation URL.
+3. The exact PR title.
+4. A fenced `md` block containing the complete PR body.
+5. The body must preserve the template's section order and include the `Apps in Toss / TDS` risk section when the PR touches client UI/WebView/routing/CSS.
+
+Do not call this complete until the answer is copy/paste-ready.
 
 ## Review Patterns To Preempt
 

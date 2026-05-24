@@ -59,6 +59,8 @@ PR creation handoff rule:
 - The server maintainer owns final merge authority.
 - Codex must provide the PR creation URL or created PR URL, the exact PR title, and a `.github/PULL_REQUEST_TEMPLATE.md`-shaped PR description the user can paste into GitHub.
 - If connector or `gh` auth fails, do not stop at the permission error; treat it as a handoff and provide the URL plus copy/paste-ready title/body.
+- Failed PR creation handoff is fail-closed. The final response must not be sent until it contains all three artifacts: PR URL, exact PR title, and a fenced Markdown body that preserves every top-level section from `.github/PULL_REQUEST_TEMPLATE.md`.
+- A short summary, abbreviated body, or "main points" list is a failed handoff even if the branch was pushed successfully.
 
 ## Hook Management
 

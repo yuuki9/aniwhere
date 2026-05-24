@@ -52,6 +52,15 @@ Before changing SDK/runtime behavior:
 3. Separate console values and sandbox evidence from code inspection.
 4. Mark unresolved console/mobile-device needs as `Needs console value` or `Needs sandbox`.
 
+## PR Handoff Fail-Closed Contract
+
+When the user asks for PR creation, PR update, or PR handoff:
+
+1. Run `aniwhere-pr-preflight` and read `.github/PULL_REQUEST_TEMPLATE.md`.
+2. If direct PR creation fails because of GitHub connector permissions, `gh` authentication, fork permissions, or any other reason, the final response must include the PR creation URL, exact PR title, and a complete fenced Markdown PR body.
+3. The PR body must follow `.github/PULL_REQUEST_TEMPLATE.md` section order. Summaries, shortened descriptions, or "key points" are not acceptable fallback output.
+4. Before sending the final answer, verify that every top-level template section is present, especially `Apps in Toss / TDS` for client UI/WebView/routing/CSS work.
+
 ## Hook Maintenance
 
 - Add or change hooks only when a repeated miss happened or a durable workflow decision was made.

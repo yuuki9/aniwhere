@@ -33,6 +33,12 @@
 - Skill은 특정 작업을 어떻게 실행할지 정의합니다.
 - 반복되는 실수가 hook으로 승격되면 `docs/agent-hooks.md`에 기록하고, 오래된 별도 guard 문서는 남기지 않습니다.
 
+## PR Handoff Guard
+
+- If direct PR creation fails, Codex must provide a fail-closed handoff: PR creation URL, exact PR title, and a complete copy/paste-ready body following `.github/PULL_REQUEST_TEMPLATE.md`.
+- A shortened PR description, summary, or list of key points is not acceptable fallback output.
+- Before the final response, Codex must verify that the `Apps in Toss / TDS` section is present for any client UI/WebView/routing/CSS PR.
+
 ## UX 방향
 
 - 첫 화면은 소개보다 실제 진입과 발견에 집중합니다.

@@ -72,6 +72,7 @@ type(scope): 짧은 설명 (한 줄, 명령형 또는 현재형)
 - PR 생성 단계의 필수 산출물은 `PR 생성 URL`, `PR title`, `.github/PULL_REQUEST_TEMPLATE.md` 구조를 그대로 따른 copy/paste 가능한 PR description입니다.
 - 사용자는 GitHub 웹 로그인 흐름으로 PR을 만드는 경우가 많습니다. GitHub connector나 `gh` 인증 문제로 PR을 직접 만들 수 없더라도 URL만 전달하지 말고, PR title과 `.github/PULL_REQUEST_TEMPLATE.md` 구조를 따른 PR description을 항상 복사/붙여넣기 가능한 형태로 함께 제공합니다.
 - PR description을 사용자가 그대로 전체 복사할 수 있게 작성합니다. 특별한 요청이 없으면 설명 전체를 fenced code block(``` … ```)으로 감싸지 말고, 본문 안에도 불필요한 triple backtick을 넣지 않습니다.
+- PR 직접 생성 실패 시 handoff는 fail-closed입니다. 최종 답변 전에 `PR 생성 URL`, 정확한 `PR title`, 템플릿의 모든 상위 섹션을 포함한 전체 PR description이 있는지 확인하고, 하나라도 없으면 답변하지 않습니다.
 
 ## 버전 태그 (`v*`)
 

@@ -14,6 +14,8 @@
 
 ## Mandatory Rules
 
+- PR creation handoff is fail-closed: if direct PR creation fails for any reason, the final response must include the PR creation URL, exact PR title, and a complete copy/paste-ready body following `.github/PULL_REQUEST_TEMPLATE.md`. A summary or abbreviated body is not acceptable.
+
 - Client UI/TDS work must follow `docs/tds-route-audit.md`: classify the route, search official TDS Mobile docs with the Apps in Toss MCP, record checked docs, and classify visible deltas as `TDS-required`, `Product-approved`, or `Regression` before editing.
 - Natural-language requests must be routed through `docs/agent-hooks.md`. The user does not need to name a skill; Codex must infer the work type and load the matching docs/skills.
 
