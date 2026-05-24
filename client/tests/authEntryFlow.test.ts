@@ -149,11 +149,15 @@ test('saveAniwhereNickname rejects unavailable nicknames before updating the pro
 test('auth flow logs safe error summaries instead of raw error objects', () => {
   const auth = source('../src/shared/lib/auth.ts')
   const authEntryFlow = source('../src/shared/lib/authEntryFlow.ts')
+  const rawAppLoginErrorLogPattern = /console\.error\(\s*'\[aniwhere:auth\] appLogin failed'\s*,\s*error\s*\)/
+  const rawAuthEntryErrorLogPattern =
+    /console\.error\(\s*'\[aniwhere:auth-entry\][^']*'\s*,\s*\{\s*error\s*\}\s*\)/s
 
   assert.match(auth, /toSafeErrorSummary\(error\)/)
   assert.match(authEntryFlow, /error: toSafeErrorSummary\(error\)/)
-  assert.doesNotMatch(auth, /appLogin failed', error\)/)
-  assert.doesNotMatch(authEntryFlow, /console\.error\('\[aniwhere:auth-entry\].*\{ error \}/s)
+  assert.match("console.error('[aniwhere:auth-entry] server login failed', { error })", rawAuthEntryErrorLogPattern)
+  assert.doesNotMatch(auth, rawAppLoginErrorLogPattern)
+  assert.doesNotMatch(authEntryFlow, rawAuthEntryErrorLogPattern)
 })
 
 test('auth session storage failures are contained', () => {
