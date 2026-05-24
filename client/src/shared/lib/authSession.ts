@@ -1,4 +1,5 @@
 import type { LoginResult, UserSummary } from '../api/types'
+import { toSafeErrorSummary } from './safeError'
 
 const AUTH_SESSION_STORAGE_KEY = 'aniwhere.auth.session.v1'
 
@@ -53,7 +54,11 @@ export function saveAuthSession(session: AuthSession) {
     return
   }
 
-  window.localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(session))
+  try {
+    window.localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(session))
+  } catch (error) {
+    console.error('[aniwhere:auth-session] save failed', toSafeErrorSummary(error))
+  }
 }
 
 export function updateAuthSessionUser(user: UserSummary) {
@@ -74,5 +79,9 @@ export function clearAuthSession() {
     return
   }
 
-  window.localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
+  try {
+    window.localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
+  } catch (error) {
+    console.error('[aniwhere:auth-session] clear failed', toSafeErrorSummary(error))
+  }
 }

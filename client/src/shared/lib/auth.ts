@@ -1,4 +1,5 @@
 import { appLogin, getOperationalEnvironment } from '@apps-in-toss/web-framework'
+import { toSafeErrorSummary } from './safeError'
 
 export type EntryFlowResult =
   | {
@@ -28,7 +29,7 @@ export async function startServiceEntry(): Promise<EntryFlowResult> {
   try {
     result = await appLogin()
   } catch (error) {
-    console.error('[aniwhere:auth] appLogin failed', error)
+    console.error('[aniwhere:auth] appLogin failed', toSafeErrorSummary(error))
     throw error
   }
 

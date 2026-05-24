@@ -64,5 +64,6 @@ test('client API functions cover Swagger paths added for facets, favorites, auth
   assert.match(client, /Authorization/)
   assert.match(client, /authToken/)
   assert.match(client, /getStoredAccessToken/)
-  assert.match(client, /authToken \?\? getStoredAccessToken\(\)/)
+  assert.match(client, /authToken === undefined \? getStoredAccessToken\(\) : authToken/)
+  assert.doesNotMatch(client, /authToken \?\? getStoredAccessToken\(\)/)
 })

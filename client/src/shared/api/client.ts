@@ -37,7 +37,7 @@ export function toQueryString(params: QueryParams) {
 export async function request<T>(path: string, init?: ApiRequestInit): Promise<T> {
   const { authToken, ...requestInit } = init ?? {}
   const headers = new Headers(init?.headers)
-  const resolvedAuthToken = authToken ?? getStoredAccessToken()
+  const resolvedAuthToken = authToken === undefined ? getStoredAccessToken() : authToken
 
   // Keep body-less GET/HEAD calls simple so the API does not receive an unnecessary CORS preflight.
   if (init?.body != null && !headers.has('Content-Type')) {
@@ -66,7 +66,7 @@ export async function request<T>(path: string, init?: ApiRequestInit): Promise<T
 export async function requestForm<T>(path: string, body: FormData, init?: ApiRequestInit): Promise<T> {
   const { authToken, ...requestInit } = init ?? {}
   const headers = new Headers(init?.headers)
-  const resolvedAuthToken = authToken ?? getStoredAccessToken()
+  const resolvedAuthToken = authToken === undefined ? getStoredAccessToken() : authToken
 
   if (resolvedAuthToken && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${resolvedAuthToken}`)

@@ -3,6 +3,7 @@ import { checkNicknameAvailability, getMyProfile, updateMyNickname } from '../ap
 import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../api/types'
 import type { EntryFlowResult } from './auth'
 import { createAuthSession, saveAuthSession, updateAuthSessionUser, type AuthSession } from './authSession'
+import { toSafeErrorSummary } from './safeError'
 
 export type EntrySessionResult =
   | {
@@ -47,7 +48,7 @@ export async function completeServiceEntry(
     })
   } catch (error) {
     console.error('[aniwhere:auth-entry] server login failed', {
-      error,
+      error: toSafeErrorSummary(error),
       referrer: entry.referrer,
     })
     throw error
@@ -57,7 +58,7 @@ export async function completeServiceEntry(
   try {
     user = await deps.getProfile(login.accessToken)
   } catch (error) {
-    console.error('[aniwhere:auth-entry] profile fetch failed', { error })
+    console.error('[aniwhere:auth-entry] profile fetch failed', { error: toSafeErrorSummary(error) })
     throw error
   }
 

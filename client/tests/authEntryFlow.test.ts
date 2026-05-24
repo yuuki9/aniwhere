@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createServer, type ViteDevServer } from 'vite'
 import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../src/shared/api/types'
@@ -36,6 +37,8 @@ const loadAuthEntryFlow = async () => {
     ) => Promise<UserSummary>
   }>
 }
+
+const source = (path: string) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 
 test.after(async () => {
   await viteServer?.close()
@@ -141,4 +144,22 @@ test('saveAniwhereNickname rejects unavailable nicknames before updating the pro
   )
 
   assert.equal(updateCalled, false)
+})
+
+test('auth flow logs safe error summaries instead of raw error objects', () => {
+  const auth = source('../src/shared/lib/auth.ts')
+  const authEntryFlow = source('../src/shared/lib/authEntryFlow.ts')
+
+  assert.match(auth, /toSafeErrorSummary\(error\)/)
+  assert.match(authEntryFlow, /error: toSafeErrorSummary\(error\)/)
+  assert.doesNotMatch(auth, /appLogin failed', error\)/)
+  assert.doesNotMatch(authEntryFlow, /console\.error\('\[aniwhere:auth-entry\].*\{ error \}/s)
+})
+
+test('auth session storage failures are contained', () => {
+  const authSession = source('../src/shared/lib/authSession.ts')
+
+  assert.match(authSession, /try\s*\{\s*window\.localStorage\.setItem/s)
+  assert.match(authSession, /try\s*\{\s*window\.localStorage\.removeItem/s)
+  assert.match(authSession, /toSafeErrorSummary\(error\)/)
 })
