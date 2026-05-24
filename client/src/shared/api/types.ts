@@ -1,6 +1,7 @@
 export type ApiResponse<T> = {
   success: boolean
-  data: T
+  data?: T | null
+  code?: string
   message?: string
 }
 
@@ -114,6 +115,37 @@ export type Shop = {
   updatedAt: string
 }
 
+type FacetBaseItem = {
+  id: number
+  name: string
+  selected: boolean
+  disabled: boolean
+  count: number
+}
+
+export type FacetRegionItem = FacetBaseItem
+
+export type FacetCategoryItem = FacetBaseItem
+
+export type FacetWorkItem = FacetBaseItem & {
+  coverUrl: string | null
+}
+
+export type FacetStatusItem = {
+  value: ShopStatus
+  label: string
+  selected: boolean
+  disabled: boolean
+  count: number
+}
+
+export type ShopFacetResponse = {
+  regions: FacetRegionItem[]
+  categories: FacetCategoryItem[]
+  works: FacetWorkItem[]
+  statuses: FacetStatusItem[]
+}
+
 export type ShopRequest = {
   name: string
   address: string
@@ -172,8 +204,10 @@ export type Post = {
   id: number
   title: string
   content: string
+  authorUserId: number
   authorNickname: string
   viewCount: number
+  likeCount: number
   createdAt: string
   updatedAt: string
 }
@@ -182,6 +216,7 @@ export type Comment = {
   id: number
   postId: number
   content: string
+  authorUserId: number
   authorNickname: string
   createdAt: string
 }
@@ -192,10 +227,24 @@ export type ShopSearchParams = {
   sort?: string[]
   regionId?: number
   category?: string
+  categoryIds?: number[]
   keyword?: string
   workKeyword?: string
   workId?: number
   status?: ShopStatus
+}
+
+export type ShopFacetParams = {
+  keyword?: string
+  regionIds?: number[]
+  categoryIds?: number[]
+  workIds?: number[]
+  status?: ShopStatus
+  swLat?: number
+  swLng?: number
+  neLat?: number
+  neLng?: number
+  type?: WorkType
 }
 
 export type PagingParams = {
@@ -210,11 +259,55 @@ export type CreatePostPayload = {
   authorNickname: string
 }
 
-export type UpdatePostPayload = CreatePostPayload
+export type UpdatePostPayload = {
+  title: string
+  content: string
+}
 
 export type CreateCommentPayload = {
   content: string
   authorNickname: string
+}
+
+export type TossLoginPayload = {
+  authorizationCode: string
+  referrer: string
+}
+
+export type RefreshAuthPayload = {
+  refreshToken: string
+}
+
+export type LoginResult = {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+  role: string
+  isNewUser: boolean
+}
+
+export type RefreshResult = {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+}
+
+export type UserSummary = {
+  id: number
+  userKey: number
+  nickname: string | null
+  status: string
+  lastLoginAt: string | null
+  createdAt: string
+}
+
+export type NicknameAvailabilityResult = {
+  nickname: string
+  available: boolean
+}
+
+export type UpdateNicknamePayload = {
+  nickname: string
 }
 
 export type Unit = Record<string, never>

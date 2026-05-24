@@ -1044,6 +1044,49 @@ p {
   padding-top: 0;
 }
 
+.intro-nickname-card {
+  display: grid;
+  width: 100%;
+  gap: var(--ait-space-3);
+}
+
+.intro-nickname-label {
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-title-sm);
+  font-weight: 700;
+  line-height: var(--ait-line-height-title);
+}
+
+.intro-nickname-input {
+  width: 100%;
+  min-height: 52px;
+  padding: var(--ait-space-4) var(--ait-space-5);
+  border: 1px solid var(--ait-color-border-strong);
+  border-radius: var(--ait-radius-lg);
+  background: var(--ait-color-gray-0);
+  color: var(--ait-color-gray-900);
+  font: inherit;
+  font-size: var(--ait-font-size-body-lg);
+  letter-spacing: 0;
+  outline: none;
+}
+
+.intro-nickname-input:focus {
+  border-color: var(--ait-color-brand);
+  box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.14);
+}
+
+.intro-nickname-input::placeholder {
+  color: var(--ait-color-gray-500);
+}
+
+.intro-nickname-help {
+  margin: 0;
+  color: var(--ait-color-gray-600);
+  font-size: var(--ait-font-size-body-sm);
+  line-height: var(--ait-line-height-body);
+}
+
 .intro-entry-error {
   margin: 0;
   color: var(--ait-color-red-700);

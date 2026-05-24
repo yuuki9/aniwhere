@@ -1,10 +1,14 @@
 import type { ApiResponse } from './types'
+import { getStoredAccessToken } from '../lib/authSession'
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'https://api.aniwhere.link'
 
 type QueryValue = string | number | boolean | undefined | null
 type QueryParams = Record<string, QueryValue | QueryValue[]>
+type ApiRequestInit = RequestInit & {
+  authToken?: string | null
+}
 
 export function toQueryString(params: QueryParams) {
   const search = new URLSearchParams()
@@ -30,16 +34,21 @@ export function toQueryString(params: QueryParams) {
   return query ? `?${query}` : ''
 }
 
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: ApiRequestInit): Promise<T> {
+  const { authToken, ...requestInit } = init ?? {}
   const headers = new Headers(init?.headers)
+  const resolvedAuthToken = authToken ?? getStoredAccessToken()
 
   // Keep body-less GET/HEAD calls simple so the API does not receive an unnecessary CORS preflight.
   if (init?.body != null && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
+  if (resolvedAuthToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${resolvedAuthToken}`)
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
+    ...requestInit,
     headers: {
       ...Object.fromEntries(headers),
     },
@@ -51,13 +60,24 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(payload.message ?? '요청 처리에 실패했습니다.')
   }
 
-  return payload.data
+  return payload.data as T
 }
 
-export async function requestForm<T>(path: string, body: FormData, init?: RequestInit): Promise<T> {
+export async function requestForm<T>(path: string, body: FormData, init?: ApiRequestInit): Promise<T> {
+  const { authToken, ...requestInit } = init ?? {}
+  const headers = new Headers(init?.headers)
+  const resolvedAuthToken = authToken ?? getStoredAccessToken()
+
+  if (resolvedAuthToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${resolvedAuthToken}`)
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
-    ...init,
+    ...requestInit,
+    headers: {
+      ...Object.fromEntries(headers),
+    },
     body,
   })
 
@@ -67,5 +87,5 @@ export async function requestForm<T>(path: string, body: FormData, init?: Reques
     throw new Error(payload.message ?? '요청 처리에 실패했습니다.')
   }
 
-  return payload.data
+  return payload.data as T
 }

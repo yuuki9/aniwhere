@@ -2,6 +2,8 @@ import { request, requestForm, toQueryString } from './client'
 import type {
   PageResponse,
   Shop,
+  ShopFacetParams,
+  ShopFacetResponse,
   ShopRequest,
   ShopSearchParams,
   Unit,
@@ -14,6 +16,7 @@ export function getShops(params: ShopSearchParams = {}) {
     sort: params.sort,
     regionId: params.regionId,
     category: params.category,
+    categoryIds: params.categoryIds,
     keyword: params.keyword,
     workKeyword: params.workKeyword,
     workId: params.workId,
@@ -21,6 +24,23 @@ export function getShops(params: ShopSearchParams = {}) {
   })
 
   return request<PageResponse<Shop>>(`/api/v1/shops${query}`)
+}
+
+export function getShopFacets(params: ShopFacetParams = {}) {
+  const query = toQueryString({
+    keyword: params.keyword,
+    regionIds: params.regionIds,
+    categoryIds: params.categoryIds,
+    workIds: params.workIds,
+    status: params.status,
+    swLat: params.swLat,
+    swLng: params.swLng,
+    neLat: params.neLat,
+    neLng: params.neLng,
+    type: params.type,
+  })
+
+  return request<ShopFacetResponse>(`/api/v1/shops/facets${query}`)
 }
 
 export function getShop(id: number) {
@@ -90,6 +110,20 @@ export function updateShop(id: number, payload: ShopRequest) {
 export function deleteShop(id: number) {
   return request<Unit>(`/api/v1/shops/${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function addFavoriteShop(id: number, authToken?: string | null) {
+  return request<Unit>(`/api/v1/shops/${id}/favorite`, {
+    method: 'POST',
+    authToken,
+  })
+}
+
+export function removeFavoriteShop(id: number, authToken?: string | null) {
+  return request<Unit>(`/api/v1/shops/${id}/favorite`, {
+    method: 'DELETE',
+    authToken,
   })
 }
 

@@ -1,5 +1,5 @@
 import { request, toQueryString } from './client'
-import type { WorkCatalogItem, WorkType } from './types'
+import type { Unit, WorkCatalogItem, WorkType } from './types'
 
 type GetWorksParams = {
   type?: WorkType
@@ -11,4 +11,18 @@ export function getWorks(params: GetWorksParams = {}) {
   })
 
   return request<WorkCatalogItem[]>(`/api/v1/works${query}`)
+}
+
+export function addFavoriteWork(workId: number, authToken?: string | null) {
+  return request<Unit>(`/api/v1/works/${workId}/favorite`, {
+    method: 'POST',
+    authToken,
+  })
+}
+
+export function removeFavoriteWork(workId: number, authToken?: string | null) {
+  return request<Unit>(`/api/v1/works/${workId}/favorite`, {
+    method: 'DELETE',
+    authToken,
+  })
 }

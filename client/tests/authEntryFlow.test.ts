@@ -1,0 +1,144 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { fileURLToPath } from 'node:url'
+import { createServer, type ViteDevServer } from 'vite'
+import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../src/shared/api/types'
+import type { EntryFlowResult } from '../src/shared/lib/auth'
+
+let viteServer: ViteDevServer | undefined
+
+const loadAuthEntryFlow = async () => {
+  viteServer ??= await createServer({
+    appType: 'custom',
+    logLevel: 'error',
+    mode: 'public',
+    root: fileURLToPath(new URL('..', import.meta.url)),
+    server: { middlewareMode: true },
+  })
+
+  return viteServer.ssrLoadModule('/src/shared/lib/authEntryFlow.ts') as Promise<{
+    completeServiceEntry: (
+      entry: EntryFlowResult,
+      deps: {
+        login: (payload: { authorizationCode: string; referrer: string }) => Promise<LoginResult>
+        getProfile: (accessToken: string) => Promise<UserSummary>
+        saveSession: (session: unknown) => void
+      },
+    ) => Promise<{ mode: 'preview' | 'ready' | 'needsNickname' }>
+    saveAniwhereNickname: (
+      nickname: string,
+      accessToken: string,
+      deps: {
+        checkNicknameAvailability: (nickname: string, accessToken: string) => Promise<NicknameAvailabilityResult>
+        updateMyNickname: (payload: { nickname: string }, accessToken: string) => Promise<UserSummary>
+        updateSessionUser: (user: UserSummary) => void
+      },
+    ) => Promise<UserSummary>
+  }>
+}
+
+test.after(async () => {
+  await viteServer?.close()
+})
+
+const loginResult: LoginResult = {
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
+  expiresIn: 900,
+  role: 'ROLE_USER',
+  isNewUser: false,
+}
+
+const userWithNickname: UserSummary = {
+  id: 1,
+  userKey: 443731104,
+  nickname: '굿즈탐험가',
+  status: 'ACTIVE',
+  lastLoginAt: null,
+  createdAt: '2026-05-24T00:00:00',
+}
+
+test('completeServiceEntry passes Toss authorization code to the server and opens home for named users', async () => {
+  const { completeServiceEntry } = await loadAuthEntryFlow()
+  const calls: unknown[] = []
+
+  const result = await completeServiceEntry(
+    { mode: 'toss', authorizationCode: 'code-1', referrer: 'SANDBOX' },
+    {
+      login: async (payload) => {
+        calls.push(payload)
+        return loginResult
+      },
+      getProfile: async (accessToken) => {
+        calls.push({ accessToken })
+        return userWithNickname
+      },
+      saveSession: (session) => {
+        calls.push({ session })
+      },
+    },
+  )
+
+  assert.equal(result.mode, 'ready')
+  assert.deepEqual(calls[0], { authorizationCode: 'code-1', referrer: 'SANDBOX' })
+  assert.deepEqual(calls[1], { accessToken: 'access-token' })
+  assert.match(JSON.stringify(calls[2]), /refresh-token/)
+})
+
+test('completeServiceEntry asks for an Aniwhere nickname when the server marks a new or unnamed user', async () => {
+  const { completeServiceEntry } = await loadAuthEntryFlow()
+
+  const result = await completeServiceEntry(
+    { mode: 'toss', authorizationCode: 'code-2', referrer: 'SANDBOX' },
+    {
+      login: async () => ({ ...loginResult, isNewUser: true }),
+      getProfile: async () => ({ ...userWithNickname, nickname: null }),
+      saveSession: () => undefined,
+    },
+  )
+
+  assert.equal(result.mode, 'needsNickname')
+})
+
+test('saveAniwhereNickname trims, checks availability, updates the profile, and stores the user', async () => {
+  const { saveAniwhereNickname } = await loadAuthEntryFlow()
+  const calls: unknown[] = []
+
+  const user = await saveAniwhereNickname('  굿즈탐험가  ', 'access-token', {
+    checkNicknameAvailability: async (nickname, accessToken) => {
+      calls.push({ check: nickname, accessToken })
+      return { nickname, available: true }
+    },
+    updateMyNickname: async (payload, accessToken) => {
+      calls.push({ update: payload, accessToken })
+      return { ...userWithNickname, nickname: payload.nickname }
+    },
+    updateSessionUser: (updatedUser) => {
+      calls.push({ user: updatedUser.nickname })
+    },
+  })
+
+  assert.equal(user.nickname, '굿즈탐험가')
+  assert.deepEqual(calls[0], { check: '굿즈탐험가', accessToken: 'access-token' })
+  assert.deepEqual(calls[1], { update: { nickname: '굿즈탐험가' }, accessToken: 'access-token' })
+  assert.deepEqual(calls[2], { user: '굿즈탐험가' })
+})
+
+test('saveAniwhereNickname rejects unavailable nicknames before updating the profile', async () => {
+  const { saveAniwhereNickname } = await loadAuthEntryFlow()
+  let updateCalled = false
+
+  await assert.rejects(
+    saveAniwhereNickname('이미있는닉네임', 'access-token', {
+      checkNicknameAvailability: async (nickname) => ({ nickname, available: false }),
+      updateMyNickname: async () => {
+        updateCalled = true
+        return userWithNickname
+      },
+      updateSessionUser: () => undefined,
+    }),
+    /이미 사용 중인 닉네임/,
+  )
+
+  assert.equal(updateCalled, false)
+})

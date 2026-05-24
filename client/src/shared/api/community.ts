@@ -43,6 +43,20 @@ export function deletePost(id: number) {
   })
 }
 
+export function likePost(id: number, authToken?: string | null) {
+  return request<Unit>(`/api/v1/posts/${id}/likes`, {
+    method: 'POST',
+    authToken,
+  })
+}
+
+export function unlikePost(id: number, authToken?: string | null) {
+  return request<Unit>(`/api/v1/posts/${id}/likes`, {
+    method: 'DELETE',
+    authToken,
+  })
+}
+
 export function getComments(postId: number) {
   return request<Comment[]>(`/api/v1/posts/${postId}/comments`)
 }

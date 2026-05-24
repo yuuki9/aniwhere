@@ -24,7 +24,13 @@ export async function startServiceEntry(): Promise<EntryFlowResult> {
     return { mode: 'preview' }
   }
 
-  const result = await appLogin()
+  let result: Awaited<ReturnType<typeof appLogin>>
+  try {
+    result = await appLogin()
+  } catch (error) {
+    console.error('[aniwhere:auth] appLogin failed', error)
+    throw error
+  }
 
   return {
     mode: 'toss',

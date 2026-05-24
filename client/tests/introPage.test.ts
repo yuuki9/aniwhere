@@ -219,6 +219,30 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
   assert.match(actionsRule, /align-items:\s*center;/)
 })
 
+test('IntroPage bridges Toss login through the Aniwhere server before entering home', () => {
+  const source = introPageSource()
+
+  assert.match(source, /completeServiceEntry\(entry\)/)
+  assert.match(source, /result\.mode === 'needsNickname'/)
+  assert.match(source, /setPendingNicknameSession\(result\.session\)/)
+  assert.match(source, /entryMode:\s*result\.mode === 'preview' \? 'preview' : 'toss'/)
+})
+
+test('IntroPage renders a nickname setup step for new or unnamed Aniwhere users', () => {
+  const source = introPageSource()
+  const styles = appCssSource()
+
+  assert.match(source, /nicknameInput/)
+  assert.match(source, /saveAniwhereNickname\(nicknameInput,\s*pendingNicknameSession\.accessToken\)/)
+  assert.match(source, /애니웨어에서 사용할 닉네임/)
+  assert.match(source, /닉네임 저장하기/)
+  assert.match(source, /inputMode="text"/)
+  assert.match(source, /maxLength=\{50\}/)
+  assert.match(cssRuleBody(styles, '.intro-nickname-card'), /display:\s*grid;/)
+  assert.match(cssRuleBody(styles, '.intro-nickname-input'), /min-height:\s*52px;/)
+  assert.match(cssRuleBody(styles, '.intro-nickname-help'), /font-size:\s*var\(--ait-font-size-body-sm\);/)
+})
+
 test('TDS public fallback preserves rounded block button behavior', () => {
   const source = tdsPublicSource()
 
