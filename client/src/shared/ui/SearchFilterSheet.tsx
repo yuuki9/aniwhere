@@ -1,24 +1,197 @@
-import { type RefObject, useCallback, useEffect, useRef } from 'react'
+import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Button, ListRow } from '@aniwhere/tds-mobile'
+import { getShopFacets } from '../api/shops'
+import type { ShopStatus } from '../api/types'
+import { statusToLabel } from '../lib/format'
+import { toShopFacetParams, type ShopFilters } from '../lib/shopFilters'
 
 type SearchFilterSheetProps = {
   open: boolean
   triggerRef: RefObject<HTMLElement>
+  keyword?: string
+  selectedFilters: ShopFilters
+  onApplyFilters: (filters: ShopFilters) => void
   onClose: () => void
 }
 
-export function SearchFilterSheet({ open, triggerRef, onClose }: SearchFilterSheetProps) {
+type SearchFilterSheetDialogProps = Omit<SearchFilterSheetProps, 'open'>
+
+type CountedOption = {
+  id: number
+  name: string
+  disabled: boolean
+  count: number
+}
+
+type StatusOption = {
+  value: ShopStatus
+  label: string
+  disabled: boolean
+  count: number
+}
+
+const EMPTY_FILTERS: ShopFilters = {
+  categoryIds: [],
+}
+
+const FALLBACK_STATUS_OPTIONS: StatusOption[] = [
+  { value: 'ACTIVE', label: statusToLabel('ACTIVE'), disabled: false, count: 0 },
+  { value: 'CLOSED', label: statusToLabel('CLOSED'), disabled: false, count: 0 },
+  { value: 'UNVERIFIED', label: statusToLabel('UNVERIFIED'), disabled: false, count: 0 },
+]
+
+function sameIdList(left: number[], right: number[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index])
+}
+
+function areFiltersEqual(left: ShopFilters, right: ShopFilters) {
+  return (
+    left.regionId === right.regionId &&
+    sameIdList(left.categoryIds, right.categoryIds) &&
+    left.workId === right.workId &&
+    left.status === right.status
+  )
+}
+
+function countLabel(count: number) {
+  return count > 0 ? `${count.toLocaleString()}곳` : '결과 없음'
+}
+
+function FilterSection({
+  id,
+  title,
+  children,
+}: {
+  id: string
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <section className="search-filter-section" aria-labelledby={id}>
+      <h3 id={id}>{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+function CountBadge({ count }: { count: number }) {
+  return <small className="search-filter-option-count">{countLabel(count)}</small>
+}
+
+export function SearchFilterSheet({
+  open,
+  ...props
+}: SearchFilterSheetProps) {
+  if (!open) {
+    return null
+  }
+
+  const draftKey = [
+    props.selectedFilters.regionId ?? '',
+    props.selectedFilters.categoryIds.join(','),
+    props.selectedFilters.workId ?? '',
+    props.selectedFilters.status ?? '',
+  ].join('|')
+
+  return <SearchFilterSheetDialog key={draftKey} {...props} />
+}
+
+function SearchFilterSheetDialog({
+  triggerRef,
+  keyword,
+  selectedFilters,
+  onApplyFilters,
+  onClose,
+}: SearchFilterSheetDialogProps) {
   const filterSheetRef = useRef<HTMLElement | null>(null)
   const filterCloseButtonRef = useRef<HTMLButtonElement | null>(null)
+  const [draftFilters, setDraftFilters] = useState<ShopFilters>(selectedFilters)
+  const facetParams = useMemo(
+    () => toShopFacetParams(draftFilters, { keyword: keyword?.trim() || undefined }),
+    [draftFilters, keyword],
+  )
+  const facetQuery = useQuery({
+    queryKey: ['shops', 'filter-facets', facetParams],
+    queryFn: () => getShopFacets(facetParams),
+    staleTime: 1000 * 60,
+  })
+  const statusOptions = facetQuery.data?.statuses.length ? facetQuery.data.statuses : FALLBACK_STATUS_OPTIONS
+  const hasDraftChanges = !areFiltersEqual(draftFilters, selectedFilters)
 
   const closeFilterSheet = useCallback(() => {
     onClose()
   }, [onClose])
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
+  const applyFilters = () => {
+    onApplyFilters(draftFilters)
+    closeFilterSheet()
+  }
 
+  const resetFilters = () => {
+    setDraftFilters(EMPTY_FILTERS)
+  }
+
+  const selectRegion = (regionId: number) => {
+    setDraftFilters((current) => ({
+      ...current,
+      regionId: current.regionId === regionId ? undefined : regionId,
+    }))
+  }
+
+  const toggleCategory = (categoryId: number) => {
+    setDraftFilters((current) => ({
+      ...current,
+      categoryIds: current.categoryIds.includes(categoryId)
+        ? current.categoryIds.filter((id) => id !== categoryId)
+        : [...current.categoryIds, categoryId],
+    }))
+  }
+
+  const selectWork = (workId: number) => {
+    setDraftFilters((current) => ({
+      ...current,
+      workId: current.workId === workId ? undefined : workId,
+    }))
+  }
+
+  const selectStatus = (status: ShopStatus) => {
+    setDraftFilters((current) => ({
+      ...current,
+      status: current.status === status ? undefined : status,
+    }))
+  }
+
+  const renderOption = ({
+    option,
+    selected,
+    onClick,
+  }: {
+    option: CountedOption
+    selected: boolean
+    onClick: () => void
+  }) => (
+    <ListRow
+      border="none"
+      className="search-filter-option-row"
+      contents={
+        <button
+          className={`search-filter-option-button ${selected ? 'search-filter-option-selected' : ''}`}
+          type="button"
+          disabled={option.disabled}
+          aria-pressed={selected}
+          onClick={onClick}
+        >
+          <span>{option.name}</span>
+          <CountBadge count={option.count} />
+        </button>
+      }
+      key={option.id}
+      verticalPadding="small"
+    />
+  )
+
+  useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow
     const filterTriggerElement = triggerRef.current
     const focusableSelector = [
@@ -74,11 +247,7 @@ export function SearchFilterSheet({ open, triggerRef, onClose }: SearchFilterShe
       window.removeEventListener('keydown', handleKeyDown)
       window.setTimeout(() => filterTriggerElement?.focus(), 0)
     }
-  }, [closeFilterSheet, open, triggerRef])
-
-  if (!open) {
-    return null
-  }
+  }, [closeFilterSheet, triggerRef])
 
   return (
     <div className="search-filter-layer" role="presentation" onClick={closeFilterSheet}>
@@ -99,18 +268,94 @@ export function SearchFilterSheet({ open, triggerRef, onClose }: SearchFilterShe
           </button>
         </div>
 
-        <div className="search-filter-pending">
-          <strong>필터 항목 준비 중</strong>
-          <small>facet API가 연결되면 지역, 카테고리, 영업 상태 기준으로 검색 결과를 좁힐 수 있어요.</small>
+        <div className="search-filter-content">
+          {facetQuery.isLoading ? <small className="meta-text">필터를 불러오는 중입니다.</small> : null}
+          {facetQuery.isError ? <small className="error-text">{(facetQuery.error as Error).message}</small> : null}
+
+          {(facetQuery.data?.regions.length ?? 0) > 0 ? (
+            <FilterSection id="search-filter-region" title="지역">
+              <ul className="search-filter-option-list">
+                {facetQuery.data?.regions.map((region) =>
+                  renderOption({
+                    option: region,
+                    selected: draftFilters.regionId === region.id,
+                    onClick: () => selectRegion(region.id),
+                  }),
+                )}
+              </ul>
+            </FilterSection>
+          ) : null}
+
+          {(facetQuery.data?.categories.length ?? 0) > 0 ? (
+            <FilterSection id="search-filter-category" title="카테고리">
+              <ul className="search-filter-option-list">
+                {facetQuery.data?.categories.map((category) =>
+                  renderOption({
+                    option: category,
+                    selected: draftFilters.categoryIds.includes(category.id),
+                    onClick: () => toggleCategory(category.id),
+                  }),
+                )}
+              </ul>
+            </FilterSection>
+          ) : null}
+
+          {(facetQuery.data?.works.length ?? 0) > 0 ? (
+            <FilterSection id="search-filter-work" title="작품">
+              <ul className="search-filter-option-list">
+                {facetQuery.data?.works.map((work) =>
+                  renderOption({
+                    option: work,
+                    selected: draftFilters.workId === work.id,
+                    onClick: () => selectWork(work.id),
+                  }),
+                )}
+              </ul>
+            </FilterSection>
+          ) : null}
+
+          <FilterSection id="search-filter-status" title="영업 상태">
+            <ul className="search-filter-option-list">
+              {statusOptions.map((status) => (
+                <ListRow
+                  border="none"
+                  className="search-filter-option-row"
+                  contents={
+                    <button
+                      className={`search-filter-option-button ${
+                        draftFilters.status === status.value ? 'search-filter-option-selected' : ''
+                      }`}
+                      type="button"
+                      disabled={status.disabled}
+                      aria-pressed={draftFilters.status === status.value}
+                      onClick={() => selectStatus(status.value)}
+                    >
+                      <span>{status.label}</span>
+                      <CountBadge count={status.count} />
+                    </button>
+                  }
+                  key={status.value}
+                  verticalPadding="small"
+                />
+              ))}
+            </ul>
+          </FilterSection>
         </div>
 
         <div className="search-filter-sheet-actions">
-          <button type="button" disabled>
+          <Button className="search-filter-action" color="light" size="large" type="button" onClick={resetFilters}>
             선택 초기화
-          </button>
-          <button type="button" disabled>
+          </Button>
+          <Button
+            className="search-filter-action search-filter-action-primary"
+            color="primary"
+            size="large"
+            type="button"
+            disabled={!hasDraftChanges && !facetQuery.isFetched}
+            onClick={applyFilters}
+          >
             필터 적용
-          </button>
+          </Button>
         </div>
       </section>
     </div>

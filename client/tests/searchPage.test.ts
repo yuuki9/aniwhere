@@ -48,7 +48,7 @@ test('SearchPage sends work-scoped searches to the shop search API workKeyword p
   const apiTypes = apiTypesSource()
 
   assert.match(source, /const currentSearchScope = searchParams\.get\('scope'\) === 'work' \? 'work' : 'shop'/)
-  assert.match(source, /queryKey: \['shops', 'search-page-results', currentSearchScope, currentKeyword, currentPage\]/)
+  assert.match(source, /queryKey: \['shops', 'search-page-results', currentSearchScope, currentKeyword, selectedFilters, currentPage\]/)
   assert.match(source, /if \(currentSearchScope === 'work'\) \{[\s\S]*workKeyword: searchKeyword/)
   assert.match(source, /if \(currentSearchScope === 'work'\) \{/)
   assert.match(source, /next\.set\('scope', 'work'\)/)
@@ -82,14 +82,33 @@ test('SearchPage has a filter button and bottom sheet shell without client-side 
 
   assert.match(source, /search-filter-button/)
   assert.match(source, /SearchFilterSheet/)
+  assert.match(source, /selectedFilters=\{selectedFilters\}/)
+  assert.match(source, /onApplyFilters=\{applyFilters\}/)
   assert.match(filterSheet, /search-filter-sheet/)
+  assert.match(filterSheet, /import \{ Button, ListRow \} from '@aniwhere\/tds-mobile'/)
+  assert.match(filterSheet, /getShopFacets/)
   assert.match(filterSheet, /filterCloseButtonRef/)
   assert.match(filterSheet, /event\.key === 'Escape'/)
   assert.match(filterSheet, /querySelectorAll<HTMLElement>/)
   assert.match(filterSheet, /선택 초기화/)
   assert.match(filterSheet, /필터 적용/)
-  assert.match(filterSheet, /facet API가 연결되면/)
+  assert.match(filterSheet, /search-filter-option-list/)
+  assert.doesNotMatch(filterSheet, /facet API가 연결되면/)
   assert.doesNotMatch(source, /search-page-facets/)
+})
+
+test('SearchPage sends selected filters to shop search requests and preserves them while searching', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /parseShopFilters\(searchParams\)/)
+  assert.match(source, /toShopSearchParams\(selectedFilters\)/)
+  assert.match(source, /countShopFilters\(selectedFilters\)/)
+  assert.match(source, /writeShopFilters\(searchParams, nextFilters\)/)
+  assert.match(source, /selectedFilters,\s*currentPage/)
+  assert.match(source, /regionId:\s*selectedSearchParams\.regionId/)
+  assert.match(source, /categoryIds:\s*selectedSearchParams\.categoryIds/)
+  assert.match(source, /workId:\s*selectedSearchParams\.workId/)
+  assert.match(source, /status:\s*selectedSearchParams\.status/)
 })
 
 test('SearchPage search icon button follows the home header icon button touch target', () => {
@@ -121,7 +140,7 @@ test('SearchPage treats keyword changes as replaceable search state instead of b
   const source = searchPageSource()
 
   assert.match(source, /const handleSearchBack = \(\) =>/)
-  assert.match(source, /const next = new URLSearchParams\(\)/)
+  assert.match(source, /const next = writeShopFilters\(new URLSearchParams\(\), selectedFilters\)/)
   assert.match(source, /setSearchParams\(next, \{ replace: true \}\)/)
   assert.match(source, /onBack=\{handleSearchBack\}/)
 })

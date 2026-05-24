@@ -191,7 +191,7 @@ test('admin shops route is a standalone TDS-style CRUD screen after role verific
   assert.match(aitAllowlist, /new Set\(\[\]\)/)
   assert.match(aitAllowlist, /New Ait\* imports are not allowed/)
   assert.match(tdsLayerGuide, /Existing `Ait\*` imports are treated as migration debt/)
-  assert.match(tdsLayerGuide, /Route migration should remove the allowlist over time, starting with `\/intro`/)
+  assert.match(tdsLayerGuide, /Route migration should keep the allowlist empty and use the TDS facades instead/)
   assert.match(tdsLayerGuide, /main` 머지 후 자동으로 반영되는 배포 표면/)
   assert.match(tdsLayerGuide, /모든 client UI PR은 아래 검증을 통과해야 합니다/)
   assert.match(designTokensGuide, /Apps in Toss\/ads\/local 출시 기준 화면은 프로젝트 TDS facade를 통해 공식 `@toss\/tds-mobile` 컴포넌트를 먼저 사용한다/)
