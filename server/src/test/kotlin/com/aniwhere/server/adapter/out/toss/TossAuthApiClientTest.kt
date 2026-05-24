@@ -4,15 +4,44 @@ import com.aniwhere.server.config.AuthProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.web.client.RestClient
+import com.sun.net.httpserver.HttpServer
+import java.net.InetSocketAddress
 
 class TossAuthApiClientTest {
     @Test
-    fun `인가코드 교환 후 userKey 반환`() {
+    fun `generate-token이 octet-stream 이어도 userKey를 반환한다`() {
+        val server = HttpServer.create(InetSocketAddress(0), 0)
+        var generateTokenRequestBody: String? = null
+
+        server.createContext("/api-partner/v1/apps-in-toss/user/oauth2/generate-token") { exchange ->
+            generateTokenRequestBody = exchange.requestBody.bufferedReader().use { it.readText() }
+            val responseBody = """{"resultType":"SUCCESS","success":{"accessToken":"access-token-1"}}"""
+            exchange.responseHeaders.add("Content-Type", "application/octet-stream")
+            exchange.sendResponseHeaders(200, responseBody.toByteArray().size.toLong())
+            exchange.responseBody.use { it.write(responseBody.toByteArray()) }
+        }
+        server.createContext("/api-partner/v1/apps-in-toss/user/oauth2/login-me") { exchange ->
+            val responseBody = """{"resultType":"SUCCESS","success":{"userKey":443731104}}"""
+            exchange.responseHeaders.add("Content-Type", "application/json")
+            exchange.sendResponseHeaders(200, responseBody.toByteArray().size.toLong())
+            exchange.responseBody.use { it.write(responseBody.toByteArray()) }
+        }
+        server.start()
+
+        val baseUrl = "http://127.0.0.1:${server.address.port}"
         val client =
             TossAuthApiClient(
-                RestClient.builder().baseUrl("https://apps-in-toss-api.toss.im"),
-                AuthProperties(toss = AuthProperties.Toss(baseUrl = "https://apps-in-toss-api.toss.im")),
+                RestClient.builder().baseUrl(baseUrl),
+                AuthProperties(toss = AuthProperties.Toss(baseUrl = baseUrl)),
             )
-        assertThat(client).isNotNull
+
+        try {
+            val userKey = client.exchangeAndGetUserKey("code-1", "SANDBOX")
+
+            assertThat(userKey).isEqualTo(443731104)
+            assertThat(generateTokenRequestBody).contains("\"referrer\":\"sandbox\"")
+        } finally {
+            server.stop(0)
+        }
     }
 }
