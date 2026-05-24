@@ -6,19 +6,16 @@ import com.aniwhere.server.adapter.out.persistence.entity.ShopStatusEnum
 import com.aniwhere.server.adapter.out.persistence.entity.WorkEntity
 import com.aniwhere.server.adapter.out.persistence.mapper.ShopMapper
 import com.aniwhere.server.adapter.out.persistence.repository.CategoryRepository
-import com.aniwhere.server.adapter.out.persistence.repository.CategoryFacetCountRow
 import com.aniwhere.server.adapter.out.persistence.repository.RegionRepository
-import com.aniwhere.server.adapter.out.persistence.repository.RegionFacetCountRow
 import com.aniwhere.server.adapter.out.persistence.repository.ShopRepository
-import com.aniwhere.server.adapter.out.persistence.repository.StatusFacetCountRow
-import com.aniwhere.server.adapter.out.persistence.repository.WorkFacetCatalogRow
-import com.aniwhere.server.adapter.out.persistence.repository.WorkFacetGroupCountRow
 import com.aniwhere.server.adapter.out.persistence.repository.WorkRepository
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.config.ShopImagesS3Properties
-import com.aniwhere.server.domain.shop.model.ShopFacetQuery
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
+import com.aniwhere.server.domain.category.model.CategoryListItem
+import com.aniwhere.server.domain.region.model.RegionListItem
+import com.aniwhere.server.domain.work.model.WorkType
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
@@ -34,7 +31,6 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import java.math.BigDecimal
-import com.aniwhere.server.domain.work.model.WorkType
 
 @ExtendWith(MockKExtension::class)
 class ShopPersistenceAdapterTest {
@@ -158,42 +154,46 @@ class ShopPersistenceAdapterTest {
     }
 
     @Test
-    fun `findAll - category 이름과 categoryIds를 함께 repository로 전달`() {
+    fun `findAll - regionIds categoryIds workIds를 repository로 전달`() {
         val pageable = PageRequest.of(0, 20)
         every {
             shopRepo.search(
-                1,
-                "피규어",
+                true,
+                setOf<Short>(1),
                 true,
                 setOf<Short>(1, 2),
                 "테스트",
                 null,
-                null,
+                true,
+                setOf(10, 20),
+                "ANIMATION",
                 ShopStatusEnum.active,
                 pageable,
             )
         } returns PageImpl(emptyList())
 
         adapter.findAll(
-            regionId = 1,
-            categoryName = "피규어",
+            regionIds = setOf(1),
             categoryIds = setOf(1, 2),
             keyword = "테스트",
             workKeyword = null,
-            workId = null,
+            workIds = setOf(10, 20),
+            workType = WorkType.ANIMATION,
             status = ShopStatus.ACTIVE,
             pageable = pageable,
         )
 
         verify {
             shopRepo.search(
-                1,
-                "피규어",
+                true,
+                setOf<Short>(1),
                 true,
                 setOf<Short>(1, 2),
                 "테스트",
                 null,
-                null,
+                true,
+                setOf(10, 20),
+                "ANIMATION",
                 ShopStatusEnum.active,
                 pageable,
             )
@@ -201,230 +201,57 @@ class ShopPersistenceAdapterTest {
     }
 
     @Test
-    fun `findFacets - count가 0이면 disabled=true`() {
-        every {
-            shopRepo.findRegionFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            RegionFacetCountRow(id = 1, name = "홍대", count = 0),
+    fun `findFacets - region category workType 옵션 목록을 반환`() {
+        every { regionRepo.findAllWithShopCount() } returns listOf(
+            RegionListItem(id = 1, name = "홍대", city = "서울", count = 2),
         )
-        every {
-            shopRepo.findCategoryFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every { shopRepo.findWorkFacetCatalog(any()) } returns emptyList()
-        every {
-            shopRepo.findWorkFacetCandidateCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every { shopRepo.countWorkFacetSelectedBase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns 0
-        every {
-            shopRepo.findWorkFacetSelectedIntersections(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every {
-            shopRepo.findStatusFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-
-        val result = adapter.findFacets(ShopFacetQuery())
-
-        assertTrue(result.regions.single().disabled)
-        assertEquals(0, result.regions.single().count)
-    }
-
-    @Test
-    fun `findFacets - query의 선택값을 selected에 반영`() {
-        every {
-            shopRepo.findRegionFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            RegionFacetCountRow(id = 1, name = "홍대", count = 3),
-            RegionFacetCountRow(id = 2, name = "합정", count = 1),
-        )
-        every {
-            shopRepo.findCategoryFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            CategoryFacetCountRow(id = 10, name = "피규어", count = 2),
-            CategoryFacetCountRow(id = 20, name = "굿즈", count = 0),
-        )
-        every { shopRepo.findWorkFacetCatalog(any()) } returns listOf(
-            WorkFacetCatalogRow(id = 100, name = "원피스", coverUrl = "https://example.com/onepiece.jpg"),
-            WorkFacetCatalogRow(id = 200, name = "주술회전", coverUrl = null),
-        )
-        every {
-            shopRepo.findWorkFacetCandidateCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            WorkFacetGroupCountRow(workId = 100, count = 2),
-            WorkFacetGroupCountRow(workId = 200, count = 0),
-        )
-        every { shopRepo.countWorkFacetSelectedBase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns 2
-        every {
-            shopRepo.findWorkFacetSelectedIntersections(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            WorkFacetGroupCountRow(workId = 100, count = 2),
-            WorkFacetGroupCountRow(workId = 200, count = 0),
-        )
-        every {
-            shopRepo.findStatusFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            StatusFacetCountRow(status = ShopStatusEnum.active, count = 4),
-            StatusFacetCountRow(status = ShopStatusEnum.closed, count = 1),
+        every { categoryRepo.findAllWithShopCount() } returns listOf(
+            CategoryListItem(id = 10, name = "피규어", count = 3),
         )
 
         val result = adapter.findFacets(
-            ShopFacetQuery(
-                regionIds = setOf(1),
-                categoryIds = setOf(20),
-                workIds = setOf(100),
-                status = ShopStatus.CLOSED,
-            ),
+            includeRegions = true,
+            includeCategories = true,
+            includeWorkTypes = true,
         )
 
-        assertTrue(result.regions.single { it.id == 1.toShort() }.selected)
-        assertTrue(result.categories.single { it.id == 20.toShort() }.selected)
-        assertTrue(result.works.single { it.id == 100 }.selected)
-        assertTrue(result.statuses.single { it.value == ShopStatus.CLOSED.name }.selected)
-        assertEquals("https://example.com/onepiece.jpg", result.works.single { it.id == 100 }.coverUrl)
+        assertEquals(1.toShort(), result.regions.single().id)
+        assertEquals("홍대", result.regions.single().name)
+        assertEquals(10.toShort(), result.categories.single().id)
+        assertEquals("피규어", result.categories.single().name)
+        assertEquals(setOf("ANIMATION", "GAME"), result.workTypes.map { it.value }.toSet())
+        assertEquals(setOf("애니메이션", "게임"), result.workTypes.map { it.label }.toSet())
     }
 
     @Test
-    fun `findFacets - AND across groups와 OR in group를 위한 필터 파라미터 전달`() {
-        every {
-            shopRepo.findRegionFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every {
-            shopRepo.findCategoryFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every { shopRepo.findWorkFacetCatalog(any()) } returns emptyList()
-        every {
-            shopRepo.findWorkFacetCandidateCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every { shopRepo.countWorkFacetSelectedBase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns 0
-        every {
-            shopRepo.findWorkFacetSelectedIntersections(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every {
-            shopRepo.findStatusFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
+    fun `findFacets - options 조회 시 shop facet query repository는 호출하지 않는다`() {
+        every { regionRepo.findAllWithShopCount() } returns emptyList()
+        every { categoryRepo.findAllWithShopCount() } returns emptyList()
 
-        val query = ShopFacetQuery(
-            keyword = "애니",
-            regionIds = setOf(1, 2),
-            categoryIds = setOf(10, 20),
-            workIds = setOf(100, 200),
-            status = ShopStatus.ACTIVE,
-            swLat = BigDecimal("37.1"),
-            swLng = BigDecimal("127.1"),
-            neLat = BigDecimal("37.9"),
-            neLng = BigDecimal("127.9"),
-        )
+        adapter.findFacets(includeRegions = true, includeCategories = true, includeWorkTypes = true)
 
-        adapter.findFacets(query)
-
-        verify {
-            shopRepo.findRegionFacetCounts(
-                "애니",
-                setOf<Short>(1, 2),
-                true,
-                setOf<Short>(10, 20),
-                true,
-                setOf(100, 200),
-                ShopStatusEnum.active,
-                BigDecimal("37.1"),
-                BigDecimal("127.1"),
-                BigDecimal("37.9"),
-                BigDecimal("127.9"),
-            )
-        }
-        verify {
-            shopRepo.findStatusFacetCounts(
-                "애니",
-                true,
-                setOf<Short>(1, 2),
-                true,
-                setOf<Short>(10, 20),
-                true,
-                setOf(100, 200),
-                BigDecimal("37.1"),
-                BigDecimal("127.1"),
-                BigDecimal("37.9"),
-                BigDecimal("127.9"),
-            )
-        }
+        verify(exactly = 0) { shopRepo.findRegionFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { shopRepo.findCategoryFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { shopRepo.findWorkFacetCatalog(any()) }
+        verify(exactly = 0) { shopRepo.findStatusFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun `findFacets - works type 필터를 repository에 전달`() {
-        every {
-            shopRepo.findRegionFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every {
-            shopRepo.findCategoryFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every { shopRepo.findWorkFacetCatalog(any()) } returns emptyList()
-        every {
-            shopRepo.findWorkFacetCandidateCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every { shopRepo.countWorkFacetSelectedBase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns 0
-        every {
-            shopRepo.findWorkFacetSelectedIntersections(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every {
-            shopRepo.findStatusFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-
-        adapter.findFacets(ShopFacetQuery(type = WorkType.ANIMATION))
-
-        verify {
-            shopRepo.findWorkFacetCatalog("ANIMATION")
-        }
-        verify {
-            shopRepo.findWorkFacetCandidateCounts(
-                null,
-                false,
-                emptySet(),
-                false,
-                emptySet(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                "ANIMATION",
-            )
-        }
-        verify(exactly = 0) { shopRepo.countWorkFacetSelectedBase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun `findFacets - work facet union count는 selectedBase + candidate - intersection`() {
-        every {
-            shopRepo.findRegionFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every {
-            shopRepo.findCategoryFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
-        every { shopRepo.findWorkFacetCatalog(any()) } returns listOf(
-            WorkFacetCatalogRow(id = 100, name = "원피스", coverUrl = "https://example.com/onepiece.jpg"),
-            WorkFacetCatalogRow(id = 200, name = "원신", coverUrl = "https://example.com/genshin.jpg"),
+    fun `findFacets - include false 인 옵션은 조회하지 않고 빈 배열로 반환`() {
+        every { categoryRepo.findAllWithShopCount() } returns listOf(
+            CategoryListItem(id = 10, name = "피규어", count = 3),
         )
-        every {
-            shopRepo.findWorkFacetCandidateCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            WorkFacetGroupCountRow(workId = 100, count = 5),
-            WorkFacetGroupCountRow(workId = 200, count = 4),
-        )
-        every {
-            shopRepo.countWorkFacetSelectedBase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns 3
-        every {
-            shopRepo.findWorkFacetSelectedIntersections(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns listOf(
-            WorkFacetGroupCountRow(workId = 100, count = 3),
-            WorkFacetGroupCountRow(workId = 200, count = 1),
-        )
-        every {
-            shopRepo.findStatusFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } returns emptyList()
 
-        val result = adapter.findFacets(ShopFacetQuery(workIds = setOf(100)))
+        val result = adapter.findFacets(
+            includeRegions = false,
+            includeCategories = true,
+            includeWorkTypes = false,
+        )
 
-        assertEquals(3, result.works.single { it.id == 100 }.count)
-        assertEquals(6, result.works.single { it.id == 200 }.count)
+        assertTrue(result.regions.isEmpty())
+        assertEquals(1, result.categories.size)
+        assertTrue(result.workTypes.isEmpty())
+        verify(exactly = 0) { regionRepo.findAllWithShopCount() }
+        verify(exactly = 1) { categoryRepo.findAllWithShopCount() }
     }
 }
