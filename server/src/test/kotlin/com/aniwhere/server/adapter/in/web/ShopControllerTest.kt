@@ -12,6 +12,7 @@ import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.aniwhere.server.domain.category.model.CategorySummary
 import com.aniwhere.server.domain.work.model.WorkSummary
+import com.aniwhere.server.domain.work.model.WorkType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -99,12 +100,12 @@ class ShopControllerTest {
             .andExpect(jsonPath("$.data.totalElements").value(1))
             .andExpect(jsonPath("$.code").doesNotExist())
             .andExpect(jsonPath("$.message").doesNotExist())
-        verify { useCase.searchShops(null, null, emptySet(), "테스트", null, null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), "테스트", null, emptySet(), null, null, any()) }
     }
 
     @Test
     fun `GET shops - keyword 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(null, null, emptySet(), "원피스", null, null, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(emptySet(), emptySet(), "원피스", null, emptySet(), null, null, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("keyword", " 원피스 ")
@@ -112,25 +113,25 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, emptySet(), "원피스", null, null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), "원피스", null, emptySet(), null, null, any()) }
     }
 
     @Test
-    fun `GET shops - workId 를 그대로 유스케이스에 전달`() {
-        every { useCase.searchShops(null, null, emptySet(), null, null, 42, null, any()) } returns PageImpl(listOf(sampleShop))
+    fun `GET shops - workIds 를 그대로 유스케이스에 전달`() {
+        every { useCase.searchShops(emptySet(), emptySet(), null, null, setOf(42), null, null, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
-                .param("workId", "42")
+                .param("workIds", "42")
                 .param("page", "0")
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, emptySet(), null, null, 42, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, setOf(42), null, null, any()) }
     }
 
     @Test
     fun `GET shops - workKeyword 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(null, null, emptySet(), null, "주술회전", null, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(emptySet(), emptySet(), null, "주술회전", emptySet(), null, null, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("workKeyword", " 주술회전 ")
@@ -138,15 +139,15 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, emptySet(), null, "주술회전", null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, "주술회전", emptySet(), null, null, any()) }
     }
 
     @Test
     fun `GET shops - status 필터를 domain enum으로 전달`() {
-        every { useCase.searchShops(null, null, emptySet(), null, null, null, ShopStatus.ACTIVE, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, ShopStatus.ACTIVE, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("status", "ACTIVE").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
-        verify { useCase.searchShops(null, null, emptySet(), null, null, null, ShopStatus.ACTIVE, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, ShopStatus.ACTIVE, any()) }
     }
 
     @Test
@@ -163,22 +164,22 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - keyword 가 공백만이면 필터 미적용(null)`() {
-        every { useCase.searchShops(null, null, emptySet(), null, null, null, null, any()) } returns PageImpl(emptyList())
+        every { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, null, any()) } returns PageImpl(emptyList())
         mvc.perform(get("/api/v1/shops").param("keyword", "   ").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.code").value("EMPTY_RESULT"))
-        verify { useCase.searchShops(null, null, emptySet(), null, null, null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, null, any()) }
     }
 
     @Test
-    fun `GET shops - category와 categoryIds를 함께 전달하면 둘 다 유스케이스로 전달`() {
+    fun `GET shops - regionIds와 categoryIds를 함께 전달하면 둘 다 유스케이스로 전달`() {
         every {
             useCase.searchShops(
-                null,
-                "피규어",
+                setOf<Short>(1, 2),
                 setOf<Short>(1, 2),
                 null,
                 null,
+                emptySet(),
                 null,
                 null,
                 any(),
@@ -187,7 +188,7 @@ class ShopControllerTest {
 
         mvc.perform(
             get("/api/v1/shops")
-                .param("category", "피규어")
+                .param("regionIds", "1", "2")
                 .param("categoryIds", "1", "2")
                 .param("page", "0")
                 .param("size", "20"),
@@ -196,16 +197,44 @@ class ShopControllerTest {
 
         verify {
             useCase.searchShops(
-                null,
-                "피규어",
+                setOf<Short>(1, 2),
                 setOf<Short>(1, 2),
                 null,
                 null,
+                emptySet(),
                 null,
                 null,
                 any(),
             )
         }
+    }
+
+    @Test
+    fun `GET shops - workType 앞뒤 공백은 trim 후 enum으로 전달`() {
+        every {
+            useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), WorkType.GAME, null, any())
+        } returns PageImpl(listOf(sampleShop))
+
+        mvc.perform(
+            get("/api/v1/shops")
+                .param("workType", " game ")
+                .param("page", "0")
+                .param("size", "20"),
+        )
+            .andExpect(status().isOk)
+
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), WorkType.GAME, null, any()) }
+    }
+
+    @Test
+    fun `GET shops - workType 값이 잘못되면 400`() {
+        mvc.perform(
+            get("/api/v1/shops")
+                .param("workType", "novel")
+                .param("page", "0")
+                .param("size", "20"),
+        )
+            .andExpect(status().isBadRequest)
     }
 
     @Test

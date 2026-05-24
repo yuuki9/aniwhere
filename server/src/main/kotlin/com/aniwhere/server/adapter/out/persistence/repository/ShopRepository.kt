@@ -19,9 +19,7 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
     @Query("""
         SELECT DISTINCT s FROM ShopEntity s
         LEFT JOIN FETCH s.region
-        LEFT JOIN s.categories c
-        WHERE (:regionId IS NULL OR s.region.id = :regionId)
-          AND (:categoryName IS NULL OR c.name = :categoryName)
+        WHERE (:applyRegionIds = false OR s.region.id IN :regionIds)
           AND (:applyCategoryIds = false OR EXISTS (
                 SELECT 1 FROM ShopEntity s3 JOIN s3.categories c3
                 WHERE s3.id = s.id AND c3.id IN :categoryIds))
@@ -32,15 +30,19 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
                   WHERE s2.id = s.id AND (
                        w.name LIKE CONCAT('%', :workKeyword, '%')
                     OR (TYPE(w) = AnimationWorkEntity AND TREAT(w AS AnimationWorkEntity).koreanTitle LIKE CONCAT('%', :workKeyword, '%')))))
-          AND (:workId IS NULL OR EXISTS (
+          AND (:applyWorkIds = false OR EXISTS (
                 SELECT 1 FROM ShopEntity s2 JOIN s2.works w
-                WHERE s2.id = s.id AND w.id = :workId))
+                WHERE s2.id = s.id AND w.id IN :workIds))
+          AND (:workType IS NULL OR EXISTS (
+                SELECT 1 FROM ShopEntity s4 JOIN s4.works w4
+                WHERE s4.id = s.id AND (
+                    (:workType = 'ANIMATION' AND TYPE(w4) = AnimationWorkEntity)
+                    OR (:workType = 'GAME' AND TYPE(w4) = GameWorkEntity)
+                )))
     """,
     countQuery = """
         SELECT COUNT(DISTINCT s) FROM ShopEntity s
-        LEFT JOIN s.categories c
-        WHERE (:regionId IS NULL OR s.region.id = :regionId)
-          AND (:categoryName IS NULL OR c.name = :categoryName)
+        WHERE (:applyRegionIds = false OR s.region.id IN :regionIds)
           AND (:applyCategoryIds = false OR EXISTS (
                 SELECT 1 FROM ShopEntity s3 JOIN s3.categories c3
                 WHERE s3.id = s.id AND c3.id IN :categoryIds))
@@ -51,18 +53,26 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
                   WHERE s2.id = s.id AND (
                        w.name LIKE CONCAT('%', :workKeyword, '%')
                     OR (TYPE(w) = AnimationWorkEntity AND TREAT(w AS AnimationWorkEntity).koreanTitle LIKE CONCAT('%', :workKeyword, '%')))))
-          AND (:workId IS NULL OR EXISTS (
+          AND (:applyWorkIds = false OR EXISTS (
                 SELECT 1 FROM ShopEntity s2 JOIN s2.works w
-                WHERE s2.id = s.id AND w.id = :workId))
+                WHERE s2.id = s.id AND w.id IN :workIds))
+          AND (:workType IS NULL OR EXISTS (
+                SELECT 1 FROM ShopEntity s4 JOIN s4.works w4
+                WHERE s4.id = s.id AND (
+                    (:workType = 'ANIMATION' AND TYPE(w4) = AnimationWorkEntity)
+                    OR (:workType = 'GAME' AND TYPE(w4) = GameWorkEntity)
+                )))
     """)
     fun search(
-        regionId: Short?,
-        categoryName: String?,
+        applyRegionIds: Boolean,
+        regionIds: Set<Short>,
         applyCategoryIds: Boolean,
         categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
-        workId: Int?,
+        applyWorkIds: Boolean,
+        workIds: Set<Int>,
+        workType: String?,
         status: ShopStatusEnum?,
         pageable: Pageable,
     ): Page<ShopEntity>

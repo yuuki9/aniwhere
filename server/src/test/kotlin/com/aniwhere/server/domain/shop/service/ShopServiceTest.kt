@@ -7,6 +7,7 @@ import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
 import com.aniwhere.server.domain.shop.model.ShopStatus
+import com.aniwhere.server.domain.work.model.WorkType
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
 import com.aniwhere.server.domain.shop.port.out.ShopImageStoragePort
 import com.aniwhere.server.domain.shop.port.out.ShopPersistencePort
@@ -79,17 +80,17 @@ class ShopServiceTest {
         val pageable = PageRequest.of(0, 20)
         every { port.findAll(any(), any(), any(), any(), any(), any(), any(), pageable) } returns PageImpl(listOf(sampleShop))
         val result = service.searchShops(
-            regionId = 1,
-            categoryName = null,
+            regionIds = setOf(1),
             categoryIds = emptySet(),
             keyword = "테스트",
             workKeyword = null,
-            workId = null,
+            workIds = emptySet(),
+            workType = WorkType.GAME,
             status = ShopStatus.ACTIVE,
             pageable = pageable,
         )
         assertEquals(1, result.totalElements)
-        verify { port.findAll(1, null, emptySet(), "테스트", null, null, ShopStatus.ACTIVE, pageable) }
+        verify { port.findAll(setOf(1), emptySet(), "테스트", null, emptySet(), WorkType.GAME, ShopStatus.ACTIVE, pageable) }
     }
 
     @Test

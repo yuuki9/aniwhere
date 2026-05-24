@@ -10,6 +10,7 @@ import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
+import com.aniwhere.server.domain.work.model.WorkType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -44,29 +45,29 @@ class ShopController(
         summary = "샵 검색 (페이징). 결과가 없을 때 `code`·`message` 로 안내. " +
             "`keyword`: 샵 이름(`shops.name`) 부분 일치(LIKE). " +
             "`workKeyword`: 취급 작품 `works.name` / `works.korean_title` 부분 일치(LIKE, 두 컬럼 OR). " +
-            "`workId`: 해당 `works.id` 취급 매장만. " +
-            "문자열·`workId` 필터는 함께 주면 AND.",
+            "`workIds`: 전달한 `works.id` 집합을 하나 이상 취급하는 매장만. " +
+            "필터 그룹 간에는 AND, 같은 그룹의 다중 값은 OR.",
     )
     @GetMapping
     fun searchShops(
-        @RequestParam(required = false) regionId: Short?,
-        @RequestParam(required = false) category: String?,
+        @RequestParam(required = false) regionIds: List<Short>?,
         @RequestParam(required = false) categoryIds: List<Short>?,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) workKeyword: String?,
-        @RequestParam(required = false) workId: Int?,
+        @RequestParam(required = false) workIds: List<Int>?,
+        @RequestParam(required = false) workType: String?,
         @RequestParam(required = false) status: String?,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<Page<Shop>> {
         val kw = keyword?.trim()?.takeIf { it.isNotEmpty() }
         val workKw = workKeyword?.trim()?.takeIf { it.isNotEmpty() }
         val page = useCase.searchShops(
-            regionId,
-            category,
+            regionIds.orEmpty().toSet(),
             categoryIds.orEmpty().toSet(),
             kw,
             workKw,
-            workId,
+            workIds.orEmpty().toSet(),
+            workType.toWorkTypeOrNull(),
             status.toShopStatusOrNull(),
             pageable,
         )
@@ -187,6 +188,13 @@ private fun String?.toShopStatusOrNull(): ShopStatus? {
     val normalized = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
     return runCatching { ShopStatus.valueOf(normalized.uppercase()) }
         .getOrElse { throw BadRequestException("Invalid shop status: $normalized") }
+}
+
+private fun String?.toWorkTypeOrNull(): WorkType? {
+    val normalized = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val allowed = WorkType.entries.joinToString(" | ") { it.name }
+    return runCatching { WorkType.valueOf(normalized.uppercase()) }
+        .getOrElse { throw BadRequestException("workType must be one of: $allowed") }
 }
 
 data class ShopRequest(

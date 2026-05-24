@@ -4,6 +4,7 @@ import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
 import com.aniwhere.server.domain.shop.model.ShopStatus
+import com.aniwhere.server.domain.work.model.WorkType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
@@ -21,12 +22,12 @@ interface ShopPersistencePort {
         includeWorkTypes: Boolean = true,
     ): ShopFacetResponse
     fun findAll(
-        regionId: Short?,
-        categoryName: String?,
+        regionIds: Set<Short>,
         categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
-        workId: Int?,
+        workIds: Set<Int>,
+        workType: WorkType?,
         status: ShopStatus?,
         pageable: Pageable,
     ): Page<Shop>

@@ -68,23 +68,25 @@ class ShopPersistenceAdapter(
 
     @Transactional(readOnly = true)
     override fun findAll(
-        regionId: Short?,
-        categoryName: String?,
+        regionIds: Set<Short>,
         categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
-        workId: Int?,
+        workIds: Set<Int>,
+        workType: WorkType?,
         status: ShopStatus?,
         pageable: Pageable,
     ): Page<Shop> =
         shopRepo.search(
-            regionId,
-            categoryName,
+            regionIds.isNotEmpty(),
+            regionIds,
             categoryIds.isNotEmpty(),
             categoryIds,
             keyword,
             workKeyword,
-            workId,
+            workIds.isNotEmpty(),
+            workIds,
+            workType?.name,
             status?.let { ShopStatusEnum.valueOf(it.name.lowercase()) },
             pageable,
         ).map(shopMapper::toDomain)

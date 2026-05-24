@@ -15,6 +15,7 @@ import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.category.model.CategoryListItem
 import com.aniwhere.server.domain.region.model.RegionListItem
+import com.aniwhere.server.domain.work.model.WorkType
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
@@ -153,42 +154,46 @@ class ShopPersistenceAdapterTest {
     }
 
     @Test
-    fun `findAll - category 이름과 categoryIds를 함께 repository로 전달`() {
+    fun `findAll - regionIds categoryIds workIds를 repository로 전달`() {
         val pageable = PageRequest.of(0, 20)
         every {
             shopRepo.search(
-                1,
-                "피규어",
+                true,
+                setOf<Short>(1),
                 true,
                 setOf<Short>(1, 2),
                 "테스트",
                 null,
-                null,
+                true,
+                setOf(10, 20),
+                "ANIMATION",
                 ShopStatusEnum.active,
                 pageable,
             )
         } returns PageImpl(emptyList())
 
         adapter.findAll(
-            regionId = 1,
-            categoryName = "피규어",
+            regionIds = setOf(1),
             categoryIds = setOf(1, 2),
             keyword = "테스트",
             workKeyword = null,
-            workId = null,
+            workIds = setOf(10, 20),
+            workType = WorkType.ANIMATION,
             status = ShopStatus.ACTIVE,
             pageable = pageable,
         )
 
         verify {
             shopRepo.search(
-                1,
-                "피규어",
+                true,
+                setOf<Short>(1),
                 true,
                 setOf<Short>(1, 2),
                 "테스트",
                 null,
-                null,
+                true,
+                setOf(10, 20),
+                "ANIMATION",
                 ShopStatusEnum.active,
                 pageable,
             )
