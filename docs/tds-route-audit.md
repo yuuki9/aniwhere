@@ -126,6 +126,25 @@ Official docs checked on 2026-05-22 with web fallback because Apps in Toss MCP w
 | Admin taxonomy selectors | Product-approved | Admin create/edit now uses Swagger-backed category/work IDs. The selector is app-owned because the current public facade exports only the proven TDS primitives in this repo; it follows the checked Checkbox, AgreementV4, Grid List, TextField, Button, ListRow, and segmented selection references without adding new `Ait*` usage. |
 | Runtime verification | Needs sandbox | `tsc`, lint, and public bundle verification passed locally, but Apps in Toss native navigation, safe area, and Pixel 8a sandbox behavior still need device confirmation. |
 
+## Current Search/Explore Filter Audit
+
+Official docs checked with Apps in Toss MCP on 2026-05-24:
+
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Route role | Product-approved | `/search` keeps keyword-first search and `/explore` keeps map-first exploration. Filters are a supporting sheet, not a replacement for the primary route purpose. |
+| TDS import boundary | TDS-required | The filter sheet imports `Button` and `ListRow` from `@aniwhere/tds-mobile`, which resolves to `@toss/tds-mobile` in Apps in Toss builds. Unused legacy `client/src/shared/ui/ait` components were removed so page code cannot drift back to `Ait*` imports. |
+| Facet filter sheet | Product-approved / API-required | The sheet now uses Swagger-backed `GET /api/v1/shops/facets` data for region, category, work, and status filters. The shell remains app-owned because the current facade exposes only proven primitives; the checked BottomSheet doc is the behavior reference. |
+| Search API params | Product-approved / API-required | `/search` preserves `regionId`, repeated `categoryIds`, `workId`, and `status` while changing keywords or pages, then sends them to `GET /api/v1/shops`. Work-scope fallback still uses `workKeyword`. |
+| Explore API params | Product-approved / API-required | `/explore` reads the same URL filter params and sends them to the map source query instead of filtering region/work only on the client. The active quick chip toggles the `ACTIVE` status filter; favorite remains a visual-only chip until a favorite-backed API exists. |
+| Runtime verification | Needs sandbox | Local tests prove source behavior, but Apps in Toss sheet animation, safe area, and Pixel 8a tap behavior still require sandbox/device verification. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

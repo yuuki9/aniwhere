@@ -30,14 +30,9 @@ Do not wait for the user to provide component or foundation links. If the route 
 
 ## Local Components
 
-Local TDS-compatible components live under `client/src/shared/ui/ait`. These are legacy fallback/building-block components and should shrink until removed. They are not a reason to avoid official TDS in WebView/ads/local work.
+The legacy `client/src/shared/ui/ait` component layer has been removed. Public/domain fallback behavior now belongs under the explicit runtime facades, especially `client/src/shared/ui/tdsMobile/public.tsx` and `client/src/shared/ui/tdsRuntime/public.tsx`.
 
-- `AitTop`: local equivalent for a compact TDS `Top` area.
-- `AitListRow`: local equivalent for TDS `ListRow` with `left` asset and two-line contents.
-- `AitButton`: local equivalent for a primary TDS-style button.
-- `AitNavigation`: local web navigation; Apps in Toss runtime can rely on native navigation behavior.
-
-Do not add new props or new `Ait*` components. Replace existing usage with official TDS facade components or route-specific app-owned UI that has an explicit removal/follow-up plan.
+Do not recreate `client/src/shared/ui/ait`, add new `Ait*` components, or route page code around the `@aniwhere/tds-mobile` facade. Replace any future local gap with official TDS facade components or route-specific app-owned UI that has an explicit removal/follow-up plan.
 
 ## Ait Usage Freeze
 
@@ -45,8 +40,8 @@ Existing `Ait*` imports are treated as migration debt. New route/page code must 
 
 - Use `@aniwhere/tds-mobile` first when an official TDS component exists.
 - Use Apps in Toss native/common navigation as the launch target; any app-owned navigation must be justified as a temporary gap.
-- Do not update `client/scripts/assert-ait-usage-allowlist.mjs` to allow more route/page files. Reducing the allowlist is the only normal direction.
-- Route migration should remove the allowlist over time, starting with `/intro`.
+- Do not update `client/scripts/assert-ait-usage-allowlist.mjs` to allow more route/page files. The normal allowlist is empty.
+- Route migration should keep the allowlist empty and use the TDS facades instead.
 
 ## Styling Rules
 

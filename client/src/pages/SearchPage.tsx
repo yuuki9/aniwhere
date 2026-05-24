@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useRef, useState } from 'react'
+import { type FormEvent, useCallback, useMemo, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShops } from '../shared/api/shops'
@@ -6,6 +6,13 @@ import type { Shop } from '../shared/api/types'
 import { formatRelativeUpdated } from '../shared/lib/format'
 import { requestCurrentLocation } from '../shared/lib/location'
 import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
+import {
+  countShopFilters,
+  parseShopFilters,
+  toShopSearchParams,
+  writeShopFilters,
+  type ShopFilters,
+} from '../shared/lib/shopFilters'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { StatusPill } from '../shared/ui/StatusPill'
@@ -38,18 +45,25 @@ async function searchShopsFromSearchBar({
   currentSearchScope,
   currentKeyword,
   currentPage,
+  selectedFilters,
 }: {
   currentSearchScope: SearchScope
   currentKeyword: string
   currentPage: number
+  selectedFilters: ShopFilters
 }) {
   const searchKeyword = currentKeyword || undefined
+  const selectedSearchParams = toShopSearchParams(selectedFilters)
 
   if (currentSearchScope === 'work') {
     return getShops({
       page: currentPage,
       size: SEARCH_PAGE_SIZE,
       workKeyword: searchKeyword,
+      regionId: selectedSearchParams.regionId,
+      categoryIds: selectedSearchParams.categoryIds,
+      workId: selectedSearchParams.workId,
+      status: selectedSearchParams.status,
     })
   }
 
@@ -57,6 +71,10 @@ async function searchShopsFromSearchBar({
     page: currentPage,
     size: SEARCH_PAGE_SIZE,
     keyword: searchKeyword,
+    regionId: selectedSearchParams.regionId,
+    categoryIds: selectedSearchParams.categoryIds,
+    workId: selectedSearchParams.workId,
+    status: selectedSearchParams.status,
   })
 
   if (shopResults.content.length > 0 || currentPage > 0) {
@@ -67,6 +85,10 @@ async function searchShopsFromSearchBar({
     page: currentPage,
     size: SEARCH_PAGE_SIZE,
     workKeyword: searchKeyword,
+    regionId: selectedSearchParams.regionId,
+    categoryIds: selectedSearchParams.categoryIds,
+    workId: selectedSearchParams.workId,
+    status: selectedSearchParams.status,
   })
 }
 
@@ -76,6 +98,7 @@ export function SearchPage() {
   const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword') ?? ''
   const currentPage = Number(searchParams.get('page') ?? '0')
+  const selectedFilters = useMemo(() => parseShopFilters(searchParams), [searchParams])
   const returnTo = searchParams.get('returnTo')
   const safeReturnTo = returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : null
   const [keyword, setKeyword] = useState(currentKeyword)
@@ -84,22 +107,22 @@ export function SearchPage() {
   const [nearbyError, setNearbyError] = useState<string | null>(null)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
-  const appliedFilterCount = 0
+  const appliedFilterCount = countShopFilters(selectedFilters)
 
   const closeFilterSheet = useCallback(() => {
     setIsFilterSheetOpen(false)
   }, [])
 
   const resultQuery = useQuery({
-    queryKey: ['shops', 'search-page-results', currentSearchScope, currentKeyword, currentPage],
-    queryFn: () => searchShopsFromSearchBar({ currentSearchScope, currentKeyword, currentPage }),
+    queryKey: ['shops', 'search-page-results', currentSearchScope, currentKeyword, selectedFilters, currentPage],
+    queryFn: () => searchShopsFromSearchBar({ currentSearchScope, currentKeyword, currentPage, selectedFilters }),
     placeholderData: keepPreviousData,
     enabled: currentKeyword.trim().length > 0,
   })
 
   const moveToSearch = (nextKeyword: string, nextPage = 0) => {
     const trimmed = nextKeyword.trim()
-    const next = new URLSearchParams()
+    const next = writeShopFilters(new URLSearchParams(), selectedFilters)
 
     if (safeReturnTo) {
       next.set('returnTo', safeReturnTo)
@@ -130,7 +153,7 @@ export function SearchPage() {
 
   const handleSearchBack = () => {
     if (currentKeyword.trim()) {
-      const next = new URLSearchParams()
+      const next = writeShopFilters(new URLSearchParams(), selectedFilters)
 
       if (safeReturnTo) {
         next.set('returnTo', safeReturnTo)
@@ -151,6 +174,10 @@ export function SearchPage() {
     }
 
     navigate(-1)
+  }
+
+  const applyFilters = (nextFilters: ShopFilters) => {
+    setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
   }
 
   const handleNearbySearch = async () => {
@@ -216,7 +243,14 @@ export function SearchPage() {
           </div>
         </header>
 
-        <SearchFilterSheet open={isFilterSheetOpen} triggerRef={filterTriggerRef} onClose={closeFilterSheet} />
+        <SearchFilterSheet
+          open={isFilterSheetOpen}
+          triggerRef={filterTriggerRef}
+          keyword={currentKeyword}
+          selectedFilters={selectedFilters}
+          onApplyFilters={applyFilters}
+          onClose={closeFilterSheet}
+        />
 
         {!currentKeyword ? (
           <div className="search-screen-content search-screen-content-v2">

@@ -47,6 +47,8 @@ test('ExplorePage shares the search bar and filter sheet pattern with SearchPage
   const topSearchSource = exploreTopSearchSource()
 
   assert.match(source, /SearchFilterSheet/)
+  assert.match(source, /selectedFilters=\{selectedFilters\}/)
+  assert.match(source, /onApplyFilters=\{applyFilters\}/)
   assert.match(source, /<AppTopNavigation/)
   assert.doesNotMatch(source, /title="지도"/)
   assert.match(source, /onBack=\{handleExploreBack\}/)
@@ -297,6 +299,19 @@ test('ExplorePage exposes map viewport search after the map moves', () => {
   assert.match(source, /onViewportChange=\{handleMapViewportChange\}/)
   assert.match(source, /mapViewportFilter/)
   assert.match(source, /이 지역 매장 검색/)
+})
+
+test('ExplorePage sends selected filters to the shop API instead of local-only chips', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /parseShopFilters\(searchParams\)/)
+  assert.match(source, /toShopSearchParams\(selectedFilters\)/)
+  assert.match(source, /queryKey: \['shops', 'explore-map-source', selectedSearchParams\]/)
+  assert.match(source, /getShops\(\{ page: 0, size: MAP_FETCH_SIZE, \.\.\.selectedSearchParams \}\)/)
+  assert.match(source, /countShopFilters\(selectedFilters\)/)
+  assert.match(source, /writeShopFilters\(searchParams, nextFilters\)/)
+  assert.match(source, /toggleActiveStatusFilter/)
+  assert.match(source, /id: 'active'/)
 })
 
 test('Explore controls separate list, location, zoom, and AI actions for mobile reachability', () => {

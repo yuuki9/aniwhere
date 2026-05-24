@@ -12,6 +12,13 @@ import {
   type UserLocation,
 } from '../shared/lib/location'
 import {
+  countShopFilters,
+  parseShopFilters,
+  toShopSearchParams,
+  writeShopFilters,
+  type ShopFilters,
+} from '../shared/lib/shopFilters'
+import {
   buildNaverMapSearchUrl,
   buildNaverWebDirectionUrl,
   canBuildNaverWebDirectionUrl,
@@ -138,16 +145,8 @@ export function ExplorePage() {
   const location = useLocation()
   const routeState = location.state as ExploreLocationState
   const [searchParams, setSearchParams] = useSearchParams()
-  const parsePositiveInt = (value: string | null) => {
-    if (value == null || !/^\d+$/.test(value)) {
-      return undefined
-    }
-
-    const parsed = Number(value)
-    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
-  }
-  const regionId = parsePositiveInt(searchParams.get('regionId'))
-  const workId = parsePositiveInt(searchParams.get('workId'))
+  const selectedFilters = useMemo(() => parseShopFilters(searchParams), [searchParams])
+  const selectedSearchParams = useMemo(() => toShopSearchParams(selectedFilters), [selectedFilters])
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
@@ -165,7 +164,7 @@ export function ExplorePage() {
   )
   const [locationError, setLocationError] = useState<string | null>(null)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
-  const [activeMapQuickChips, setActiveMapQuickChips] = useState<Record<string, boolean>>({})
+  const [favoriteQuickChipActive, setFavoriteQuickChipActive] = useState(false)
   const [mapViewport, setMapViewport] = useState<MapViewport | null>(null)
   const [mapViewportFilter, setMapViewportFilter] = useState<MapBounds | null>(null)
   const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
@@ -199,14 +198,21 @@ export function ExplorePage() {
   const expandedPointerIdRef = useRef<number | null>(null)
   const expandedDragStartYRef = useRef<number | null>(null)
   const effectiveUserLocation = userLocation ?? nearbyRequest?.location ?? null
-  const appliedFilterCount = mapViewportFilter ? 1 : 0
+  const appliedFilterCount = countShopFilters(selectedFilters) + (mapViewportFilter ? 1 : 0)
+  const activeMapQuickChips = useMemo(
+    () => ({
+      favorite: favoriteQuickChipActive,
+      active: selectedFilters.status === 'ACTIVE',
+    }),
+    [favoriteQuickChipActive, selectedFilters.status],
+  )
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
   const searchReturnTo = `${location.pathname}${location.search}`
   const searchHref = `/search?returnTo=${encodeURIComponent(searchReturnTo)}`
 
   const shopsQuery = useQuery({
-    queryKey: ['shops', 'explore-map-source', regionId, workId],
-    queryFn: () => getShops({ page: 0, size: MAP_FETCH_SIZE, regionId, workId }),
+    queryKey: ['shops', 'explore-map-source', selectedSearchParams],
+    queryFn: () => getShops({ page: 0, size: MAP_FETCH_SIZE, ...selectedSearchParams }),
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -232,17 +238,13 @@ export function ExplorePage() {
 
   const filteredShops = useMemo(() => {
     return allShops.filter((shop) => {
-      if (regionId && shop.regionId !== regionId) {
-        return false
-      }
-
       if (mapViewportFilter && !isShopInsideMapBounds(shop, mapViewportFilter)) {
         return false
       }
 
       return true
     })
-  }, [allShops, mapViewportFilter, regionId])
+  }, [allShops, mapViewportFilter])
 
   const shopsWithDistance = useMemo(() => {
     const nextShops = filteredShops.map((shop) => {
@@ -559,13 +561,36 @@ export function ExplorePage() {
     setIsFilterSheetOpen(false)
   }, [])
 
-  const toggleMapQuickChip = useCallback((chipId: string) => {
-    // Deferred facet filters: keep these chips as visual toggles until the backend API contract exists.
-    setActiveMapQuickChips((previous) => ({
-      ...previous,
-      [chipId]: !previous[chipId],
-    }))
-  }, [])
+  const applyFilters = useCallback(
+    (nextFilters: ShopFilters) => {
+      setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
+      setVisibleListCount(PAGE_SIZE)
+      setMapViewportFilter(null)
+      setHasPendingMapSearch(false)
+    },
+    [searchParams, setSearchParams],
+  )
+
+  const toggleActiveStatusFilter = useCallback(() => {
+    applyFilters({
+      ...selectedFilters,
+      categoryIds: [...selectedFilters.categoryIds],
+      status: selectedFilters.status === 'ACTIVE' ? undefined : 'ACTIVE',
+    })
+  }, [applyFilters, selectedFilters])
+
+  const toggleMapQuickChip = useCallback(
+    (chipId: string) => {
+      // Deferred facet filters: favorite stays visual until the favorite-backed API contract exists.
+      if (chipId === 'active') {
+        toggleActiveStatusFilter()
+        return
+      }
+
+      setFavoriteQuickChipActive((current) => !current)
+    },
+    [toggleActiveStatusFilter],
+  )
 
   const shopsError = shopsQuery.isError ? (shopsQuery.error as Error).message : null
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
@@ -871,7 +896,13 @@ export function ExplorePage() {
             ) : null}
           </div>
 
-          <SearchFilterSheet open={isFilterSheetOpen} triggerRef={filterTriggerRef} onClose={closeFilterSheet} />
+          <SearchFilterSheet
+            open={isFilterSheetOpen}
+            triggerRef={filterTriggerRef}
+            selectedFilters={selectedFilters}
+            onApplyFilters={applyFilters}
+            onClose={closeFilterSheet}
+          />
 
           {locationError && sheetMode !== 'expanded' && !isListSheetOpen ? (
             <p className="map-location-error-toast" role="status">
