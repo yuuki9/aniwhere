@@ -4,7 +4,6 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
-import com.aniwhere.server.domain.shop.model.ShopFacetQuery
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
 import com.aniwhere.server.domain.shop.model.ShopStatus
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.transaction.PlatformTransactionManager
-import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.SimpleTransactionStatus
 import org.springframework.transaction.support.TransactionTemplate
 import java.awt.image.BufferedImage
@@ -101,109 +99,14 @@ class ShopServiceTest {
     }
 
     @Test
-    fun `getShopFacets - 동일 쿼리는 TTL 내 캐시를 사용해 한 번만 조회한다`() {
-        val query = ShopFacetQuery(keyword = "원피스")
+    fun `getShopFacets - 옵션 목록을 persistence port에서 조회한다`() {
         val expected = ShopFacetResponse()
-        every { port.findFacets(query) } returns expected
+        every { port.findFacets(true, false, true) } returns expected
 
-        val firstResult = service.getShopFacets(query)
-        val secondResult = service.getShopFacets(query)
+        val result = service.getShopFacets(includeRegions = true, includeCategories = false, includeWorkTypes = true)
 
-        assertSame(expected, firstResult)
-        assertSame(expected, secondResult)
-        verify(exactly = 1) { port.findFacets(query) }
-    }
-
-    @Test
-    fun `getShopFacets - bounds 스케일만 다른 동일 좌표 쿼리는 캐시를 재사용한다`() {
-        val originalPrecisionQuery = ShopFacetQuery(
-            swLat = BigDecimal("37.1"),
-            swLng = BigDecimal("127.1"),
-            neLat = BigDecimal("37.2"),
-            neLng = BigDecimal("127.2"),
-        )
-        val semanticallySameQueryWithDifferentScale = originalPrecisionQuery.copy(
-            swLat = BigDecimal("37.10"),
-            swLng = BigDecimal("127.10"),
-            neLat = BigDecimal("37.20"),
-            neLng = BigDecimal("127.20"),
-        )
-        val expected = ShopFacetResponse()
-        val capturedQuery = slot<ShopFacetQuery>()
-        every { port.findFacets(capture(capturedQuery)) } returns expected
-
-        val firstResult = service.getShopFacets(originalPrecisionQuery)
-        val secondResult = service.getShopFacets(semanticallySameQueryWithDifferentScale)
-
-        assertSame(expected, firstResult)
-        assertSame(expected, secondResult)
-        assertEquals(originalPrecisionQuery, capturedQuery.captured)
-        assertEquals(BigDecimal("37.1"), capturedQuery.captured.swLat)
-        verify(exactly = 1) { port.findFacets(any()) }
-    }
-
-    @Test
-    fun `getShopFacets - 캐시 만료 후에는 persistence port를 다시 조회한다`() {
-        val query = ShopFacetQuery(keyword = "나루토")
-        val staleCached = ShopFacetResponse()
-        val fresh = ShopFacetResponse(statuses = listOf())
-        service.putFacetCacheForTest(
-            query = query,
-            response = staleCached,
-            cachedAtMillis = System.currentTimeMillis() - 60_000L,
-        )
-        every { port.findFacets(query) } returns fresh
-
-        val result = service.getShopFacets(query)
-
-        assertSame(fresh, result)
-        verify(exactly = 1) { port.findFacets(query) }
-    }
-
-    @Test
-    fun `createShop - 쓰기 이후 facet 캐시를 비워 다음 조회는 다시 조회한다`() {
-        val query = ShopFacetQuery(keyword = "코난")
-        val firstResponse = ShopFacetResponse()
-        val secondResponse = ShopFacetResponse(regions = listOf())
-        every { port.findFacets(query) } returns firstResponse andThen secondResponse
-        every { port.save(any()) } returns sampleShop
-
-        val beforeWrite = service.getShopFacets(query)
-        service.createShop(sampleShop.copy(id = null))
-        val afterWrite = service.getShopFacets(query)
-
-        assertSame(firstResponse, beforeWrite)
-        assertSame(secondResponse, afterWrite)
-        verify(exactly = 2) { port.findFacets(query) }
-        verify { port.save(any()) }
-    }
-
-    @Test
-    fun `createShop - 트랜잭션 동기화 활성 상태에서는 afterCommit 후 facet 캐시를 비운다`() {
-        val query = ShopFacetQuery(keyword = "슬램덩크")
-        val firstResponse = ShopFacetResponse()
-        val secondResponse = ShopFacetResponse(works = listOf())
-        every { port.findFacets(query) } returns firstResponse andThen secondResponse
-        every { port.save(any()) } returns sampleShop
-
-        TransactionSynchronizationManager.initSynchronization()
-        try {
-            val beforeWrite = service.getShopFacets(query)
-            service.createShop(sampleShop.copy(id = null))
-            val beforeAfterCommit = service.getShopFacets(query)
-
-            TransactionSynchronizationManager.getSynchronizations().forEach { it.afterCommit() }
-
-            val afterAfterCommit = service.getShopFacets(query)
-
-            assertSame(firstResponse, beforeWrite)
-            assertSame(firstResponse, beforeAfterCommit)
-            assertSame(secondResponse, afterAfterCommit)
-            verify(exactly = 2) { port.findFacets(query) }
-            verify { port.save(any()) }
-        } finally {
-            TransactionSynchronizationManager.clearSynchronization()
-        }
+        assertSame(expected, result)
+        verify(exactly = 1) { port.findFacets(true, false, true) }
     }
 
     @Test

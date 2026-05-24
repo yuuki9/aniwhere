@@ -5,13 +5,11 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.UnauthorizedException
 import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
-import com.aniwhere.server.domain.shop.model.ShopFacetQuery
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
-import com.aniwhere.server.domain.work.model.WorkType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -82,35 +80,16 @@ class ShopController(
     @Operation(summary = "샵 검색 필터 팩셋")
     @GetMapping("/facets")
     fun getShopFacets(
-        @RequestParam(required = false) keyword: String?,
-        @RequestParam(required = false) regionIds: List<Short>?,
-        @RequestParam(required = false) categoryIds: List<Short>?,
-        @RequestParam(required = false) workIds: List<Int>?,
-        @RequestParam(required = false) status: String?,
-        @RequestParam(required = false) swLat: BigDecimal?,
-        @RequestParam(required = false) swLng: BigDecimal?,
-        @RequestParam(required = false) neLat: BigDecimal?,
-        @RequestParam(required = false) neLng: BigDecimal?,
-        @RequestParam(required = false) type: String?,
-    ): ApiResponse<ShopFacetResponse> {
-        validateBounds(swLat, swLng, neLat, neLng)
-        return ApiResponse.ok(
-            useCase.getShopFacets(
-                ShopFacetQuery(
-                    keyword = keyword?.trim()?.takeIf { it.isNotEmpty() },
-                    regionIds = regionIds.orEmpty().toSet(),
-                    categoryIds = categoryIds.orEmpty().toSet(),
-                    workIds = workIds.orEmpty().toSet(),
-                    status = status.toShopStatusOrNull(),
-                    swLat = swLat,
-                    swLng = swLng,
-                    neLat = neLat,
-                    neLng = neLng,
-                    type = type.toWorkTypeOrNull(),
-                ),
-            ),
-        )
-    }
+        @RequestParam(required = false) includeRegions: Boolean?,
+        @RequestParam(required = false) includeCategories: Boolean?,
+        @RequestParam(required = false) includeWorkTypes: Boolean?,
+    ): ApiResponse<ShopFacetResponse> = ApiResponse.ok(
+        useCase.getShopFacets(
+            includeRegions = includeRegions ?: true,
+            includeCategories = includeCategories ?: true,
+            includeWorkTypes = includeWorkTypes ?: true,
+        ),
+    )
 
     @Operation(summary = "샵 등록 (JSON)")
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
@@ -208,29 +187,6 @@ private fun String?.toShopStatusOrNull(): ShopStatus? {
     val normalized = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
     return runCatching { ShopStatus.valueOf(normalized.uppercase()) }
         .getOrElse { throw BadRequestException("Invalid shop status: $normalized") }
-}
-
-private fun String?.toWorkTypeOrNull(): WorkType? {
-    val normalized = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-    val allowedTypes = WorkType.entries.joinToString(" | ") { it.name }
-    return runCatching { WorkType.valueOf(normalized.uppercase()) }
-        .getOrElse { throw BadRequestException("type must be one of: $allowedTypes") }
-}
-
-private fun validateBounds(
-    swLat: BigDecimal?,
-    swLng: BigDecimal?,
-    neLat: BigDecimal?,
-    neLng: BigDecimal?,
-) {
-    val values = listOf(swLat, swLng, neLat, neLng)
-    val providedCount = values.count { it != null }
-    if (providedCount != 0 && providedCount != values.size) {
-        throw BadRequestException("swLat, swLng, neLat, neLng must be provided together")
-    }
-    if (providedCount == values.size && (swLat!! > neLat!! || swLng!! > neLng!!)) {
-        throw BadRequestException("invalid bounds: swLat <= neLat and swLng <= neLng must hold")
-    }
 }
 
 data class ShopRequest(

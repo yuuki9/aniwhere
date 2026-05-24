@@ -4,7 +4,6 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
-import com.aniwhere.server.domain.shop.model.ShopFacetQuery
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
 import com.aniwhere.server.domain.shop.model.ShopStatus
@@ -17,13 +16,8 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.support.TransactionSynchronization
-import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
 @Service
 @Transactional(readOnly = true)
@@ -32,24 +26,18 @@ class ShopService(
     private val imageStorage: ShopImageStoragePort,
     private val transactionTemplate: TransactionTemplate,
 ) : ShopUseCase {
-    private val facetCache = ConcurrentHashMap<ShopFacetQuery, CachedFacetResponse>()
-
     override fun getShop(id: Long) =
         port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
 
-    override fun getShopFacets(query: ShopFacetQuery): ShopFacetResponse {
-        val cacheKey = normalizeForCacheKey(query)
-        val cachedOrFresh = facetCache.compute(cacheKey) { _, existing ->
-            val now = System.currentTimeMillis()
-            if (existing != null && now - existing.cachedAtMillis <= FACET_CACHE_TTL_MILLIS) {
-                existing
-            } else {
-                CachedFacetResponse(response = port.findFacets(query), cachedAtMillis = now)
-            }
-        } ?: error("Facet cache compute failed")
-
-        return cachedOrFresh.response
-    }
+    override fun getShopFacets(
+        includeRegions: Boolean,
+        includeCategories: Boolean,
+        includeWorkTypes: Boolean,
+    ): ShopFacetResponse = port.findFacets(
+        includeRegions = includeRegions,
+        includeCategories = includeCategories,
+        includeWorkTypes = includeWorkTypes,
+    )
 
     override fun searchShops(
         regionId: Short?,
@@ -248,8 +236,6 @@ class ShopService(
 
     private companion object {
         const val MAX_GALLERY_IMAGES = 6
-        const val FACET_CACHE_TTL_MILLIS = 30_000L
-        const val FACET_BOUNDS_SCALE = 6
         private val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
 
         fun normalizeContentType(raw: String): String {
@@ -266,43 +252,5 @@ class ShopService(
         }
     }
 
-    internal fun putFacetCacheForTest(query: ShopFacetQuery, response: ShopFacetResponse, cachedAtMillis: Long) {
-        facetCache[normalizeForCacheKey(query)] = CachedFacetResponse(response = response, cachedAtMillis = cachedAtMillis)
-    }
-
-    private fun clearFacetCache() {
-        facetCache.clear()
-    }
-
-    private fun invalidateFacetCache() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(
-                object : TransactionSynchronization {
-                    override fun afterCommit() {
-                        clearFacetCache()
-                    }
-                },
-            )
-            return
-        }
-        clearFacetCache()
-    }
-
-    private fun normalizeForCacheKey(query: ShopFacetQuery): ShopFacetQuery = query.copy(
-        regionIds = query.regionIds.toSet(),
-        categoryIds = query.categoryIds.toSet(),
-        workIds = query.workIds.toSet(),
-        swLat = normalizeBound(query.swLat),
-        swLng = normalizeBound(query.swLng),
-        neLat = normalizeBound(query.neLat),
-        neLng = normalizeBound(query.neLng),
-    )
-
-    private fun normalizeBound(value: BigDecimal?): BigDecimal? =
-        value?.setScale(FACET_BOUNDS_SCALE, RoundingMode.HALF_UP)
-
-    private data class CachedFacetResponse(
-        val response: ShopFacetResponse,
-        val cachedAtMillis: Long,
-    )
+    private fun invalidateFacetCache() = Unit
 }

@@ -1,20 +1,17 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.domain.shop.model.Shop
-import com.aniwhere.server.domain.shop.model.ShopFacetQuery
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.model.FacetCategoryItem
 import com.aniwhere.server.domain.shop.model.FacetRegionItem
-import com.aniwhere.server.domain.shop.model.FacetStatusItem
-import com.aniwhere.server.domain.shop.model.FacetWorkItem
+import com.aniwhere.server.domain.shop.model.FacetWorkTypeItem
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
 import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.aniwhere.server.domain.category.model.CategorySummary
 import com.aniwhere.server.domain.work.model.WorkSummary
-import com.aniwhere.server.domain.work.model.WorkType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -212,93 +209,52 @@ class ShopControllerTest {
     }
 
     @Test
-    fun `GET shops_facets - 쿼리 파라미터를 trim과 enum 파싱 후 전달`() {
-        val captured = slot<ShopFacetQuery>()
-        every { useCase.getShopFacets(capture(captured)) } returns ShopFacetResponse()
-
-        mvc.perform(
-            get("/api/v1/shops/facets")
-                .param("keyword", " 원피스 ")
-                .param("regionIds", "1,2")
-                .param("categoryIds", "3,4")
-                .param("workIds", "10,20")
-                .param("status", "active")
-                .param("swLat", "37.1")
-                .param("swLng", "127.1")
-                .param("neLat", "37.9")
-                .param("neLng", "127.9")
-                .param("type", " game "),
-        )
-            .andExpect(status().isOk)
-
-        assertEquals("원피스", captured.captured.keyword)
-        assertEquals(setOf<Short>(1, 2), captured.captured.regionIds)
-        assertEquals(setOf<Short>(3, 4), captured.captured.categoryIds)
-        assertEquals(setOf(10, 20), captured.captured.workIds)
-        assertEquals(ShopStatus.ACTIVE, captured.captured.status)
-        assertEquals(BigDecimal("37.1"), captured.captured.swLat)
-        assertEquals(BigDecimal("127.1"), captured.captured.swLng)
-        assertEquals(BigDecimal("37.9"), captured.captured.neLat)
-        assertEquals(BigDecimal("127.9"), captured.captured.neLng)
-        assertEquals(WorkType.GAME, captured.captured.type)
-    }
-
-    @Test
-    fun `GET shops_facets - 멀티 선택 파라미터 미전달 시 empty set으로 전달`() {
-        val captured = slot<ShopFacetQuery>()
-        every { useCase.getShopFacets(capture(captured)) } returns ShopFacetResponse()
-
-        mvc.perform(get("/api/v1/shops/facets"))
-            .andExpect(status().isOk)
-
-        assertEquals(emptySet<Short>(), captured.captured.regionIds)
-        assertEquals(emptySet<Short>(), captured.captured.categoryIds)
-        assertEquals(emptySet<Int>(), captured.captured.workIds)
-    }
-
-    @Test
-    fun `GET shops_facets - 응답은 regions categories works statuses 배열을 포함`() {
-        every { useCase.getShopFacets(any()) } returns ShopFacetResponse(
+    fun `GET shops_facets - 응답은 regions categories workTypes 배열을 포함`() {
+        every { useCase.getShopFacets(true, true, true) } returns ShopFacetResponse(
             regions = listOf(FacetRegionItem(id = 1, name = "홍대")),
             categories = listOf(FacetCategoryItem(id = 2, name = "굿즈")),
-            works = listOf(FacetWorkItem(id = 10, name = "원피스")),
-            statuses = listOf(FacetStatusItem(value = ShopStatus.ACTIVE.name, label = "운영중")),
+            workTypes = listOf(FacetWorkTypeItem(value = "GAME", label = "게임")),
         )
 
         mvc.perform(get("/api/v1/shops/facets"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.regions[0].id").value(1))
             .andExpect(jsonPath("$.data.categories[0].id").value(2))
-            .andExpect(jsonPath("$.data.works[0].id").value(10))
-            .andExpect(jsonPath("$.data.statuses[0].value").value("ACTIVE"))
+            .andExpect(jsonPath("$.data.workTypes[0].value").value("GAME"))
+            .andExpect(jsonPath("$.data.works").doesNotExist())
+            .andExpect(jsonPath("$.data.statuses").doesNotExist())
     }
 
     @Test
-    fun `GET shops_facets - type 이 잘못되면 400`() {
-        mvc.perform(get("/api/v1/shops/facets").param("type", "novel"))
-            .andExpect(status().isBadRequest)
+    fun `GET shops_facets - 파라미터 없이 옵션 목록 조회`() {
+        every { useCase.getShopFacets(true, true, true) } returns ShopFacetResponse()
+
+        mvc.perform(get("/api/v1/shops/facets"))
+            .andExpect(status().isOk)
+
+        verify { useCase.getShopFacets(true, true, true) }
     }
 
     @Test
-    fun `GET shops_facets - bounds 값은 4개를 모두 주거나 모두 비워야 한다`() {
+    fun `GET shops_facets - include 파라미터로 요소 포함 여부를 제어`() {
+        every { useCase.getShopFacets(false, true, false) } returns ShopFacetResponse(
+            regions = emptyList(),
+            categories = listOf(FacetCategoryItem(id = 2, name = "굿즈")),
+            workTypes = emptyList(),
+        )
+
         mvc.perform(
             get("/api/v1/shops/facets")
-                .param("swLat", "37.1")
-                .param("swLng", "127.1"),
+                .param("includeRegions", "false")
+                .param("includeCategories", "true")
+                .param("includeWorkTypes", "false"),
         )
-            .andExpect(status().isBadRequest)
-    }
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.regions.length()").value(0))
+            .andExpect(jsonPath("$.data.categories[0].id").value(2))
+            .andExpect(jsonPath("$.data.workTypes.length()").value(0))
 
-    @Test
-    fun `GET shops_facets - bounds 최소값이 최대값보다 크면 400`() {
-        mvc.perform(
-            get("/api/v1/shops/facets")
-                .param("swLat", "38.0")
-                .param("swLng", "128.0")
-                .param("neLat", "37.0")
-                .param("neLng", "127.0"),
-        )
-            .andExpect(status().isBadRequest)
+        verify { useCase.getShopFacets(false, true, false) }
     }
 
     @Test
