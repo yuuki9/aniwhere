@@ -13,15 +13,17 @@ class TossRestClientConfiguration(
 ) {
     @Bean(name = ["tossRestClientBuilder"])
     fun tossRestClientBuilder(): RestClient.Builder {
-        if (props.toss.mtls.skipStartupCheck) {
+        if (!props.toss.mtls.enabled) {
             return RestClient.builder()
         }
+        return mtlsRestClientBuilder(
+            certPath = props.toss.mtls.certPath,
+            keyPath = props.toss.mtls.keyPath,
+        )
+    }
 
-        val sslContext =
-            MtlsSslContextFactory.fromPem(
-                certPath = props.toss.mtls.certPath,
-                keyPath = props.toss.mtls.keyPath,
-            )
+    private fun mtlsRestClientBuilder(certPath: String, keyPath: String): RestClient.Builder {
+        val sslContext = MtlsSslContextFactory.fromPem(certPath = certPath, keyPath = keyPath)
         val httpClient =
             HttpClient.newBuilder()
                 .sslContext(sslContext)

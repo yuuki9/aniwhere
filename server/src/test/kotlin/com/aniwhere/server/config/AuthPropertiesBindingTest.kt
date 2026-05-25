@@ -17,6 +17,7 @@ class AuthPropertiesBindingTest {
                 "app.auth.toss.base-url=https://apps-in-toss-api.toss.im",
                 "app.auth.toss.mtls.cert-path=/home/ubuntu/mtls/aniwheretls_public.crt",
                 "app.auth.toss.mtls.key-path=/home/ubuntu/mtls/aniwheretls_private.key",
+                "app.auth.toss.mtls.enabled=true",
             )
 
     @Test
@@ -27,6 +28,7 @@ class AuthPropertiesBindingTest {
             assertThat(props.toss.baseUrl).contains("apps-in-toss-api")
             assertThat(props.toss.mtls.certPath).endsWith("aniwheretls_public.crt")
             assertThat(props.toss.mtls.keyPath).endsWith("aniwheretls_private.key")
+            assertThat(props.toss.mtls.enabled).isTrue()
         }
     }
 

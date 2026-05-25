@@ -28,13 +28,32 @@ class TossMtlsStartupValidatorTest {
     }
 
     @Test
-    fun `스킵이면 mTLS 파일 없어도 통과`() {
+    fun `스킵이면 mTLS 파일 없어도 검증 통과`() {
         val validator =
             TossMtlsStartupValidator(
                 AuthProperties(
                     toss =
                         AuthProperties.Toss(
                             mtls = AuthProperties.Toss.Mtls(skipStartupCheck = true),
+                        ),
+                ),
+            )
+        validator.run(noArgs)
+    }
+
+    @Test
+    fun `mTLS 비활성화면 파일 없어도 검증 통과`() {
+        val validator =
+            TossMtlsStartupValidator(
+                AuthProperties(
+                    toss =
+                        AuthProperties.Toss(
+                            mtls =
+                                AuthProperties.Toss.Mtls(
+                                    enabled = false,
+                                    certPath = "/path/does/not/exist.crt",
+                                    keyPath = "/path/does/not/exist.key",
+                                ),
                         ),
                 ),
             )
