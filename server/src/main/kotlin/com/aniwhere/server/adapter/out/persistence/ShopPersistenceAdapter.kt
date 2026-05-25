@@ -5,27 +5,21 @@ import com.aniwhere.server.adapter.out.persistence.entity.ShopImageEntity
 import com.aniwhere.server.adapter.out.persistence.entity.ShopImageRoleEnum
 import com.aniwhere.server.adapter.out.persistence.entity.ShopStatusEnum
 import com.aniwhere.server.adapter.out.persistence.mapper.ShopMapper
-import com.aniwhere.server.adapter.out.persistence.repository.CategoryFacetCountRow
-import com.aniwhere.server.adapter.out.persistence.repository.RegionFacetCountRow
 import com.aniwhere.server.adapter.out.persistence.repository.CategoryRepository
 import com.aniwhere.server.adapter.out.persistence.repository.RegionRepository
 import com.aniwhere.server.adapter.out.persistence.repository.ShopRepository
-import com.aniwhere.server.adapter.out.persistence.repository.StatusFacetCountRow
-import com.aniwhere.server.adapter.out.persistence.repository.WorkFacetCatalogRow
-import com.aniwhere.server.adapter.out.persistence.repository.WorkFacetGroupCountRow
 import com.aniwhere.server.adapter.out.persistence.repository.WorkRepository
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.domain.shop.model.FacetCategoryItem
 import com.aniwhere.server.domain.shop.model.FacetRegionItem
-import com.aniwhere.server.domain.shop.model.FacetStatusItem
-import com.aniwhere.server.domain.shop.model.FacetWorkItem
+import com.aniwhere.server.domain.shop.model.FacetWorkTypeItem
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.Shop
-import com.aniwhere.server.domain.shop.model.ShopFacetQuery
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
 import com.aniwhere.server.domain.shop.port.out.ShopPersistencePort
+import com.aniwhere.server.domain.work.model.WorkType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
@@ -50,140 +44,49 @@ class ShopPersistenceAdapter(
     override fun findById(id: Long) = shopRepo.findByIdOrNull(id)?.let(shopMapper::toDomain)
 
     @Transactional(readOnly = true)
-    override fun findFacets(query: ShopFacetQuery): ShopFacetResponse {
-        val applyRegion = query.regionIds.isNotEmpty()
-        val applyCategory = query.categoryIds.isNotEmpty()
-        val applySelectedWork = query.workIds.isNotEmpty()
-        val statusFilter = query.status?.toEntityStatus()
-        val regionIds = query.regionIds
-        val categoryIds = query.categoryIds
-        val selectedWorkIds = query.workIds
-
-        val regionRows = shopRepo.findRegionFacetCounts(
-            query.keyword,
-            regionIds,
-            applyCategory,
-            categoryIds,
-            applySelectedWork,
-            selectedWorkIds,
-            statusFilter,
-            query.swLat,
-            query.swLng,
-            query.neLat,
-            query.neLng,
-        )
-        val categoryRows = shopRepo.findCategoryFacetCounts(
-            query.keyword,
-            applyRegion,
-            regionIds,
-            query.categoryIds.isNotEmpty(),
-            categoryIds,
-            applySelectedWork,
-            selectedWorkIds,
-            statusFilter,
-            query.swLat,
-            query.swLng,
-            query.neLat,
-            query.neLng,
-        )
-        val workCatalog = shopRepo.findWorkFacetCatalog(query.type?.name)
-        val workCandidateCounts = shopRepo.findWorkFacetCandidateCounts(
-            query.keyword,
-            applyRegion,
-            regionIds,
-            applyCategory,
-            categoryIds,
-            statusFilter,
-            query.swLat,
-            query.swLng,
-            query.neLat,
-            query.neLng,
-            query.type?.name,
-        )
-        val selectedBaseCount = if (applySelectedWork) {
-            shopRepo.countWorkFacetSelectedBase(
-                query.keyword,
-                applyRegion,
-                regionIds,
-                applyCategory,
-                categoryIds,
-                statusFilter,
-                query.swLat,
-                query.swLng,
-                query.neLat,
-                query.neLng,
-                true,
-                selectedWorkIds,
-            )
-        } else {
-            0L
-        }
-        val selectedIntersections = if (applySelectedWork) {
-            shopRepo.findWorkFacetSelectedIntersections(
-                query.keyword,
-                applyRegion,
-                regionIds,
-                applyCategory,
-                categoryIds,
-                statusFilter,
-                query.swLat,
-                query.swLng,
-                query.neLat,
-                query.neLng,
-                true,
-                selectedWorkIds,
-                query.type?.name,
-            )
+    override fun findFacets(
+        includeRegions: Boolean,
+        includeCategories: Boolean,
+        includeWorkTypes: Boolean,
+    ): ShopFacetResponse = ShopFacetResponse(
+        regions = if (includeRegions) {
+            regionRepo.findAllWithShopCount().map { FacetRegionItem(id = it.id, name = it.name) }
         } else {
             emptyList()
-        }
-        val statusRows = shopRepo.findStatusFacetCounts(
-            query.keyword,
-            applyRegion,
-            regionIds,
-            applyCategory,
-            categoryIds,
-            applySelectedWork,
-            selectedWorkIds,
-            query.swLat,
-            query.swLng,
-            query.neLat,
-            query.neLng,
-        )
-
-        return ShopFacetResponse(
-            regions = regionRows.map { it.toFacetItem(query.regionIds) },
-            categories = categoryRows.map { it.toFacetItem(query.categoryIds) },
-            works = buildWorkFacetItems(
-                catalog = workCatalog,
-                candidateCounts = workCandidateCounts,
-                selectedIntersectionCounts = selectedIntersections,
-                selectedWorkIds = selectedWorkIds,
-                selectedBaseCount = selectedBaseCount,
-            ),
-            statuses = statusRows.toStatusFacetItems(query.status),
-        )
-    }
+        },
+        categories = if (includeCategories) {
+            categoryRepo.findAllWithShopCount().map { FacetCategoryItem(id = it.id, name = it.name) }
+        } else {
+            emptyList()
+        },
+        workTypes = if (includeWorkTypes) {
+            WorkType.entries.map { it.toFacetItem() }
+        } else {
+            emptyList()
+        },
+    )
 
     @Transactional(readOnly = true)
     override fun findAll(
-        regionId: Short?,
-        categoryName: String?,
+        regionIds: Set<Short>,
         categoryIds: Set<Short>,
         keyword: String?,
         workKeyword: String?,
-        workId: Int?,
+        workIds: Set<Int>,
+        workType: WorkType?,
         status: ShopStatus?,
         pageable: Pageable,
     ): Page<Shop> =
         shopRepo.search(
-            regionId,
-            categoryName,
+            regionIds.isNotEmpty(),
+            regionIds,
             categoryIds.isNotEmpty(),
             categoryIds,
             keyword,
             workKeyword,
-            workId,
+            workIds.isNotEmpty(),
+            workIds,
+            workType?.name,
             status?.let { ShopStatusEnum.valueOf(it.name.lowercase()) },
             pageable,
         ).map(shopMapper::toDomain)
@@ -340,77 +243,12 @@ class ShopPersistenceAdapter(
         }
     }
 
-    private fun ShopStatus.toEntityStatus(): ShopStatusEnum = ShopStatusEnum.valueOf(name.lowercase())
-
-    private fun RegionFacetCountRow.toFacetItem(selectedIds: Set<Short>) = FacetRegionItem(
-        id = id,
-        name = name,
-        selected = id in selectedIds,
-        disabled = count == 0L,
-        count = count,
+    private fun WorkType.toFacetItem(): FacetWorkTypeItem = FacetWorkTypeItem(
+        value = name,
+        label = when (this) {
+            WorkType.ANIMATION -> "애니메이션"
+            WorkType.GAME -> "게임"
+        },
     )
-
-    private fun CategoryFacetCountRow.toFacetItem(selectedIds: Set<Short>) = FacetCategoryItem(
-        id = id,
-        name = name,
-        selected = id in selectedIds,
-        disabled = count == 0L,
-        count = count,
-    )
-
-    private fun buildWorkFacetItems(
-        catalog: List<WorkFacetCatalogRow>,
-        candidateCounts: List<WorkFacetGroupCountRow>,
-        selectedIntersectionCounts: List<WorkFacetGroupCountRow>,
-        selectedWorkIds: Set<Int>,
-        selectedBaseCount: Long,
-    ): List<FacetWorkItem> {
-        val candidateCountMap = candidateCounts.associate { it.workId to it.count }
-        val intersectionCountMap = selectedIntersectionCounts.associate { it.workId to it.count }
-        val hasSelected = selectedWorkIds.isNotEmpty()
-        return catalog.map { row ->
-            val candidateCount = candidateCountMap[row.id] ?: 0L
-            val count = when {
-                !hasSelected -> candidateCount
-                row.id in selectedWorkIds -> selectedBaseCount
-                else -> selectedBaseCount + candidateCount - (intersectionCountMap[row.id] ?: 0L)
-            }
-            FacetWorkItem(
-                id = row.id,
-                name = row.name,
-                coverUrl = row.coverUrl,
-                selected = row.id in selectedWorkIds,
-                disabled = count == 0L,
-                count = count,
-            )
-        }
-    }
-
-    private fun List<StatusFacetCountRow>.toStatusFacetItems(selectedStatus: ShopStatus?): List<FacetStatusItem> {
-        val countByStatus = associate { it.status to it.count }
-        val selectedEnum = selectedStatus?.toEntityStatus()
-        val selectedCount = selectedEnum?.let { countByStatus[it] ?: 0L } ?: 0L
-        return ShopStatusEnum.entries.map { status ->
-            val candidateCount = countByStatus[status] ?: 0L
-            val combinedCount = when {
-                selectedEnum == null -> candidateCount
-                selectedEnum == status -> selectedCount
-                else -> selectedCount + candidateCount
-            }
-            FacetStatusItem(
-                value = status.name.uppercase(),
-                label = status.toFacetLabel(),
-                selected = selectedEnum == status,
-                disabled = combinedCount == 0L,
-                count = combinedCount,
-            )
-        }
-    }
-
-    private fun ShopStatusEnum.toFacetLabel(): String = when (this) {
-        ShopStatusEnum.active -> "운영중"
-        ShopStatusEnum.closed -> "폐업"
-        ShopStatusEnum.unverified -> "검증중"
-    }
 
 }
