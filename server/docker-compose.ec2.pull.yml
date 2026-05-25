@@ -8,6 +8,8 @@ services:
       - "61783:8080"
     env_file:
       - .env
+    volumes:
+      - /home/ubuntu/mtls:/home/ubuntu/mtls:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

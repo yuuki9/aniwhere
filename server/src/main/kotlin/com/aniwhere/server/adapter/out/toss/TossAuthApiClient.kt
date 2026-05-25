@@ -6,13 +6,14 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.config.AuthProperties
 import com.aniwhere.server.domain.auth.port.out.TossAuthPort
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
 @Component
 class TossAuthApiClient(
-    private val restClientBuilder: RestClient.Builder,
+    @Qualifier("tossRestClientBuilder") private val restClientBuilder: RestClient.Builder,
     private val props: AuthProperties,
 ) : TossAuthPort {
     private val objectMapper: ObjectMapper =
