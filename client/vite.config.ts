@@ -33,6 +33,32 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: '/',
+    build: {
+      chunkSizeWarningLimit: appRuntime === 'apps-in-toss' ? 1200 : 500,
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: 'tds-mobile',
+                test: /node_modules[\\/]@toss[\\/]tds-mobile[\\/]/,
+                priority: 3,
+              },
+              {
+                name: 'tds-runtime',
+                test: /node_modules[\\/]@toss[\\/]tds-mobile-ait[\\/]/,
+                priority: 2,
+              },
+              {
+                name: 'react-vendor',
+                test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+                priority: 1,
+              },
+            ],
+          },
+        },
+      },
+    },
     plugins,
     resolve: {
       alias: {

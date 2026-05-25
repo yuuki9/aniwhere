@@ -1,26 +1,33 @@
+import { Suspense, type ReactNode } from 'react'
 import { Navigate, createBrowserRouter } from 'react-router-dom'
-import { AdminAccessGate } from '../pages/admin/AdminAccessGate'
-import { AdminShopManagePage } from '../pages/admin/AdminShopManagePage'
-import { AdminShopLocationPage } from '../pages/admin/AdminShopLocationPage'
-import { AdminShopsPage } from '../pages/admin/AdminShopsPage'
-import { CommunityPage } from '../pages/CommunityPage'
-import { ExplorePage } from '../pages/ExplorePage'
-import { HomePage } from '../pages/HomePage'
-import { IntroPage } from '../pages/IntroPage'
-import { PostDetailPage } from '../pages/PostDetailPage'
-import { SearchPage } from '../pages/SearchPage'
-import { ShopPage } from '../pages/ShopPage'
 import { MainLayout } from '../shared/ui/MainLayout'
-import { ShopRouteRedirect } from './ShopRouteRedirect'
+import {
+  AdminAccessGate,
+  AdminShopLocationPage,
+  AdminShopManagePage,
+  AdminShopsPage,
+  CommunityPage,
+  ExplorePage,
+  HomePage,
+  IntroPage,
+  PostDetailPage,
+  SearchPage,
+  ShopPage,
+  ShopRouteRedirect,
+} from './lazyRouteComponents'
+
+function routeElement(element: ReactNode) {
+  return <Suspense fallback={null}>{element}</Suspense>
+}
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <IntroPage />,
+    element: routeElement(<IntroPage />),
   },
   {
     path: '/intro',
-    element: <IntroPage />,
+    element: routeElement(<IntroPage />),
   },
   {
     path: '/',
@@ -32,7 +39,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'home',
-        element: <HomePage />,
+        element: routeElement(<HomePage />),
       },
       {
         path: 'shops',
@@ -40,17 +47,17 @@ export const router = createBrowserRouter([
       },
       {
         path: 'explore',
-        element: <ExplorePage />,
+        element: routeElement(<ExplorePage />),
       },
       {
         path: 'community',
-        element: <CommunityPage />,
+        element: routeElement(<CommunityPage />),
       },
     ],
   },
   {
     path: '/shops/:shopId',
-    element: <ShopRouteRedirect />,
+    element: routeElement(<ShopRouteRedirect />),
   },
   {
     path: '/shop/detail',
@@ -58,19 +65,19 @@ export const router = createBrowserRouter([
   },
   {
     path: '/shop/detail/:shopId',
-    element: <ShopPage />,
+    element: routeElement(<ShopPage />),
   },
   {
     path: '/search',
-    element: <SearchPage />,
+    element: routeElement(<SearchPage />),
   },
   {
     path: '/community/:postId',
-    element: <PostDetailPage />,
+    element: routeElement(<PostDetailPage />),
   },
   {
     path: '/admin',
-    element: <AdminAccessGate />,
+    element: routeElement(<AdminAccessGate />),
     children: [
       {
         index: true,
@@ -78,19 +85,19 @@ export const router = createBrowserRouter([
       },
       {
         path: 'shops',
-        element: <AdminShopManagePage />,
+        element: routeElement(<AdminShopManagePage />),
       },
       {
         path: 'shops/new',
-        element: <AdminShopsPage />,
+        element: routeElement(<AdminShopsPage />),
       },
       {
         path: 'shops/:shopId/edit',
-        element: <AdminShopsPage />,
+        element: routeElement(<AdminShopsPage />),
       },
       {
         path: 'shops/location',
-        element: <AdminShopLocationPage />,
+        element: routeElement(<AdminShopLocationPage />),
       },
     ],
   },

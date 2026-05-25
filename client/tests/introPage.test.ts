@@ -331,7 +331,7 @@ test('IntroPage is reachable from the documented intro route', () => {
 
   assert.match(
     source,
-    /\{[^{}]*(?:path:\s*['"]\/intro['"][^{}]*element:\s*<IntroPage\s*\/>|element:\s*<IntroPage\s*\/>[^{}]*path:\s*['"]\/intro['"])[^{}]*\}/,
+    /\{[^{}]*(?:path:\s*['"]\/intro['"][^{}]*element:\s*routeElement\(<IntroPage\s*\/>\)|element:\s*routeElement\(<IntroPage\s*\/>\)[^{}]*path:\s*['"]\/intro['"])[^{}]*\}/,
   )
 })
 
