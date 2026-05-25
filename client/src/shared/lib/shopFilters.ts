@@ -113,7 +113,6 @@ export function writeShopFilters(searchParams: URLSearchParams, filters: ShopFil
     next.set('status', filters.status)
   }
 
-  next.set('page', '0')
   return next
 }
 

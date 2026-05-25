@@ -187,14 +187,19 @@ export function SearchPage() {
   }
 
   const applyFilters = (nextFilters: ShopFilters) => {
-    setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
+    const next = writeShopFilters(searchParams, nextFilters)
+
+    next.set('page', '0')
+    setSearchParams(next, { replace: true })
   }
 
   const removeAppliedFilterChip = useCallback(
     (chip: AppliedShopFilterChip) => {
       const nextFilters = removeAppliedShopFilterChip(selectedFilters, chip)
+      const next = writeShopFilters(searchParams, nextFilters)
 
-      setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
+      next.set('page', '0')
+      setSearchParams(next, { replace: true })
     },
     [searchParams, selectedFilters, setSearchParams],
   )

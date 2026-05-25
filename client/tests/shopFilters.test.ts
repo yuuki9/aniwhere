@@ -24,7 +24,7 @@ test('parseShopFilters keeps only valid Swagger-backed shop filters', () => {
   })
 })
 
-test('writeShopFilters rewrites filter params and resets paging without dropping search context', () => {
+test('writeShopFilters rewrites filter params and removes paging without dropping search context', () => {
   const params = writeShopFilters(new URLSearchParams('keyword=홍대&page=4&categoryIds=1&status=CLOSED'), {
     regionIds: [8, 9],
     categoryIds: [3, 5],
@@ -34,7 +34,7 @@ test('writeShopFilters rewrites filter params and resets paging without dropping
 
   assert.equal(
     params.toString(),
-    'keyword=%ED%99%8D%EB%8C%80&regionIds=8&regionIds=9&categoryIds=3&categoryIds=5&status=UNVERIFIED&page=0',
+    'keyword=%ED%99%8D%EB%8C%80&regionIds=8&regionIds=9&categoryIds=3&categoryIds=5&status=UNVERIFIED',
   )
 })
 
