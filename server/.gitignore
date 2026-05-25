@@ -1,2 +1,5 @@
 .env
 *.pem
+*.crt
+*.key
+mtls/
