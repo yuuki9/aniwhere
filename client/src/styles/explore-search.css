@@ -1754,16 +1754,7 @@
   height: 36px;
 }
 
-.map-sheet-detail-row-v3 > :has(.map-sheet-detail-icon) {
-  display: inline-flex;
-  align-items: flex-start;
-  justify-content: center;
-  width: 100%;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.map-sheet-detail-row-v3 > :has(.map-sheet-detail-icon) > :has(.map-sheet-detail-icon) {
+.map-sheet-detail-row-v3--has-icon > .ait-list-row-asset {
   display: inline-flex;
   align-items: flex-start;
   justify-content: center;
@@ -1772,10 +1763,48 @@
   flex: 0 0 36px;
 }
 
-.map-sheet-detail-row-v3 > :has(.map-sheet-detail-icon) > :last-child {
+.map-sheet-detail-row-v3--has-icon > .ait-list-row-copy {
   width: auto;
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.map-sheet-detail-row-v3--has-directions > .ait-list-row-right {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: var(--ait-space-4);
+}
+
+@supports selector(:has(.map-sheet-detail-icon)) {
+  .map-sheet-detail-row-v3 > :has(.map-sheet-detail-icon) {
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .map-sheet-detail-row-v3 > :has(.map-sheet-detail-icon) > :has(.map-sheet-detail-icon) {
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+  }
+
+  .map-sheet-detail-row-v3 > :has(.map-sheet-detail-icon) > :last-child {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .map-sheet-detail-row-v3:has(.map-place-directions-button) > :last-child {
+    flex: 0 0 auto;
+    align-self: center;
+    margin-left: var(--ait-space-4);
+  }
 }
 
 .map-sheet-detail-row-v3 .ait-list-row-copy {
@@ -1784,12 +1813,6 @@
 }
 
 .map-sheet-detail-row-v3 .ait-list-row-right {
-  flex: 0 0 auto;
-  align-self: center;
-  margin-left: var(--ait-space-4);
-}
-
-.map-sheet-detail-row-v3:has(.map-place-directions-button) > :last-child {
   flex: 0 0 auto;
   align-self: center;
   margin-left: var(--ait-space-4);
@@ -3001,6 +3024,7 @@
 
   .map-sheet-shell-detail {
     --map-sheet-expanded-inline: 16px;
+
     padding-inline: 0;
   }
 

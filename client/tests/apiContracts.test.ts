@@ -10,6 +10,7 @@ const communityApiSource = () => source('../src/shared/api/community.ts')
 const authApiSource = () => source('../src/shared/api/auth.ts')
 const usersApiSource = () => source('../src/shared/api/users.ts')
 const apiClientSource = () => source('../src/shared/api/client.ts')
+const backendContractSource = () => source('../../docs/backend-api-contract.md')
 
 test('client API types expose the current Swagger response models', () => {
   const types = apiTypesSource()
@@ -72,4 +73,12 @@ test('client API functions cover Swagger paths added for facets, favorites, auth
   assert.match(client, /getStoredAccessToken/)
   assert.match(client, /authToken === undefined \? getStoredAccessToken\(\) : authToken/)
   assert.doesNotMatch(client, /authToken \?\? getStoredAccessToken\(\)/)
+})
+
+test('backend API contract notes keep shop facets aligned with deployed Swagger', () => {
+  const contract = backendContractSource()
+
+  assert.match(contract, /GET \/api\/v1\/shops\/facets` provides search facet payload \(`regions`, `categories`, `workTypes`\)/)
+  assert.match(contract, /accepts optional `includeRegions`, `includeCategories`, and `includeWorkTypes`/)
+  assert.match(contract, /does not expose `keyword`, selected filter IDs, `status`, `type`, or map bounds/)
 })

@@ -30,7 +30,12 @@ function MapDetailRow({
   return (
     <ListRow
       border="none"
-      className={['map-sheet-detail-row-v3', className].filter(Boolean).join(' ')}
+      className={[
+        'map-sheet-detail-row-v3',
+        'map-sheet-detail-row-v3--has-icon',
+        descriptionAction ? 'map-sheet-detail-row-v3--has-directions' : null,
+        className,
+      ].filter(Boolean).join(' ')}
       left={<span className="map-sheet-detail-icon">
         <MapDetailIcon name={icon} />
       </span>}
