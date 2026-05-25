@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, CSSProperties, LiHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, LiHTMLAttributes, ReactNode } from 'react'
 import { useEffect } from 'react'
 
 type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -34,6 +34,46 @@ export function Button({
     >
       {children}
     </button>
+  )
+}
+
+type PublicSearchFieldProps = InputHTMLAttributes<HTMLInputElement> & {
+  fixed?: boolean
+  fixedSafeZoneOffset?: number
+  onDeleteClick?: () => void
+  takeSpace?: boolean
+}
+
+export function SearchField({
+  className,
+  fixed = false,
+  fixedSafeZoneOffset = 0,
+  onDeleteClick,
+  onKeyDown,
+  takeSpace = true,
+  type = 'search',
+  value,
+  ...props
+}: PublicSearchFieldProps) {
+  return (
+    <input
+      className={['ait-search-field', className].filter(Boolean).join(' ')}
+      data-fixed={fixed ? 'true' : undefined}
+      data-fixed-safe-zone-offset={fixed ? fixedSafeZoneOffset : undefined}
+      data-take-space={takeSpace ? 'true' : 'false'}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && onDeleteClick != null && String(value ?? '').length > 0) {
+          event.preventDefault()
+          onDeleteClick()
+          return
+        }
+
+        onKeyDown?.(event)
+      }}
+      type={type}
+      value={value}
+      {...props}
+    />
   )
 }
 

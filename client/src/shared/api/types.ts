@@ -118,32 +118,21 @@ export type Shop = {
 type FacetBaseItem = {
   id: number
   name: string
-  selected: boolean
-  disabled: boolean
-  count: number
 }
 
 export type FacetRegionItem = FacetBaseItem
 
 export type FacetCategoryItem = FacetBaseItem
 
-export type FacetWorkItem = FacetBaseItem & {
-  coverUrl: string | null
-}
-
-export type FacetStatusItem = {
-  value: ShopStatus
+export type FacetWorkTypeItem = {
+  value: WorkType
   label: string
-  selected: boolean
-  disabled: boolean
-  count: number
 }
 
 export type ShopFacetResponse = {
   regions: FacetRegionItem[]
   categories: FacetCategoryItem[]
-  works: FacetWorkItem[]
-  statuses: FacetStatusItem[]
+  workTypes: FacetWorkTypeItem[]
 }
 
 export type ShopRequest = {
@@ -225,26 +214,19 @@ export type ShopSearchParams = {
   page?: number
   size?: number
   sort?: string[]
-  regionId?: number
-  category?: string
+  regionIds?: number[]
   categoryIds?: number[]
   keyword?: string
   workKeyword?: string
-  workId?: number
+  workIds?: number[]
+  workType?: WorkType
   status?: ShopStatus
 }
 
 export type ShopFacetParams = {
-  keyword?: string
-  regionIds?: number[]
-  categoryIds?: number[]
-  workIds?: number[]
-  status?: ShopStatus
-  swLat?: number
-  swLng?: number
-  neLat?: number
-  neLng?: number
-  type?: WorkType
+  includeRegions?: boolean
+  includeCategories?: boolean
+  includeWorkTypes?: boolean
 }
 
 export type PagingParams = {
