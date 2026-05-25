@@ -241,7 +241,7 @@ function SearchFilterSheetDialog({
             color="primary"
             size="large"
             type="button"
-            disabled={!hasDraftChanges && !facetQuery.isFetched}
+            disabled={!hasDraftChanges || !facetQuery.isFetched}
             onClick={applyFilters}
           >
             필터 적용
