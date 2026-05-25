@@ -53,3 +53,7 @@ app:
       client-id: ${APP_TOSS_CLIENT_ID:}
       client-secret: ${APP_TOSS_CLIENT_SECRET:}
       unlink-basic-auth: ${APP_TOSS_UNLINK_BASIC_AUTH:}
+      mtls:
+        cert-path: ${APP_TOSS_MTLS_CERT_PATH:/home/ubuntu/mtls/aniwheretls_public.crt}
+        key-path: ${APP_TOSS_MTLS_KEY_PATH:/home/ubuntu/mtls/aniwheretls_private.key}
+        skip-startup-check: ${APP_TOSS_MTLS_SKIP_STARTUP_CHECK:false}

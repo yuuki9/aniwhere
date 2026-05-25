@@ -15,6 +15,8 @@ class AuthPropertiesBindingTest {
                 "app.auth.jwt.refresh-exp-seconds=1209600",
                 "app.auth.jwt.secret=test-secret-test-secret-test-secret-1234",
                 "app.auth.toss.base-url=https://apps-in-toss-api.toss.im",
+                "app.auth.toss.mtls.cert-path=/home/ubuntu/mtls/aniwheretls_public.crt",
+                "app.auth.toss.mtls.key-path=/home/ubuntu/mtls/aniwheretls_private.key",
             )
 
     @Test
@@ -23,6 +25,8 @@ class AuthPropertiesBindingTest {
             val props = context.getBean(AuthProperties::class.java)
             assertThat(props.jwt.issuer).isEqualTo("aniwhere")
             assertThat(props.toss.baseUrl).contains("apps-in-toss-api")
+            assertThat(props.toss.mtls.certPath).endsWith("aniwheretls_public.crt")
+            assertThat(props.toss.mtls.keyPath).endsWith("aniwheretls_private.key")
         }
     }
 

@@ -19,5 +19,12 @@ data class AuthProperties(
         val clientId: String = "",
         val clientSecret: String = "",
         val unlinkBasicAuth: String = "",
-    )
+        val mtls: Mtls = Mtls(),
+    ) {
+        data class Mtls(
+            val certPath: String = "/home/ubuntu/mtls/aniwheretls_public.crt",
+            val keyPath: String = "/home/ubuntu/mtls/aniwheretls_private.key",
+            val skipStartupCheck: Boolean = false,
+        )
+    }
 }
