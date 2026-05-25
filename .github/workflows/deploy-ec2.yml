@@ -82,6 +82,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "server/docker-compose.ec2.image.yml"
           target: "/home/${{ secrets.EC2_USER }}/aniwhere-server/"
+          strip_components: 1
           timeout: 60s
           command_timeout: 10m
 
@@ -111,7 +112,24 @@ jobs:
           script: |
             set -euo pipefail
             REMOTE_DIR="/home/${{ secrets.EC2_USER }}/aniwhere-server"
+            COMPOSE_FILE="$REMOTE_DIR/docker-compose.ec2.image.yml"
+            NESTED_COMPOSE="$REMOTE_DIR/server/docker-compose.ec2.image.yml"
             cd "$REMOTE_DIR"
+            if [ -f "$NESTED_COMPOSE" ]; then
+              cp "$NESTED_COMPOSE" "$COMPOSE_FILE"
+            fi
+            if [ ! -f "$COMPOSE_FILE" ]; then
+              echo "compose file not found: $COMPOSE_FILE"
+              exit 1
+            fi
+            if ! grep -q '/home/ubuntu/mtls:/home/ubuntu/mtls:ro' "$COMPOSE_FILE"; then
+              echo "compose missing mTLS bind mount: $COMPOSE_FILE"
+              exit 1
+            fi
+            if [ ! -f /home/ubuntu/mtls/aniwheretls_public.crt ] || [ ! -f /home/ubuntu/mtls/aniwheretls_private.key ]; then
+              echo "host mTLS files missing under /home/ubuntu/mtls/"
+              exit 1
+            fi
             URL=$(printf '%s' "$PRESIGN_B64" | base64 -d)
             curl -fSL "$URL" -o /tmp/aniwhere-image.tar
             sudo docker load -i /tmp/aniwhere-image.tar
@@ -136,5 +154,10 @@ jobs:
               fi
             }
             compose -f docker-compose.ec2.image.yml down 2>/dev/null || true
-            compose -f docker-compose.ec2.image.yml up -d
+            compose -f docker-compose.ec2.image.yml up -d --force-recreate
+            if ! sudo docker inspect aniwhere-server --format '{{range .Mounts}}{{if eq .Destination "/home/ubuntu/mtls"}}{{.Source}}{{end}}{{end}}' | grep -q '/home/ubuntu/mtls'; then
+              echo "container missing /home/ubuntu/mtls bind mount"
+              sudo docker inspect aniwhere-server --format '{{json .Mounts}}'
+              exit 1
+            fi
             sudo docker ps -a --filter name=aniwhere-server
