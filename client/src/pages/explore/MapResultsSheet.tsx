@@ -10,6 +10,7 @@ type MapResultShop = Shop & {
 type MapResultsSheetProps = {
   visible: boolean
   topSearch: ReactNode
+  appliedFilters: ReactNode
   visibleShops: MapResultShop[]
   totalShops: number
   isLoading: boolean
@@ -21,6 +22,7 @@ type MapResultsSheetProps = {
 export function MapResultsSheet({
   visible,
   topSearch,
+  appliedFilters,
   visibleShops,
   totalShops,
   isLoading,
@@ -34,7 +36,10 @@ export function MapResultsSheet({
 
   return (
     <section className="map-results-sheet-v2" aria-label="검색 결과 목록">
-      <div className="map-results-sheet-top">{topSearch}</div>
+      <div className="map-results-sheet-top">
+        {topSearch}
+        {appliedFilters}
+      </div>
 
       {visibleShops.length === 0 && !isLoading ? (
         <div className="map-list-empty">

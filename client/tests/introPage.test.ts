@@ -165,6 +165,7 @@ test('IntroPage explains Aniwhere through curation, map exploration, and review 
   assert.match(source, /iconName:\s*'icon-pin-mono'/)
   assert.match(source, /iconName:\s*'icon-pencil-mono'/)
   assert.match(source, /intro-chain-row-\$\{item\.icon\}/)
+  assert.doesNotMatch(source, /ait-list-row/)
   assert.doesNotMatch(source, /<path d="M4\.5 18\.5h15" \/>/)
   assert.doesNotMatch(source, /포인트를 받아요/)
   assert.doesNotMatch(source, /운영팀 검토 후 승인 상태를 확인해요/)
@@ -217,6 +218,59 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
   assert.match(introPageSource(), /display="block"/)
   assert.doesNotMatch(introPageSource(), /display="full"/)
   assert.match(actionsRule, /align-items:\s*center;/)
+})
+
+test('IntroPage exposes temporary UI preview shortcuts during local dev', async () => {
+  const { IntroPage } = await loadIntroPage()
+  const { container, dom, previousGlobals } = setupDom()
+  const root = createRoot(container)
+  const source = introPageSource()
+  const styles = appCssSource()
+
+  try {
+    await act(async () => {
+      root.render(
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/intro'] },
+          React.createElement(
+            Routes,
+            null,
+            React.createElement(Route, {
+              element: React.createElement(IntroPage),
+              path: '/intro',
+            }),
+            React.createElement(Route, {
+              element: React.createElement('p', null, 'explore preview'),
+              path: '/explore',
+            }),
+            React.createElement(Route, {
+              element: React.createElement('p', null, 'search preview'),
+              path: '/search',
+            }),
+          ),
+        ),
+      )
+    })
+
+    const previewButtons = container.querySelectorAll('.intro-preview-actions button')
+
+    assert.equal(previewButtons.length, 2)
+
+    await act(async () => {
+      previewButtons[0].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
+    })
+
+    assert.match(container.textContent ?? '', /explore preview/)
+  } finally {
+    cleanupDom(dom, previousGlobals, root)
+  }
+
+  assert.match(source, /const showIntroUiPreview = import\.meta\.env\.DEV/)
+  assert.match(source, /navigate\('\/explore'\)/)
+  assert.match(source, /returnTo: '\/intro'/)
+  assert.match(cssRuleBody(styles, '.intro-preview-actions'), /display:\s*grid;/)
+  assert.match(cssRuleBody(styles, '.intro-preview-note'), /font-size:\s*var\(--ait-font-size-caption\);/)
 })
 
 test('IntroPage bridges Toss login through the Aniwhere server before entering home', () => {
@@ -323,7 +377,7 @@ test('IntroPage preserves the domain intro feature-list rhythm', () => {
   const listRule = cssRuleBody(styles, '.intro-feature-list')
   const iconRule = cssRuleBodies(styles, '.intro-feature-icon').at(-1) ?? ''
   const iconImageRule = cssRuleBody(styles, '.intro-feature-icon-image')
-  const connectorRule = cssRuleBody(styles, '.intro-chain-row:not(:last-child) .ait-list-row-asset::after')
+  const connectorRule = cssRuleBody(styles, '.intro-chain-row:not(:last-child) .intro-feature-asset::after')
   const rowRule = cssRuleBody(styles, '.intro-feature-list .intro-chain-row')
   const rowTitleRule = cssRuleBody(styles, '.intro-feature-copy strong')
   const curationRowTitleRule = cssRuleBody(styles, '.intro-chain-row-curation .intro-feature-copy strong')

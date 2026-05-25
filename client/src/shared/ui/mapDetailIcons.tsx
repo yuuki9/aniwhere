@@ -1,4 +1,14 @@
-export type MapDetailIconName = 'pin' | 'clock' | 'layers' | 'tag' | 'link' | 'route'
+export type MapDetailIconName =
+  | 'pin'
+  | 'clock'
+  | 'layers'
+  | 'tag'
+  | 'building'
+  | 'collection'
+  | 'sparkle'
+  | 'calendar'
+  | 'link'
+  | 'route'
 
 export function MapDetailIcon({ name }: { name: MapDetailIconName }) {
   const commonProps = {
@@ -39,6 +49,46 @@ export function MapDetailIcon({ name }: { name: MapDetailIconName }) {
         <svg {...commonProps}>
           <path d="M20 10.6 13.6 17a2 2 0 0 1-2.8 0L4.9 11.1V5h6.1L17 10.8a2 2 0 0 1 0 2.8Z" />
           <circle cx="8.1" cy="8.1" r="1.1" />
+        </svg>
+      )
+    case 'building':
+      return (
+        <svg {...commonProps}>
+          <path d="M5.5 20V6.4a1.9 1.9 0 0 1 1.9-1.9h6.2a1.9 1.9 0 0 1 1.9 1.9V20" />
+          <path d="M4 20h16" />
+          <path d="M9 8.2h3" />
+          <path d="M9 11.5h3" />
+          <path d="M9 14.8h3" />
+          <path d="M15.5 10.2h1.2a1.8 1.8 0 0 1 1.8 1.8v8" />
+        </svg>
+      )
+    case 'collection':
+      return (
+        <svg {...commonProps}>
+          <rect x="4.5" y="5" width="6.2" height="6.2" rx="1.4" />
+          <rect x="13.3" y="5" width="6.2" height="6.2" rx="1.4" />
+          <rect x="4.5" y="13.8" width="6.2" height="6.2" rx="1.4" />
+          <rect x="13.3" y="13.8" width="6.2" height="6.2" rx="1.4" />
+        </svg>
+      )
+    case 'sparkle':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 4.5 13.7 9l4.3 1.7-4.3 1.7L12 17l-1.7-4.6L6 10.7 10.3 9 12 4.5Z" />
+          <path d="M18.2 15.2 19 17l1.8.8-1.8.8-.8 1.9-.8-1.9-1.8-.8 1.8-.8.8-1.8Z" />
+          <path d="M5.8 14.8 6.4 16l1.2.6-1.2.6-.6 1.2-.6-1.2-1.2-.6 1.2-.6.6-1.2Z" />
+        </svg>
+      )
+    case 'calendar':
+      return (
+        <svg {...commonProps}>
+          <rect x="4.5" y="5.5" width="15" height="14" rx="2.2" />
+          <path d="M8.2 3.8v3.4" />
+          <path d="M15.8 3.8v3.4" />
+          <path d="M4.5 9.5h15" />
+          <path d="M8 13h2" />
+          <path d="M13.5 13h2" />
+          <path d="M8 16h2" />
         </svg>
       )
     case 'link':

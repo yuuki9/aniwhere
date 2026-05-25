@@ -46,6 +46,7 @@
 
 - Route-level TDS work must follow `docs/tds-route-audit.md` before editing. Classify the route, discover the relevant official TDS docs with the Apps in Toss MCP, record the docs checked, then classify each visible delta as `TDS-required`, `Product-approved`, or `Regression`.
 - Do not wait for the user to provide official TDS links. If a route uses buttons, typography, lists, top/title areas, bottom CTAs, sheets, search, toasts, or dialogs, search the matching official TDS docs first.
+- If Apps in Toss MCP or `ax search tds-web` times out, treat it as a tool/runtime issue, not as permission to skip official TDS evidence. Follow the recovery and fallback steps in `docs/agent-hooks.md` and `docs/agent-skills.md`, then record the fallback source used.
 - UI/UX 개선 요청은 `docs/agent-hooks.md`의 UI/TDS hook을 먼저 적용합니다.
 
 - 메인 UI에는 와이어프레임성 설명문, 기능 안내문, 내부 검토용 플레이버 텍스트를 남기지 않습니다.

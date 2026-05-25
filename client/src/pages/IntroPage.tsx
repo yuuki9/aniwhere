@@ -76,6 +76,7 @@ type EntryRouteState =
 
 export function IntroPage() {
   const navigate = useNavigate()
+  const showIntroUiPreview = import.meta.env.DEV
   const [isEntering, setIsEntering] = useState(false)
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
@@ -131,6 +132,15 @@ export function IntroPage() {
     }
   }
 
+  const openExplorePreview = () => {
+    navigate('/explore')
+  }
+
+  const openSearchPreview = () => {
+    const next = new URLSearchParams({ returnTo: '/intro' })
+    navigate(`/search?${next.toString()}`)
+  }
+
   return (
     <main className="app-shell intro-mobile-shell">
       <IntroNavigation />
@@ -153,11 +163,11 @@ export function IntroPage() {
 
         <ul className="intro-feature-list" aria-label="Aniwhere 주요 기능">
           {featureItems.map((item) => (
-            <li className={`ait-list-row intro-chain-row intro-chain-row-${item.icon}`} key={item.title}>
-              <span className="ait-list-row-asset">
+            <li className={`intro-chain-row intro-chain-row-${item.icon}`} key={item.title}>
+              <span className="intro-feature-asset">
                 <IntroFeatureIcon name={item.iconName} type={item.icon} />
               </span>
-              <span className="ait-list-row-copy intro-feature-copy">
+              <span className="intro-feature-copy">
                 <strong>{item.title}</strong>
                 <span>{item.body}</span>
               </span>
@@ -167,6 +177,7 @@ export function IntroPage() {
 
         <div className="intro-mobile-actions">
           {pendingNicknameSession == null ? (
+            <>
             <Button
               color="primary"
               display="block"
@@ -177,6 +188,20 @@ export function IntroPage() {
             >
               {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
             </Button>
+              {showIntroUiPreview ? (
+                <>
+                  <div className="intro-preview-actions" aria-label="임시 UI 확인">
+                    <Button color="light" display="block" onClick={openExplorePreview} size="large" variant="weak">
+                      탐색 UI 먼저 보기
+                    </Button>
+                    <Button color="light" display="block" onClick={openSearchPreview} size="large" variant="weak">
+                      검색 UI 먼저 보기
+                    </Button>
+                  </div>
+                  <small className="intro-preview-note">임시 확인용 진입점이에요. 로그인 수정 후 제거합니다.</small>
+                </>
+              ) : null}
+            </>
           ) : (
             <form className="intro-nickname-card" onSubmit={handleNicknameSubmit}>
               <label className="intro-nickname-label" htmlFor="intro-nickname">

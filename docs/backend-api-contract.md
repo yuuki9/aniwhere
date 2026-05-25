@@ -30,9 +30,9 @@ When the backend contract changes:
 - `GET /api/v1/regions` returns `RegionListItem[]` with `id`, `name`, `city`, and `count`.
 - `GET /api/v1/categories` returns `CategoryListItem[]` with `id`, `name`, and `count`.
 - `GET /api/v1/works` accepts optional `type=ANIMATION|GAME`.
-- `GET /api/v1/shops/facets` provides search facet payload (`regions`, `categories`, `works`, `statuses`) for filter UI.
-- `GET /api/v1/shops/facets` accepts optional `keyword`, `regionIds[]`, `categoryIds[]`, `workIds[]`, `status`, bounds (`swLat/swLng/neLat/neLng`), and `type=ANIMATION|GAME`.
-- `GET /api/v1/shops/facets` validates bounds as all-or-none and `sw <= ne`; invalid `status`/`type` returns `400`.
+- `GET /api/v1/shops/facets` provides search facet payload (`regions`, `categories`, `workTypes`) for filter UI.
+- `GET /api/v1/shops/facets` accepts optional `includeRegions`, `includeCategories`, and `includeWorkTypes` boolean query params.
+- The deployed Swagger contract for `GET /api/v1/shops/facets` does not expose `keyword`, selected filter IDs, `status`, `type`, or map bounds. Use `GET /api/v1/shops` for result filtering.
 - `GET /api/v1/shops` keeps compatibility for both `category` (name filter) and `categoryIds[]` (ID filter); when both are present, both filters are applied.
 - `ShopRequest` sends `categoryIds` and `workIds` arrays for create/update.
 - `Shop.categories` is `CategorySummary[]` (`id`, `name`), not `string[]`.
