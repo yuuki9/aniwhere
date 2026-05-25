@@ -39,7 +39,52 @@ command = "C:\\Users\\<your-user>\\scoop\\shims\\ax.exe"
 args = ["mcp", "start"]
 ```
 
-Replace `<your-user>` with your Windows account name, or point `command` to the actual `ax.exe` path in your environment. After changing this config, restart Codex or start a new Codex session before relying on the MCP tools. The CLI fallback is `ax search docs --query "<topic>"`, `ax search tds-web --query "<topic>"`, and `ax list examples`.
+Replace `<your-user>` with your Windows account name, or point `command` to the actual `ax.exe` path in your environment. After changing this config, restart Codex or start a new Codex session before relying on the MCP tools. If the MCP tool later reports `Transport closed`, do not restart Codex just to check docs; first use the CLI fallback: `ax search docs --query "<topic>"`, `ax search tds-web --query "<topic>"`, `ax get tds-web --id "<id>"`, and `ax list examples`.
+
+### TDS Web Search Timeout Recovery
+
+When `search_tds_web_docs` or `ax search tds-web` times out, first decide whether the issue is TDS-specific:
+
+```powershell
+ax search docs --query WebView --limit 2
+ax search tds-web --query Button --limit 2
+```
+
+If `docs` works but `tds-web` hangs, inspect and clear stale TDS search processes before retrying:
+
+```powershell
+Get-CimInstance Win32_Process |
+  Where-Object { $_.Name -eq 'ax.exe' -and $_.CommandLine -like '* search tds-web *' } |
+  Select-Object ProcessId,CommandLine
+
+Get-CimInstance Win32_Process |
+  Where-Object { $_.Name -eq 'ax.exe' -and $_.CommandLine -like '* search tds-web *' } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+
+If TDS Web search still hangs, stop duplicate Apps in Toss MCP servers, back up only the TDS search caches, and let `ax` recreate them on the next search:
+
+```powershell
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$axLocal = Join-Path $env:LOCALAPPDATA 'ax'
+
+Get-CimInstance Win32_Process |
+  Where-Object { $_.Name -eq 'ax.exe' -and $_.CommandLine -like '* mcp start*' } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+
+foreach ($name in 'tds-mobile-search-index', 'tds-search-index', 'tds-mobile-cache-metadata.json', 'tds-cache-metadata.json') {
+  $path = Join-Path $axLocal $name
+  if (Test-Path $path) {
+    Move-Item -LiteralPath $path -Destination "$path.bad-$stamp"
+  }
+}
+
+ax search tds-web --query Button --limit 2
+```
+
+Successful output from this command means the local TDS Web search cache has been rebuilt. If the current Codex MCP tool then reports `Transport closed`, continue UI/TDS documentation checks through the `ax` CLI in the current session and record `MCP Transport closed; ax CLI fallback used` in `docs/tds-route-audit.md`. Restart Codex only when an MCP-only workflow is required or when `ax` CLI also fails.
+
+Do not delete the general `search-index` unless general Apps in Toss docs search is also broken. If the local tool remains unavailable after cache recovery and a Codex restart, use official web pages under `https://tossmini-docs.toss.im/tds-mobile` and record the fallback in `docs/tds-route-audit.md`.
 
 ## PR-Level Launch/TDS Gate
 

@@ -49,12 +49,65 @@ const MIN_ZOOM = 7
 const MAX_ZOOM = 19
 const INITIAL_ZOOM = 14
 const CLUSTER_BREAK_ZOOM = 16
+const VIEWPORT_COORDINATE_EPSILON = 0.00005
+const SHOP_MARKER_LABEL_MAX_LENGTH = 10
+const SHOP_MARKER_HEIGHT = 32
+const SHOP_MARKER_MIN_WIDTH = 72
+const SHOP_MARKER_MAX_WIDTH = 148
 
 function createMarkerIcon(className: string, label: string, size: number) {
   return {
     content: `<span class="${className}" style="width:${size}px;height:${size}px" aria-hidden="true">${label}</span>`,
     size: new naver.maps.Size(size, size),
     anchor: new naver.maps.Point(size / 2, size / 2),
+  }
+}
+
+function escapeMarkerLabel(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function getShopMarkerLabel(shop: Shop) {
+  const label = shop.name.trim() || '매장'
+  const characters = Array.from(label)
+
+  if (characters.length <= SHOP_MARKER_LABEL_MAX_LENGTH) {
+    return label
+  }
+
+  return `${characters.slice(0, SHOP_MARKER_LABEL_MAX_LENGTH - 1).join('')}...`
+}
+
+function getChipMarkerWidth(label: string) {
+  const estimatedWidth = Array.from(label).length * 12 + 34
+
+  return Math.min(SHOP_MARKER_MAX_WIDTH, Math.max(SHOP_MARKER_MIN_WIDTH, estimatedWidth))
+}
+
+function createShopMarkerIcon(shop: Shop, isActive: boolean) {
+  const label = getShopMarkerLabel(shop)
+  const width = getChipMarkerWidth(label)
+
+  return {
+    content: `<span class="map-naver-shop-chip${isActive ? ' map-naver-shop-chip-active' : ''}" aria-hidden="true"><span class="map-naver-shop-chip-dot"></span><span class="map-naver-shop-chip-label">${escapeMarkerLabel(label)}</span></span>`,
+    size: new naver.maps.Size(width, SHOP_MARKER_HEIGHT),
+    anchor: new naver.maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
+  }
+}
+
+function createClusterMarkerIcon(count: number) {
+  const label = `${count}곳`
+  const width = getChipMarkerWidth(label)
+
+  return {
+    content: `<span class="map-naver-cluster-chip" aria-hidden="true"><span class="map-naver-cluster-chip-count">${escapeMarkerLabel(label)}</span></span>`,
+    size: new naver.maps.Size(width, SHOP_MARKER_HEIGHT),
+    anchor: new naver.maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
   }
 }
 
@@ -72,18 +125,6 @@ function getClusterCellSize(zoom: number) {
   }
 
   return 0.014
-}
-
-function getClusterIconSize(count: number) {
-  if (count >= 20) {
-    return 42
-  }
-
-  if (count >= 10) {
-    return 38
-  }
-
-  return 34
 }
 
 function buildMarkerGroups(shops: Shop[], zoom: number, activeShopId: number | null): ShopMarkerGroup[] {
@@ -176,6 +217,29 @@ function readMapViewport(map: naver.maps.Map): MapViewport {
   }
 }
 
+function didCoordinateMove(previous: UserLocation, next: UserLocation) {
+  return (
+    Math.abs(previous.latitude - next.latitude) > VIEWPORT_COORDINATE_EPSILON ||
+    Math.abs(previous.longitude - next.longitude) > VIEWPORT_COORDINATE_EPSILON
+  )
+}
+
+function shouldPublishViewportChange(previous: MapViewport | null, next: MapViewport) {
+  if (!previous) {
+    return true
+  }
+
+  if (previous.zoom !== next.zoom) {
+    return true
+  }
+
+  return (
+    didCoordinateMove(previous.center, next.center) ||
+    didCoordinateMove(previous.bounds.northEast, next.bounds.northEast) ||
+    didCoordinateMove(previous.bounds.southWest, next.bounds.southWest)
+  )
+}
+
 export function ShopMap({
   shops,
   activeShopId,
@@ -196,6 +260,7 @@ export function ShopMap({
   const shopMarkersRef = useRef<MarkerWithListeners[]>([])
   const userMarkerRef = useRef<MarkerWithListeners | null>(null)
   const lastAppliedFocusRef = useRef<number | null>(null)
+  const lastPublishedViewportRef = useRef<MapViewport | null>(null)
   const readyNotifiedRef = useRef(false)
   const onClearSelectionRef = useRef(onClearSelection)
   const onReadyRef = useRef(onReady)
@@ -204,14 +269,15 @@ export function ShopMap({
   const [loadError, setLoadError] = useState<string | null>(null)
   const [mapInitialized, setMapInitialized] = useState(false)
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM)
+  const [markerZoom, setMarkerZoom] = useState(INITIAL_ZOOM)
 
   const validShops = useMemo(
     () => shops.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
     [shops],
   )
   const markerGroups = useMemo(
-    () => buildMarkerGroups(validShops, currentZoom, activeShopId),
-    [activeShopId, currentZoom, validShops],
+    () => buildMarkerGroups(validShops, markerZoom, activeShopId),
+    [activeShopId, markerZoom, validShops],
   )
 
   const center = useMemo(() => {
@@ -281,16 +347,27 @@ export function ShopMap({
         })
 
         mapRef.current = map
-        setCurrentZoom(map.getZoom())
+        const initialZoom = map.getZoom()
+        setCurrentZoom(initialZoom)
+        setMarkerZoom(initialZoom)
         setMapInitialized(true)
         mapClickListenerRef.current = maps.Event.addListener(map, 'click', () => {
           onClearSelectionRef.current?.()
         })
         mapZoomListenerRef.current = maps.Event.addListener(map, 'zoom_changed', () => {
-          setCurrentZoom(map.getZoom())
+          const nextZoom = map.getZoom()
+          setCurrentZoom((previousZoom) => (previousZoom === nextZoom ? previousZoom : nextZoom))
         })
         mapIdleListenerRef.current = maps.Event.addListener(map, 'idle', () => {
-          onViewportChangeRef.current?.(readMapViewport(map))
+          const nextViewport = readMapViewport(map)
+
+          setMarkerZoom((previousZoom) => (previousZoom === nextViewport.zoom ? previousZoom : nextViewport.zoom))
+
+          if (shouldPublishViewportChange(lastPublishedViewportRef.current, nextViewport)) {
+            lastPublishedViewportRef.current = nextViewport
+            onViewportChangeRef.current?.(nextViewport)
+          }
+
           if (!readyNotifiedRef.current) {
             readyNotifiedRef.current = true
             onReadyRef.current?.()
@@ -347,17 +424,19 @@ export function ShopMap({
     shopMarkersRef.current.forEach(removeMarker)
     shopMarkersRef.current = markerGroups.map((group) => {
       if (group.type === 'cluster') {
-        const size = getClusterIconSize(group.shops.length)
         const marker = new naver.maps.Marker({
           map,
           position: toLatLng(group.latitude, group.longitude),
           title: `${group.shops.length}개 매장`,
           clickable: true,
           zIndex: 8,
-          icon: createMarkerIcon('map-naver-cluster-marker', String(group.shops.length), size),
+          icon: createClusterMarkerIcon(group.shops.length),
         })
         const listener = naver.maps.Event.addListener(marker, 'click', () => {
-          map.morph(toLatLng(group.latitude, group.longitude), Math.min(MAX_ZOOM, Math.max(CLUSTER_BREAK_ZOOM, currentZoom + 2)))
+          map.morph(
+            toLatLng(group.latitude, group.longitude),
+            Math.min(MAX_ZOOM, Math.max(CLUSTER_BREAK_ZOOM, map.getZoom() + 2)),
+          )
         })
 
         return {
@@ -373,11 +452,7 @@ export function ShopMap({
         title: group.shop.name,
         clickable: true,
         zIndex: isActive ? 20 : 10,
-        icon: createMarkerIcon(
-          `map-naver-marker ${isActive ? 'map-naver-marker-active' : ''}`,
-          '',
-          isActive ? 24 : 18,
-        ),
+        icon: createShopMarkerIcon(group.shop, isActive),
       })
       const listener = naver.maps.Event.addListener(marker, 'click', () => {
         onSelectShopRef.current(group.shop.id)
@@ -388,7 +463,7 @@ export function ShopMap({
         listeners: [listener],
       }
     })
-  }, [activeShopId, currentZoom, mapInitialized, markerGroups])
+  }, [activeShopId, mapInitialized, markerGroups])
 
   useEffect(() => {
     const map = mapRef.current
@@ -491,7 +566,7 @@ export function ShopMap({
 
     const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, map.getZoom() + direction))
     map.setZoom(nextZoom)
-    setCurrentZoom(nextZoom)
+    setCurrentZoom((previousZoom) => (previousZoom === nextZoom ? previousZoom : nextZoom))
   }
 
   if (loadError) {

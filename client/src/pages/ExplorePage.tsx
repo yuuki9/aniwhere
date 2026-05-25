@@ -1,9 +1,9 @@
 import { type UIEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
-import { getShop, getShops } from '../shared/api/shops'
+import { getShop, getShopFacets, getShops } from '../shared/api/shops'
 import type { AdminShopPhoto, Shop } from '../shared/api/types'
 import {
   calculateDistanceKm,
@@ -14,16 +14,24 @@ import {
 import {
   countShopFilters,
   parseShopFilters,
+  removeAppliedShopFilterChip,
   toShopSearchParams,
   writeShopFilters,
+  type AppliedShopFilterChip,
   type ShopFilters,
 } from '../shared/lib/shopFilters'
+import {
+  SHOP_FACET_GC_TIME_MS,
+  SHOP_FACET_STALE_TIME_MS,
+  shopFacetQueryKey,
+} from '../shared/lib/shopFacetQuery'
 import {
   buildNaverMapSearchUrl,
   buildNaverWebDirectionUrl,
   canBuildNaverWebDirectionUrl,
 } from '../shared/lib/naverDirections'
 import { isAppsInTossRuntime } from '../shared/lib/auth'
+import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
@@ -44,9 +52,9 @@ const MAP_FETCH_SIZE = 200
 const EMPTY_SHOPS: Shop[] = []
 const DETAIL_MEDIA_TONES = ['blue', 'orange', 'mint', 'violet'] as const
 const MAP_QUICK_CHIPS: MapQuickChipItem[] = [
-  { id: 'favorite', label: '관심매장' },
   { id: 'active', label: '영업중' },
 ]
+const isMapAssistantEnabled = false
 const ASSISTANT_SUGGESTIONS = ['홍대에서 피규어 많은 곳', '피규어 종류가 많은 매장', '초행자에게 추천할 만한 곳']
 const ASSISTANT_RETRY_HINT = '현재 데이터 기준으로 바로 맞는 후보를 찾지 못했어요. 작품명, 지역명, 매장명을 조금 더 구체적으로 입력해보세요.'
 
@@ -164,7 +172,6 @@ export function ExplorePage() {
   )
   const [locationError, setLocationError] = useState<string | null>(null)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
-  const [favoriteQuickChipActive, setFavoriteQuickChipActive] = useState(false)
   const [mapViewport, setMapViewport] = useState<MapViewport | null>(null)
   const [mapViewportFilter, setMapViewportFilter] = useState<MapBounds | null>(null)
   const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
@@ -198,13 +205,13 @@ export function ExplorePage() {
   const expandedPointerIdRef = useRef<number | null>(null)
   const expandedDragStartYRef = useRef<number | null>(null)
   const effectiveUserLocation = userLocation ?? nearbyRequest?.location ?? null
-  const appliedFilterCount = countShopFilters(selectedFilters) + (mapViewportFilter ? 1 : 0)
+  const appliedFilterCount = countShopFilters(selectedFilters)
+  const hasAppliedFilterChips = appliedFilterCount > 0
   const activeMapQuickChips = useMemo(
     () => ({
-      favorite: favoriteQuickChipActive,
       active: selectedFilters.status === 'ACTIVE',
     }),
-    [favoriteQuickChipActive, selectedFilters.status],
+    [selectedFilters.status],
   )
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
   const searchReturnTo = `${location.pathname}${location.search}`
@@ -213,9 +220,19 @@ export function ExplorePage() {
   const shopsQuery = useQuery({
     queryKey: ['shops', 'explore-map-source', selectedSearchParams],
     queryFn: () => getShops({ page: 0, size: MAP_FETCH_SIZE, ...selectedSearchParams }),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  })
+
+  const appliedFacetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: false }
+  const appliedFacetQuery = useQuery({
+    queryKey: shopFacetQueryKey(appliedFacetParams),
+    queryFn: () => getShopFacets(appliedFacetParams),
+    staleTime: SHOP_FACET_STALE_TIME_MS,
+    gcTime: SHOP_FACET_GC_TIME_MS,
+    enabled: hasAppliedFilterChips,
   })
 
   const activeShopDetailQuery = useQuery({
@@ -238,13 +255,21 @@ export function ExplorePage() {
 
   const filteredShops = useMemo(() => {
     return allShops.filter((shop) => {
+      if (
+        selectedSearchParams.regionIds != null &&
+        selectedSearchParams.regionIds.length > 0 &&
+        (shop.regionId == null || !selectedSearchParams.regionIds.includes(shop.regionId))
+      ) {
+        return false
+      }
+
       if (mapViewportFilter && !isShopInsideMapBounds(shop, mapViewportFilter)) {
         return false
       }
 
       return true
     })
-  }, [allShops, mapViewportFilter])
+  }, [allShops, mapViewportFilter, selectedSearchParams.regionIds])
 
   const shopsWithDistance = useMemo(() => {
     const nextShops = filteredShops.map((shop) => {
@@ -292,8 +317,43 @@ export function ExplorePage() {
 
     return shopsWithDistance.find((shop) => shop.id === selectedShopId) ?? null
   }, [selectedShopId, shopsWithDistance])
+  const selectedShopIsInFilteredResults =
+    selectedShopId == null || shopsWithDistance.some((shop) => shop.id === selectedShopId)
 
   const detailShop = activeShopDetailQuery.data ?? activeShop ?? null
+
+  useEffect(() => {
+    if (
+      selectedShopId == null ||
+      appliedFilterCount === 0 ||
+      shopsQuery.isPlaceholderData ||
+      !shopsQuery.isSuccess ||
+      selectedShopIsInFilteredResults
+    ) {
+      return
+    }
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('shopId')
+    next.delete('sheet')
+
+    if (selectionOrigin === 'list') {
+      next.set('view', 'list')
+    } else {
+      next.delete('view')
+    }
+
+    setSearchParams(next, { replace: true })
+  }, [
+    appliedFilterCount,
+    searchParams,
+    selectedShopId,
+    selectedShopIsInFilteredResults,
+    selectionOrigin,
+    setSearchParams,
+    shopsQuery.isPlaceholderData,
+    shopsQuery.isSuccess,
+  ])
 
   const assistantMutation = useMutation({
     mutationFn: async (question: string) =>
@@ -342,7 +402,7 @@ export function ExplorePage() {
     const next = new URLSearchParams(searchParams)
 
     next.set('view', nextViewMode)
-    pushSearchParams(next)
+    replaceSearchParams(next)
   }
 
   const clearLocationError = () => {
@@ -561,12 +621,20 @@ export function ExplorePage() {
     setIsFilterSheetOpen(false)
   }, [])
 
+  const removeAppliedFilterChip = useCallback(
+    (chip: AppliedShopFilterChip) => {
+      const nextFilters = removeAppliedShopFilterChip(selectedFilters, chip)
+
+      setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
+      setVisibleListCount(PAGE_SIZE)
+    },
+    [searchParams, selectedFilters, setSearchParams],
+  )
+
   const applyFilters = useCallback(
     (nextFilters: ShopFilters) => {
       setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
       setVisibleListCount(PAGE_SIZE)
-      setMapViewportFilter(null)
-      setHasPendingMapSearch(false)
     },
     [searchParams, setSearchParams],
   )
@@ -581,13 +649,11 @@ export function ExplorePage() {
 
   const toggleMapQuickChip = useCallback(
     (chipId: string) => {
-      // Deferred facet filters: favorite stays visual until the favorite-backed API contract exists.
-      if (chipId === 'active') {
-        toggleActiveStatusFilter()
+      if (chipId !== 'active') {
         return
       }
 
-      setFavoriteQuickChipActive((current) => !current)
+      toggleActiveStatusFilter()
     },
     [toggleActiveStatusFilter],
   )
@@ -619,7 +685,17 @@ export function ExplorePage() {
   const isExploreTopHidden = sheetMode === 'expanded' || isListSheetOpen
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
-  const showAssistantReturn = !assistantOpen && assistantHasConversation && !isListSheetOpen && sheetMode !== 'expanded'
+  const showAssistantReturn =
+    isMapAssistantEnabled && !assistantOpen && assistantHasConversation && !isListSheetOpen && sheetMode !== 'expanded'
+
+  const renderAppliedFilterChips = () => (
+    <AppliedFilterChips
+      className="map-applied-filter-chips"
+      filters={selectedFilters}
+      facets={appliedFacetQuery.data}
+      onRemoveFilter={removeAppliedFilterChip}
+    />
+  )
 
   const handleListScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget
@@ -844,11 +920,6 @@ export function ExplorePage() {
           ) : null}
 
           {!isListSheetOpen ? (
-            shopsQuery.isLoading && allShops.length === 0 ? (
-            <div className="map-empty">
-              <p>매장 지도를 준비하고 있습니다.</p>
-            </div>
-          ) : (
             <ShopMap
               shops={mappableShops}
               activeShopId={detailShop?.id ?? null}
@@ -860,7 +931,6 @@ export function ExplorePage() {
               focusRequestId={focusRequestId}
               selectionOrigin={selectionOrigin}
             />
-            )
           ) : null}
 
           <div
@@ -877,7 +947,10 @@ export function ExplorePage() {
                   onSearchClick={() => navigate(searchHref)}
                   onFilterClick={() => setIsFilterSheetOpen(true)}
                 />
-                <MapQuickChips items={MAP_QUICK_CHIPS} activeItems={activeMapQuickChips} onToggle={toggleMapQuickChip} />
+                <div className="map-chip-composite-row">
+                  <MapQuickChips items={MAP_QUICK_CHIPS} activeItems={activeMapQuickChips} onToggle={toggleMapQuickChip} />
+                  {renderAppliedFilterChips()}
+                </div>
 
                 {hasPendingMapSearch && mapViewport ? (
                   <button className="map-area-search-button" type="button" onClick={handleSearchCurrentMapArea}>
@@ -900,6 +973,7 @@ export function ExplorePage() {
             open={isFilterSheetOpen}
             triggerRef={filterTriggerRef}
             selectedFilters={selectedFilters}
+            viewportBounds={mapViewport?.bounds ?? mapViewportFilter}
             onApplyFilters={applyFilters}
             onClose={closeFilterSheet}
           />
@@ -919,7 +993,7 @@ export function ExplorePage() {
           />
 
           <MapAssistantPanel
-            visible={!isListSheetOpen && sheetMode !== 'expanded'}
+            visible={isMapAssistantEnabled && !isListSheetOpen && sheetMode !== 'expanded'}
             open={assistantOpen}
             showReturn={showAssistantReturn}
             hasConversation={assistantHasConversation}
@@ -950,6 +1024,7 @@ export function ExplorePage() {
                 onFilterClick={() => setIsFilterSheetOpen(true)}
               />
             }
+            appliedFilters={renderAppliedFilterChips()}
             visibleShops={visibleShops}
             totalShops={totalShops}
             isLoading={shopsQuery.isLoading}
@@ -1014,7 +1089,6 @@ export function ExplorePage() {
 
                   <MapDetailSummaryCard
                     shop={detailShop}
-                    description={detailDescription}
                     activeTab={activeDetailTab}
                     photoCount={detailMediaItems.length}
                     onTabChange={setDetailTab}
@@ -1023,6 +1097,7 @@ export function ExplorePage() {
                   {activeDetailTab === 'info' ? (
                     <MapDetailInfoCard
                       shop={detailShop}
+                      description={detailDescription}
                       floorLabel={detailFloorLabel}
                       distanceLabel={activeShop?.distanceLabel ?? null}
                       onOpenDirections={openNaverDirections}

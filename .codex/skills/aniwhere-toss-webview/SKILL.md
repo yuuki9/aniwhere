@@ -63,6 +63,7 @@ description: Use when Aniwhere work mentions Apps in Toss, WebView, sandbox, @ap
 ### TDS And Mobile UI
 
 - Check current official guidance before adding or changing TDS dependencies.
+- If the Apps in Toss MCP tool reports `Transport closed`, do not require a Codex restart before continuing UI/TDS work. First verify the local `ax` CLI with `ax search tds-web --query Button --limit 2`; when it works, use `ax search tds-web --query "<topic>"` and `ax get tds-web --id "<id>"` as the official TDS document source for the current session, then record `MCP Transport closed; ax CLI fallback used` in `docs/tds-route-audit.md`.
 - Preserve Toss-style information exploration UX.
 - Verify at narrow mobile widths and in Apps in Toss sandbox where possible.
 - Before editing a route, follow `docs/tds-route-audit.md`: classify the route, search official TDS Mobile docs with the Apps in Toss MCP, record the docs checked, then classify each visible delta as `TDS-required`, `Product-approved`, or `Regression`.

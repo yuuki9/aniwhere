@@ -24,6 +24,7 @@ This document is the natural-language trigger layer for Aniwhere Codex sessions.
 | User wording or task shape | Hook action | Required docs/skills |
 | --- | --- | --- |
 | UI, UX, 화면, 레이아웃, 버튼, 필터, 폼, sheet, modal, toast, route, `/intro`, `/home`, `/admin/**`, "TDS 맞춰줘" | Treat as UI/TDS work. Search TDS Mobile docs first, classify the route, then edit. | `aniwhere-product-ux`, `aniwhere-toss-webview`, `docs/tds-route-audit.md`, TDS Mobile docs |
+| TDS docs search timeout, Apps in Toss MCP timeout, `ax search tds-web` hang, MCP 문서 검색 멈춤 | Treat as tooling/debug work before continuing UI/TDS changes. Reproduce with `ax search docs`, `ax search tds-web`, and process inspection; if only TDS Web search is affected, follow the cache/process recovery in `docs/agent-skills.md`. | `aniwhere-debug-loop`, `aniwhere-skill-workflow`, `docs/agent-skills.md` |
 | 앱인토스, sandbox, WebView, Toss login, 권한, navigationBar, 광고, promotion, reward, requestReview, 공유, 출시 | Treat as Apps in Toss runtime/launch work. Check official developer docs before assumptions. | `aniwhere-toss-webview`, `aniwhere-launch-checklist`, Apps in Toss developer docs |
 | RN, React Native, Unity, runtime-structure from non-WebView docs | First decide whether the document applies to Aniwhere WebView. Default is non-applicable unless the task targets that platform. | `guard.md`, `docs/agent-hooks.md`, relevant official docs |
 | Swagger, API 명세, server contract, CORS, request/response shape, removed field | Treat as API contract work. Compare frontend calls against Swagger/OpenAPI before editing. | `backend-api-contract-audit`, `docs/backend-api-contract.md`, Swagger/OpenAPI |
@@ -42,6 +43,15 @@ Before editing UI or CSS:
 4. Classify visible deltas as `TDS-required`, `Product-approved`, or `Regression`.
 5. Use `@aniwhere/tds-mobile` facade for page code when an official TDS component fits.
 6. If Apps in Toss runtime behavior cannot be proven locally, mark it `Needs sandbox`.
+
+If TDS document discovery times out:
+
+1. Confirm whether the problem is TDS-specific by running both `ax search docs --query WebView --limit 2` and `ax search tds-web --query Button --limit 2`.
+2. Inspect lingering `ax.exe` processes and stop only stale `ax search tds-web` commands before retrying.
+3. If general Apps in Toss search works but TDS Web search still hangs, follow the `%LOCALAPPDATA%\ax` TDS cache recovery notes in `docs/agent-skills.md`.
+4. If the current MCP tool reports `Transport closed` but `ax search tds-web --query Button --limit 2` works, do not require a Codex restart for UI/TDS work. Use the `ax` CLI as the official-doc fallback for the current session and record `MCP Transport closed; ax CLI fallback used` in `docs/tds-route-audit.md`.
+5. Restart Codex or open a new session only when an MCP-only capability is required and the `ax` CLI cannot provide the needed docs or examples.
+6. If both MCP and `ax` CLI remain unavailable, use official web URLs under `https://tossmini-docs.toss.im/tds-mobile` as a fallback and record `MCP/ax unavailable; official web fallback used` in `docs/tds-route-audit.md`.
 
 ## Apps In Toss Hook Contract
 

@@ -139,11 +139,103 @@ Official docs checked with Apps in Toss MCP on 2026-05-24:
 | Area | Current classification | Notes |
 | --- | --- | --- |
 | Route role | Product-approved | `/search` keeps keyword-first search and `/explore` keeps map-first exploration. Filters are a supporting sheet, not a replacement for the primary route purpose. |
-| TDS import boundary | TDS-required | The filter sheet imports `Button` and `ListRow` from `@aniwhere/tds-mobile`, which resolves to `@toss/tds-mobile` in Apps in Toss builds. Unused legacy `client/src/shared/ui/ait` components were removed so page code cannot drift back to `Ait*` imports. |
-| Facet filter sheet | Product-approved / API-required | The sheet now uses Swagger-backed `GET /api/v1/shops/facets` data for region, category, work, and status filters. The shell remains app-owned because the current facade exposes only proven primitives; the checked BottomSheet doc is the behavior reference. |
-| Search API params | Product-approved / API-required | `/search` preserves `regionId`, repeated `categoryIds`, `workId`, and `status` while changing keywords or pages, then sends them to `GET /api/v1/shops`. Work-scope fallback still uses `workKeyword`. |
-| Explore API params | Product-approved / API-required | `/explore` reads the same URL filter params and sends them to the map source query instead of filtering region/work only on the client. The active quick chip toggles the `ACTIVE` status filter; favorite remains a visual-only chip until a favorite-backed API exists. |
+| TDS import boundary | TDS-required | The filter sheet imports `Button` from `@aniwhere/tds-mobile`, which resolves to `@toss/tds-mobile` in Apps in Toss builds. Unused legacy `client/src/shared/ui/ait` components were removed so page code cannot drift back to `Ait*` imports. |
+| Facet filter sheet | Product-approved / API-required | The sheet now uses Swagger-backed `GET /api/v1/shops/facets` as a filter-option API for region and category labels. The current server contract exposes `regions`, `categories`, and `workTypes` option lists via include flags, not keyword/bbox/selected-state facet counts. Selecting a region/category chip updates only local draft state until the user applies filters. `영업중` stays a map quick chip, and `작품` stays in `/search` keyword/work-scope discovery instead of becoming a sheet facet. Facets render as section titles with wrapping selection chips, matching the approved mobile store-filter reference instead of full-width vertical list rows. The shell and chips remain app-owned because the current facade exposes only proven primitives; the checked BottomSheet/Button docs are the behavior reference. |
+| Search API params | Product-approved / API-required | `/search` preserves repeated `regionIds`, repeated `categoryIds`, `workId`, and `status` while changing keywords or pages, then sends `regionIds`, `categoryIds`, `workIds`, and `status` to `GET /api/v1/shops`. Work-scope fallback still uses `workKeyword`. |
+| Explore API params | Product-approved / API-required | `/explore` reads the same URL filter params and sends them to the map source query instead of filtering region/work only on the client. The active quick chip toggles the `ACTIVE` status filter, and visual-only quick chips are intentionally excluded until an API-backed filter exists. |
 | Runtime verification | Needs sandbox | Local tests prove source behavior, but Apps in Toss sheet animation, safe area, and Pixel 8a tap behavior still require sandbox/device verification. |
+
+## Current Intro/Home/Search/Explore TDS Follow-up Audit
+
+Official docs checked with `ax search tds-web` CLI fallback on 2026-05-24 because the current Codex MCP transport was closed after TDS cache recovery:
+
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Route/page Ait markup boundary | TDS-required | `/intro` no longer renders page-level `ait-list-row*` classes. `/home`, `/search`, and `/explore` have no `shared/ui/ait` imports or `Ait*` route/page components. Shared public fallback may still render `ait-*` classes internally as the public-build compatibility layer. |
+| `/search` actual input | TDS-required | The editable search input imports `SearchField` through `@aniwhere/tds-mobile`, which resolves to official `@toss/tds-mobile` in Apps in Toss builds. |
+| `/home` search entry | Product-approved | Kept as an app-owned button-like route entry because it navigates to `/search` instead of acting as an inline editable text field. |
+| `/explore` top search entry | Product-approved | Kept as an app-owned map overlay route entry. Official `SearchField` remains the reference for editable search fields, not navigation-only affordances. |
+| `/intro` feature chain | Product-approved | The feature chain keeps the approved app-owned connector treatment; official ListRow informed the left/content structure, but the connector itself is not a documented ListRow pattern. Page-level `ait-list-row*` classes were removed. |
+| Runtime verification | Needs sandbox | Local tests and builds do not prove Apps in Toss native navigation, safe area, runtime font, or Pixel 8a tap behavior. |
+
+### 2026-05-24 Search/Explore Follow-up
+
+- `/search` editable input now leaves official `SearchField` chrome unwrapped: page code no longer attaches `search-screen-input` to `SearchField` and no longer uses `form.search-screen-bar` around it. Apps in Toss DOM may still include generated Emotion classes such as `css-*`; those are official TDS runtime classes, not Aniwhere route classes.
+- Region facets are multi-select. URL state uses repeated `regionIds`, and the current Swagger-backed `/api/v1/shops` contract accepts `regionIds` directly.
+- Multi-region `/search` now sends repeated `regionIds` in one shop search request instead of fanning out per region.
+- `/explore` keeps the current map bbox as a client-side viewport filter for the result list/map. `GET /api/v1/shops/facets` no longer accepts bbox params in the synced `main` contract, so it is used only to fetch option labels.
+
+### 2026-05-25 Applied Filter Chip Follow-up
+
+Official docs checked with `ax search tds-web` CLI fallback because the Apps in Toss MCP transport returned `Transport closed`:
+
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- Checkbox: https://tossmini-docs.toss.im/tds-mobile/components/checkbox/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Applied filter chips | Product-approved | TDS Mobile docs expose `SearchField` for the input and `Badge` for non-interactive status labels, but no exported `Chip` component was found in docs or the installed `@toss/tds-mobile` type surface. `/search` and `/explore` therefore render app-owned removable applied-filter chips under the search row, using TDS-compatible tokens and the Swagger-backed facet names. |
+| Chip removal behavior | Product-approved / API-required | Removing a chip updates URL-backed `ShopFilters` through `writeShopFilters` without opening the filter sheet. Region and category chips remove only the selected ID, and status removes only `status`. Current-location and map-bbox actions no longer create applied filter chips. |
+| Explore placement | Product-approved | In map mode, applied chips share the quick-chip row and appear to the right of the quick chips. In list mode, applied chips render inside `MapResultsSheet` directly below the search bar because the map overlay top controls are intentionally hidden while the list sheet is open. |
+| SearchField alignment | Product-approved | `/search` keeps official `SearchField` via `@aniwhere/tds-mobile`; route CSS only adapts the official root height inside this inline toolbar so the visible TDS input face, filter button, and applied chips align without reintroducing a second search UI. |
+
+### 2026-05-25 Explore Detail Bottom Sheet Follow-up
+
+Official docs checked with `ax search tds-web` CLI fallback because the Apps in Toss MCP transport returned `Transport closed`:
+
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- useBottomSheet: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-bottom-sheet/
+- BottomCTA overview: https://tossmini-docs.toss.im/tds-mobile/components/BottomCTA/check-first/
+- BottomCTA.Single: https://tossmini-docs.toss.im/tds-mobile/components/BottomCTA/Single/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- Tab: https://tossmini-docs.toss.im/tds-mobile/components/tab/
+- Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Detail sheet route role | Product-approved | `/explore?sheet=expanded` is the map detail decision surface. It supports map comparison, route opening, tabbed detail info, and native/browser back folding through URL state. |
+| Peek and expanded sheet frame | Product-approved | Official `BottomSheet` is the reference for bottom-up panels, but the explore map uses a persistent map-attached peek sheet and a drag-aware expanded sheet rather than a modal overlay with dimmer/focus lock. Keeping the app-owned `map-bottom-sheet*` frame avoids breaking map comparison, peek drag, and URL-driven back behavior. Treat this as a documented app-owned shell, not a recreated `Ait*` layer. |
+| Ait/alt route layer | TDS-required / Passed | `MapPeekSheet`, `MapDetailSummaryCard`, `MapDetailInfoCard`, `MapDetailMediaSection`, and `MapDetailSupplementSections` do not import `client/src/shared/ui/ait`, do not render `Ait*` components, and do not use `ait-*` or `alt-*` route classes. `--ait-*` CSS tokens remain the allowed compatibility token layer. |
+| Detail info rows | TDS-required / Product-approved | Repeated shop detail rows import `ListRow` and `Button` through `@aniwhere/tds-mobile`. Address keeps the documented `left` and `contents` structure, then uses an app-owned two-column value line inside `contents` so the address text and route action share the same left/right rhythm without the outer right slot making this row feel misaligned. The clean icon stays in `left`, the TDS-generated left wrapper is constrained to the same 36px box as the icon, and the first row uses a documented inline correction token so its visible content aligns with the following TDS detail rows. The route action remains a small weak TDS button. |
+| Detail tabs | Product-approved | TDS Mobile `Tab` supports `small` and `large` sizes and handles tab semantics, but `/explore?sheet=expanded` keeps an app-owned sticky tab rail because it must live inside the persistent map-attached sheet and support URL/tab state with the existing sheet header. The tab text now uses the smaller app token to align visually with TDS `Tab size="small"` density. |
+| AI summary placement | Product-approved | The Olive Young mobile store detail reference keeps the store identity and action area above the tabs, then shows address, hours, services, and notices inside the `기본 정보` tab. `/explore?sheet=expanded` keeps the top identity card focused on the shop name, keyword chips, and tabs, then places a compact `AI가 요약한 정보` card at the top of the `정보` tab before factual `ListRow` rows. The card uses ADS-width spacing, a shorter two-line preview, and a `더보기` control so it works as a first-read decision aid without taking over the detail sheet. It also avoids duplicating the same visit-tip text when the AI summary falls back to `visitTip`. Reference checked: https://m.oliveyoung.co.kr/m/mtn/store/information/DF3C |
+| Expanded sheet spacing rhythm | Product-approved | The expanded detail sheet uses one route-level inline spacing variable for identity, tabs, factual rows, and the AI summary block so the 375px detail surface has a consistent left/right rhythm. The extra info header was removed, and `ListRow` keeps its own vertical rhythm while route CSS only supplies the shared horizontal inset. This adapts the checked `Top`, `ListRow`, and `BottomSheet` references to Aniwhere's persistent map-attached sheet. |
+| Detail metadata emphasis | Product-approved | The previous update badge beside `기본 정보` was removed. Freshness is now a `최근 업데이트` row with an icon and bold value, keeping address, location, status, categories, visit tip, and update metadata in one scannable ListRow stack. |
+| AI chat entry | Product-approved / Hidden feature | The map AI chat panel remains componentized but is disabled by a feature flag because the user-facing AI chat button is still under development. Re-enable only after product approval and sandbox verification. |
+| Quick chips | Product-approved / API-required | `/explore` quick chips now expose only filter-backed chips. The visual-only `관심매장` chip was removed so current-location, map-area, and favorite-like non-facet state cannot appear as applied filter chips. |
+| `/search` top/content alignment | Regression fixed | `/search` now shares one inline padding token between `search-screen-top-v2` and `search-screen-content-v2`, keeping the official `SearchField` chrome and filter button aligned with the result content. |
+| Media hero and tab content | Product-approved | The media preview, keyword chips, tab rail, photo/review sections, and route thumbnail button remain app-owned because the current official docs do not define this map-specific media/detail composition. The works tab changed from a passive chip cloud to a compact work feed with 44px poster thumbnails, fallback initials, a `/search?scope=work&keyword=:workName` row action, and preview expansion. Official ListRow and Asset docs informed the left/media/content rhythm, but the work feed itself remains app-owned and must not be described as an official TDS component. |
+| Runtime verification | Needs sandbox | Local tests/builds can verify imports and layout source, but Apps in Toss sheet animation, safe area, focus behavior, and native back behavior still need sandbox/device confirmation. |
+
+### 2026-05-25 Explore Map Marker Follow-up
+
+Official docs checked with `ax search tds-web` CLI fallback because the Apps in Toss MCP transport returned `Transport closed`:
+
+- Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- Tooltip: https://tossmini-docs.toss.im/tds-mobile/components/tooltip/
+- Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- `지도 마커` search: no dedicated TDS Mobile map marker component was found.
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Map marker component boundary | Product-approved | TDS Mobile exposes `Badge` for compact status recognition, but no dedicated map marker component was found. `/explore` map markers are therefore app-owned Naver Maps HTML overlays styled with TDS-compatible tokens, not official TDS components. |
+| Individual shop markers | Product-approved | Individual shop markers now render as store-name chips so users can identify nearby shops directly on the map. Labels are truncated and HTML-escaped before being injected into the Naver marker content. |
+| Cluster markers | Product-approved | Clustering remains enabled at lower zoom levels to protect dense shop areas and WebView performance. The visual cluster marker changed from a round icon to a count chip so the map reads as a consistent chip-based surface instead of mixing icon and label metaphors. |
+| Runtime verification | Needs sandbox | Local source tests and builds can verify marker generation, but overlapping labels, tap hit area, and real Naver Maps WebView rendering should be checked on a 375px Apps in Toss sandbox device. |
 
 ## PR Evidence Format
 
