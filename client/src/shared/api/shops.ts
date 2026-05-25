@@ -14,12 +14,12 @@ export function getShops(params: ShopSearchParams = {}) {
     page: params.page ?? 0,
     size: params.size ?? 20,
     sort: params.sort,
-    regionId: params.regionId,
-    category: params.category,
+    regionIds: params.regionIds,
     categoryIds: params.categoryIds,
     keyword: params.keyword,
     workKeyword: params.workKeyword,
-    workId: params.workId,
+    workIds: params.workIds,
+    workType: params.workType,
     status: params.status,
   })
 
@@ -28,16 +28,9 @@ export function getShops(params: ShopSearchParams = {}) {
 
 export function getShopFacets(params: ShopFacetParams = {}) {
   const query = toQueryString({
-    keyword: params.keyword,
-    regionIds: params.regionIds,
-    categoryIds: params.categoryIds,
-    workIds: params.workIds,
-    status: params.status,
-    swLat: params.swLat,
-    swLng: params.swLng,
-    neLat: params.neLat,
-    neLng: params.neLng,
-    type: params.type,
+    includeRegions: params.includeRegions,
+    includeCategories: params.includeCategories,
+    includeWorkTypes: params.includeWorkTypes,
   })
 
   return request<ShopFacetResponse>(`/api/v1/shops/facets${query}`)

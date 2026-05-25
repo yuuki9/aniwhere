@@ -1,96 +1,43 @@
-import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button, ListRow } from '@aniwhere/tds-mobile'
+import { Button } from '@aniwhere/tds-mobile'
 import { getShopFacets } from '../api/shops'
-import type { ShopStatus } from '../api/types'
-import { statusToLabel } from '../lib/format'
-import { toShopFacetParams, type ShopFilters } from '../lib/shopFilters'
+import {
+  SHOP_FACET_GC_TIME_MS,
+  SHOP_FACET_STALE_TIME_MS,
+  shopFacetQueryKey,
+} from '../lib/shopFacetQuery'
+import type { ShopFilters } from '../lib/shopFilters'
 
 type SearchFilterSheetProps = {
   open: boolean
   triggerRef: RefObject<HTMLElement>
   keyword?: string
   selectedFilters: ShopFilters
+  viewportBounds?: {
+    southWest: {
+      latitude: number
+      longitude: number
+    }
+    northEast: {
+      latitude: number
+      longitude: number
+    }
+  } | null
   onApplyFilters: (filters: ShopFilters) => void
   onClose: () => void
 }
 
 type SearchFilterSheetDialogProps = Omit<SearchFilterSheetProps, 'open'>
 
-type CountedOption = {
-  id: number
-  name: string
-  disabled: boolean
-  count: number
-}
-
-type StatusOption = {
-  value: ShopStatus
-  label: string
-  disabled: boolean
-  count: number
-}
-
-const EMPTY_FILTERS: ShopFilters = {
-  categoryIds: [],
-}
-
-const FALLBACK_STATUS_OPTIONS: StatusOption[] = [
-  { value: 'ACTIVE', label: statusToLabel('ACTIVE'), disabled: false, count: 0 },
-  { value: 'CLOSED', label: statusToLabel('CLOSED'), disabled: false, count: 0 },
-  { value: 'UNVERIFIED', label: statusToLabel('UNVERIFIED'), disabled: false, count: 0 },
-]
-
-function sameIdList(left: number[], right: number[]) {
-  return left.length === right.length && left.every((id, index) => id === right[index])
-}
-
-function areFiltersEqual(left: ShopFilters, right: ShopFilters) {
-  return (
-    left.regionId === right.regionId &&
-    sameIdList(left.categoryIds, right.categoryIds) &&
-    left.workId === right.workId &&
-    left.status === right.status
-  )
-}
-
-function countLabel(count: number) {
-  return count > 0 ? `${count.toLocaleString()}곳` : '결과 없음'
-}
-
-function FilterSection({
-  id,
-  title,
-  children,
-}: {
-  id: string
-  title: string
-  children: ReactNode
-}) {
-  return (
-    <section className="search-filter-section" aria-labelledby={id}>
-      <h3 id={id}>{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function CountBadge({ count }: { count: number }) {
-  return <small className="search-filter-option-count">{countLabel(count)}</small>
-}
-
-export function SearchFilterSheet({
-  open,
-  ...props
-}: SearchFilterSheetProps) {
+export function SearchFilterSheet({ open, ...props }: SearchFilterSheetProps) {
   if (!open) {
     return null
   }
 
   const draftKey = [
-    props.selectedFilters.regionId ?? '',
+    props.selectedFilters.regionIds.join(','),
     props.selectedFilters.categoryIds.join(','),
-    props.selectedFilters.workId ?? '',
     props.selectedFilters.status ?? '',
   ].join('|')
 
@@ -101,95 +48,47 @@ function SearchFilterSheetDialog({
   triggerRef,
   keyword,
   selectedFilters,
+  viewportBounds,
   onApplyFilters,
   onClose,
 }: SearchFilterSheetDialogProps) {
   const filterSheetRef = useRef<HTMLElement | null>(null)
   const filterCloseButtonRef = useRef<HTMLButtonElement | null>(null)
-  const [draftFilters, setDraftFilters] = useState<ShopFilters>(selectedFilters)
-  const facetParams = useMemo(
-    () => toShopFacetParams(draftFilters, { keyword: keyword?.trim() || undefined }),
-    [draftFilters, keyword],
-  )
+  const [draftFilters, setDraftFilters] = useState<ShopFilters>(() => ({
+    ...selectedFilters,
+    workId: undefined,
+  }))
+  void keyword
+  void viewportBounds
+
+  const facetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: false }
   const facetQuery = useQuery({
-    queryKey: ['shops', 'filter-facets', facetParams],
+    queryKey: shopFacetQueryKey(facetParams),
     queryFn: () => getShopFacets(facetParams),
-    staleTime: 1000 * 60,
+    staleTime: SHOP_FACET_STALE_TIME_MS,
+    gcTime: SHOP_FACET_GC_TIME_MS,
   })
-  const statusOptions = facetQuery.data?.statuses.length ? facetQuery.data.statuses : FALLBACK_STATUS_OPTIONS
-  const hasDraftChanges = !areFiltersEqual(draftFilters, selectedFilters)
+  const hasDraftChanges =
+    draftFilters.regionIds.join(',') !== selectedFilters.regionIds.join(',') ||
+    draftFilters.categoryIds.join(',') !== selectedFilters.categoryIds.join(',')
 
   const closeFilterSheet = useCallback(() => {
     onClose()
   }, [onClose])
 
   const applyFilters = () => {
-    onApplyFilters(draftFilters)
+    onApplyFilters({ ...draftFilters, workId: undefined })
     closeFilterSheet()
   }
 
   const resetFilters = () => {
-    setDraftFilters(EMPTY_FILTERS)
-  }
-
-  const selectRegion = (regionId: number) => {
     setDraftFilters((current) => ({
       ...current,
-      regionId: current.regionId === regionId ? undefined : regionId,
+      regionIds: [],
+      categoryIds: [],
+      workId: undefined,
     }))
   }
-
-  const toggleCategory = (categoryId: number) => {
-    setDraftFilters((current) => ({
-      ...current,
-      categoryIds: current.categoryIds.includes(categoryId)
-        ? current.categoryIds.filter((id) => id !== categoryId)
-        : [...current.categoryIds, categoryId],
-    }))
-  }
-
-  const selectWork = (workId: number) => {
-    setDraftFilters((current) => ({
-      ...current,
-      workId: current.workId === workId ? undefined : workId,
-    }))
-  }
-
-  const selectStatus = (status: ShopStatus) => {
-    setDraftFilters((current) => ({
-      ...current,
-      status: current.status === status ? undefined : status,
-    }))
-  }
-
-  const renderOption = ({
-    option,
-    selected,
-    onClick,
-  }: {
-    option: CountedOption
-    selected: boolean
-    onClick: () => void
-  }) => (
-    <ListRow
-      border="none"
-      className="search-filter-option-row"
-      contents={
-        <button
-          className={`search-filter-option-button ${selected ? 'search-filter-option-selected' : ''}`}
-          type="button"
-          disabled={option.disabled}
-          aria-pressed={selected}
-          onClick={onClick}
-        >
-          <span>{option.name}</span>
-          <CountBadge count={option.count} />
-        </button>
-      }
-      key={option.id}
-      verticalPadding="small"
-    />
-  )
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow
@@ -273,73 +172,64 @@ function SearchFilterSheetDialog({
           {facetQuery.isError ? <small className="error-text">{(facetQuery.error as Error).message}</small> : null}
 
           {(facetQuery.data?.regions.length ?? 0) > 0 ? (
-            <FilterSection id="search-filter-region" title="지역">
-              <ul className="search-filter-option-list">
-                {facetQuery.data?.regions.map((region) =>
-                  renderOption({
-                    option: region,
-                    selected: draftFilters.regionId === region.id,
-                    onClick: () => selectRegion(region.id),
-                  }),
-                )}
+            <section className="search-filter-section" aria-labelledby="search-filter-region">
+              <h3 id="search-filter-region">지역</h3>
+              <ul className="search-filter-chip-list">
+                {facetQuery.data?.regions.map((region) => (
+                  <li className="search-filter-chip-item" key={region.id}>
+                    <button
+                      className={`search-filter-chip-button ${
+                        draftFilters.regionIds.includes(region.id) ? 'search-filter-chip-selected' : ''
+                      }`}
+                      type="button"
+                      aria-label={region.name}
+                      aria-pressed={draftFilters.regionIds.includes(region.id)}
+                      onClick={() =>
+                        setDraftFilters((current) => ({
+                          ...current,
+                          regionIds: current.regionIds.includes(region.id)
+                            ? current.regionIds.filter((id) => id !== region.id)
+                            : [...current.regionIds, region.id],
+                        }))
+                      }
+                    >
+                      {region.name}
+                    </button>
+                  </li>
+                ))}
               </ul>
-            </FilterSection>
+            </section>
           ) : null}
 
           {(facetQuery.data?.categories.length ?? 0) > 0 ? (
-            <FilterSection id="search-filter-category" title="카테고리">
-              <ul className="search-filter-option-list">
-                {facetQuery.data?.categories.map((category) =>
-                  renderOption({
-                    option: category,
-                    selected: draftFilters.categoryIds.includes(category.id),
-                    onClick: () => toggleCategory(category.id),
-                  }),
-                )}
-              </ul>
-            </FilterSection>
-          ) : null}
-
-          {(facetQuery.data?.works.length ?? 0) > 0 ? (
-            <FilterSection id="search-filter-work" title="작품">
-              <ul className="search-filter-option-list">
-                {facetQuery.data?.works.map((work) =>
-                  renderOption({
-                    option: work,
-                    selected: draftFilters.workId === work.id,
-                    onClick: () => selectWork(work.id),
-                  }),
-                )}
-              </ul>
-            </FilterSection>
-          ) : null}
-
-          <FilterSection id="search-filter-status" title="영업 상태">
-            <ul className="search-filter-option-list">
-              {statusOptions.map((status) => (
-                <ListRow
-                  border="none"
-                  className="search-filter-option-row"
-                  contents={
+            <section className="search-filter-section" aria-labelledby="search-filter-category">
+              <h3 id="search-filter-category">카테고리</h3>
+              <ul className="search-filter-chip-list">
+                {facetQuery.data?.categories.map((category) => (
+                  <li className="search-filter-chip-item" key={category.id}>
                     <button
-                      className={`search-filter-option-button ${
-                        draftFilters.status === status.value ? 'search-filter-option-selected' : ''
+                      className={`search-filter-chip-button ${
+                        draftFilters.categoryIds.includes(category.id) ? 'search-filter-chip-selected' : ''
                       }`}
                       type="button"
-                      disabled={status.disabled}
-                      aria-pressed={draftFilters.status === status.value}
-                      onClick={() => selectStatus(status.value)}
+                      aria-label={category.name}
+                      aria-pressed={draftFilters.categoryIds.includes(category.id)}
+                      onClick={() =>
+                        setDraftFilters((current) => ({
+                          ...current,
+                          categoryIds: current.categoryIds.includes(category.id)
+                            ? current.categoryIds.filter((id) => id !== category.id)
+                            : [...current.categoryIds, category.id],
+                        }))
+                      }
                     >
-                      <span>{status.label}</span>
-                      <CountBadge count={status.count} />
+                      {category.name}
                     </button>
-                  }
-                  key={status.value}
-                  verticalPadding="small"
-                />
-              ))}
-            </ul>
-          </FilterSection>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
 
         <div className="search-filter-sheet-actions">

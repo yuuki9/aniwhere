@@ -1,23 +1,32 @@
 import { type FormEvent, useCallback, useMemo, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { getShops } from '../shared/api/shops'
+import { getShopFacets, getShops } from '../shared/api/shops'
 import type { Shop } from '../shared/api/types'
 import { formatRelativeUpdated } from '../shared/lib/format'
 import { requestCurrentLocation } from '../shared/lib/location'
 import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
 import {
+  SHOP_FACET_GC_TIME_MS,
+  SHOP_FACET_STALE_TIME_MS,
+  shopFacetQueryKey,
+} from '../shared/lib/shopFacetQuery'
+import {
   countShopFilters,
   parseShopFilters,
+  removeAppliedShopFilterChip,
   toShopSearchParams,
   writeShopFilters,
+  type AppliedShopFilterChip,
   type ShopFilters,
 } from '../shared/lib/shopFilters'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
+import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { StatusPill } from '../shared/ui/StatusPill'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
 import { buildNearbyExploreHref } from './searchNearby'
+import { SearchField } from '@aniwhere/tds-mobile'
 
 const SEARCH_PAGE_SIZE = 8
 
@@ -26,7 +35,7 @@ const buildExploreHref = (shopId: number, shopRegionId: number | null) => {
   next.set('page', '0')
 
   if (shopRegionId) {
-    next.set('regionId', String(shopRegionId))
+    next.set('regionIds', String(shopRegionId))
   }
 
   next.set('shopId', String(shopId))
@@ -60,10 +69,7 @@ async function searchShopsFromSearchBar({
       page: currentPage,
       size: SEARCH_PAGE_SIZE,
       workKeyword: searchKeyword,
-      regionId: selectedSearchParams.regionId,
-      categoryIds: selectedSearchParams.categoryIds,
-      workId: selectedSearchParams.workId,
-      status: selectedSearchParams.status,
+      ...selectedSearchParams,
     })
   }
 
@@ -71,10 +77,7 @@ async function searchShopsFromSearchBar({
     page: currentPage,
     size: SEARCH_PAGE_SIZE,
     keyword: searchKeyword,
-    regionId: selectedSearchParams.regionId,
-    categoryIds: selectedSearchParams.categoryIds,
-    workId: selectedSearchParams.workId,
-    status: selectedSearchParams.status,
+    ...selectedSearchParams,
   })
 
   if (shopResults.content.length > 0 || currentPage > 0) {
@@ -85,10 +88,7 @@ async function searchShopsFromSearchBar({
     page: currentPage,
     size: SEARCH_PAGE_SIZE,
     workKeyword: searchKeyword,
-    regionId: selectedSearchParams.regionId,
-    categoryIds: selectedSearchParams.categoryIds,
-    workId: selectedSearchParams.workId,
-    status: selectedSearchParams.status,
+    ...selectedSearchParams,
   })
 }
 
@@ -108,6 +108,7 @@ export function SearchPage() {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
   const appliedFilterCount = countShopFilters(selectedFilters)
+  const hasSearchCriteria = currentKeyword.trim().length > 0 || appliedFilterCount > 0
 
   const closeFilterSheet = useCallback(() => {
     setIsFilterSheetOpen(false)
@@ -117,7 +118,16 @@ export function SearchPage() {
     queryKey: ['shops', 'search-page-results', currentSearchScope, currentKeyword, selectedFilters, currentPage],
     queryFn: () => searchShopsFromSearchBar({ currentSearchScope, currentKeyword, currentPage, selectedFilters }),
     placeholderData: keepPreviousData,
-    enabled: currentKeyword.trim().length > 0,
+    enabled: hasSearchCriteria,
+  })
+
+  const appliedFacetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: false }
+  const appliedFacetQuery = useQuery({
+    queryKey: shopFacetQueryKey(appliedFacetParams),
+    queryFn: () => getShopFacets(appliedFacetParams),
+    staleTime: SHOP_FACET_STALE_TIME_MS,
+    gcTime: SHOP_FACET_GC_TIME_MS,
+    enabled: appliedFilterCount > 0,
   })
 
   const moveToSearch = (nextKeyword: string, nextPage = 0) => {
@@ -180,6 +190,15 @@ export function SearchPage() {
     setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
   }
 
+  const removeAppliedFilterChip = useCallback(
+    (chip: AppliedShopFilterChip) => {
+      const nextFilters = removeAppliedShopFilterChip(selectedFilters, chip)
+
+      setSearchParams(writeShopFilters(searchParams, nextFilters), { replace: true })
+    },
+    [searchParams, selectedFilters, setSearchParams],
+  )
+
   const handleNearbySearch = async () => {
     if (nearbyState === 'loading') {
       return
@@ -203,22 +222,16 @@ export function SearchPage() {
       <section className="search-screen search-screen-v2">
         <header className="search-screen-top search-screen-top-v2">
           <div className="search-screen-toolrow">
-            <form className="search-screen-bar" onSubmit={handleSubmit}>
-              <input
+            <form className="search-screen-form" onSubmit={handleSubmit}>
+              <SearchField
                 autoFocus
                 aria-label="검색어 입력"
-                className="search-screen-input"
+                onDeleteClick={() => setKeyword('')}
                 placeholder="매장, 지역, 작품 이름 검색"
+                takeSpace={false}
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
               />
-
-              <button className="search-screen-icon" type="submit" aria-label="검색 실행">
-                <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="6" />
-                  <path d="m16 16 4 4" />
-                </svg>
-              </button>
             </form>
 
             <button
@@ -241,6 +254,12 @@ export function SearchPage() {
               {appliedFilterCount > 0 ? <small>{appliedFilterCount}</small> : null}
             </button>
           </div>
+
+          <AppliedFilterChips
+            filters={selectedFilters}
+            facets={appliedFacetQuery.data}
+            onRemoveFilter={removeAppliedFilterChip}
+          />
         </header>
 
         <SearchFilterSheet
@@ -252,7 +271,7 @@ export function SearchPage() {
           onClose={closeFilterSheet}
         />
 
-        {!currentKeyword ? (
+        {!hasSearchCriteria ? (
           <div className="search-screen-content search-screen-content-v2">
             <section className="search-history-section">
               <div className="search-history-head">
