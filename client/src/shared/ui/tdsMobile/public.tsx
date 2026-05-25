@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, LiHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, LiHTMLAttributes, ReactNode } from 'react'
 import { useEffect } from 'react'
 
 type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -7,6 +7,24 @@ type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: 'small' | 'medium' | 'large' | 'xlarge'
   color?: 'primary' | 'danger' | 'light' | 'dark'
   variant?: 'fill' | 'weak'
+}
+
+type PublicBadgeProps = HTMLAttributes<HTMLSpanElement> & {
+  color?: 'blue' | 'teal' | 'green' | 'red' | 'yellow' | 'elephant'
+  size: 'xsmall' | 'small' | 'medium' | 'large'
+  variant: 'fill' | 'weak'
+}
+
+export function Badge({ className, color = 'blue', size, variant, ...props }: PublicBadgeProps) {
+  return (
+    <span
+      className={['ait-badge', className].filter(Boolean).join(' ')}
+      data-color={color}
+      data-size={size}
+      data-variant={variant}
+      {...props}
+    />
+  )
 }
 
 export function Button({

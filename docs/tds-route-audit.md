@@ -126,6 +126,28 @@ Official docs checked on 2026-05-22 with web fallback because Apps in Toss MCP w
 | Admin taxonomy selectors | Product-approved | Admin create/edit now uses Swagger-backed category/work IDs. The selector is app-owned because the current public facade exports only the proven TDS primitives in this repo; it follows the checked Checkbox, AgreementV4, Grid List, TextField, Button, ListRow, and segmented selection references without adding new `Ait*` usage. |
 | Runtime verification | Needs sandbox | `tsc`, lint, and public bundle verification passed locally, but Apps in Toss native navigation, safe area, and Pixel 8a sandbox behavior still need device confirmation. |
 
+## Current Admin CRUD ADS Follow-up
+
+Official docs checked with Apps in Toss MCP on 2026-05-25:
+
+- MCP result: `search_tds_web_docs` returned `Transport closed`.
+- Recovery/fallback: `ax search docs --query WebView --limit 2` and `ax search tds-web --query Button --limit 2` both succeeded, so the current session used the `ax` CLI as the official-doc fallback. Stale `ax.exe` processes left after searches were stopped; no TDS cache rebuild was required because `ax search tds-web` worked after process cleanup.
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- WebView: https://developers-apps-in-toss.toss.im/tutorials/webview.md
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/admin/shops` create CTA | Regression fixed / TDS-required | The route already used `Button` through `@aniwhere/tds-mobile`, but `display="full"` rendered as a square full-bleed ADS button. It now uses `display="block"` with a route class only for preserving the rounded TDS button radius. |
+| `/admin/shops/new` and edit submit CTA | Regression fixed / TDS-required | The save CTA also moved from `display="full"` to `display="block"` so the ADS/local TDS Button keeps the same rounded boundary as other admin action buttons. |
+| Work catalog selector | Product-approved / TDS-informed | Category selection remains a compact checkbox-chip grid, but work selection now uses official `SearchField` plus `ListRow` suggestion rows through the facade. The work picker follows the Laftel finder reference at https://laftel.net/finder for the typed-query state only: selected works stack as removable chips above the search bar, and the search bar opens a directly attached vertical result list only when the user enters a Korean query. Search result rows show only the work name; selected state is represented by the chip stack plus a TDS `Badge` in the `ListRow.right` area because the Badge doc defines it as an item status indicator. The blank-query ranked recommendation panel and English/romaji matching were removed because admin shop editing needs deliberate Korean work lookup, not public discovery. |
+| Form heading placement | Product-approved | `매장 등록` / `매장 수정` is rendered inside the form above the photo strip so the first editable region has a clear local task title even when Apps in Toss native navigation owns the top bar. |
+| Location to region facet linkage | Product-approved / API-required | `AdminShopLocationPage` now loads `/api/v1/regions` and stores a matching `regionId` when the search query, road address, jibun address, or normalized address contains a region name such as `홍대` or `강남`. The server still persists the supplied `regionId`; no backend auto-classification was added. |
+| Bundle analyzer | Product-approved / Tooling | `npm run analyze:bundle` runs Vite in public mode and writes `client/dist-analyze/bundle-stats.html` through `rollup-plugin-visualizer`. This keeps normal Apps in Toss and public builds unchanged while giving a pre-code-splitting report for future route split work. |
+| Runtime verification | Needs sandbox | Source tests and lint can verify route structure, but ADS rendering of official Button radius, SearchField keyboard behavior, and real geocoder results should be checked in Apps in Toss sandbox at 375px. |
+
 ## Current Search/Explore Filter Audit
 
 Official docs checked with Apps in Toss MCP on 2026-05-24:
@@ -209,6 +231,7 @@ Official docs checked with `ax search tds-web` CLI fallback because the Apps in 
 | --- | --- | --- |
 | Detail sheet route role | Product-approved | `/explore?sheet=expanded` is the map detail decision surface. It supports map comparison, route opening, tabbed detail info, and native/browser back folding through URL state. |
 | Peek and expanded sheet frame | Product-approved | Official `BottomSheet` is the reference for bottom-up panels, but the explore map uses a persistent map-attached peek sheet and a drag-aware expanded sheet rather than a modal overlay with dimmer/focus lock. Keeping the app-owned `map-bottom-sheet*` frame avoids breaking map comparison, peek drag, and URL-driven back behavior. Treat this as a documented app-owned shell, not a recreated `Ait*` layer. |
+| useBottomSheet migration | Follow-up PR | Official `useBottomSheet` is designed for overlay sheets opened imperatively with `open`/`close`. `/explore` currently has three persistent map-attached states (`list`, `peek`, `expanded`) coupled to URL state, map comparison, pointer drag, and browser/native back behavior. Replacing it should be planned as a separate route migration with a behavior matrix and sandbox verification rather than folded into admin form cleanup. |
 | Ait/alt route layer | TDS-required / Passed | `MapPeekSheet`, `MapDetailSummaryCard`, `MapDetailInfoCard`, `MapDetailMediaSection`, and `MapDetailSupplementSections` do not import `client/src/shared/ui/ait`, do not render `Ait*` components, and do not use `ait-*` or `alt-*` route classes. `--ait-*` CSS tokens remain the allowed compatibility token layer. |
 | Detail info rows | TDS-required / Product-approved | Repeated shop detail rows import `ListRow` and `Button` through `@aniwhere/tds-mobile`. Address keeps the documented `left` and `contents` structure, then uses an app-owned two-column value line inside `contents` so the address text and route action share the same left/right rhythm without the outer right slot making this row feel misaligned. The clean icon stays in `left`, the TDS-generated left wrapper is constrained to the same 36px box as the icon, and the first row uses a documented inline correction token so its visible content aligns with the following TDS detail rows. The route action remains a small weak TDS button. |
 | Detail tabs | Product-approved | TDS Mobile `Tab` supports `small` and `large` sizes and handles tab semantics, but `/explore?sheet=expanded` keeps an app-owned sticky tab rail because it must live inside the persistent map-attached sheet and support URL/tab state with the existing sheet header. The tab text now uses the smaller app token to align visually with TDS `Tab size="small"` density. |

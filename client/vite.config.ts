@@ -1,10 +1,12 @@
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig, type PluginOption } from 'vite'
 
 // aniwhere.link serves the Vite static build from the domain root.
 export default defineConfig(({ mode }) => {
-  const appRuntime = mode === 'public' ? 'public' : (process.env.APP_RUNTIME ?? 'apps-in-toss')
+  const shouldAnalyzeBundle = mode === 'analyze' || process.env.BUNDLE_ANALYZE === 'true'
+  const appRuntime = mode === 'public' || mode === 'analyze' ? 'public' : (process.env.APP_RUNTIME ?? 'apps-in-toss')
   if (appRuntime !== 'public' && appRuntime !== 'apps-in-toss') {
     throw new Error(`Invalid APP_RUNTIME: ${appRuntime}. Expected "public" or "apps-in-toss".`)
   }
@@ -15,10 +17,23 @@ export default defineConfig(({ mode }) => {
       : './src/shared/ui/tdsRuntime/apps-in-toss.tsx'
   const tdsMobileAdapter =
     appRuntime === 'public' ? './src/shared/ui/tdsMobile/public.tsx' : './src/shared/ui/tdsMobile/apps-in-toss.tsx'
+  const plugins: PluginOption[] = [react()]
+
+  if (shouldAnalyzeBundle) {
+    plugins.push(
+      visualizer({
+        brotliSize: true,
+        filename: 'dist-analyze/bundle-stats.html',
+        gzipSize: true,
+        open: false,
+        template: 'treemap',
+      })
+    )
+  }
 
   return {
     base: '/',
-    plugins: [react()],
+    plugins,
     resolve: {
       alias: {
         '@aniwhere/tds-runtime': fileURLToPath(new URL(tdsRuntimeAdapter, import.meta.url)),

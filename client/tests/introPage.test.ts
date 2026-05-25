@@ -220,7 +220,7 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
   assert.match(actionsRule, /align-items:\s*center;/)
 })
 
-test('IntroPage exposes temporary UI preview shortcuts during local dev', async () => {
+test('IntroPage exposes a single temporary ADS preview entry through home during local dev', async () => {
   const { IntroPage } = await loadIntroPage()
   const { container, dom, previousGlobals } = setupDom()
   const root = createRoot(container)
@@ -241,12 +241,8 @@ test('IntroPage exposes temporary UI preview shortcuts during local dev', async 
               path: '/intro',
             }),
             React.createElement(Route, {
-              element: React.createElement('p', null, 'explore preview'),
-              path: '/explore',
-            }),
-            React.createElement(Route, {
-              element: React.createElement('p', null, 'search preview'),
-              path: '/search',
+              element: React.createElement('p', null, 'home preview'),
+              path: '/home',
             }),
           ),
         ),
@@ -255,20 +251,21 @@ test('IntroPage exposes temporary UI preview shortcuts during local dev', async 
 
     const previewButtons = container.querySelectorAll('.intro-preview-actions button')
 
-    assert.equal(previewButtons.length, 2)
+    assert.equal(previewButtons.length, 1)
 
     await act(async () => {
       previewButtons[0].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
     })
 
-    assert.match(container.textContent ?? '', /explore preview/)
+    assert.match(container.textContent ?? '', /home preview/)
   } finally {
     cleanupDom(dom, previousGlobals, root)
   }
 
   assert.match(source, /const showIntroUiPreview = import\.meta\.env\.DEV/)
-  assert.match(source, /navigate\('\/explore'\)/)
-  assert.match(source, /returnTo: '\/intro'/)
+  assert.match(source, /navigate\('\/home'\)/)
+  assert.doesNotMatch(source, /navigate\('\/explore'\)/)
+  assert.doesNotMatch(source, /returnTo: '\/intro'/)
   assert.match(cssRuleBody(styles, '.intro-preview-actions'), /display:\s*grid;/)
   assert.match(cssRuleBody(styles, '.intro-preview-note'), /font-size:\s*var\(--ait-font-size-caption\);/)
 })

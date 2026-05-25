@@ -171,7 +171,12 @@ export function AdminShopManagePage() {
         </section>
 
         <div className="admin-shop-create-link">
-          <Button display="full" type="button" onClick={() => navigate('/admin/shops/new')}>
+          <Button
+            className="admin-shop-create-button"
+            display="block"
+            type="button"
+            onClick={() => navigate('/admin/shops/new')}
+          >
             매장 등록
           </Button>
         </div>

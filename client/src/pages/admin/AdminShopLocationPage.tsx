@@ -1,5 +1,8 @@
 ﻿import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { getRegions } from '../../shared/api/regions'
+import type { RegionListItem } from '../../shared/api/types'
 import { geocodeShopAddress, type ShopLocationCandidate } from '../../shared/lib/naverGeocoder'
 import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 import {
@@ -10,6 +13,42 @@ import {
 
 function isLocationNoticeError(message: string) {
   return message.includes('실패') || message.includes('인증') || message.includes('필요')
+}
+
+function normalizeRegionText(value: string | null | undefined) {
+  return (value ?? '').replace(/\s+/g, '').toLocaleLowerCase()
+}
+
+function matchRegionIdForLocation({
+  candidate,
+  query,
+  regions,
+}: {
+  candidate: ShopLocationCandidate
+  query: string
+  regions: RegionListItem[]
+}) {
+  const locationText = [
+    query,
+    candidate.address,
+    candidate.roadAddress,
+    candidate.jibunAddress,
+  ]
+    .map(normalizeRegionText)
+    .filter(Boolean)
+    .join(' ')
+
+  const matchedRegion = regions.find((region) => {
+    const regionName = normalizeRegionText(region.name)
+    const cityRegionName = normalizeRegionText(`${region.city ?? ''}${region.name}`)
+
+    return (
+      (regionName.length > 0 && locationText.includes(regionName)) ||
+      (cityRegionName.length > 0 && locationText.includes(cityRegionName))
+    )
+  })
+
+  return matchedRegion?.id ?? null
 }
 
 export function AdminShopLocationPage() {
@@ -23,6 +62,11 @@ export function AdminShopLocationPage() {
   const canReturnToShopForm = Boolean(
     (location.state as { fromAdminShopCreate?: boolean } | null)?.fromAdminShopCreate,
   )
+  const regionsQuery = useQuery({
+    queryKey: ['regions', 'admin-shop-location'],
+    queryFn: getRegions,
+    staleTime: 5 * 60 * 1000,
+  })
 
   const returnToShopForm = () => {
     if (canReturnToShopForm) {
@@ -58,11 +102,17 @@ export function AdminShopLocationPage() {
 
   const selectLocation = (candidate: ShopLocationCandidate) => {
     const nextDraft = readAdminShopDraft()
+    const matchedRegionId =
+      matchRegionIdForLocation({
+        candidate,
+        query,
+        regions: regionsQuery.data ?? [],
+      }) ?? nextDraft?.regionId ?? null
     const selectedLocation = {
       address: candidate.address,
       px: candidate.px,
       py: candidate.py,
-      regionId: nextDraft?.regionId ?? null,
+      regionId: matchedRegionId,
     }
 
     if (nextDraft) {
@@ -72,6 +122,7 @@ export function AdminShopLocationPage() {
         address: candidate.address,
         px: candidate.px,
         py: candidate.py,
+        regionId: matchedRegionId,
       })
     }
 

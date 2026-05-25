@@ -132,13 +132,8 @@ export function IntroPage() {
     }
   }
 
-  const openExplorePreview = () => {
-    navigate('/explore')
-  }
-
-  const openSearchPreview = () => {
-    const next = new URLSearchParams({ returnTo: '/intro' })
-    navigate(`/search?${next.toString()}`)
+  const openHomePreview = () => {
+    navigate('/home')
   }
 
   return (
@@ -191,11 +186,8 @@ export function IntroPage() {
               {showIntroUiPreview ? (
                 <>
                   <div className="intro-preview-actions" aria-label="임시 UI 확인">
-                    <Button color="light" display="block" onClick={openExplorePreview} size="large" variant="weak">
-                      탐색 UI 먼저 보기
-                    </Button>
-                    <Button color="light" display="block" onClick={openSearchPreview} size="large" variant="weak">
-                      검색 UI 먼저 보기
+                    <Button color="light" display="block" onClick={openHomePreview} size="large" variant="weak">
+                      홈에서 ADS UI 확인하기
                     </Button>
                   </div>
                   <small className="intro-preview-note">임시 확인용 진입점이에요. 로그인 수정 후 제거합니다.</small>
