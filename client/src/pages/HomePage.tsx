@@ -45,11 +45,17 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
 function HomeCtaCardBody({ card }: { card: HomeCtaCard }) {
   return (
     <>
-      <img className="home-cta-image" src={HOME_CTA_IMAGES[card.id]} alt={card.imageAlt} loading="lazy" />
+      <span className="home-cta-media">
+        <img className="home-cta-image" src={HOME_CTA_IMAGES[card.id]} alt={card.imageAlt} loading="lazy" />
+      </span>
       <span className="home-cta-copy">
-        <strong>{card.title}</strong>
-        <small>{card.description}</small>
-        <span className="home-cta-state">{card.enabled ? '바로 보기' : '준비 중'}</span>
+        <strong>
+          {card.headlineLines.map((line) => (
+            <span className="home-cta-copy-line" key={line}>
+              {line}
+            </span>
+          ))}
+        </strong>
       </span>
     </>
   )
@@ -68,7 +74,12 @@ function HomeCtaCarousel({ cards }: { cards: HomeCtaCard[] }) {
               <HomeCtaCardBody card={card} />
             </Link>
           ) : (
-            <article className="home-cta-card home-cta-card-disabled" key={card.id} aria-disabled="true">
+            <article
+              className="home-cta-card home-cta-card-disabled"
+              key={card.id}
+              aria-disabled="true"
+              aria-label={`${card.headlineLines.join(' ')} 준비 중`}
+            >
               <HomeCtaCardBody card={card} />
             </article>
           ),

@@ -295,6 +295,39 @@ Official docs checked with official web fallback:
 | `/home` CTA routing | Product-approved / API-follow-up | Only `지도로 주변 매장 보기` is active and routes to `/explore?view=map`. `즐겨찾기 많은 매장` and `후기 많은 매장` render as disabled `준비 중` cards until the backend exposes favorite-count and review-count sort/filter contracts. |
 | Runtime verification | Needs sandbox | Source tests, lint, and build can verify the CTA assets and route wiring, but 375px ADS visual rhythm and image loading should be checked in Apps in Toss sandbox. |
 
+### 2026-05-26 Home CTA Carousel Visual Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- GridList: https://tossmini-docs.toss.im/tds-mobile/components/grid-list/
+- Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- ListHeader: https://tossmini-docs.toss.im/tds-mobile/components/list-header/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` CTA card frame | Product-approved | The CTA rail keeps an app-owned horizontal carousel because the route needs a preview of the next card and a larger discovery image than the checked `GridList` menu pattern. The visual treatment moved away from full-bleed banner imagery: each CTA is now a white card with a bounded media area and copy below it, preserving the user's requested white carousel feel. |
+| `/home` CTA media usage | Product-approved / Asset-informed | Existing CTA images are still used, but they render inside a clipped media frame instead of as the full card background with a route overlay gradient. This keeps image replacement independent from layout work and aligns better with the checked `Asset` guidance around framed media. The review CTA image still needs a later asset replacement to reduce duplicated pointing-pose mascot usage. |
+| Runtime verification | Passed / Needs follow-up asset | Source test `node --test tests/homeViewModel.test.ts` verifies the structure. ADS sandbox on Pixel 8a emulator at 412px confirmed the white carousel card rhythm, visible next-card preview, and image loading after HMR. The review CTA image still needs later replacement to remove the duplicated pointing-pose visual. |
+
+### 2026-05-26 Home Vertical CTA And Explore List Button Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- ListHeader: https://tossmini-docs.toss.im/tds-mobile/components/list-header/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- useBottomSheet: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-bottom-sheet/
+- Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` vertical CTA carousel | Product-approved / Asset-informed | The three CTA cards now use the newly generated 1024x1536 vertical images from the local Downloads folder. The card frame stays white and app-owned, while the image fills a 2:3 card and the copy is reduced to two title lines: `가까운 매장부터 / 한눈에 보기`, `많이 찜한 매장 / 먼저 둘러보기`, and `후기 많은 매장 / 믿고 찾아보기`. This follows the approved Olive Young-like content-curation carousel direction; TDS `Asset` informed the stable media frame, but TDS Mobile still does not define this exact horizontal content rail. |
+| `/explore` map-backed list results sheet | Product-approved / Regression fixed | The TDS `BottomSheet` remains the list results shell, but `/explore?view=list` no longer unmounts the map or styles the sheet as a full-screen overlay. The list sheet is constrained to the lower surface with a rounded top edge, while the top search, map context, and map/list FAB remain visible above it. This matches the Olive Young-style reference pattern more closely: the bottom sheet is part of the map exploration surface rather than a blocking list page. |
+| `/explore` list toggle over selected POI peek | Product-approved / Regression fixed | The list FAB is restored while a selected-shop peek sheet is visible. To avoid the previous failure mode where the peek sheet owned the lower surface and list rows appeared inside the wrong sheet context, tapping the list FAB with `shopId` present now clears `shopId`/`sheet` through `restoreListView()` and opens `/explore?view=list` as the map-backed TDS `BottomSheet` results surface. The peek state keeps the current-location FAB hidden but keeps the list FAB above the peek sheet with a higher z-index. |
+| Runtime verification | Needs ADS screenshot | Source tests verify the vertical CTA assets, two-line copy, map-backed list sheet layout, and selected-POI list toggle behavior. ADS/device visual verification should still confirm the 375px card crop, text readability, and list FAB tap target after HMR. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

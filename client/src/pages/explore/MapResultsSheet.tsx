@@ -10,7 +10,6 @@ type MapResultShop = Shop & {
 
 type MapResultsSheetProps = {
   visible: boolean
-  topSearch: ReactNode
   appliedFilters: ReactNode
   visibleShops: MapResultShop[]
   totalShops: number
@@ -23,7 +22,6 @@ type MapResultsSheetProps = {
 
 export function MapResultsSheet({
   visible,
-  topSearch,
   appliedFilters,
   visibleShops,
   totalShops,
@@ -43,7 +41,6 @@ export function MapResultsSheet({
       ariaLabelledBy="map-results-sheet-title"
     >
       <div className="map-results-sheet-top">
-        {topSearch}
         {appliedFilters}
         <h2 className="map-results-sheet-title" id="map-results-sheet-title">
           검색 결과

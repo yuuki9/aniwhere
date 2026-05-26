@@ -535,6 +535,7 @@ export function ExplorePage() {
 
   const handleListFabClick = () => {
     if (selectedShopId != null) {
+      restoreListView()
       return
     }
 
@@ -691,7 +692,7 @@ export function ExplorePage() {
     : null
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
   const isListSheetOpen = routeViewMode === 'list' && selectedShopId == null
-  const isExploreTopHidden = sheetMode === 'expanded' || isListSheetOpen
+  const isExploreTopHidden = sheetMode === 'expanded'
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
   const showAssistantReturn =
@@ -929,19 +930,17 @@ export function ExplorePage() {
             <AppTopNavigation className="map-route-navigation" showBack onBack={handleExploreBack} />
           ) : null}
 
-          {!isListSheetOpen ? (
-            <ShopMap
-              shops={mappableShops}
-              activeShopId={detailShop?.id ?? null}
-              onSelectShop={handleMapSelectShop}
-              onClearSelection={handleClearSelection}
-              onViewportChange={handleMapViewportChange}
-              userLocation={effectiveUserLocation}
-              focusMode={focusMode}
-              focusRequestId={focusRequestId}
-              selectionOrigin={selectionOrigin}
-            />
-          ) : null}
+          <ShopMap
+            shops={mappableShops}
+            activeShopId={detailShop?.id ?? null}
+            onSelectShop={handleMapSelectShop}
+            onClearSelection={handleClearSelection}
+            onViewportChange={handleMapViewportChange}
+            userLocation={effectiveUserLocation}
+            focusMode={focusMode}
+            focusRequestId={focusRequestId}
+            selectionOrigin={selectionOrigin}
+          />
 
           <div
             className={`map-explore-top ${isExploreTopHidden ? 'map-explore-top-hidden' : ''}`}
@@ -996,7 +995,7 @@ export function ExplorePage() {
 
           <MapOverlayControls
             visible={sheetMode !== 'expanded'}
-            showListToggle={selectedShopId == null}
+            showListToggle={sheetMode !== 'expanded'}
             isListSheetOpen={isListSheetOpen}
             locationState={locationState}
             onListClick={handleListFabClick}
@@ -1025,16 +1024,6 @@ export function ExplorePage() {
 
           <MapResultsSheet
             visible={isListSheetOpen}
-            topSearch={
-              <ExploreTopSearch
-                attachTriggerRef={isListSheetOpen}
-                filterTriggerRef={filterTriggerRef}
-                isFilterSheetOpen={isFilterSheetOpen}
-                appliedFilterCount={appliedFilterCount}
-                onSearchClick={() => navigate(searchHref)}
-                onFilterClick={() => setIsFilterSheetOpen(true)}
-              />
-            }
             appliedFilters={renderAppliedFilterChips()}
             visibleShops={visibleShops}
             totalShops={totalShops}
