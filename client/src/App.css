@@ -1025,14 +1025,34 @@ p {
   min-height: var(--ait-component-intro-action-height);
 }
 
-.intro-start-note {
-  display: flex;
-  flex-direction: column;
+.ait-bottom-sheet-dimmer {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  border: 0;
+  background: rgba(15, 23, 42, 0.36);
+}
+
+.ait-bottom-sheet {
+  z-index: 1050;
+}
+
+.ait-bottom-sheet-double-cta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--ait-space-4);
-  padding: var(--ait-space-8);
-  border: 1px solid var(--ait-color-border-strong);
-  border-radius: var(--ait-radius-xl);
-  background: var(--ait-color-background-soft-mid);
+}
+
+.ait-bottom-sheet-select {
+  display: grid;
+  gap: var(--ait-space-2);
+}
+
+.ait-bottom-sheet-select-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ait-space-4);
+  min-height: 48px;
 }
 
 .intro-mobile-actions {
@@ -1044,18 +1064,25 @@ p {
   padding-top: 0;
 }
 
-.intro-preview-actions {
-  display: grid;
-  width: 100%;
-  gap: var(--ait-space-2);
-  margin-top: var(--ait-space-2);
+.intro-login-skip-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ait-space-2) var(--ait-space-4);
+  border: 0;
+  border-radius: var(--ait-radius-full);
+  background: transparent;
+  color: var(--ait-color-text-secondary);
+  font: inherit;
+  font-size: var(--ait-font-size-body-md);
+  font-weight: 700;
+  letter-spacing: 0;
+  cursor: pointer;
 }
 
-.intro-preview-note {
-  color: var(--ait-color-gray-500);
-  font-size: var(--ait-font-size-caption);
-  line-height: var(--ait-line-height-body);
-  text-align: center;
+.intro-login-skip-button:active {
+  color: var(--ait-color-brand-pressed);
 }
 
 .intro-nickname-card {
@@ -1107,6 +1134,66 @@ p {
   font-size: var(--ait-font-size-body-sm);
   line-height: var(--ait-line-height-body);
   text-align: center;
+}
+
+.intro-auth-debug-panel {
+  display: grid;
+  width: 100%;
+  gap: var(--ait-space-4);
+  padding: var(--ait-space-4);
+  border: 1px solid #fecaca;
+  border-radius: var(--ait-radius-md);
+  background: #fff7f7;
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-caption);
+  line-height: var(--ait-line-height-body);
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.intro-auth-debug-panel p {
+  color: var(--ait-color-red-700);
+  font-size: var(--ait-font-size-body-sm);
+  font-weight: 700;
+}
+
+.intro-auth-debug-group {
+  display: grid;
+  gap: var(--ait-space-2);
+}
+
+.intro-auth-debug-group strong {
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-caption);
+}
+
+.intro-auth-debug-meta,
+.intro-auth-debug-code {
+  display: grid;
+  gap: var(--ait-space-2);
+  margin: 0;
+}
+
+.intro-auth-debug-meta > div,
+.intro-auth-debug-code > div {
+  display: grid;
+  gap: var(--ait-space-1);
+}
+
+.intro-auth-debug-code {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: var(--ait-space-1);
+}
+
+.intro-auth-debug-panel dt {
+  color: var(--ait-color-gray-600);
+  font-weight: 700;
+}
+
+.intro-auth-debug-panel dd {
+  margin: 0;
+  color: var(--ait-color-gray-900);
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
 }
 
 .intro-footer-actions {
@@ -1262,6 +1349,113 @@ p {
   background: var(--ait-color-gray-50);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   transform: translateY(-1px);
+}
+
+.home-cta-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ait-space-5);
+  padding-top: var(--ait-space-2);
+}
+
+.home-cta-carousel {
+  display: flex;
+  gap: var(--ait-space-4);
+  margin-right: calc(var(--ait-space-1) * -1);
+  overflow-x: auto;
+  padding: var(--ait-space-1) var(--ait-space-8) var(--ait-space-3) 0;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.home-cta-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.home-cta-card {
+  display: grid;
+  position: relative;
+  flex: 0 0 min(82vw, 320px);
+  min-height: 178px;
+  overflow: hidden;
+  border: 1px solid var(--ait-color-border);
+  border-radius: var(--ait-radius-md);
+  background: var(--ait-color-surface-raised);
+  box-shadow: var(--ait-shadow-sm);
+  color: inherit;
+  scroll-snap-align: start;
+  text-decoration: none;
+}
+
+.home-cta-card::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.82) 42%, rgba(255, 255, 255, 0) 72%);
+  content: '';
+  pointer-events: none;
+}
+
+.home-cta-card:not(.home-cta-card-disabled):active {
+  transform: translateY(1px);
+}
+
+.home-cta-card-disabled {
+  color: var(--ait-color-text-secondary);
+}
+
+.home-cta-card-disabled .home-cta-image {
+  filter: saturate(0.72);
+}
+
+.home-cta-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-cta-copy {
+  display: flex;
+  position: relative;
+  z-index: 1;
+  width: min(64%, 196px);
+  min-width: 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--ait-space-2);
+  padding: var(--ait-space-7) var(--ait-space-6);
+}
+
+.home-cta-copy strong {
+  color: var(--ait-color-text-primary);
+  font-size: var(--ait-font-size-body-lg);
+  font-weight: 800;
+  line-height: var(--ait-line-height-tight);
+}
+
+.home-cta-copy small {
+  color: var(--ait-color-text-secondary);
+  font-size: var(--ait-font-size-body-sm);
+  line-height: var(--ait-line-height-body);
+}
+
+.home-cta-state {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: var(--ait-space-1);
+  padding: var(--ait-space-1) var(--ait-space-3);
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-gray-100);
+  color: var(--ait-color-text-secondary);
+  font-size: var(--ait-font-size-caption);
+  font-weight: 800;
+  line-height: var(--ait-line-height-tight);
+}
+
+.home-cta-card:not(.home-cta-card-disabled) .home-cta-state {
+  background: var(--ait-color-brand);
+  color: var(--ait-color-gray-0);
 }
 
 .home-section-head {
@@ -2541,6 +2735,7 @@ p {
 .global-nav-item:focus-visible,
 .ait-button:focus-visible,
 .ait-navigation-icon-button:focus-visible,
+.home-cta-card:focus-visible,
 .home-quick-menu-item:focus-visible,
 .map-search-field:focus-visible,
 .map-zoom-button:focus-visible,

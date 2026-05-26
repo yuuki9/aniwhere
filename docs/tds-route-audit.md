@@ -260,6 +260,41 @@ Official docs checked with `ax search tds-web` CLI fallback because the Apps in 
 | Cluster markers | Product-approved | Clustering remains enabled at lower zoom levels to protect dense shop areas and WebView performance. The visual cluster marker changed from a round icon to a count chip so the map reads as a consistent chip-based surface instead of mixing icon and label metaphors. |
 | Runtime verification | Needs sandbox | Local source tests and builds can verify marker generation, but overlapping labels, tap hit area, and real Naver Maps WebView rendering should be checked on a 375px Apps in Toss sandbox device. |
 
+### 2026-05-26 Login Bypass, Explore List Sheet, Shop Favorite Follow-up
+
+Official docs checked with official web fallback because `ax` was not on PATH in this session:
+
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- useBottomSheet: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-bottom-sheet/
+- Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+- Swagger `addFavoriteShop`: https://api.aniwhere.link/swagger-ui/index.html#/Shop/addFavoriteShop
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/intro` login-free home entry | Product-approved / Temporary unblock | While Toss login token exchange is blocked in sandbox, intro exposes a secondary `로그인 없이 둘러보기` action that routes to `/home`. The primary Toss login CTA remains first and unchanged, so this is a temporary exploration bypass rather than a replacement login path. Runtime login still needs sandbox verification. |
+| `/explore` list results sheet | TDS-required / Product-approved adaptation | `MapResultsSheet` now renders through the `@aniwhere/tds-mobile` `BottomSheet` facade. It uses `disableDimmer` and `UNSAFE_disableFocusLock` because the list mode is part of the map exploration surface rather than a blocking modal task. Peek and expanded shop detail sheets remain app-owned persistent map-attached surfaces because they are coupled to URL state, drag gestures, and native/browser back folding; replacing them should remain a separate behavior migration with sandbox evidence. |
+| `/explore` quick status chip | Product-approved / Regression fix | `영업중` remains a map quick chip backed by the `status=ACTIVE` shop API parameter, but it no longer creates a duplicate applied filter chip labelled `Open`. The active quick chip itself is the visible state affordance. |
+| `/explore` sheet controls | Product-approved / Regression fix | The selected-shop peek sheet stays app-owned. After the list sheet moved to TDS `BottomSheet`, the existing map list FAB could visually overlap the peek summary at 375px. Peek mode now gets a dedicated `map-surface-sheet-peek` surface class that lifts the shared zoom/list control stack with a responsive `--map-control-bottom` value and hides only the current-location FAB while the shop route/summary action is visible. In list-sheet mode, the map toggle FAB is lifted and the scrollable result panel reserves bottom padding so sheet content and the FAB do not compete. The list FAB remains available instead of being hidden. |
+| `/explore` list toggle vs selected shop sheet | Product-approved / Regression fix | The blue list toggle is scoped to the base map/list view switch only. When a shop is selected (`shopId` is present), the selected-shop bottom sheet keeps ownership of the lower surface and the list toggle is not rendered, so tapping map controls cannot replace the shop summary/detail bottom sheet with result `ListRow` content. The toggle still appears on first `/explore` entry and while the list sheet is open, where it switches between map and list view. |
+| `/search` result to `/explore` detail | Product-approved / Regression fix | Search results no longer add an implicit `regionIds` filter when opening a selected shop in `/explore`, so selecting a shop from a work rail/search result does not create a region facet chip. The current search URL is passed through route state, and the `/explore` back icon returns to that URL when the selected detail was opened from search, preserving the work keyword/rail context. |
+| `/shop/detail/:shopId` favorite action | Product-approved / API-required | Shop detail now exposes a heart icon action beside the status pill. It calls Swagger-backed `POST /api/v1/shops/{id}/favorite` and `DELETE /api/v1/shops/{id}/favorite` through existing API helpers, uses stored Aniwhere auth when available, and shows TDS `Toast` feedback. The backend currently does not expose an initial `favorite` field on `Shop`, so the first render starts unselected and updates local state after a successful action. |
+| Runtime verification | Needs sandbox | Source tests verify routing/API wiring and TDS facade usage. Apps in Toss BottomSheet animation, safe area, back behavior, and authenticated favorite mutation still need sandbox/device confirmation after login is fixed. |
+
+### 2026-05-26 Home CTA Carousel Follow-up
+
+Official docs checked with official web fallback:
+
+- GridList: https://tossmini-docs.toss.im/tds-mobile/components/grid-list/
+- Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` quick menu replacement | Product-approved | The previous icon quick menu is replaced with a three-card horizontal CTA rail headed `오늘 어디를 둘러볼까요?`. Official `GridList` supports image/text menu items, but `/home` keeps an app-owned carousel because the approved discovery pattern needs one larger visual card per action and TDS Mobile does not expose a dedicated carousel primitive in the checked docs. The checked `Asset` and `Button` docs inform image usage and action semantics, while the route uses token-compatible CSS and plain links/articles. |
+| `/home` CTA routing | Product-approved / API-follow-up | Only `지도로 주변 매장 보기` is active and routes to `/explore?view=map`. `즐겨찾기 많은 매장` and `후기 많은 매장` render as disabled `준비 중` cards until the backend exposes favorite-count and review-count sort/filter contracts. |
+| Runtime verification | Needs sandbox | Source tests, lint, and build can verify the CTA assets and route wiring, but 375px ADS visual rhythm and image loading should be checked in Apps in Toss sandbox. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

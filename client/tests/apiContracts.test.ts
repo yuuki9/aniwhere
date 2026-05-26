@@ -60,6 +60,7 @@ test('client API functions cover Swagger paths added for facets, favorites, auth
 
   assert.match(auth, /export function tossLogin/)
   assert.match(auth, /\/api\/v1\/auth\/toss\/login/)
+  assert.match(auth, /request<LoginResult>\('\/api\/v1\/auth\/toss\/login',\s*\{\s*method:\s*'POST'/s)
   assert.match(auth, /export function refreshAuth/)
   assert.match(auth, /export function logout/)
 

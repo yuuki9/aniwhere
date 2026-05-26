@@ -2,13 +2,11 @@ import { tossLogin } from '../api/auth'
 import { checkNicknameAvailability, getMyProfile, updateMyNickname } from '../api/users'
 import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../api/types'
 import type { EntryFlowResult } from './auth'
+import { normalizeTossLoginReferrerForServer, toMaskedAuthorizationCode } from './authDebug'
 import { createAuthSession, saveAuthSession, updateAuthSessionUser, type AuthSession } from './authSession'
 import { toSafeErrorSummary } from './safeError'
 
 export type EntrySessionResult =
-  | {
-      mode: 'preview'
-    }
   | {
       mode: 'ready'
       session: AuthSession
@@ -36,20 +34,22 @@ export async function completeServiceEntry(
   entry: EntryFlowResult,
   deps: CompleteServiceEntryDeps = defaultCompleteServiceEntryDeps,
 ): Promise<EntrySessionResult> {
-  if (entry.mode === 'preview') {
-    return { mode: 'preview' }
-  }
-
   let login: LoginResult
+  const loginPayload = {
+    authorizationCode: entry.authorizationCode,
+    referrer: normalizeTossLoginReferrerForServer(entry.referrer),
+  }
+  console.info('[aniwhere:auth-debug] server login payload', {
+    authorizationCode: toMaskedAuthorizationCode(loginPayload.authorizationCode),
+    referrer: loginPayload.referrer,
+  })
+
   try {
-    login = await deps.login({
-      authorizationCode: entry.authorizationCode,
-      referrer: entry.referrer,
-    })
+    login = await deps.login(loginPayload)
   } catch (error) {
     console.error('[aniwhere:auth-entry] server login failed', {
       error: toSafeErrorSummary(error),
-      referrer: entry.referrer,
+      referrer: loginPayload.referrer,
     })
     throw error
   }

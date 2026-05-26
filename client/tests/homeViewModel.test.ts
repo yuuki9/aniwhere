@@ -3,28 +3,28 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import * as homeViewModel from '../src/pages/homeViewModel.ts'
 
-test('homeViewModel exports home menu, work preview, and review preview builders', () => {
+test('homeViewModel exports home CTA, work preview, and review preview builders', () => {
   assert.deepEqual(
     Object.keys(homeViewModel).sort(),
-    ['buildHomeQuickMenus', 'buildHomeReviewPreviewItems', 'buildHomeWorkPreviewItems'],
+    ['buildHomeCtaCards', 'buildHomeReviewPreviewItems', 'buildHomeWorkPreviewItems'],
   )
 })
 
-test('buildHomeQuickMenus keeps search out of quick menu and shows admin only when requested', () => {
-  const menus = homeViewModel.buildHomeQuickMenus()
-  const adminMenus = homeViewModel.buildHomeQuickMenus({ includeAdmin: true })
+test('buildHomeCtaCards keeps the map CTA active and future sort CTAs disabled', () => {
+  const cards = homeViewModel.buildHomeCtaCards()
 
   assert.deepEqual(
-    menus.map((menu) => menu.id),
-    ['map', 'reviews'],
+    cards.map((card) => card.id),
+    ['map', 'favorites', 'reviews'],
   )
-  assert.equal(menus[0].href, '/explore?view=map')
-  assert.equal(menus.some((menu) => menu.href.startsWith('/search')), false)
   assert.deepEqual(
-    adminMenus.map((menu) => menu.id),
-    ['map', 'reviews', 'admin'],
+    cards.map((card) => card.enabled),
+    [true, false, false],
   )
-  assert.equal(adminMenus[2].href, '/admin/shops')
+  assert.equal(cards[0].href, '/explore?view=map')
+  assert.equal(cards[1].href, null)
+  assert.equal(cards[2].href, null)
+  assert.equal(cards.some((card) => card.href?.startsWith('/search')), false)
 })
 
 test('HomePage uses user-facing sections without live region attributes', () => {
@@ -33,9 +33,11 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.match(source, /home-pending-card/)
   assert.doesNotMatch(source, /AitTop/)
   assert.match(source, /HomeSearchEntry/)
-  assert.match(source, /HomeQuickMenuSection/)
+  assert.match(source, /HomeCtaCarousel/)
+  assert.match(source, /home-cta-card/)
   assert.match(source, /home-work-poster-card/)
   assert.match(source, /home-review-preview-section/)
+  assert.doesNotMatch(source, /HomeQuickMenuSection/)
   assert.doesNotMatch(source, /API/)
   assert.doesNotMatch(source, /aria-live="polite"/)
   assert.doesNotMatch(source, /role="status"/)
@@ -52,9 +54,18 @@ test('HomePage sends work poster searches to SearchPage with work scope and retu
   assert.doesNotMatch(source, /to=\{`\/explore\?workId=\$\{work\.id\}&view=list`\}/)
 })
 
-test('HomePage exposes the admin entry during local preview unlock', () => {
+test('HomePage imports CTA images and routes only the map CTA for now', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+  const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
-  assert.match(source, /canUseAdminPreview/)
-  assert.match(source, /includeAdmin: isAdminUnlocked\(\) \|\| canUseAdminPreview\(\)/)
+  assert.match(source, /homeCtaMapImage/)
+  assert.match(source, /homeCtaFavoritesImage/)
+  assert.match(source, /homeCtaReviewsImage/)
+  assert.match(source, /const ctaCards = useMemo\(\(\) => buildHomeCtaCards\(\), \[\]\)/)
+  assert.match(source, /card\.enabled && card\.href/)
+  assert.match(source, /to=\{card\.href\}/)
+  assert.doesNotMatch(source, /canUseAdminPreview/)
+  assert.doesNotMatch(source, /isAdminUnlocked/)
+  assert.match(styles, /\.home-cta-carousel/)
+  assert.match(styles, /\.home-cta-card-disabled/)
 })

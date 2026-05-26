@@ -194,6 +194,56 @@ type PublicToastProps = {
   'aria-live'?: 'off' | 'polite' | 'assertive'
 }
 
+type PublicBottomSheetProps = HTMLAttributes<HTMLElement> & {
+  open: boolean
+  onClose?: () => void
+  header?: ReactNode
+  headerDescription?: ReactNode
+  cta?: ReactNode
+  disableDimmer?: boolean
+  ariaLabelledBy?: string
+  ariaDescribedBy?: string
+  UNSAFE_disableFocusLock?: boolean
+}
+
+export function BottomSheet({
+  children,
+  className,
+  cta,
+  header,
+  headerDescription,
+  open,
+  onClose,
+  disableDimmer = false,
+  ariaLabelledBy,
+  ariaDescribedBy,
+  UNSAFE_disableFocusLock = false,
+  ...props
+}: PublicBottomSheetProps) {
+  if (!open) {
+    return null
+  }
+
+  return (
+    <>
+      {!disableDimmer ? <button aria-label="바텀시트 닫기" className="ait-bottom-sheet-dimmer" type="button" onClick={onClose} /> : null}
+      <section
+        aria-describedby={ariaDescribedBy}
+        aria-labelledby={ariaLabelledBy}
+        className={['ait-bottom-sheet', className].filter(Boolean).join(' ')}
+        data-disable-focus-lock={UNSAFE_disableFocusLock ? 'true' : undefined}
+        role="dialog"
+        {...props}
+      >
+        {header}
+        {headerDescription}
+        {children}
+        {cta != null ? <div className="ait-bottom-sheet-cta">{cta}</div> : null}
+      </section>
+    </>
+  )
+}
+
 export function Toast({
   open,
   text,

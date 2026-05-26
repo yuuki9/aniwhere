@@ -25,7 +25,7 @@ const loadAuthEntryFlow = async () => {
         getProfile: (accessToken: string) => Promise<UserSummary>
         saveSession: (session: unknown) => void
       },
-    ) => Promise<{ mode: 'preview' | 'ready' | 'needsNickname' }>
+    ) => Promise<{ mode: 'ready' | 'needsNickname' }>
     saveAniwhereNickname: (
       nickname: string,
       accessToken: string,
@@ -83,9 +83,39 @@ test('completeServiceEntry passes Toss authorization code to the server and open
   )
 
   assert.equal(result.mode, 'ready')
-  assert.deepEqual(calls[0], { authorizationCode: 'code-1', referrer: 'SANDBOX' })
+  assert.deepEqual(calls[0], { authorizationCode: 'code-1', referrer: 'sandbox' })
   assert.deepEqual(calls[1], { accessToken: 'access-token' })
   assert.match(JSON.stringify(calls[2]), /refresh-token/)
+})
+
+test('completeServiceEntry logs a masked server login payload for sandbox diagnosis', async () => {
+  const { completeServiceEntry } = await loadAuthEntryFlow()
+  const consoleInfo = console.info
+  const infoCalls: unknown[][] = []
+  console.info = (...args: unknown[]) => {
+    infoCalls.push(args)
+  }
+
+  try {
+    await completeServiceEntry(
+      { mode: 'toss', authorizationCode: 'code-secret-123456', referrer: 'SANDBOX' },
+      {
+        login: async () => loginResult,
+        getProfile: async () => userWithNickname,
+        saveSession: () => undefined,
+      },
+    )
+  } finally {
+    console.info = consoleInfo
+  }
+
+  const serialized = JSON.stringify(infoCalls)
+  assert.match(serialized, /\[aniwhere:auth-debug\] server login payload/)
+  assert.match(serialized, /sandbox/)
+  assert.match(serialized, /"length":18/)
+  assert.match(serialized, /"prefix":"code"/)
+  assert.match(serialized, /"suffix":"3456"/)
+  assert.doesNotMatch(serialized, /code-secret-123456/)
 })
 
 test('completeServiceEntry asks for an Aniwhere nickname when the server marks a new or unnamed user', async () => {
@@ -149,15 +179,28 @@ test('saveAniwhereNickname rejects unavailable nicknames before updating the pro
 test('auth flow logs safe error summaries instead of raw error objects', () => {
   const auth = source('../src/shared/lib/auth.ts')
   const authEntryFlow = source('../src/shared/lib/authEntryFlow.ts')
+  const authDebug = source('../src/shared/lib/authDebug.ts')
   const rawAppLoginErrorLogPattern = /console\.error\(\s*'\[aniwhere:auth\] appLogin failed'\s*,\s*error\s*\)/
   const rawAuthEntryErrorLogPattern =
     /console\.error\(\s*'\[aniwhere:auth-entry\][^']*'\s*,\s*\{\s*error\s*\}\s*\)/s
 
   assert.match(auth, /toSafeErrorSummary\(error\)/)
   assert.match(authEntryFlow, /error: toSafeErrorSummary\(error\)/)
+  assert.match(authDebug, /toMaskedAuthorizationCode/)
+  assert.match(authDebug, /normalizeTossLoginReferrerForServer/)
+  assert.match(auth, /\[aniwhere:auth-debug\] appLogin result/)
+  assert.match(authEntryFlow, /\[aniwhere:auth-debug\] server login payload/)
   assert.match("console.error('[aniwhere:auth-entry] server login failed', { error })", rawAuthEntryErrorLogPattern)
   assert.doesNotMatch(auth, rawAppLoginErrorLogPattern)
   assert.doesNotMatch(authEntryFlow, rawAuthEntryErrorLogPattern)
+})
+
+test('startServiceEntry does not bypass Toss login with a preview session', () => {
+  const auth = source('../src/shared/lib/auth.ts')
+
+  assert.doesNotMatch(auth, /mode:\s*'preview'/)
+  assert.doesNotMatch(auth, /return\s+\{\s*mode:\s*'preview'\s*\}/)
+  assert.match(auth, /appLogin\(\)/)
 })
 
 test('auth session storage failures are contained', () => {

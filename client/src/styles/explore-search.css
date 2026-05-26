@@ -26,6 +26,16 @@
   --map-overlay-bottom: 210px;
 }
 
+.map-surface-app-v2.map-surface-sheet-peek {
+  --map-control-bottom: clamp(260px, 42dvh, 360px);
+  --map-overlay-bottom: clamp(288px, calc(42dvh + 28px), 388px);
+}
+
+.map-surface-app-v2.map-surface-list-open {
+  --map-control-bottom: 112px;
+  --map-overlay-bottom: 136px;
+}
+
 .map-surface-sheet-expanded .map-zoom-control,
 .map-surface-sheet-expanded .map-location-fab,
 .map-surface-list-open .map-zoom-control,
@@ -33,6 +43,14 @@
 .map-surface-sheet-expanded .map-list-fab,
 .map-surface-sheet-expanded .map-llm-fab {
   display: none;
+}
+
+.map-surface-sheet-peek .map-location-fab {
+  display: none;
+}
+
+.map-surface-list-open .map-list-fab {
+  bottom: max(72px, calc(env(safe-area-inset-bottom) + 64px));
 }
 
 .map-surface-app-v2 .map-naver,
@@ -1365,6 +1383,14 @@
   gap: var(--ait-space-6);
 }
 
+.map-results-sheet-title {
+  margin: 0;
+  color: var(--ait-color-text-primary);
+  font-size: var(--ait-font-size-title-sm);
+  font-weight: 800;
+  line-height: var(--ait-line-height-title);
+}
+
 .map-sheet-summary-head,
 .map-results-card {
   display: flex;
@@ -1395,6 +1421,10 @@
   overflow: auto;
   min-height: 0;
   padding-bottom: 4px;
+}
+
+.map-surface-list-open .map-results-sheet-list {
+  padding-bottom: max(104px, calc(env(safe-area-inset-bottom) + 96px));
 }
 
 .map-results-sheet-loading {
@@ -3384,6 +3414,53 @@
 .shop-detail-shell {
   gap: 16px;
   padding-bottom: 48px;
+}
+
+.shop-detail-summary-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ait-space-3);
+  flex: 0 0 auto;
+}
+
+.shop-detail-favorite-button {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ait-color-border-strong);
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-gray-0);
+  color: var(--ait-color-gray-600);
+  cursor: pointer;
+  box-shadow: var(--ait-shadow-sm);
+}
+
+.shop-detail-favorite-button[data-favorite='true'] {
+  border-color: rgba(255, 103, 79, 0.32);
+  background: var(--ait-color-intro-title-highlight);
+  color: var(--ait-color-aniwhere-text-coral);
+}
+
+.shop-detail-favorite-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.shop-detail-favorite-icon {
+  width: 22px;
+  height: 22px;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.shop-detail-favorite-button[data-favorite='true'] .shop-detail-favorite-icon {
+  fill: currentcolor;
 }
 
 .shop-detail-topbar {

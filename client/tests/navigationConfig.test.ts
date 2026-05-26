@@ -6,6 +6,7 @@ const mainLayoutSource = () => fs.readFileSync(new URL('../src/shared/ui/MainLay
 const lazyRouteComponentsSource = () => fs.readFileSync(new URL('../src/app/lazyRouteComponents.tsx', import.meta.url), 'utf8')
 const routerSource = () => fs.readFileSync(new URL('../src/app/router.tsx', import.meta.url), 'utf8')
 const viteConfigSource = () => fs.readFileSync(new URL('../vite.config.ts', import.meta.url), 'utf8')
+const graniteConfigSource = () => fs.readFileSync(new URL('../granite.config.ts', import.meta.url), 'utf8')
 const packageSource = () => fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
 const exploreSearchCssSource = () => fs.readFileSync(new URL('../src/styles/explore-search.css', import.meta.url), 'utf8')
 
@@ -21,6 +22,18 @@ test('Vite keeps strict local ADS port but avoids CI port collisions', () => {
 
   assert.match(source, /port:\s*5173/)
   assert.match(source, /strictPort:\s*process\.env\.CI !== 'true'/)
+})
+
+test('Apps in Toss dev server keeps the local loopback host until LAN sandbox setup is enabled', () => {
+  const granite = graniteConfigSource()
+  const vite = viteConfigSource()
+
+  assert.match(granite, /host:\s*'localhost'/)
+  assert.match(granite, /dev:\s*'vite'/)
+  assert.doesNotMatch(granite, /ANIWHERE_DEV_HOST/)
+  assert.doesNotMatch(granite, /networkInterfaces/)
+  assert.doesNotMatch(granite, /vite --host 0\.0\.0\.0/)
+  assert.match(vite, /host:\s*'127\.0\.0\.1'/)
 })
 
 test('Vite exposes an opt-in public bundle analyzer report', () => {

@@ -60,6 +60,18 @@ test('SearchPage sends work-scoped searches to the shop search API workKeyword p
   assert.match(apiTypes, /workKeyword\?: string/)
 })
 
+test('SearchPage opens explore details without adding implicit region filters and preserves the search route', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /const location = useLocation\(\)/)
+  assert.match(source, /const searchReturnTo = `\$\{location\.pathname\}\$\{location\.search\}`/)
+  assert.match(source, /const buildExploreHref = \(shopId: number\) =>/)
+  assert.match(source, /to=\{buildExploreHref\(shop\.id\)\}/)
+  assert.match(source, /state=\{\{ returnTo: searchReturnTo \}\}/)
+  assert.doesNotMatch(source, /buildExploreHref\(shop\.id, shop\.regionId\)/)
+  assert.doesNotMatch(source, /next\.set\('regionIds'/)
+})
+
 test('SearchPage default search bar falls back to workKeyword when shop-name search is empty', () => {
   const source = searchPageSource()
 

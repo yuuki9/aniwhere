@@ -63,7 +63,7 @@ type ViewMode = 'map' | 'list'
 type SheetMode = 'peek' | 'expanded'
 type SelectionOrigin = 'map' | 'list' | null
 type ExploreLocationState = {
-  returnTo?: '/home'
+  returnTo?: string
 } | null
 type DetailMediaTone = (typeof DETAIL_MEDIA_TONES)[number]
 type DetailMediaItem = {
@@ -81,6 +81,10 @@ function getLocationErrorMessage(error: unknown) {
   }
 
   return '현재 위치를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.'
+}
+
+function isSafeExploreReturnTo(returnTo: string | undefined) {
+  return returnTo != null && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : null
 }
 
 type MapBounds = MapViewport['bounds']
@@ -214,6 +218,7 @@ export function ExplorePage() {
     [selectedFilters.status],
   )
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
+  const safeRouteReturnTo = isSafeExploreReturnTo(routeState?.returnTo)
   const searchReturnTo = `${location.pathname}${location.search}`
   const searchHref = `/search?returnTo=${encodeURIComponent(searchReturnTo)}`
 
@@ -529,8 +534,7 @@ export function ExplorePage() {
   }
 
   const handleListFabClick = () => {
-    if (detailShop) {
-      restoreListView()
+    if (selectedShopId != null) {
       return
     }
 
@@ -566,6 +570,11 @@ export function ExplorePage() {
 
     if (isListSheetOpen) {
       handleSwitchView('map')
+      return
+    }
+
+    if (selectedShopId != null && safeRouteReturnTo) {
+      navigate(safeRouteReturnTo, { replace: true })
       return
     }
 
@@ -909,6 +918,7 @@ export function ExplorePage() {
             'map-surface-app-v2',
             usesTossNavigation ? 'map-surface-toss-navigation' : 'map-surface-local-navigation',
             detailShop ? 'map-surface-sheet-open' : '',
+            sheetMode === 'peek' && detailShop ? 'map-surface-sheet-peek' : '',
             sheetMode === 'expanded' ? 'map-surface-sheet-expanded' : '',
             isListSheetOpen ? 'map-surface-list-open' : '',
           ]
@@ -986,6 +996,7 @@ export function ExplorePage() {
 
           <MapOverlayControls
             visible={sheetMode !== 'expanded'}
+            showListToggle={selectedShopId == null}
             isListSheetOpen={isListSheetOpen}
             locationState={locationState}
             onListClick={handleListFabClick}
@@ -1029,6 +1040,7 @@ export function ExplorePage() {
             totalShops={totalShops}
             isLoading={shopsQuery.isLoading}
             listRef={listScrollRef}
+            onClose={() => handleSwitchView('map')}
             onScroll={handleListScroll}
             onSelectShop={handleListSelectShop}
           />

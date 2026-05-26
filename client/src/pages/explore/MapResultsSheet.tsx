@@ -2,6 +2,7 @@ import type { ReactNode, RefObject, UIEvent } from 'react'
 import type { Shop } from '../../shared/api/types'
 import { formatRelativeUpdated } from '../../shared/lib/format'
 import { StatusPill } from '../../shared/ui/StatusPill'
+import { BottomSheet } from '@aniwhere/tds-mobile'
 
 type MapResultShop = Shop & {
   distanceLabel?: string | null
@@ -15,6 +16,7 @@ type MapResultsSheetProps = {
   totalShops: number
   isLoading: boolean
   listRef: RefObject<HTMLDivElement | null>
+  onClose: () => void
   onScroll: (event: UIEvent<HTMLDivElement>) => void
   onSelectShop: (shopId: number) => void
 }
@@ -27,18 +29,25 @@ export function MapResultsSheet({
   totalShops,
   isLoading,
   listRef,
+  onClose,
   onScroll,
   onSelectShop,
 }: MapResultsSheetProps) {
-  if (!visible) {
-    return null
-  }
-
   return (
-    <section className="map-results-sheet-v2" aria-label="검색 결과 목록">
+    <BottomSheet
+      UNSAFE_disableFocusLock
+      className="map-results-sheet-v2"
+      disableDimmer
+      open={visible}
+      onClose={onClose}
+      ariaLabelledBy="map-results-sheet-title"
+    >
       <div className="map-results-sheet-top">
         {topSearch}
         {appliedFilters}
+        <h2 className="map-results-sheet-title" id="map-results-sheet-title">
+          검색 결과
+        </h2>
       </div>
 
       {visibleShops.length === 0 && !isLoading ? (
@@ -71,6 +80,6 @@ export function MapResultsSheet({
           </div>
         ) : null}
       </div>
-    </section>
+    </BottomSheet>
   )
 }

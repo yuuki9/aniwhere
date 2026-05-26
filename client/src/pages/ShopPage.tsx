@@ -1,11 +1,13 @@
-import { useEffect, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
-import { getShop } from '../shared/api/shops'
+import { addFavoriteShop, getShop, removeFavoriteShop } from '../shared/api/shops'
 import { formatDateTime, formatRelativeUpdated, linkTypeToLabel, statusToLabel } from '../shared/lib/format'
+import { getStoredAccessToken } from '../shared/lib/authSession'
 import { StatusPill } from '../shared/ui/StatusPill'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
+import { Toast } from '@aniwhere/tds-mobile'
 
 function formatFloorLabel(floor: string | null) {
   if (!floor) {
@@ -18,6 +20,8 @@ function formatFloorLabel(floor: string | null) {
 export function ShopPage() {
   const { shopId } = useParams()
   const parsedId = Number(shopId)
+  const [favoriteState, setFavoriteState] = useState<{ shopId: number; isFavorite: boolean } | null>(null)
+  const [favoriteToast, setFavoriteToast] = useState<string | null>(null)
 
   useEffect(() => {
     document.body.classList.add('shop-detail-route-body')
@@ -38,6 +42,27 @@ export function ShopPage() {
     queryFn: () => getShopPhotos(parsedId),
     enabled: Number.isFinite(parsedId),
     staleTime: Infinity,
+  })
+
+  const favoriteShopMutation = useMutation({
+    mutationFn: (nextFavorite: boolean) => {
+      const shop = shopQuery.data
+      if (!shop) {
+        throw new Error('매장 정보를 불러온 뒤 다시 시도해 주세요.')
+      }
+
+      return nextFavorite ? addFavoriteShop(shop.id) : removeFavoriteShop(shop.id)
+    },
+    onSuccess: (_result, nextFavorite) => {
+      const shop = shopQuery.data
+      if (shop) {
+        setFavoriteState({ shopId: shop.id, isFavorite: nextFavorite })
+      }
+      setFavoriteToast(nextFavorite ? '관심 매장에 저장했어요.' : '관심 매장에서 해제했어요.')
+    },
+    onError: (error) => {
+      setFavoriteToast(error instanceof Error ? error.message : '관심 매장을 저장하지 못했어요.')
+    },
   })
 
   const mediaItems = useMemo(() => {
@@ -77,10 +102,30 @@ export function ShopPage() {
   }
 
   const shop = shopQuery.data
+  const isFavoriteShop = shop != null && favoriteState?.shopId === shop.id ? favoriteState.isFavorite : false
+
+  const handleFavoriteClick = () => {
+    if (!shop || favoriteShopMutation.isPending) {
+      return
+    }
+
+    if (!getStoredAccessToken()) {
+      setFavoriteToast('로그인 후 관심 매장을 저장할 수 있어요.')
+      return
+    }
+
+    favoriteShopMutation.mutate(!isFavoriteShop)
+  }
 
   return (
     <main className="app-shell shop-detail-shell">
       <AppTopNavigation showBack />
+      <Toast
+        higherThanCTA
+        open={favoriteToast != null}
+        text={favoriteToast ?? ''}
+        onClose={() => setFavoriteToast(null)}
+      />
 
       {shopQuery.isLoading ? <p className="section">매장 정보를 불러오는 중입니다.</p> : null}
       {shopQuery.isError ? <p className="section error-text">{(shopQuery.error as Error).message}</p> : null}
@@ -113,7 +158,22 @@ export function ShopPage() {
                   {shop.categories.length > 0 ? shop.categories.map((category) => category.name).join(' · ') : '카테고리 확인 중'}
                 </p>
               </div>
-              <StatusPill status={shop.status} />
+              <div className="shop-detail-summary-actions">
+                <StatusPill status={shop.status} />
+                <button
+                  aria-label={isFavoriteShop ? '관심 매장 해제' : '관심 매장 추가'}
+                  aria-pressed={isFavoriteShop}
+                  className="shop-detail-favorite-button"
+                  data-favorite={isFavoriteShop ? 'true' : 'false'}
+                  disabled={favoriteShopMutation.isPending}
+                  type="button"
+                  onClick={handleFavoriteClick}
+                >
+                  <svg className="shop-detail-favorite-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 20s-7-4.4-9.2-9.2C1.2 7.3 3.4 4 6.9 4c2 0 3.5 1 4.3 2.4C12 5 13.5 4 15.5 4c3.5 0 5.7 3.3 4.1 6.8C19 15.6 12 20 12 20Z" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="shop-detail-summary-meta">

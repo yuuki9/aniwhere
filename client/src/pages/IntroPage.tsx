@@ -1,12 +1,17 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
 import introFeatureReviewIcon from '../assets/icons/intro-feature-review.webp'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
-import { isAppsInTossRuntime, startServiceEntry } from '../shared/lib/auth'
+import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
+import {
+  normalizeTossLoginReferrerForServer,
+  toMaskedAuthorizationCode,
+  type MaskedAuthorizationCode,
+} from '../shared/lib/authDebug'
 import type { AuthSession } from '../shared/lib/authSession'
 import { Button } from '@aniwhere/tds-mobile'
 
@@ -71,16 +76,97 @@ function IntroNavigation() {
 
 type EntryRouteState =
   {
-    entryMode: 'preview' | 'toss'
+    entryMode: 'toss'
   }
+
+type AuthDebugEntry = {
+  authorizationCode: MaskedAuthorizationCode
+  referrer: string
+}
+
+type AuthDebugSnapshot = {
+  appLoginResult: AuthDebugEntry | null
+  serverLoginPayload: AuthDebugEntry | null
+}
+
+const EMPTY_AUTH_DEBUG_SNAPSHOT: AuthDebugSnapshot = {
+  appLoginResult: null,
+  serverLoginPayload: null,
+}
+
+function MaskedAuthorizationCodeView({ code }: { code: MaskedAuthorizationCode }) {
+  return (
+    <dl className="intro-auth-debug-code">
+      <div>
+        <dt>present</dt>
+        <dd>{String(code.present)}</dd>
+      </div>
+      <div>
+        <dt>length</dt>
+        <dd>{code.length}</dd>
+      </div>
+      {code.prefix != null ? (
+        <div>
+          <dt>prefix</dt>
+          <dd>{code.prefix}</dd>
+        </div>
+      ) : null}
+      {code.suffix != null ? (
+        <div>
+          <dt>suffix</dt>
+          <dd>{code.suffix}</dd>
+        </div>
+      ) : null}
+    </dl>
+  )
+}
+
+function AuthDebugGroup({ title, value }: { title: string; value: AuthDebugEntry | null }) {
+  if (value == null) {
+    return null
+  }
+
+  return (
+    <section className="intro-auth-debug-group">
+      <strong>{title}</strong>
+      <dl className="intro-auth-debug-meta">
+        <div>
+          <dt>authorizationCode</dt>
+          <dd>
+            <MaskedAuthorizationCodeView code={value.authorizationCode} />
+          </dd>
+        </div>
+        <div>
+          <dt>referrer</dt>
+          <dd>{value.referrer}</dd>
+        </div>
+      </dl>
+    </section>
+  )
+}
+
+function IntroAuthDebugPanel({ snapshot }: { snapshot: AuthDebugSnapshot }) {
+  if (snapshot.appLoginResult == null && snapshot.serverLoginPayload == null) {
+    return null
+  }
+
+  return (
+    <aside className="intro-auth-debug-panel" aria-label="ADS login debug">
+      <p>ADS login debug</p>
+      <AuthDebugGroup title="appLogin result" value={snapshot.appLoginResult} />
+      <AuthDebugGroup title="server login payload" value={snapshot.serverLoginPayload} />
+    </aside>
+  )
+}
 
 export function IntroPage() {
   const navigate = useNavigate()
-  const showIntroUiPreview = import.meta.env.DEV
+  const isEntryAttemptInFlightRef = useRef(false)
   const [isEntering, setIsEntering] = useState(false)
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
   const [pendingNicknameSession, setPendingNicknameSession] = useState<AuthSession | null>(null)
+  const [authDebugSnapshot, setAuthDebugSnapshot] = useState<AuthDebugSnapshot>(EMPTY_AUTH_DEBUG_SNAPSHOT)
   const [nicknameInput, setNicknameInput] = useState('')
 
   useEffect(() => {
@@ -92,13 +178,31 @@ export function IntroPage() {
   }, [])
 
   const handleStart = async () => {
+    if (isEntryAttemptInFlightRef.current) {
+      return
+    }
+
+    isEntryAttemptInFlightRef.current = true
     setIsEntering(true)
     setEntryError(null)
+    setAuthDebugSnapshot(EMPTY_AUTH_DEBUG_SNAPSHOT)
 
     try {
       const entry = await startServiceEntry()
+      const debugEntry = {
+        authorizationCode: toMaskedAuthorizationCode(entry.authorizationCode),
+        referrer: entry.referrer,
+      }
+      const serverDebugEntry = {
+        authorizationCode: debugEntry.authorizationCode,
+        referrer: normalizeTossLoginReferrerForServer(entry.referrer),
+      }
+      setAuthDebugSnapshot({
+        appLoginResult: debugEntry,
+        serverLoginPayload: serverDebugEntry,
+      })
       const result = await completeServiceEntry(entry)
-      const state: EntryRouteState = { entryMode: result.mode === 'preview' ? 'preview' : 'toss' }
+      const state: EntryRouteState = { entryMode: 'toss' }
       if (result.mode === 'needsNickname') {
         setPendingNicknameSession(result.session)
         setNicknameInput(result.user.nickname ?? '')
@@ -106,11 +210,19 @@ export function IntroPage() {
       }
       navigate('/home', { state })
     } catch (error) {
-      console.error('[aniwhere:intro] service entry failed', error)
-      setEntryError('로그인을 완료하지 못했어요. 다시 시도해 주세요.')
+      const message = error instanceof Error ? error.message : '로그인을 완료하지 못했어요. 다시 시도해 주세요.'
+      if (message !== TOSS_LOGIN_UNAVAILABLE_MESSAGE) {
+        console.error('[aniwhere:intro] service entry failed', error)
+      }
+      setEntryError(message)
     } finally {
+      isEntryAttemptInFlightRef.current = false
       setIsEntering(false)
     }
+  }
+
+  const handleEnterWithoutLogin = () => {
+    navigate('/home')
   }
 
   const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -130,10 +242,6 @@ export function IntroPage() {
     } finally {
       setIsSavingNickname(false)
     }
-  }
-
-  const openHomePreview = () => {
-    navigate('/home')
   }
 
   return (
@@ -172,7 +280,6 @@ export function IntroPage() {
 
         <div className="intro-mobile-actions">
           {pendingNicknameSession == null ? (
-            <>
             <Button
               color="primary"
               display="block"
@@ -183,17 +290,6 @@ export function IntroPage() {
             >
               {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
             </Button>
-              {showIntroUiPreview ? (
-                <>
-                  <div className="intro-preview-actions" aria-label="임시 UI 확인">
-                    <Button color="light" display="block" onClick={openHomePreview} size="large" variant="weak">
-                      홈에서 ADS UI 확인하기
-                    </Button>
-                  </div>
-                  <small className="intro-preview-note">임시 확인용 진입점이에요. 로그인 수정 후 제거합니다.</small>
-                </>
-              ) : null}
-            </>
           ) : (
             <form className="intro-nickname-card" onSubmit={handleNicknameSubmit}>
               <label className="intro-nickname-label" htmlFor="intro-nickname">
@@ -222,7 +318,13 @@ export function IntroPage() {
               </Button>
             </form>
           )}
+          {pendingNicknameSession == null ? (
+            <button className="intro-login-skip-button" type="button" onClick={handleEnterWithoutLogin}>
+              로그인 없이 둘러보기
+            </button>
+          ) : null}
           {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
+          <IntroAuthDebugPanel snapshot={authDebugSnapshot} />
         </div>
       </section>
     </main>
