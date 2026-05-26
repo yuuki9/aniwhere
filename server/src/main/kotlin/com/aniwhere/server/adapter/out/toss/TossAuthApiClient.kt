@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.config.AuthProperties
+import com.aniwhere.server.config.MtlsRequestContext
+import com.aniwhere.server.config.TossRestClientMtlsStatus
 import com.aniwhere.server.domain.auth.port.out.TossAuthPort
 import java.security.MessageDigest
 import java.util.UUID
@@ -21,6 +23,7 @@ import org.springframework.web.client.RestClientResponseException
 class TossAuthApiClient(
     @Qualifier("tossRestClientBuilder") private val restClientBuilder: RestClient.Builder,
     private val props: AuthProperties,
+    private val mtlsStatus: TossRestClientMtlsStatus,
 ) : TossAuthPort {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -35,24 +38,42 @@ class TossAuthApiClient(
         val authorizationCodeFingerprint = fingerprintAuthorizationCode(authorizationCode)
 
         log.info(
-            "Toss auth exchange started requestId={} baseUrl={} referrerIn={} referrerOut={} authorizationCodeFp={}",
+            "Toss auth exchange started requestId={} baseUrl={} referrerIn={} referrerOut={} authorizationCodeFp={} mtlsEnabled={} mtlsCertPath={} mtlsKeyPath={}",
             requestId,
             props.toss.baseUrl,
             referrer,
             normalizedReferrer,
             authorizationCodeFingerprint,
+            props.toss.mtls.enabled,
+            props.toss.mtls.certPath,
+            props.toss.mtls.keyPath,
+        )
+
+        val generateTokenPath = "/api-partner/v1/apps-in-toss/user/oauth2/generate-token"
+        val generateTokenBody =
+            mapOf("authorizationCode" to authorizationCode, "referrer" to normalizedReferrer)
+        log.info(
+            "Toss API request requestId={} method=POST url={} body={}",
+            requestId,
+            requestUrl(generateTokenPath),
+            objectMapper.writeValueAsString(generateTokenBody),
         )
 
         val generateTokenStartedAtNs = System.nanoTime()
+        MtlsRequestContext.bind(requestId)
+        var generateTokenHttpCompleted = false
         val tokenResponseRaw =
             try {
-                rest.post()
-                    .uri("/api-partner/v1/apps-in-toss/user/oauth2/generate-token")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(mapOf("authorizationCode" to authorizationCode, "referrer" to normalizedReferrer))
-                    .retrieve()
-                    .body(String::class.java)
+                val response =
+                    rest.post()
+                        .uri(generateTokenPath)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .body(generateTokenBody)
+                        .retrieve()
+                        .body(String::class.java)
+                generateTokenHttpCompleted = true
+                response
             } catch (e: RestClientResponseException) {
                 log.warn(
                     "Toss generate-token HTTP error requestId={} authorizationCodeFp={} status={} body={}",
@@ -65,6 +86,19 @@ class TossAuthApiClient(
                 throw BadRequestException(
                     "토스 토큰 발급 HTTP 오류(status=${e.statusCode.value()}, ${describeTossGenerateTokenResponse(e.responseBodyAsString)})",
                 )
+            } catch (e: Exception) {
+                log.warn(
+                    "Toss generate-token transport error requestId={} authorizationCodeFp={} errorType={} message={}",
+                    requestId,
+                    authorizationCodeFingerprint,
+                    e.javaClass.simpleName,
+                    e.message,
+                    e,
+                )
+                throw e
+            } finally {
+                logGenerateTokenMtlsHandshake(requestId, generateTokenHttpCompleted)
+                MtlsRequestContext.clear()
             }
 
         log.info(
@@ -117,11 +151,19 @@ class TossAuthApiClient(
             maskSecret(accessToken),
         )
 
+        val loginMePath = "/api-partner/v1/apps-in-toss/user/oauth2/login-me"
+        log.info(
+            "Toss API request requestId={} method=GET url={} authorization=Bearer {}",
+            requestId,
+            requestUrl(loginMePath),
+            accessToken,
+        )
+
         val loginMeStartedAtNs = System.nanoTime()
         val me =
             try {
                 rest.get()
-                    .uri("/api-partner/v1/apps-in-toss/user/oauth2/login-me")
+                    .uri(loginMePath)
                     .header("Authorization", "Bearer $accessToken")
                     .retrieve()
                     .body(LoginMeResponse::class.java)
@@ -176,6 +218,46 @@ class TossAuthApiClient(
 
     private fun normalizeReferrer(referrer: String): String =
         if (referrer.equals("SANDBOX", ignoreCase = true)) "sandbox" else referrer
+
+    private fun logGenerateTokenMtlsHandshake(
+        requestId: String,
+        httpCompleted: Boolean,
+    ) {
+        if (!mtlsStatus.enabled || !mtlsStatus.builderUsesMtlsHttpClient) {
+            log.info(
+                "Toss generate-token mTLS handshake requestId={} builderUsesMtlsHttpClient=false clientCertSentThisRequest=N/A httpCompleted={}",
+                requestId,
+                httpCompleted,
+            )
+            return
+        }
+
+        val selected = MtlsRequestContext.selectedClientCert()
+        if (selected != null) {
+            log.info(
+                "Toss generate-token mTLS handshake requestId={} builderUsesMtlsHttpClient=true clientCertSentThisRequest=true selectedAlias={} selectedSubject={} configuredSubject={} httpCompleted={}",
+                requestId,
+                selected.alias,
+                selected.subject,
+                mtlsStatus.configuredCertSubject,
+                httpCompleted,
+            )
+            return
+        }
+
+        log.warn(
+            "Toss generate-token mTLS handshake requestId={} builderUsesMtlsHttpClient=true clientCertSentThisRequest=false configuredSubject={} httpCompleted={} note=KeyManager callback was not invoked; TLS session may be reused or handshake did not request a client certificate",
+            requestId,
+            mtlsStatus.configuredCertSubject,
+            httpCompleted,
+        )
+    }
+
+    private fun requestUrl(path: String): String {
+        val base = props.toss.baseUrl.trimEnd('/')
+        val normalizedPath = if (path.startsWith('/')) path else "/$path"
+        return base + normalizedPath
+    }
 
     private fun newRequestId(): String = UUID.randomUUID().toString().substring(0, 8)
 

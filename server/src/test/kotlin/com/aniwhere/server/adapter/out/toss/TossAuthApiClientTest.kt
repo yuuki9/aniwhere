@@ -2,6 +2,7 @@ package com.aniwhere.server.adapter.out.toss
 
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.config.AuthProperties
+import com.aniwhere.server.config.TossRestClientMtlsStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -35,6 +36,7 @@ class TossAuthApiClientTest {
             TossAuthApiClient(
                 RestClient.builder().baseUrl(baseUrl),
                 AuthProperties(toss = AuthProperties.Toss(baseUrl = baseUrl)),
+                TossRestClientMtlsStatus.disabled(),
             )
 
         try {
@@ -64,6 +66,7 @@ class TossAuthApiClientTest {
             TossAuthApiClient(
                 RestClient.builder().baseUrl(baseUrl),
                 AuthProperties(toss = AuthProperties.Toss(baseUrl = baseUrl)),
+                TossRestClientMtlsStatus.disabled(),
             )
 
         try {
