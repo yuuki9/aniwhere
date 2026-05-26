@@ -1,10 +1,10 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.config.security.SecurityPrincipal
-import com.aniwhere.server.domain.community.model.Comment
-import com.aniwhere.server.domain.community.model.Post
-import com.aniwhere.server.domain.community.port.`in`.CommentUseCase
-import com.aniwhere.server.domain.community.port.`in`.PostUseCase
+import com.aniwhere.server.domain.review.model.Comment
+import com.aniwhere.server.domain.review.model.Post
+import com.aniwhere.server.domain.review.port.`in`.CommentUseCase
+import com.aniwhere.server.domain.review.port.`in`.PostUseCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 
 @WebMvcTest(PostController::class, CommentController::class)
 @AutoConfigureMockMvc(addFilters = false)
-class CommunityControllerTest {
+class ReviewControllerTest {
     @Autowired
     private lateinit var mvc: MockMvc
 

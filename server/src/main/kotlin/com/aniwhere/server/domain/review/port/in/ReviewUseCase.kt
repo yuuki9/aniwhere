@@ -1,7 +1,7 @@
-package com.aniwhere.server.domain.community.port.`in`
+package com.aniwhere.server.domain.review.port.`in`
 
-import com.aniwhere.server.domain.community.model.Comment
-import com.aniwhere.server.domain.community.model.Post
+import com.aniwhere.server.domain.review.model.Comment
+import com.aniwhere.server.domain.review.model.Post
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 

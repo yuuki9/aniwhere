@@ -4,17 +4,17 @@ import com.aniwhere.server.adapter.out.persistence.entity.CommentEntity
 import com.aniwhere.server.adapter.out.persistence.entity.PostLikeEntity
 import com.aniwhere.server.adapter.out.persistence.entity.PostEntity
 import com.aniwhere.server.adapter.out.persistence.entity.UserEntity
-import com.aniwhere.server.adapter.out.persistence.mapper.CommunityMapper
+import com.aniwhere.server.adapter.out.persistence.mapper.ReviewMapper
 import com.aniwhere.server.adapter.out.persistence.repository.CommentRepository
 import com.aniwhere.server.adapter.out.persistence.repository.PostLikeRepository
 import com.aniwhere.server.adapter.out.persistence.repository.PostRepository
 import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
-import com.aniwhere.server.domain.community.model.Comment
-import com.aniwhere.server.domain.community.model.Post
-import com.aniwhere.server.domain.community.port.out.CommentPersistencePort
-import com.aniwhere.server.domain.community.port.out.PostPersistencePort
+import com.aniwhere.server.domain.review.model.Comment
+import com.aniwhere.server.domain.review.model.Post
+import com.aniwhere.server.domain.review.port.out.CommentPersistencePort
+import com.aniwhere.server.domain.review.port.out.PostPersistencePort
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
@@ -27,16 +27,16 @@ class PostPersistenceAdapter(
     private val postLikeRepo: PostLikeRepository,
 ) : PostPersistencePort {
 
-    override fun findById(id: Long) = repo.findByIdOrNull(id)?.let(CommunityMapper::toDomain)
+    override fun findById(id: Long) = repo.findByIdOrNull(id)?.let(ReviewMapper::toDomain)
 
     override fun findByIdAndIncreaseViewCount(id: Long): Post? {
         if (repo.incrementViewCount(id) == 0) {
             return null
         }
-        return repo.findByIdOrNull(id)?.let(CommunityMapper::toDomain)
+        return repo.findByIdOrNull(id)?.let(ReviewMapper::toDomain)
     }
 
-    override fun findAll(pageable: Pageable): Page<Post> = repo.findAll(pageable).map(CommunityMapper::toDomain)
+    override fun findAll(pageable: Pageable): Page<Post> = repo.findAll(pageable).map(ReviewMapper::toDomain)
 
     override fun save(post: Post): Post {
         val author = userRepo.findByIdOrNull(post.authorUserId)
@@ -48,14 +48,14 @@ class PostPersistenceAdapter(
             author = author,
             authorNickname = authorNickname,
         )
-        return CommunityMapper.toDomain(repo.save(entity))
+        return ReviewMapper.toDomain(repo.save(entity))
     }
 
     override fun update(id: Long, post: Post): Post {
         val entity = repo.findByIdOrNull(id) ?: throw EntityNotFoundException("Post not found: $id")
         entity.title = post.title
         entity.content = post.content
-        return CommunityMapper.toDomain(repo.save(entity))
+        return ReviewMapper.toDomain(repo.save(entity))
     }
 
     override fun deleteById(id: Long) {
@@ -88,10 +88,10 @@ class CommentPersistenceAdapter(
     private val userRepo: UserRepository,
 ) : CommentPersistencePort {
 
-    override fun findById(id: Long) = commentRepo.findByIdOrNull(id)?.let(CommunityMapper::toDomain)
+    override fun findById(id: Long) = commentRepo.findByIdOrNull(id)?.let(ReviewMapper::toDomain)
 
     override fun findByPostId(postId: Long) =
-        commentRepo.findByPostIdOrderByCreatedAtAsc(postId).map(CommunityMapper::toDomain)
+        commentRepo.findByPostIdOrderByCreatedAtAsc(postId).map(ReviewMapper::toDomain)
 
     override fun save(comment: Comment): Comment {
         val post = postRepo.findByIdOrNull(comment.postId)
@@ -105,7 +105,7 @@ class CommentPersistenceAdapter(
             content = comment.content,
             authorNickname = authorNickname,
         )
-        return CommunityMapper.toDomain(commentRepo.save(entity))
+        return ReviewMapper.toDomain(commentRepo.save(entity))
     }
 
     override fun deleteById(id: Long) {

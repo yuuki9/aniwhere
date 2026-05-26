@@ -1,5 +1,5 @@
 -- =============================================
--- Community Tables (추가 스키마)
+-- Review Tables (후기·제보 스키마, REST 경로는 /api/v1/posts 유지)
 -- =============================================
 
 CREATE TABLE IF NOT EXISTS posts (

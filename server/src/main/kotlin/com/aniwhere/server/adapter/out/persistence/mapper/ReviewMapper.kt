@@ -2,10 +2,10 @@ package com.aniwhere.server.adapter.out.persistence.mapper
 
 import com.aniwhere.server.adapter.out.persistence.entity.CommentEntity
 import com.aniwhere.server.adapter.out.persistence.entity.PostEntity
-import com.aniwhere.server.domain.community.model.Comment
-import com.aniwhere.server.domain.community.model.Post
+import com.aniwhere.server.domain.review.model.Comment
+import com.aniwhere.server.domain.review.model.Post
 
-object CommunityMapper {
+object ReviewMapper {
     fun toDomain(e: PostEntity) = Post(
         id = e.id, title = e.title, content = e.content,
         authorUserId = e.author.id!!,
