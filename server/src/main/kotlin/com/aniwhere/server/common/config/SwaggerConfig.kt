@@ -16,7 +16,7 @@ class SwaggerConfig(
         val info = Info()
             .title("Aniwhere API")
             .version("v1")
-            .description("Figure shops & community API")
+            .description("Figure shops & review API")
         val api = OpenAPI().info(info)
         val base = apiPublicUrl.trim().trimEnd('/')
         if (base.isNotEmpty()) {

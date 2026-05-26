@@ -3,10 +3,10 @@ package com.aniwhere.server.adapter.`in`.web
 import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.UnauthorizedException
 import com.aniwhere.server.config.security.SecurityPrincipal
-import com.aniwhere.server.domain.community.model.Comment
-import com.aniwhere.server.domain.community.model.Post
-import com.aniwhere.server.domain.community.port.`in`.CommentUseCase
-import com.aniwhere.server.domain.community.port.`in`.PostUseCase
+import com.aniwhere.server.domain.review.model.Comment
+import com.aniwhere.server.domain.review.model.Post
+import com.aniwhere.server.domain.review.port.`in`.CommentUseCase
+import com.aniwhere.server.domain.review.port.`in`.PostUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springdoc.core.annotations.ParameterObject
@@ -18,7 +18,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
-@Tag(name = "Community - Post", description = "커뮤니티 게시판 API")
+@Tag(name = "Review - Post", description = "후기·제보 API (클라이언트 호환: /api/v1/posts)")
 @RestController
 @RequestMapping("/api/v1/posts")
 class PostController(private val useCase: PostUseCase) {
@@ -62,7 +62,7 @@ class PostController(private val useCase: PostUseCase) {
             ?: throw UnauthorizedException("Authentication required")
 }
 
-@Tag(name = "Community - Comment", description = "댓글 API")
+@Tag(name = "Review - Comment", description = "후기·제보 댓글 API")
 @RestController
 @RequestMapping("/api/v1/posts/{postId}/comments")
 class CommentController(private val useCase: CommentUseCase) {
