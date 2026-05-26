@@ -126,7 +126,7 @@ jobs:
               echo "compose missing mTLS bind mount: $COMPOSE_FILE"
               exit 1
             fi
-            if [ ! -f /home/ubuntu/mtls/aniwheretls_public.crt ] || [ ! -f /home/ubuntu/mtls/aniwheretls_private.key ]; then
+            if [ ! -f /home/ubuntu/mtls/aniwheretlv2_public.crt ] || [ ! -f /home/ubuntu/mtls/aniwheretlv2_private.key ]; then
               echo "host mTLS files missing under /home/ubuntu/mtls/"
               exit 1
             fi

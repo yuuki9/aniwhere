@@ -23,8 +23,8 @@ data class AuthProperties(
     ) {
         data class Mtls(
             val enabled: Boolean = true,
-            val certPath: String = "/home/ubuntu/mtls/aniwheretls_public.crt",
-            val keyPath: String = "/home/ubuntu/mtls/aniwheretls_private.key",
+            val certPath: String = "/home/ubuntu/mtls/aniwheretlv2_public.crt",
+            val keyPath: String = "/home/ubuntu/mtls/aniwheretlv2_private.key",
             val skipStartupCheck: Boolean = false,
         )
     }
