@@ -328,6 +328,20 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/explore` list toggle over selected POI peek | Product-approved / Regression fixed | The list FAB is restored while a selected-shop peek sheet is visible. To avoid the previous failure mode where the peek sheet owned the lower surface and list rows appeared inside the wrong sheet context, tapping the list FAB with `shopId` present now clears `shopId`/`sheet` through `restoreListView()` and opens `/explore?view=list` as the map-backed TDS `BottomSheet` results surface. The peek state keeps the current-location FAB hidden but keeps the list FAB above the peek sheet with a higher z-index. |
 | Runtime verification | Needs ADS screenshot | Source tests verify the vertical CTA assets, two-line copy, map-backed list sheet layout, and selected-POI list toggle behavior. ADS/device visual verification should still confirm the 375px card crop, text readability, and list FAB tap target after HMR. |
 
+### 2026-05-27 App-Owned Shadow Removal Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- `Shadow 그림자` search: no dedicated TDS Mobile shadow/foundation document found in the returned results.
+- GridList: https://tossmini-docs.toss.im/tds-mobile/components/grid-list/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| App-owned shadow usage | Product-approved / Regression fix | All `box-shadow` declarations were removed from Aniwhere-owned CSS files under `client/src`, and the unused `--ait-shadow-*` / `--shadow` tokens were removed from `tokens.css`. The previous shadow tokens and custom shadow values made card, sheet, marker, and admin surfaces read as unwanted blue/raised layers, especially around the `/home` curation cards. Layer separation now relies on spacing, borders, background, and persistent map/sheet layout rather than shadows. |
+| `Ait*` and `ait-*` boundary | TDS-required / Passed | `client/src` still has no route/page `Ait*` imports from `shared/ui/ait`. Remaining `ait-*` class names belong to the TDS public fallback/compatibility facade and token-compatible internal wrappers, not route-level Ait component usage. Shadow declarations were removed from those app-owned fallback styles as well. |
+| Runtime verification | Needs ADS screenshot | Source tests, lint, and build verify the CSS no longer contains `box-shadow`. ADS/device visual verification should still confirm that shadow removal does not reduce tap-target recognition on map controls, sheets, admin forms, and home curation cards. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

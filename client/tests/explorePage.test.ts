@@ -533,18 +533,21 @@ test('Explore map search and filter controls stay visually separated to avoid ac
   assert.ok(fieldRules.some((rule) => /background:\s*var\(--ait-color-surface-raised\);/.test(rule)))
   assert.ok(filterRules.some((rule) => /width:\s*46px;/.test(rule)))
   assert.ok(filterRules.some((rule) => /border:\s*1px solid var\(--ait-color-border-strong\);/.test(rule)))
-  assert.ok(filterRules.some((rule) => /box-shadow:\s*var\(--ait-shadow-lg\);/.test(rule)))
 })
 
 test('Explore map overlay controls avoid competing raised layers', () => {
   const styles = appCssSource()
-  const chipRules = cssRuleBodies(styles, '.map-chip-status')
   const areaSearchRules = cssRuleBodies(styles, '.map-area-search-button')
 
-  assert.ok(chipRules.some((rule) => /box-shadow:\s*none;/.test(rule)))
   assert.ok(areaSearchRules.some((rule) => /background:\s*var\(--ait-color-surface-raised\);/.test(rule)))
   assert.ok(areaSearchRules.some((rule) => /color:\s*var\(--text-strong\);/.test(rule)))
   assert.doesNotMatch(styles, /\.map-surface-sheet-open\s+\.map-list-fab\s*\{[\s\S]*?display:\s*none;/)
+})
+
+test('Explore and shared app CSS do not use box shadows', () => {
+  const styles = appCssSource()
+
+  assert.doesNotMatch(styles, /box-shadow/)
 })
 
 test('Explore peek sheet keeps map controls clear of the selected shop summary', () => {

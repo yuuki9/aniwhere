@@ -124,10 +124,6 @@
   --ait-line-height-title: 1.3;
   --ait-line-height-body: 1.5;
 
-  --ait-shadow-sm: 0 10px 24px rgba(49, 130, 246, 0.24);
-  --ait-shadow-md: 0 14px 28px rgba(15, 23, 42, 0.14);
-  --ait-shadow-lg: 0 16px 34px rgba(17, 29, 44, 0.08);
-  --ait-shadow-xl: 0 20px 40px rgba(73, 109, 173, 0.08);
 
   /* Component-level tokens mapped to TDS-like primitives. */
   --ait-component-button-height: 48px;
@@ -170,5 +166,4 @@
   --text-strong: var(--ait-color-text-primary);
   --text-subtle: var(--ait-color-text-secondary);
   --border: var(--ait-color-border);
-  --shadow: var(--ait-shadow-lg);
 }

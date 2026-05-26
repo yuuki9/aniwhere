@@ -12,6 +12,13 @@ function readPngDimensions(path: URL) {
   }
 }
 
+function cssRuleBodies(css: string, selector: string) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const matches = css.matchAll(new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\}`, 'g'))
+
+  return Array.from(matches, (match) => match[1])
+}
+
 test('homeViewModel exports home CTA, work preview, and review preview builders', () => {
   assert.deepEqual(
     Object.keys(homeViewModel).sort(),
@@ -96,6 +103,7 @@ test('HomePage imports CTA images and routes only the map CTA for now', () => {
 test('Home CTA cards render as vertical image-first curation carousel cards', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+  const tokens = fs.readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
 
   assert.match(source, /className="home-cta-media"/)
   assert.match(source, /className="home-cta-image"/)
@@ -103,14 +111,30 @@ test('Home CTA cards render as vertical image-first curation carousel cards', ()
   assert.doesNotMatch(source, /<small>\{card\.description\}<\/small>/)
   assert.match(styles, /\.home-cta-section\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
   assert.match(styles, /\.home-cta-carousel\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
+  assert.match(styles, /\.home-cta-carousel\s*\{[\s\S]*padding: var\(--ait-space-1\) var\(--ait-space-8\) 0 0;/)
   assert.match(styles, /\.home-cta-card\s*\{[\s\S]*flex: 0 0 clamp\(224px, 64vw, 252px\)/)
   assert.match(styles, /\.home-cta-card\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
+  assert.match(styles, /\.home-cta-card\s*\{[\s\S]*border: 0;/)
+  assert.equal(cssRuleBodies(styles, '.home-cta-card').some((rule) => /box-shadow:/.test(rule)), false)
   assert.match(styles, /\.home-cta-media\s*\{[\s\S]*aspect-ratio:\s*2 \/ 3/)
   assert.match(styles, /\.home-cta-media\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
   assert.match(styles, /\.home-cta-image\s*\{[\s\S]*object-fit: cover/)
+  assert.match(styles, /\.home-cta-image\s*\{[\s\S]*transform: scale\(1\.14\);/)
+  assert.match(styles, /\.home-cta-image\s*\{[\s\S]*transform-origin: center top;/)
   assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*position:\s*absolute/)
+  assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: 0 18px 32px;/)
+  assert.equal(cssRuleBodies(styles, '.home-cta-copy').some((rule) => /background:/.test(rule)), false)
   assert.match(styles, /\.home-cta-copy-line/)
   assert.doesNotMatch(styles, /\.home-cta-card::after/)
+  assert.doesNotMatch(tokens, /--ait-shadow|--shadow/)
+})
+
+test('Home content sections keep a compact curation rhythm', () => {
+  const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+  const issueRules = cssRuleBodies(styles, '.home-issue-section,\n.home-review-preview-section')
+
+  assert.ok(issueRules.some((rule) => /gap:\s*var\(--ait-space-5\);/.test(rule)))
+  assert.ok(issueRules.some((rule) => /padding-top:\s*var\(--ait-space-3\);/.test(rule)))
 })
 
 test('Home CTA image assets are vertical ChatGPT curation cards', () => {

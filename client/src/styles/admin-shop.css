@@ -12,7 +12,6 @@
   background: var(--ait-color-gray-0);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: var(--ait-radius-4xl);
-  box-shadow: var(--ait-shadow-xl);
 }
 
 .admin-unlock-card {
@@ -171,7 +170,6 @@
 
 .admin-shop-list-item-active {
   border-color: rgba(59, 130, 246, 0.55);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
 }
 
 .admin-shop-list-item-head,
@@ -700,7 +698,6 @@
 
 .admin-shop-picker-row-active {
   border-color: var(--admin-shop-brand-border-strong);
-  box-shadow: 0 0 0 3px var(--admin-shop-brand-bg-strong);
 }
 
 .admin-shop-picker-row-copy {
@@ -931,7 +928,6 @@
   line-height: 20px;
   text-align: center;
   transform: translateX(-50%);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
   pointer-events: none;
 }
 
@@ -1048,12 +1044,10 @@
   border-color: var(--admin-shop-brand-border-strong);
   background: var(--admin-shop-brand-bg);
   color: var(--ait-color-brand);
-  box-shadow: 0 0 0 2px var(--admin-shop-brand-bg);
 }
 
 .admin-shop-catalog-option:focus-within {
   border-color: var(--admin-shop-brand-border-strong);
-  box-shadow: 0 0 0 3px var(--admin-shop-brand-bg);
 }
 
 .admin-shop-catalog-option input {
@@ -1266,7 +1260,6 @@
 .admin-shop-field .text-input[aria-invalid='true'],
 .admin-shop-location-card[aria-invalid='true'] {
   border-color: var(--ait-color-red-700);
-  box-shadow: 0 0 0 3px var(--admin-shop-field-error-ring);
 }
 
 .admin-shop-field-grid {
@@ -1527,7 +1520,6 @@
   background: var(--ait-color-gray-0);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: var(--ait-radius-4xl);
-  box-shadow: var(--ait-shadow-xl);
 }
 
 .shop-detail-shell {
