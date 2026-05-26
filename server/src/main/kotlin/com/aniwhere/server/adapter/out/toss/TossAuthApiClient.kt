@@ -8,6 +8,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.config.AuthProperties
 import com.aniwhere.server.domain.auth.port.out.TossAuthPort
+import java.security.MessageDigest
+import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.MediaType
@@ -26,17 +28,22 @@ class TossAuthApiClient(
         jacksonObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     override fun exchangeAndGetUserKey(authorizationCode: String, referrer: String): Long {
+        val requestId = newRequestId()
+        val exchangeStartedAtNs = System.nanoTime()
         val rest = restClientBuilder.baseUrl(props.toss.baseUrl).build()
         val normalizedReferrer = normalizeReferrer(referrer)
+        val authorizationCodeFingerprint = fingerprintAuthorizationCode(authorizationCode)
 
         log.info(
-            "Toss generate-token request baseUrl={} referrerIn={} referrerOut={} authorizationCode={}",
+            "Toss auth exchange started requestId={} baseUrl={} referrerIn={} referrerOut={} authorizationCodeFp={}",
+            requestId,
             props.toss.baseUrl,
             referrer,
             normalizedReferrer,
-            maskSecret(authorizationCode),
+            authorizationCodeFingerprint,
         )
 
+        val generateTokenStartedAtNs = System.nanoTime()
         val tokenResponseRaw =
             try {
                 rest.post()
@@ -48,7 +55,9 @@ class TossAuthApiClient(
                     .body(String::class.java)
             } catch (e: RestClientResponseException) {
                 log.warn(
-                    "Toss generate-token HTTP error status={} body={}",
+                    "Toss generate-token HTTP error requestId={} authorizationCodeFp={} status={} body={}",
+                    requestId,
+                    authorizationCodeFingerprint,
                     e.statusCode.value(),
                     maskSensitiveJson(e.responseBodyAsString),
                     e,
@@ -58,8 +67,20 @@ class TossAuthApiClient(
                 )
             }
 
+        log.info(
+            "Toss generate-token response requestId={} authorizationCodeFp={} elapsedMs={} diagnosis={}",
+            requestId,
+            authorizationCodeFingerprint,
+            elapsedMs(generateTokenStartedAtNs),
+            describeTossGenerateTokenResponse(tokenResponseRaw),
+        )
+
         if (tokenResponseRaw.isNullOrBlank()) {
-            log.warn("Toss generate-token response body is empty")
+            log.warn(
+                "Toss generate-token response body is empty requestId={} authorizationCodeFp={}",
+                requestId,
+                authorizationCodeFingerprint,
+            )
             throw BadRequestException("토스 토큰 발급 응답이 비어 있습니다.")
         }
 
@@ -68,7 +89,9 @@ class TossAuthApiClient(
                 objectMapper.readValue(tokenResponseRaw, GenerateTokenResponse::class.java)
             }.getOrElse { e ->
                 log.warn(
-                    "Toss generate-token response parse failed body={}",
+                    "Toss generate-token response parse failed requestId={} authorizationCodeFp={} body={}",
+                    requestId,
+                    authorizationCodeFingerprint,
                     maskSensitiveJson(tokenResponseRaw),
                     e,
                 )
@@ -79,7 +102,9 @@ class TossAuthApiClient(
         if (accessToken.isNullOrBlank()) {
             val diagnosis = describeTossGenerateTokenResponse(tokenResponseRaw)
             log.warn(
-                "Toss generate-token missing accessToken diagnosis={} body={}",
+                "Toss generate-token missing accessToken requestId={} authorizationCodeFp={} diagnosis={} body={}",
+                requestId,
+                authorizationCodeFingerprint,
                 diagnosis,
                 maskSensitiveJson(tokenResponseRaw),
             )
@@ -92,6 +117,7 @@ class TossAuthApiClient(
             maskSecret(accessToken),
         )
 
+        val loginMeStartedAtNs = System.nanoTime()
         val me =
             try {
                 rest.get()
@@ -101,31 +127,65 @@ class TossAuthApiClient(
                     .body(LoginMeResponse::class.java)
             } catch (e: RestClientResponseException) {
                 log.warn(
-                    "Toss login-me HTTP error status={} body={}",
+                    "Toss login-me HTTP error requestId={} authorizationCodeFp={} status={} body={}",
+                    requestId,
+                    authorizationCodeFingerprint,
                     e.statusCode.value(),
                     maskSensitiveJson(e.responseBodyAsString),
                     e,
                 )
                 throw BadRequestException("토스 사용자 조회 HTTP 오류(status=${e.statusCode.value()})")
             } ?: run {
-                log.warn("Toss login-me response body is empty")
+                log.warn(
+                    "Toss login-me response body is empty requestId={} authorizationCodeFp={}",
+                    requestId,
+                    authorizationCodeFingerprint,
+                )
                 throw BadRequestException("토스 사용자 조회에 실패했습니다.")
             }
+
+        log.info(
+            "Toss login-me response received requestId={} authorizationCodeFp={} elapsedMs={} resultType={}",
+            requestId,
+            authorizationCodeFingerprint,
+            elapsedMs(loginMeStartedAtNs),
+            me.resultType ?: "(missing)",
+        )
 
         val userKey = me.success?.userKey
         if (userKey == null) {
             log.warn(
-                "Toss login-me missing userKey resultType={}",
+                "Toss login-me missing userKey requestId={} authorizationCodeFp={} resultType={}",
+                requestId,
+                authorizationCodeFingerprint,
                 me.resultType ?: "(missing)",
             )
             throw BadRequestException("토스 userKey 응답이 비어 있습니다.")
         }
+
+        log.info(
+            "Toss auth exchange completed requestId={} authorizationCodeFp={} userKey={} totalElapsedMs={}",
+            requestId,
+            authorizationCodeFingerprint,
+            userKey,
+            elapsedMs(exchangeStartedAtNs),
+        )
 
         return userKey
     }
 
     private fun normalizeReferrer(referrer: String): String =
         if (referrer.equals("SANDBOX", ignoreCase = true)) "sandbox" else referrer
+
+    private fun newRequestId(): String = UUID.randomUUID().toString().substring(0, 8)
+
+    private fun elapsedMs(startNs: Long): Long = (System.nanoTime() - startNs) / 1_000_000
+
+    private fun fingerprintAuthorizationCode(value: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
+        val hashPrefix = digest.joinToString("") { "%02x".format(it) }.take(12)
+        return "$hashPrefix(len=${value.length})"
+    }
 
     private fun describeTossGenerateTokenResponse(raw: String?): String {
         if (raw.isNullOrBlank()) return "emptyBody=true"
