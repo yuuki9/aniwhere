@@ -1,4 +1,4 @@
-package com.aniwhere.server.domain.community.model
+package com.aniwhere.server.domain.review.model
 
 import java.time.LocalDateTime
 

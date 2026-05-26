@@ -1,11 +1,11 @@
-package com.aniwhere.server.domain.community.service
+package com.aniwhere.server.domain.review.service
 
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.common.exception.ForbiddenException
-import com.aniwhere.server.domain.community.model.Comment
-import com.aniwhere.server.domain.community.model.Post
-import com.aniwhere.server.domain.community.port.out.CommentPersistencePort
-import com.aniwhere.server.domain.community.port.out.PostPersistencePort
+import com.aniwhere.server.domain.review.model.Comment
+import com.aniwhere.server.domain.review.model.Post
+import com.aniwhere.server.domain.review.port.out.CommentPersistencePort
+import com.aniwhere.server.domain.review.port.out.PostPersistencePort
 import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
