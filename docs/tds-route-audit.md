@@ -361,6 +361,19 @@ Official docs checked with official web fallback because `ax` was not on PATH in
 | --- | --- | --- |
 | `/home` first CTA routing | Product-approved / Regression fix | The first CTA remains the active map exploration shortcut and links to `/explore?view=map` so Explore opens in map mode explicitly. Local browser verification confirmed clicking `a.home-cta-card` changes the address from `/home` to `/explore?view=map`. |
 
+### 2026-05-27 Home Vertical CTA Restore Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- GridList: https://tossmini-docs.toss.im/tds-mobile/components/grid-list/
+- Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` CTA card orientation | Product-approved / Regression fixed | The horizontal `3:2` CTA density pass was reverted because the requested product direction is the earlier vertical content-curation CTA. Cards are restored to a compact `4:5` frame with the 1024x1536 vertical image assets cropped inside the card, and the image content is slightly scaled inside `home-cta-media` so the illustration fills the card frame more fully. The current no-shadow decision remains intact. TDS `Asset` informed the stable media frame; the carousel itself remains app-owned because the checked `GridList` docs cover image/text grid menus rather than Aniwhere's horizontal discovery rail. |
+| Runtime verification | Passed local / Needs sandbox | `node --test tests/homeViewModel.test.ts` verifies the vertical CTA CSS contract and image dimensions. ADS sandbox should still confirm the visual rhythm on the target device because local tests do not prove WebView safe area, image decode, or native scroll feel. |
+
 ### 2026-05-27 Explore List And Map View Split Follow-up
 
 Official docs checked with official web fallback because Apps in Toss MCP was not loaded and `ax` was not on PATH in this session:
