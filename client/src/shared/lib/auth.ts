@@ -1,5 +1,4 @@
 import { appLogin, getOperationalEnvironment } from '@apps-in-toss/web-framework'
-import { logAuthFlow, logAuthFlowError } from './authFlowDebug'
 import { toSafeErrorSummary } from './safeError'
 
 export type EntryFlowResult =
@@ -23,22 +22,16 @@ export function isAppsInTossRuntime() {
 
 export async function startServiceEntry(): Promise<EntryFlowResult> {
   if (!isAppsInTossRuntime()) {
-    logAuthFlow('auth', 'runtime-preview')
     return { mode: 'preview' }
   }
-
-  const environment = getOperationalEnvironment()
-  logAuthFlow('auth', 'appLogin-start', { operationalEnvironment: environment })
 
   let result: Awaited<ReturnType<typeof appLogin>>
   try {
     result = await appLogin()
   } catch (error) {
-    logAuthFlowError('auth', 'appLogin-failed', toSafeErrorSummary(error))
+    console.error('[aniwhere:auth] appLogin failed', toSafeErrorSummary(error))
     throw error
   }
-
-  logAuthFlow('auth', 'appLogin-ok', { referrer: result.referrer })
 
   return {
     mode: 'toss',

@@ -2,12 +2,6 @@ import { tossLogin } from '../api/auth'
 import { checkNicknameAvailability, getMyProfile, updateMyNickname } from '../api/users'
 import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../api/types'
 import type { EntryFlowResult } from './auth'
-import {
-  logAuthFlow,
-  logAuthFlowError,
-  summarizeLoginResult,
-  summarizeUserProfile,
-} from './authFlowDebug'
 import { createAuthSession, saveAuthSession, updateAuthSessionUser, type AuthSession } from './authSession'
 import { toSafeErrorSummary } from './safeError'
 
@@ -43,11 +37,8 @@ export async function completeServiceEntry(
   deps: CompleteServiceEntryDeps = defaultCompleteServiceEntryDeps,
 ): Promise<EntrySessionResult> {
   if (entry.mode === 'preview') {
-    logAuthFlow('auth-entry', 'preview-skip')
     return { mode: 'preview' }
   }
-
-  logAuthFlow('auth-entry', 'server-login-start', { referrer: entry.referrer })
 
   let login: LoginResult
   try {
@@ -56,35 +47,28 @@ export async function completeServiceEntry(
       referrer: entry.referrer,
     })
   } catch (error) {
-    logAuthFlowError('auth-entry', 'server-login-failed', toSafeErrorSummary(error), {
+    console.error('[aniwhere:auth-entry] server login failed', {
+      error: toSafeErrorSummary(error),
       referrer: entry.referrer,
     })
     throw error
   }
 
-  logAuthFlow('auth-entry', 'server-login-ok', summarizeLoginResult(login))
-
-  logAuthFlow('auth-entry', 'profile-fetch-start')
   let user: UserSummary
   try {
     user = await deps.getProfile(login.accessToken)
   } catch (error) {
-    logAuthFlowError('auth-entry', 'profile-fetch-failed', toSafeErrorSummary(error))
+    console.error('[aniwhere:auth-entry] profile fetch failed', { error: toSafeErrorSummary(error) })
     throw error
   }
 
-  logAuthFlow('auth-entry', 'profile-fetch-ok', summarizeUserProfile(user))
-
   const session = createAuthSession(login, user)
   deps.saveSession(session)
-  logAuthFlow('auth-entry', 'session-save-ok')
 
   if (login.isNewUser || user.nickname == null || user.nickname.trim() === '') {
-    logAuthFlow('auth-entry', 'complete', { result: 'needsNickname' })
     return { mode: 'needsNickname', session, user }
   }
 
-  logAuthFlow('auth-entry', 'complete', { result: 'ready' })
   return { mode: 'ready', session, user }
 }
 
