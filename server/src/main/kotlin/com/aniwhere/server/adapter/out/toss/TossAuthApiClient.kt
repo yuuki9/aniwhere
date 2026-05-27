@@ -51,8 +51,8 @@ class TossAuthApiClient(
         val tokenResponse =
             runCatching {
                 objectMapper.readValue(tokenResponseRaw, GenerateTokenResponse::class.java)
-            }.getOrElse {
-                throw BadRequestException("토스 토큰 발급 응답 파싱에 실패했습니다.")
+            }.getOrElse { cause ->
+                throw BadRequestException("토스 토큰 발급 응답 파싱에 실패했습니다.", cause)
             }
 
         val accessToken = tokenResponse.success?.accessToken
