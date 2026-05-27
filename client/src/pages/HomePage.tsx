@@ -1,21 +1,26 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import homeQuickAdminIcon from '../assets/icons/home-quick-admin.webp'
-import homeQuickReviewIcon from '../assets/icons/home-quick-review.webp'
-import homeQuickStoreIcon from '../assets/icons/home-quick-store.webp'
+import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
+import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.png'
+import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
 import { getPosts } from '../shared/api/community'
 import { getWorks } from '../shared/api/works'
 import { formatDateTime } from '../shared/lib/format'
-import { canUseAdminPreview, isAdminUnlocked } from '../shared/lib/adminAccess'
 import {
-  buildHomeQuickMenus,
+  buildHomeCtaCards,
   buildHomeReviewPreviewItems,
   buildHomeWorkPreviewItems,
-  type HomeQuickMenu,
+  type HomeCtaCard,
   type HomeReviewPreviewItem,
   type HomeWorkPreviewItem,
 } from './homeViewModel'
+
+const HOME_CTA_IMAGES: Record<HomeCtaCard['id'], string> = {
+  map: homeCtaNearbyBannerImage,
+  favorites: homeCtaFavoritesBannerImage,
+  reviews: homeCtaReviewsBannerImage,
+}
 
 function SearchIcon() {
   return (
@@ -24,12 +29,6 @@ function SearchIcon() {
       <path d="m16 16 4 4" />
     </svg>
   )
-}
-
-function HomeQuickMenuIcon({ icon }: { icon: HomeQuickMenu['icon'] }) {
-  const iconSrc = icon === 'map' ? homeQuickStoreIcon : icon === 'admin' ? homeQuickAdminIcon : homeQuickReviewIcon
-
-  return <img alt="" aria-hidden="true" className="home-quick-icon-image" src={iconSrc} />
 }
 
 function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
@@ -43,23 +42,47 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
   )
 }
 
-function HomeQuickMenuSection({ menus }: { menus: HomeQuickMenu[] }) {
+function HomeCtaBannerBody({ card }: { card: HomeCtaCard }) {
   return (
-    <nav className="home-quick-menu" data-menu-count={menus.length} aria-label="홈 빠른 메뉴">
-      {menus.map((menu) => (
-        <Link className="home-quick-menu-item" key={menu.id} to={menu.href}>
-          <span
-            className={`home-quick-icon home-quick-icon-${menu.id}`}
-            data-tds-asset-shape="squircle-background"
-            data-tds-asset-size="medium"
-            data-tds-icon-name={`home-${menu.icon}`}
-          >
-            <HomeQuickMenuIcon icon={menu.icon} />
-          </span>
-          <span>{menu.label}</span>
-        </Link>
-      ))}
-    </nav>
+    <>
+      <span className="home-cta-media">
+        <img className="home-cta-image" src={HOME_CTA_IMAGES[card.id]} alt={card.imageAlt} loading="lazy" />
+      </span>
+      <span className="home-cta-copy">
+        <strong>
+          {card.headlineLines.map((line) => (
+            <span className="home-cta-copy-line" key={line}>
+              {line}
+            </span>
+          ))}
+        </strong>
+      </span>
+    </>
+  )
+}
+
+function HomeCtaBannerList({ cards }: { cards: HomeCtaCard[] }) {
+  return (
+    <section className="home-cta-section" aria-label="매장 탐색 바로가기">
+      <div className="home-cta-banner-list" aria-label="매장 탐색 바로가기">
+        {cards.map((card) =>
+          card.enabled && card.href ? (
+            <Link className="home-cta-banner" key={card.id} to={card.href}>
+              <HomeCtaBannerBody card={card} />
+            </Link>
+          ) : (
+            <article
+              className="home-cta-banner home-cta-banner-disabled"
+              key={card.id}
+              aria-disabled="true"
+              aria-label={`${card.headlineLines.join(' ')} 준비 중`}
+            >
+              <HomeCtaBannerBody card={card} />
+            </article>
+          ),
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -175,10 +198,7 @@ function HomeReviewPreviewSection({ posts, isLoading, isError }: {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const quickMenus = useMemo(
-    () => buildHomeQuickMenus({ includeAdmin: isAdminUnlocked() || canUseAdminPreview() }),
-    [],
-  )
+  const ctaCards = useMemo(() => buildHomeCtaCards(), [])
   const worksQuery = useQuery({
     queryKey: ['works', 'home-preview'],
     queryFn: getWorks,
@@ -201,7 +221,7 @@ export function HomePage() {
   return (
     <main className="app-shell discover-shell">
       <HomeSearchEntry onSearch={() => navigate('/search')} />
-      <HomeQuickMenuSection menus={quickMenus} />
+      <HomeCtaBannerList cards={ctaCards} />
       <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />
       <HomeReviewPreviewSection posts={reviewItems} isLoading={postsQuery.isLoading} isError={postsQuery.isError} />
     </main>

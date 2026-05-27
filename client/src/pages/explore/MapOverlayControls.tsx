@@ -1,5 +1,6 @@
 type MapOverlayControlsProps = {
   visible: boolean
+  showListToggle: boolean
   isListSheetOpen: boolean
   locationState: 'idle' | 'loading' | 'ready' | 'error'
   onListClick: () => void
@@ -8,6 +9,7 @@ type MapOverlayControlsProps = {
 
 export function MapOverlayControls({
   visible,
+  showListToggle,
   isListSheetOpen,
   locationState,
   onListClick,
@@ -19,31 +21,33 @@ export function MapOverlayControls({
 
   return (
     <>
-      <button
-        aria-label={isListSheetOpen ? '지도 보기' : '목록 보기'}
-        className={`map-list-fab ${isListSheetOpen ? 'map-list-fab-map' : ''}`}
-        type="button"
-        onClick={onListClick}
-      >
-        <span className="map-list-fab-icon" aria-hidden="true">
-          {isListSheetOpen ? (
-            <svg className="map-list-fab-map-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
-              <path d="m4 5 5-2 6 2 5-2v16l-5 2-6-2-5 2V5Z" />
-              <path d="M9 3v16" />
-              <path d="M15 5v16" />
-            </svg>
-          ) : (
-            <svg className="map-list-fab-list-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
-              <path d="M9 7h10" />
-              <path d="M9 12h10" />
-              <path d="M9 17h10" />
-              <circle cx="5.25" cy="7" r="1.1" />
-              <circle cx="5.25" cy="12" r="1.1" />
-              <circle cx="5.25" cy="17" r="1.1" />
-            </svg>
-          )}
-        </span>
-      </button>
+      {showListToggle ? (
+        <button
+          aria-label={isListSheetOpen ? '지도 보기' : '목록 보기'}
+          className={`map-list-fab ${isListSheetOpen ? 'map-list-fab-map' : ''}`}
+          type="button"
+          onClick={onListClick}
+        >
+          <span className="map-list-fab-icon" aria-hidden="true">
+            {isListSheetOpen ? (
+              <svg className="map-list-fab-map-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path d="m4 5 5-2 6 2 5-2v16l-5 2-6-2-5 2V5Z" />
+                <path d="M9 3v16" />
+                <path d="M15 5v16" />
+              </svg>
+            ) : (
+              <svg className="map-list-fab-list-icon map-control-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path d="M9 7h10" />
+                <path d="M9 12h10" />
+                <path d="M9 17h10" />
+                <circle cx="5.25" cy="7" r="1.1" />
+                <circle cx="5.25" cy="12" r="1.1" />
+                <circle cx="5.25" cy="17" r="1.1" />
+              </svg>
+            )}
+          </span>
+        </button>
+      ) : null}
 
       {!isListSheetOpen ? (
         <button

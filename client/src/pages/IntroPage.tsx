@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
 import introFeatureReviewIcon from '../assets/icons/intro-feature-review.webp'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
-import { isAppsInTossRuntime, startServiceEntry } from '../shared/lib/auth'
+import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
 import type { AuthSession } from '../shared/lib/authSession'
 import { Button } from '@aniwhere/tds-mobile'
@@ -71,12 +71,12 @@ function IntroNavigation() {
 
 type EntryRouteState =
   {
-    entryMode: 'preview' | 'toss'
+    entryMode: 'toss'
   }
 
 export function IntroPage() {
   const navigate = useNavigate()
-  const showIntroUiPreview = import.meta.env.DEV
+  const isEntryAttemptInFlightRef = useRef(false)
   const [isEntering, setIsEntering] = useState(false)
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
@@ -92,13 +92,18 @@ export function IntroPage() {
   }, [])
 
   const handleStart = async () => {
+    if (isEntryAttemptInFlightRef.current) {
+      return
+    }
+
+    isEntryAttemptInFlightRef.current = true
     setIsEntering(true)
     setEntryError(null)
 
     try {
       const entry = await startServiceEntry()
       const result = await completeServiceEntry(entry)
-      const state: EntryRouteState = { entryMode: result.mode === 'preview' ? 'preview' : 'toss' }
+      const state: EntryRouteState = { entryMode: 'toss' }
       if (result.mode === 'needsNickname') {
         setPendingNicknameSession(result.session)
         setNicknameInput(result.user.nickname ?? '')
@@ -106,11 +111,23 @@ export function IntroPage() {
       }
       navigate('/home', { state })
     } catch (error) {
-      console.error('[aniwhere:intro] service entry failed', error)
-      setEntryError('로그인을 완료하지 못했어요. 다시 시도해 주세요.')
+      const message = error instanceof Error ? error.message : '로그인을 완료하지 못했어요. 다시 시도해 주세요.'
+      if (message !== TOSS_LOGIN_UNAVAILABLE_MESSAGE) {
+        console.error('[aniwhere:intro] service entry failed', error)
+      }
+      setEntryError(message)
     } finally {
+      isEntryAttemptInFlightRef.current = false
       setIsEntering(false)
     }
+  }
+
+  const handleEnterWithoutLogin = () => {
+    if (isEntryAttemptInFlightRef.current || isEntering) {
+      return
+    }
+
+    navigate('/home')
   }
 
   const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -130,15 +147,6 @@ export function IntroPage() {
     } finally {
       setIsSavingNickname(false)
     }
-  }
-
-  const openExplorePreview = () => {
-    navigate('/explore')
-  }
-
-  const openSearchPreview = () => {
-    const next = new URLSearchParams({ returnTo: '/intro' })
-    navigate(`/search?${next.toString()}`)
   }
 
   return (
@@ -177,7 +185,6 @@ export function IntroPage() {
 
         <div className="intro-mobile-actions">
           {pendingNicknameSession == null ? (
-            <>
             <Button
               color="primary"
               display="block"
@@ -188,20 +195,6 @@ export function IntroPage() {
             >
               {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
             </Button>
-              {showIntroUiPreview ? (
-                <>
-                  <div className="intro-preview-actions" aria-label="임시 UI 확인">
-                    <Button color="light" display="block" onClick={openExplorePreview} size="large" variant="weak">
-                      탐색 UI 먼저 보기
-                    </Button>
-                    <Button color="light" display="block" onClick={openSearchPreview} size="large" variant="weak">
-                      검색 UI 먼저 보기
-                    </Button>
-                  </div>
-                  <small className="intro-preview-note">임시 확인용 진입점이에요. 로그인 수정 후 제거합니다.</small>
-                </>
-              ) : null}
-            </>
           ) : (
             <form className="intro-nickname-card" onSubmit={handleNicknameSubmit}>
               <label className="intro-nickname-label" htmlFor="intro-nickname">
@@ -230,6 +223,16 @@ export function IntroPage() {
               </Button>
             </form>
           )}
+          {pendingNicknameSession == null ? (
+            <button
+              className="intro-login-skip-button"
+              disabled={isEntering}
+              type="button"
+              onClick={handleEnterWithoutLogin}
+            >
+              로그인 없이 둘러보기
+            </button>
+          ) : null}
           {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
         </div>
       </section>

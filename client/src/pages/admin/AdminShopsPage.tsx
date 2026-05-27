@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, Toast } from '@aniwhere/tds-mobile'
+import { Badge, Button, ListRow, SearchField, Toast } from '@aniwhere/tds-mobile'
 import { API_BASE_URL } from '../../shared/api/client'
 import { getCategories } from '../../shared/api/categories'
 import {
@@ -294,6 +294,71 @@ function toggleSelectedId(selectedIds: number[], targetId: number) {
     : [...selectedIds, targetId]
 }
 
+function normalizeSearchText(value: string | null | undefined) {
+  return (value ?? '').trim().toLocaleLowerCase()
+}
+
+function compactSearchText(value: string) {
+  return value.replace(/\s+/g, '')
+}
+
+function hasKoreanText(value: string) {
+  return /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(value)
+}
+
+function getWorkSearchFields(work: WorkCatalogItem) {
+  return [work.name, work.koreanTitle, work.titleNative, ...(work.genres ?? [])].filter((field) => hasKoreanText(field ?? ''))
+}
+
+function getHighlightedWorkNameParts(name: string, query: string) {
+  const normalizedQuery = normalizeSearchText(query)
+
+  if (!normalizedQuery) {
+    return [{ text: name, highlighted: false }]
+  }
+
+  const normalizedName = normalizeSearchText(name)
+  const startIndex = normalizedName.indexOf(normalizedQuery)
+
+  if (startIndex >= 0) {
+    return [
+      { text: name.slice(0, startIndex), highlighted: false },
+      { text: name.slice(startIndex, startIndex + normalizedQuery.length), highlighted: true },
+      { text: name.slice(startIndex + normalizedQuery.length), highlighted: false },
+    ].filter((part) => part.text.length > 0)
+  }
+
+  const compactName = compactSearchText(normalizedName)
+  const compactQuery = compactSearchText(normalizedQuery)
+  if (compactQuery.length > 0 && compactName.includes(compactQuery)) {
+    return [{ text: name, highlighted: true }]
+  }
+
+  return [{ text: name, highlighted: false }]
+}
+
+function getMatchingWorkOptions(options: WorkCatalogItem[], query: string, selectedIds: number[]) {
+  const normalizedQuery = normalizeSearchText(query)
+  const compactQuery = compactSearchText(normalizedQuery)
+
+  if (!normalizedQuery || !hasKoreanText(normalizedQuery)) {
+    return []
+  }
+
+  return options
+    .filter((work) => {
+      const searchableFields = getWorkSearchFields(work)
+        .map(normalizeSearchText)
+        .filter(Boolean)
+
+      const aliases = searchableFields.flatMap((field) => [field, compactSearchText(field)])
+
+      return aliases.some((alias) => alias.includes(normalizedQuery) || alias.includes(compactQuery))
+    })
+    .sort((a, b) => Number(selectedIds.includes(b.id)) - Number(selectedIds.includes(a.id)))
+    .slice(0, 8)
+}
+
 function CatalogSelectionSection({
   emptyLabel,
   isError,
@@ -339,6 +404,119 @@ function CatalogSelectionSection({
           })}
         </div>
       ) : null}
+    </section>
+  )
+}
+
+function WorkCatalogSearchSelectionSection({
+  emptyLabel,
+  isError,
+  isLoading,
+  onToggle,
+  options,
+  query,
+  selectedIds,
+  title,
+  onQueryChange,
+}: {
+  emptyLabel: string
+  isError: boolean
+  isLoading: boolean
+  onToggle: (id: number) => void
+  options: WorkCatalogItem[]
+  query: string
+  selectedIds: number[]
+  title: string
+  onQueryChange: (query: string) => void
+}) {
+  const matchingOptions = getMatchingWorkOptions(options, query, selectedIds)
+  const selectedOptions = options.filter((option) => selectedIds.includes(option.id))
+  const normalizedQuery = normalizeSearchText(query)
+  const hasSearchableQuery = hasKoreanText(normalizedQuery)
+
+  return (
+    <section className="admin-shop-catalog-group admin-shop-work-search-shell" aria-label={title}>
+      <div className="admin-shop-catalog-head">
+        <strong>{title}</strong>
+        <small>{selectedIds.length}개 선택</small>
+      </div>
+
+      {selectedOptions.length > 0 ? (
+        <div className="admin-shop-selected-work-list" aria-label="선택된 작품">
+          {selectedOptions.map((work) => (
+            <button
+              aria-label={`${work.name} 선택 해제`}
+              className="admin-shop-selected-work-chip"
+              key={work.id}
+              type="button"
+              onClick={() => onToggle(work.id)}
+            >
+              <span>{work.name}</span>
+              <span aria-hidden="true">x</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="admin-shop-work-search-combobox">
+        <SearchField
+          className="admin-shop-work-search-field"
+          placeholder="작품 이름으로 검색"
+          style={{ padding: 0 }}
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          onDeleteClick={() => onQueryChange('')}
+        />
+
+        {!isLoading && !isError && options.length > 0 && hasSearchableQuery ? (
+          <div className="admin-shop-work-suggestion-panel">
+            {matchingOptions.length === 0 ? (
+              <small className="meta-text">검색어와 비슷한 작품이 없어요.</small>
+            ) : (
+              <ul className="admin-shop-work-suggestion-list" aria-label="작품 검색 결과">
+                {matchingOptions.map((work) => {
+                  const selected = selectedIds.includes(work.id)
+
+                  return (
+                    <ListRow
+                      className="admin-shop-work-suggestion-row"
+                      contents={
+                        <button className="admin-shop-work-suggestion-button" type="button" onClick={() => onToggle(work.id)}>
+                          <strong>
+                            {getHighlightedWorkNameParts(work.name, query).map((part, index) =>
+                              part.highlighted ? (
+                                <mark className="admin-shop-work-suggestion-highlight" key={`${work.id}-highlight-${index}`}>
+                                  {part.text}
+                                </mark>
+                              ) : (
+                                <span key={`${work.id}-text-${index}`}>{part.text}</span>
+                              )
+                            )}
+                          </strong>
+                        </button>
+                      }
+                      data-selected={selected ? 'true' : undefined}
+                      key={work.id}
+                      right={
+                        selected ? (
+                          <Badge className="admin-shop-work-suggestion-selected-badge" color="blue" size="small" variant="weak">
+                            선택됨
+                          </Badge>
+                        ) : null
+                      }
+                      verticalPadding="small"
+                    />
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      {isLoading ? <small className="meta-text">{title} 목록을 불러오고 있습니다.</small> : null}
+      {isError ? <small className="error-text">{title} 목록을 불러오지 못했습니다.</small> : null}
+      {!isLoading && !isError && options.length === 0 ? <small className="meta-text">{emptyLabel}</small> : null}
     </section>
   )
 }
@@ -427,6 +605,7 @@ export function AdminShopsPage() {
   const [editImageItems, setEditImageItems] = useState<EditableImageItem[]>([])
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set())
   const [fieldErrors, setFieldErrors] = useState<ShopFieldErrors>({})
+  const [workSearchQuery, setWorkSearchQuery] = useState('')
   const [notice, setNotice] = useState<string | null>(() => {
     if (!isEditMode && readPendingAdminShopFileCount() > 0 && pendingFiles.length === 0) {
       return '사진 선택이 초기화됐어요. 다시 선택해주세요.'
@@ -650,7 +829,11 @@ export function AdminShopsPage() {
             saveShopMutation.mutate()
           }}
         >
-          <section className="admin-shop-editor-section">
+          <div className="admin-shop-editor-heading">
+            <h1>{isEditMode ? '매장 수정' : '매장 등록'}</h1>
+          </div>
+
+          <section className="admin-shop-editor-section admin-shop-photo-section">
             <div className="admin-shop-photo-strip">
               {isEditMode ? (
                 <>
@@ -853,19 +1036,26 @@ export function AdminShopsPage() {
               title="카테고리"
               onToggle={toggleCategory}
             />
-            <CatalogSelectionSection
+            <WorkCatalogSearchSelectionSection
               emptyLabel="등록된 작품이 없습니다."
               isError={worksQuery.isError}
               isLoading={worksQuery.isLoading}
               options={worksQuery.data ?? []}
+              query={workSearchQuery}
               selectedIds={shopForm.workIds}
               title="취급 작품"
+              onQueryChange={setWorkSearchQuery}
               onToggle={toggleWork}
             />
           </section>
 
           <div className="admin-shop-actions">
-            <Button display="full" disabled={saveShopMutation.isPending || editShopQuery.isLoading} type="submit">
+            <Button
+              className="admin-shop-submit-button"
+              display="block"
+              disabled={saveShopMutation.isPending || editShopQuery.isLoading}
+              type="submit"
+            >
               {saveShopMutation.isPending ? '저장 중...' : isEditMode ? '수정하기' : '등록하기'}
             </Button>
           </div>

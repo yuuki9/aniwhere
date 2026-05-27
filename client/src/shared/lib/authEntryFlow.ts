@@ -7,9 +7,6 @@ import { toSafeErrorSummary } from './safeError'
 
 export type EntrySessionResult =
   | {
-      mode: 'preview'
-    }
-  | {
       mode: 'ready'
       session: AuthSession
       user: UserSummary
@@ -32,24 +29,27 @@ const defaultCompleteServiceEntryDeps: CompleteServiceEntryDeps = {
   saveSession: saveAuthSession,
 }
 
+function normalizeTossLoginReferrerForServer(value: string): string {
+  const normalized = value.trim()
+  return normalized.toUpperCase() === 'SANDBOX' ? 'sandbox' : normalized
+}
+
 export async function completeServiceEntry(
   entry: EntryFlowResult,
   deps: CompleteServiceEntryDeps = defaultCompleteServiceEntryDeps,
 ): Promise<EntrySessionResult> {
-  if (entry.mode === 'preview') {
-    return { mode: 'preview' }
+  let login: LoginResult
+  const loginPayload = {
+    authorizationCode: entry.authorizationCode,
+    referrer: normalizeTossLoginReferrerForServer(entry.referrer),
   }
 
-  let login: LoginResult
   try {
-    login = await deps.login({
-      authorizationCode: entry.authorizationCode,
-      referrer: entry.referrer,
-    })
+    login = await deps.login(loginPayload)
   } catch (error) {
     console.error('[aniwhere:auth-entry] server login failed', {
       error: toSafeErrorSummary(error),
-      referrer: entry.referrer,
+      referrer: loginPayload.referrer,
     })
     throw error
   }

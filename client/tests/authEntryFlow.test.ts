@@ -25,7 +25,7 @@ const loadAuthEntryFlow = async () => {
         getProfile: (accessToken: string) => Promise<UserSummary>
         saveSession: (session: unknown) => void
       },
-    ) => Promise<{ mode: 'preview' | 'ready' | 'needsNickname' }>
+    ) => Promise<{ mode: 'ready' | 'needsNickname' }>
     saveAniwhereNickname: (
       nickname: string,
       accessToken: string,
@@ -83,7 +83,7 @@ test('completeServiceEntry passes Toss authorization code to the server and open
   )
 
   assert.equal(result.mode, 'ready')
-  assert.deepEqual(calls[0], { authorizationCode: 'code-1', referrer: 'SANDBOX' })
+  assert.deepEqual(calls[0], { authorizationCode: 'code-1', referrer: 'sandbox' })
   assert.deepEqual(calls[1], { accessToken: 'access-token' })
   assert.match(JSON.stringify(calls[2]), /refresh-token/)
 })
@@ -155,9 +155,19 @@ test('auth flow logs safe error summaries instead of raw error objects', () => {
 
   assert.match(auth, /toSafeErrorSummary\(error\)/)
   assert.match(authEntryFlow, /error: toSafeErrorSummary\(error\)/)
+  assert.doesNotMatch(auth, /auth-debug|console\.info/)
+  assert.doesNotMatch(authEntryFlow, /auth-debug|console\.info/)
   assert.match("console.error('[aniwhere:auth-entry] server login failed', { error })", rawAuthEntryErrorLogPattern)
   assert.doesNotMatch(auth, rawAppLoginErrorLogPattern)
   assert.doesNotMatch(authEntryFlow, rawAuthEntryErrorLogPattern)
+})
+
+test('startServiceEntry does not bypass Toss login with a preview session', () => {
+  const auth = source('../src/shared/lib/auth.ts')
+
+  assert.doesNotMatch(auth, /mode:\s*'preview'/)
+  assert.doesNotMatch(auth, /return\s+\{\s*mode:\s*'preview'\s*\}/)
+  assert.match(auth, /appLogin\(\)/)
 })
 
 test('auth session storage failures are contained', () => {

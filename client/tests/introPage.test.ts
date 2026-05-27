@@ -171,7 +171,7 @@ test('IntroPage explains Aniwhere through curation, map exploration, and review 
   assert.doesNotMatch(source, /운영팀 검토 후 승인 상태를 확인해요/)
 })
 
-test('IntroPage starts in home first instead of opening Toss login from intro', async () => {
+test('IntroPage does not enter home without completing Toss login', async () => {
   const { IntroPage } = await loadIntroPage()
   const { container, dom, previousGlobals } = setupDom()
   const root = createRoot(container)
@@ -210,7 +210,8 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
       action.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
     })
 
-    assert.match(container.textContent ?? '', /home preview/)
+    assert.doesNotMatch(container.textContent ?? '', /home preview/)
+    assert.match(container.textContent ?? '', /토스 앱에서 로그인해 주세요/)
   } finally {
     cleanupDom(dom, previousGlobals, root)
   }
@@ -220,57 +221,26 @@ test('IntroPage starts in home first instead of opening Toss login from intro', 
   assert.match(actionsRule, /align-items:\s*center;/)
 })
 
-test('IntroPage exposes temporary UI preview shortcuts during local dev', async () => {
-  const { IntroPage } = await loadIntroPage()
-  const { container, dom, previousGlobals } = setupDom()
-  const root = createRoot(container)
+test('IntroPage offers a login-free home entry while Toss login is blocked', () => {
   const source = introPageSource()
-  const styles = appCssSource()
 
-  try {
-    await act(async () => {
-      root.render(
-        React.createElement(
-          MemoryRouter,
-          { initialEntries: ['/intro'] },
-          React.createElement(
-            Routes,
-            null,
-            React.createElement(Route, {
-              element: React.createElement(IntroPage),
-              path: '/intro',
-            }),
-            React.createElement(Route, {
-              element: React.createElement('p', null, 'explore preview'),
-              path: '/explore',
-            }),
-            React.createElement(Route, {
-              element: React.createElement('p', null, 'search preview'),
-              path: '/search',
-            }),
-          ),
-        ),
-      )
-    })
+  assert.match(source, /로그인 없이 둘러보기/)
+  assert.match(source, /const handleEnterWithoutLogin = \(\) => \{\s*if \(isEntryAttemptInFlightRef\.current \|\| isEntering\)/)
+  assert.match(source, /className="intro-login-skip-button"[\s\S]*disabled=\{isEntering\}/)
+  assert.match(source, /navigate\('\/home'\)/)
+  assert.doesNotMatch(source, /임시 확인용 진입점/)
+  assert.doesNotMatch(source, /홈에서 ADS UI 확인하기/)
+})
 
-    const previewButtons = container.querySelectorAll('.intro-preview-actions button')
+test('IntroPage keeps temporary preview-only routes out of the login surface', () => {
+  const source = introPageSource()
 
-    assert.equal(previewButtons.length, 2)
-
-    await act(async () => {
-      previewButtons[0].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
-    })
-
-    assert.match(container.textContent ?? '', /explore preview/)
-  } finally {
-    cleanupDom(dom, previousGlobals, root)
-  }
-
-  assert.match(source, /const showIntroUiPreview = import\.meta\.env\.DEV/)
-  assert.match(source, /navigate\('\/explore'\)/)
-  assert.match(source, /returnTo: '\/intro'/)
-  assert.match(cssRuleBody(styles, '.intro-preview-actions'), /display:\s*grid;/)
-  assert.match(cssRuleBody(styles, '.intro-preview-note'), /font-size:\s*var\(--ait-font-size-caption\);/)
+  assert.doesNotMatch(source, /showIntroUiPreview/)
+  assert.doesNotMatch(source, /intro-preview-actions/)
+  assert.doesNotMatch(source, /임시 확인용 진입점/)
+  assert.doesNotMatch(source, /홈에서 ADS UI 확인하기/)
+  assert.doesNotMatch(source, /navigate\('\/explore'\)/)
+  assert.doesNotMatch(source, /returnTo: '\/intro'/)
 })
 
 test('IntroPage bridges Toss login through the Aniwhere server before entering home', () => {
@@ -279,7 +249,32 @@ test('IntroPage bridges Toss login through the Aniwhere server before entering h
   assert.match(source, /completeServiceEntry\(entry\)/)
   assert.match(source, /result\.mode === 'needsNickname'/)
   assert.match(source, /setPendingNicknameSession\(result\.session\)/)
-  assert.match(source, /entryMode:\s*result\.mode === 'preview' \? 'preview' : 'toss'/)
+  assert.match(source, /entryMode:\s*'toss'/)
+})
+
+test('IntroPage blocks concurrent login attempts before requesting a Toss authorization code', () => {
+  const source = introPageSource()
+
+  assert.match(source, /useRef/)
+  assert.match(source, /isEntryAttemptInFlightRef\.current/)
+  assert.match(source, /if\s*\(\s*isEntryAttemptInFlightRef\.current\s*\)\s*\{\s*return\s*\}/)
+})
+
+test('IntroPage keeps ADS login debug details out of the visible surface', () => {
+  const source = introPageSource()
+  const styles = appCssSource()
+
+  assert.doesNotMatch(source, /type AuthDebugSnapshot/)
+  assert.doesNotMatch(source, /IntroAuthDebugPanel/)
+  assert.doesNotMatch(source, /AuthDebugEntry/)
+  assert.doesNotMatch(source, /toMaskedAuthorizationCode/)
+  assert.doesNotMatch(source, /normalizeTossLoginReferrerForServer/)
+  assert.doesNotMatch(source, /ADS login debug/)
+  assert.doesNotMatch(source, /appLogin result/)
+  assert.doesNotMatch(source, /server login payload/)
+  assert.doesNotMatch(styles, /\.intro-auth-debug-panel/)
+  assert.doesNotMatch(styles, /\.intro-auth-debug-code/)
+  assert.doesNotMatch(source, /entry\.authorizationCode\}/)
 })
 
 test('IntroPage renders a nickname setup step for new or unnamed Aniwhere users', () => {
@@ -334,7 +329,7 @@ test('IntroPage is reachable from the documented intro route', () => {
 
   assert.match(
     source,
-    /\{[^{}]*(?:path:\s*['"]\/intro['"][^{}]*element:\s*<IntroPage\s*\/>|element:\s*<IntroPage\s*\/>[^{}]*path:\s*['"]\/intro['"])[^{}]*\}/,
+    /\{[^{}]*(?:path:\s*['"]\/intro['"][^{}]*element:\s*routeElement\(<IntroPage\s*\/>\)|element:\s*routeElement\(<IntroPage\s*\/>\)[^{}]*path:\s*['"]\/intro['"])[^{}]*\}/,
   )
 })
 

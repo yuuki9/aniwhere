@@ -26,11 +26,6 @@ export type AppliedShopFilterChip =
 export type AppliedShopFilterTarget = Pick<AppliedShopFilterChip, 'facet' | 'value'>
 
 const SHOP_STATUSES: ShopStatus[] = ['ACTIVE', 'CLOSED', 'UNVERIFIED']
-const SHOP_STATUS_LABELS: Record<ShopStatus, string> = {
-  ACTIVE: 'Open',
-  CLOSED: 'Closed',
-  UNVERIFIED: 'Unverified',
-}
 
 function parsePositiveInt(value: string | null) {
   if (value == null || !/^\d+$/.test(value)) {
@@ -169,18 +164,6 @@ export function buildAppliedShopFilterChips(
       removeLabel: `Remove ${label} filter`,
     })
   })
-
-  if (filters.status != null) {
-    const label = SHOP_STATUS_LABELS[filters.status]
-
-    chips.push({
-      key: `status:${filters.status}`,
-      facet: 'status',
-      value: filters.status,
-      label,
-      removeLabel: `Remove ${label} filter`,
-    })
-  }
 
   return chips
 }

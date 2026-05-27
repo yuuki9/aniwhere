@@ -95,9 +95,19 @@ test('applied shop filter chips expose visible labels and removable facet target
       { key: 'region:8', label: 'Hongdae', removeLabel: 'Remove Hongdae filter' },
       { key: 'region:9', label: 'Gangnam', removeLabel: 'Remove Gangnam filter' },
       { key: 'category:3', label: 'Lifestyle', removeLabel: 'Remove Lifestyle filter' },
-      { key: 'status:ACTIVE', label: 'Open', removeLabel: 'Remove Open filter' },
     ],
   )
+})
+
+test('applied shop filter chips do not duplicate quick chip status filters', () => {
+  const chips = buildAppliedShopFilterChips({
+    regionIds: [],
+    categoryIds: [],
+    workId: undefined,
+    status: 'ACTIVE',
+  })
+
+  assert.deepEqual(chips, [])
 })
 
 test('applied shop filter chips remove one facet without clearing unrelated filters', () => {

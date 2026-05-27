@@ -13,6 +13,7 @@ dist-ssr
 *.log
 client/node_modules
 client/dist
+client/dist-analyze
 client/*.ait
 client/.vite
 

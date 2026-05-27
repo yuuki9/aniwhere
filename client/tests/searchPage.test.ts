@@ -60,6 +60,18 @@ test('SearchPage sends work-scoped searches to the shop search API workKeyword p
   assert.match(apiTypes, /workKeyword\?: string/)
 })
 
+test('SearchPage opens explore details without adding implicit region filters and preserves the search route', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /const location = useLocation\(\)/)
+  assert.match(source, /const searchReturnTo = `\$\{location\.pathname\}\$\{location\.search\}`/)
+  assert.match(source, /const buildExploreHref = \(shopId: number\) =>/)
+  assert.match(source, /to=\{buildExploreHref\(shop\.id\)\}/)
+  assert.match(source, /state=\{\{ returnTo: searchReturnTo \}\}/)
+  assert.doesNotMatch(source, /buildExploreHref\(shop\.id, shop\.regionId\)/)
+  assert.doesNotMatch(source, /next\.set\('regionIds'/)
+})
+
 test('SearchPage default search bar falls back to workKeyword when shop-name search is empty', () => {
   const source = searchPageSource()
 
@@ -217,6 +229,17 @@ test('SearchPage treats keyword changes as replaceable search state instead of b
   assert.match(source, /const next = writeShopFilters\(new URLSearchParams\(\), selectedFilters\)/)
   assert.match(source, /setSearchParams\(next, \{ replace: true \}\)/)
   assert.match(source, /onBack=\{handleSearchBack\}/)
+})
+
+test('SearchPage submits the TDS search field on Enter while preserving returnTo query routes', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /type KeyboardEvent/)
+  assert.match(source, /const handleSearchKeyDown = \(event: KeyboardEvent<HTMLInputElement>\) =>/)
+  assert.match(source, /if \(event\.key !== 'Enter' \|\| event\.nativeEvent\.isComposing\) \{[\s\S]*?return[\s\S]*?\}/)
+  assert.match(source, /event\.preventDefault\(\)[\s\S]*moveToSearch\(keyword\)/)
+  assert.match(source, /onKeyDown=\{handleSearchKeyDown\}/)
+  assert.match(source, /next\.set\('returnTo', safeReturnTo\)/)
 })
 
 test('SearchPage renders the bundled location guide image for the empty search state', () => {

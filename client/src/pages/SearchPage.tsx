@@ -1,6 +1,6 @@
-import { type FormEvent, useCallback, useMemo, useRef, useState } from 'react'
+import { type FormEvent, type KeyboardEvent, useCallback, useMemo, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopFacets, getShops } from '../shared/api/shops'
 import type { Shop } from '../shared/api/types'
 import { formatRelativeUpdated } from '../shared/lib/format'
@@ -30,13 +30,8 @@ import { SearchField } from '@aniwhere/tds-mobile'
 
 const SEARCH_PAGE_SIZE = 8
 
-const buildExploreHref = (shopId: number, shopRegionId: number | null) => {
+const buildExploreHref = (shopId: number) => {
   const next = new URLSearchParams()
-  next.set('page', '0')
-
-  if (shopRegionId) {
-    next.set('regionIds', String(shopRegionId))
-  }
 
   next.set('shopId', String(shopId))
   return `/explore?${next.toString()}`
@@ -94,6 +89,7 @@ async function searchShopsFromSearchBar({
 
 export function SearchPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword') ?? ''
@@ -109,6 +105,7 @@ export function SearchPage() {
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
   const appliedFilterCount = countShopFilters(selectedFilters)
   const hasSearchCriteria = currentKeyword.trim().length > 0 || appliedFilterCount > 0
+  const searchReturnTo = `${location.pathname}${location.search}`
 
   const closeFilterSheet = useCallback(() => {
     setIsFilterSheetOpen(false)
@@ -153,6 +150,15 @@ export function SearchPage() {
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    moveToSearch(keyword)
+  }
+
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+      return
+    }
+
     event.preventDefault()
     moveToSearch(keyword)
   }
@@ -213,8 +219,8 @@ export function SearchPage() {
     setNearbyError(null)
 
     try {
-      const location = await requestCurrentLocation()
-      navigate(buildNearbyExploreHref(location))
+      const currentLocation = await requestCurrentLocation()
+      navigate(buildNearbyExploreHref(currentLocation))
     } catch (error) {
       setNearbyState('error')
       setNearbyError(error instanceof Error ? error.message : '현재 위치를 가져오지 못했습니다.')
@@ -236,6 +242,7 @@ export function SearchPage() {
                 takeSpace={false}
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
+                onKeyDown={handleSearchKeyDown}
               />
             </form>
 
@@ -349,7 +356,11 @@ export function SearchPage() {
 
                 return (
                   <article className="search-result-card" key={shop.id}>
-                    <Link className="search-result-link" to={buildExploreHref(shop.id, shop.regionId)}>
+                    <Link
+                      className="search-result-link"
+                      to={buildExploreHref(shop.id)}
+                      state={{ returnTo: searchReturnTo }}
+                    >
                       <div className="search-result-body">
                         <div className="search-result-name">
                           <strong>{shop.name}</strong>

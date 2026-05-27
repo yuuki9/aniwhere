@@ -1,10 +1,11 @@
 import type { Post, WorkCatalogItem } from '../shared/api/types'
 
-export type HomeQuickMenu = {
-  id: 'map' | 'reviews' | 'admin'
-  label: string
-  href: string
-  icon: 'map' | 'review' | 'admin'
+export type HomeCtaCard = {
+  id: 'map' | 'favorites' | 'reviews'
+  headlineLines: [string, string]
+  href: string | null
+  enabled: boolean
+  imageAlt: string
 }
 
 export type HomeWorkPreviewItem = {
@@ -24,32 +25,30 @@ export type HomeReviewPreviewItem = {
   createdAt: string
 }
 
-export function buildHomeQuickMenus({ includeAdmin = false }: { includeAdmin?: boolean } = {}): HomeQuickMenu[] {
-  const menus: HomeQuickMenu[] = [
+export function buildHomeCtaCards(): HomeCtaCard[] {
+  return [
     {
       id: 'map',
-      label: '지도 보기',
+      headlineLines: ['가까운 매장', '지도에서 보기'],
       href: '/explore?view=map',
-      icon: 'map',
+      enabled: true,
+      imageAlt: '지도핀과 매장 실루엣을 보여주는 Aniwhere 안내 이미지',
+    },
+    {
+      id: 'favorites',
+      headlineLines: ['찜 많은 매장', '먼저 둘러보기'],
+      href: null,
+      enabled: false,
+      imageAlt: '하트와 매장 카드를 보여주는 Aniwhere 안내 이미지',
     },
     {
       id: 'reviews',
-      label: '방문 후기',
-      href: '/community',
-      icon: 'review',
+      headlineLines: ['후기 많은 매장', '믿고 찾아보기'],
+      href: null,
+      enabled: false,
+      imageAlt: '말풍선과 별점 리뷰 카드를 보여주는 Aniwhere 안내 이미지',
     },
   ]
-
-  if (includeAdmin) {
-    menus.push({
-      id: 'admin',
-      label: '매장 관리',
-      href: '/admin/shops',
-      icon: 'admin',
-    })
-  }
-
-  return menus
 }
 
 function pickWorkSubtitle(work: WorkCatalogItem) {

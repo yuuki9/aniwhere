@@ -77,10 +77,10 @@ test('ExplorePage binds the filter trigger ref only to the visible top search in
 
   assert.match(source, /<ExploreTopSearch/)
   assert.match(topSearchSource, /ref=\{attachTriggerRef \? filterTriggerRef : null\}/)
-  assert.match(source, /const isExploreTopHidden = sheetMode === 'expanded' \|\| isListSheetOpen/)
+  assert.match(source, /const isExploreTopHidden = sheetMode === 'expanded'/)
   assert.match(source, /!isExploreTopHidden \? \(/)
   assert.match(source, /attachTriggerRef\s+filterTriggerRef=\{filterTriggerRef\}/)
-  assert.match(source, /attachTriggerRef=\{isListSheetOpen\}/)
+  assert.doesNotMatch(source, /attachTriggerRef=\{isListSheetOpen\}/)
   assert.doesNotMatch(source, /const topSearch = \(/)
   assert.doesNotMatch(source, /ref=\{filterTriggerRef\}/)
   assert.doesNotMatch(source, /const renderTopSearch = /)
@@ -165,10 +165,17 @@ test('ExplorePage extracts the list results sheet into a focused component', () 
   const resultsSheetSource = mapResultsSheetSource()
 
   assert.match(source, /<MapResultsSheet/)
-  assert.match(resultsSheetSource, /className="map-results-sheet-v2"/)
+  assert.match(source, /const isFullListView = routeViewMode === 'list' && selectedShopId == null/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*?<MapResultsSheet/)
+  assert.match(source, /visible=\{isFullListView\}/)
+  assert.doesNotMatch(resultsSheetSource, /import \{ BottomSheet \} from '@aniwhere\/tds-mobile'/)
+  assert.match(resultsSheetSource, /if \(!visible\) \{\s*return null\s*\}/)
+  assert.match(resultsSheetSource, /<section[\s\S]*className="map-results-list-panel"[\s\S]*aria-labelledby="map-results-list-title"/)
+  assert.doesNotMatch(resultsSheetSource, /role="dialog"/)
   assert.match(resultsSheetSource, /visibleShops\.map/)
   assert.match(resultsSheetSource, /formatRelativeUpdated/)
-  assert.doesNotMatch(source, /className="map-results-sheet-v2"/)
+  assert.doesNotMatch(resultsSheetSource, /topSearch/)
+  assert.doesNotMatch(source, /className="map-results-list-panel"/)
   assert.doesNotMatch(source, /visibleShops\.map/)
 })
 
@@ -339,12 +346,60 @@ test('Explore detail selection pushes history so native back closes the sheet fi
   assert.doesNotMatch(source, /syncSearchParams/)
 })
 
+test('Explore detail back returns to the originating search route when opened from search results', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /type ExploreLocationState = \{\s*returnTo\?: string/)
+  assert.match(source, /function isSafeExploreReturnTo\(returnTo: string \| undefined\)/)
+  assert.match(source, /const safeRouteReturnTo = isSafeExploreReturnTo\(routeState\?\.returnTo\)/)
+  assert.match(source, /const shouldReturnToSourceList = safeRouteReturnTo != null && isListSheetOpen/)
+  assert.doesNotMatch(source, /navigate\(routeState\.returnTo/)
+  assert.match(source, /if \(selectedShopId != null && safeRouteReturnTo\) \{\s*navigate\(safeRouteReturnTo, \{ replace: true \}\)/)
+})
+
 test('Explore list-map view switches replace history so removed chips do not resurrect', () => {
   const source = explorePageSource()
 
   assert.match(source, /const moveViewMode = \(nextViewMode: ViewMode\) => \{[\s\S]*?next\.set\('view', nextViewMode\)[\s\S]*?replaceSearchParams\(next\)[\s\S]*?\}/)
   assert.doesNotMatch(source, /next\.set\('view', nextViewMode\)\s*pushSearchParams\(next\)/)
   assert.match(source, /if \(isListSheetOpen\) \{\s*handleSwitchView\('map'\)/)
+})
+
+test('Explore list toggle stays available over a selected shop peek and opens the full list route', () => {
+  const source = explorePageSource()
+  const overlayControlsSource = mapOverlayControlsSource()
+  const styles = exploreSearchCssSource()
+  const peekListButtonRules = cssRuleBodies(styles, '.map-surface-sheet-peek .map-list-fab')
+
+  assert.match(source, /<MapOverlayControls[\s\S]*?showListToggle=\{sheetMode !== 'expanded'\}/)
+  assert.match(overlayControlsSource, /showListToggle: boolean/)
+  assert.match(overlayControlsSource, /\{showListToggle \? \(/)
+  assert.match(source, /if \(selectedShopId != null\) \{\s*restoreListView\(\)\s*return\s*\}/)
+  assert.match(source, /<ShopMap\s+shops=\{mappableShops\}/)
+  assert.doesNotMatch(source, /!\s*isListSheetOpen\s*\?\s*\([\s\S]*?<ShopMap/)
+  assert.ok(peekListButtonRules.some((rule) => /z-index:\s*1080;/.test(rule)))
+  assert.doesNotMatch(source, /if \(selectedShopId != null\) \{\s*return\s*\}/)
+})
+
+test('Explore list view is a full search and results surface instead of a map bottom sheet', () => {
+  const source = explorePageSource()
+  const styles = exploreSearchCssSource()
+  const fullListStart = source.indexOf('if (isFullListView)')
+  const fullListEnd = source.indexOf('\n  return (', fullListStart + 1)
+  const fullListBranch = source.slice(fullListStart, fullListEnd)
+
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*'map-list-view'/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*<ExploreTopSearch/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*<MapResultsSheet/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*<MapOverlayControls/)
+  assert.doesNotMatch(fullListBranch, /<ShopMap/)
+  assert.doesNotMatch(fullListBranch, /<MapQuickChips/)
+  assert.doesNotMatch(fullListBranch, /map-chip-status/)
+  assert.ok(cssRuleBodies(styles, '.map-list-view').some((rule) => /height:\s*100dvh;/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-list-view').some((rule) => /display:\s*flex;/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-list-view-top').some((rule) => /flex:\s*0 0 auto;/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-results-list-panel').some((rule) => /flex:\s*1 1 auto;/.test(rule)))
+  assert.equal(cssRuleBodies(styles, '.map-results-sheet-v2').length, 0)
 })
 
 test('Explore detail shop changes replace history instead of stacking visited shops', () => {
@@ -460,7 +515,8 @@ test('ExplorePage shows removable applied filters without opening the filter she
   assert.match(source, /className="map-chip-composite-row"/)
   assert.match(source, /appliedFilters=\{/)
   assert.match(resultsSheetSource, /appliedFilters: ReactNode/)
-  assert.match(resultsSheetSource, /<div className="map-results-sheet-top">\s*\{topSearch\}\s*\{appliedFilters\}/)
+  assert.match(resultsSheetSource, /<div className="map-results-sheet-top">\s*\{appliedFilters\}/)
+  assert.doesNotMatch(resultsSheetSource, /\{topSearch\}/)
   assert.doesNotMatch(source, /removeAppliedFilterChip[\s\S]{0,260}setIsFilterSheetOpen\(true\)/)
   assert.match(chipSource, /buildAppliedShopFilterChips/)
   assert.doesNotMatch(chipSource, /includeMapArea/)
@@ -501,18 +557,53 @@ test('Explore map search and filter controls stay visually separated to avoid ac
   assert.ok(fieldRules.some((rule) => /background:\s*var\(--ait-color-surface-raised\);/.test(rule)))
   assert.ok(filterRules.some((rule) => /width:\s*46px;/.test(rule)))
   assert.ok(filterRules.some((rule) => /border:\s*1px solid var\(--ait-color-border-strong\);/.test(rule)))
-  assert.ok(filterRules.some((rule) => /box-shadow:\s*var\(--ait-shadow-lg\);/.test(rule)))
 })
 
 test('Explore map overlay controls avoid competing raised layers', () => {
   const styles = appCssSource()
-  const chipRules = cssRuleBodies(styles, '.map-chip-status')
   const areaSearchRules = cssRuleBodies(styles, '.map-area-search-button')
 
-  assert.ok(chipRules.some((rule) => /box-shadow:\s*none;/.test(rule)))
   assert.ok(areaSearchRules.some((rule) => /background:\s*var\(--ait-color-surface-raised\);/.test(rule)))
   assert.ok(areaSearchRules.some((rule) => /color:\s*var\(--text-strong\);/.test(rule)))
   assert.doesNotMatch(styles, /\.map-surface-sheet-open\s+\.map-list-fab\s*\{[\s\S]*?display:\s*none;/)
+})
+
+test('Explore and shared app CSS do not use box shadows', () => {
+  const styles = appCssSource()
+
+  assert.doesNotMatch(styles, /box-shadow/)
+})
+
+test('Explore peek sheet keeps map controls clear of the selected shop summary', () => {
+  const source = explorePageSource()
+  const styles = exploreSearchCssSource()
+  const peekSurfaceRules = cssRuleBodies(styles, '.map-surface-app-v2.map-surface-sheet-peek')
+  const peekLocationRules = cssRuleBodies(styles, '.map-surface-sheet-peek .map-location-fab')
+  const listRules = cssRuleBodies(styles, '.map-list-fab')
+  const zoomRules = cssRuleBodies(styles, '.map-zoom-control')
+
+  assert.match(source, /sheetMode === 'peek' && detailShop \? 'map-surface-sheet-peek' : ''/)
+  assert.ok(peekSurfaceRules.some((rule) => /--map-control-bottom:\s*clamp\(260px,\s*42dvh,\s*360px\);/.test(rule)))
+  assert.ok(peekLocationRules.some((rule) => /display:\s*none;/.test(rule)))
+  assert.ok(listRules.some((rule) => /bottom:\s*calc\(var\(--map-control-bottom/.test(rule)))
+  assert.ok(zoomRules.some((rule) => /bottom:\s*var\(--map-control-bottom/.test(rule)))
+  assert.equal(cssRuleBodies(styles, '.map-surface-sheet-peek .map-list-fab').some((rule) => /display:\s*none;/.test(rule)), false)
+  assert.ok(cssRuleBodies(styles, '.map-surface-sheet-peek .map-list-fab').some((rule) => /bottom:\s*calc\(var\(--map-control-bottom/.test(rule)))
+})
+
+test('Explore full list view reserves space around the map toggle button', () => {
+  const styles = exploreSearchCssSource()
+  const listViewRules = cssRuleBodies(styles, '.map-list-view')
+  const panelRules = cssRuleBodies(styles, '.map-results-list-panel')
+  const listButtonRules = cssRuleBodies(styles, '.map-list-view .map-list-fab')
+  const listPanelRules = cssRuleBodies(styles, '.map-list-view .map-results-sheet-list')
+
+  assert.ok(listViewRules.some((rule) => /--map-control-bottom:\s*max\(80px,\s*calc\(env\(safe-area-inset-bottom\) \+ 72px\)\);/.test(rule)))
+  assert.ok(panelRules.some((rule) => /overflow:\s*hidden;/.test(rule)))
+  assert.ok(panelRules.some((rule) => /border-radius:\s*0;/.test(rule)))
+  assert.ok(listButtonRules.some((rule) => /bottom:\s*max\(28px,\s*calc\(env\(safe-area-inset-bottom\) \+ 20px\)\);/.test(rule)))
+  assert.ok(listPanelRules.some((rule) => /flex:\s*1 1 auto;/.test(rule)))
+  assert.ok(listPanelRules.some((rule) => /padding-bottom:\s*max\(104px,\s*calc\(env\(safe-area-inset-bottom\) \+ 96px\)\);/.test(rule)))
 })
 
 test('Explore map chip rail only captures pointer events on actual controls', () => {
