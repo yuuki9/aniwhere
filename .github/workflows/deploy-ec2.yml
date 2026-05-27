@@ -135,7 +135,8 @@ jobs:
             sudo docker load -i /tmp/aniwhere-image.tar
             rm -f /tmp/aniwhere-image.tar
             umask 077
-            printf 'DB_HOST=%s\nDB_PORT=%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nAPP_PUBLIC_URL=%s\nAWS_S3_SHOP_IMAGES_BUCKET=%s\nAWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL=%s\nAWS_REGION=%s\nAPP_AUTH_JWT_SECRET=%s\nAPP_TOSS_CLIENT_ID=%s\nAPP_TOSS_CLIENT_SECRET=%s\nAPP_TOSS_UNLINK_BASIC_AUTH=%s\n' \
+            printf 'SPRING_PROFILES_ACTIVE=%s\nDB_HOST=%s\nDB_PORT=%s\nDB_NAME=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nAPP_PUBLIC_URL=%s\nAWS_S3_SHOP_IMAGES_BUCKET=%s\nAWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL=%s\nAWS_REGION=%s\nAPP_AUTH_JWT_SECRET=%s\nAPP_TOSS_CLIENT_ID=%s\nAPP_TOSS_CLIENT_SECRET=%s\nAPP_TOSS_UNLINK_BASIC_AUTH=%s\n' \
+              "prod" \
               "$DB_HOST" "$DB_PORT" "$DB_NAME" "$DB_USERNAME" "$DB_PASSWORD" \
               "https://api.aniwhere.link" \
               "${AWS_S3_SHOP_IMAGES_BUCKET:-}" "${AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL:-}" "${DEPLOY_AWS_REGION:-ap-northeast-2}" \

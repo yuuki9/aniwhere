@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    # dev는 환경변수 대신 수동 하드코딩으로 운용합니다.
+    url: jdbc:mysql://127.0.0.1:25431/aniwhere?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: root
+    password: dev-password-change-me
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+app:
+  api-public-url: http://localhost:8080
+  s3:
+    shop-images:
+      bucket: dev-bucket
+      region: ap-northeast-2
+      public-base-url: http://localhost:8080
+      api-public-url: http://localhost:8080
+      use-api-proxy-urls: true
+      skip-startup-bucket-check: true
+  auth:
+    jwt:
+      issuer: aniwhere-dev
+      access-exp-seconds: 900
+      refresh-exp-seconds: 1209600
+      secret: dev-jwt-secret-change-me-with-32-chars
+    toss:
+      base-url: https://apps-in-toss-api.toss.im
+      client-id: dev-client-id-change-me
+      client-secret: dev-client-secret-change-me
+      unlink-basic-auth: dev-unlink-basic-auth-change-me
+      mtls:
+        enabled: true
+        cert-path: C:/codebase/aniwhere/server/cert/aniwhere_public.crt
+        key-path: C:/codebase/aniwhere/server/cert/aniwhere_private.key
+        skip-startup-check: false

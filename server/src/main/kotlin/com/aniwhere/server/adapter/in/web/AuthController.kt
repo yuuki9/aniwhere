@@ -2,10 +2,13 @@ package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.UnauthorizedException
+import com.aniwhere.server.common.logging.LogMasking
 import com.aniwhere.server.config.AuthProperties
+import com.aniwhere.server.domain.auth.model.LoginResult
 import com.aniwhere.server.domain.auth.port.`in`.AuthUseCase
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.PostMapping
@@ -22,10 +25,23 @@ class AuthController(
     private val authUseCase: AuthUseCase,
     private val authProperties: AuthProperties,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     @PostMapping("/toss/login")
     fun tossLogin(
         @Valid @RequestBody request: TossLoginRequest,
-    ) = ApiResponse.ok(authUseCase.login(request.authorizationCode, request.referrer))
+    ): ApiResponse<LoginResult> {
+        val result = authUseCase.login(request.authorizationCode, request.referrer)
+        log.info(
+            "Toss login response sent success=true expiresIn={} role={} isNewUser={} accessToken={} refreshToken={}",
+            result.expiresIn,
+            result.role,
+            result.isNewUser,
+            LogMasking.maskSecret(result.accessToken),
+            LogMasking.maskSecret(result.refreshToken),
+        )
+        return ApiResponse.ok(result)
+    }
 
     @PostMapping("/refresh")
     fun refresh(

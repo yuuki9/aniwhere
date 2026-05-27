@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:25431}/${DB_NAME:aniwhere}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+# OpenAPI "Try it out" base URL. Override with APP_PUBLIC_URL (e.g. http://localhost:8080 for local same-origin).
+app:
+  api-public-url: ${APP_PUBLIC_URL:https://api.aniwhere.link}
+  s3:
+    shop-images:
+      bucket: ${AWS_S3_SHOP_IMAGES_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-2}
+      public-base-url: ${AWS_S3_SHOP_IMAGES_PUBLIC_BASE_URL:}
+      api-public-url: ${APP_PUBLIC_URL:https://api.aniwhere.link}
+      use-api-proxy-urls: ${APP_S3_SHOP_IMAGES_USE_API_PROXY_URLS:true}
+      # 기본 false: 버킷 미설정 시 기동 실패. 로컬만 예외로 허용하려면 true 로 두세요.
+      skip-startup-bucket-check: ${APP_S3_SHOP_IMAGES_SKIP_STARTUP_BUCKET_CHECK:false}
+  auth:
+    jwt:
+      issuer: ${APP_AUTH_JWT_ISSUER:aniwhere}
+      access-exp-seconds: ${APP_AUTH_JWT_ACCESS_EXP_SECONDS:900}
+      refresh-exp-seconds: ${APP_AUTH_JWT_REFRESH_EXP_SECONDS:1209600}
+      secret: ${APP_AUTH_JWT_SECRET:replace-me-with-strong-secret}
+    toss:
+      base-url: ${APP_TOSS_BASE_URL:https://apps-in-toss-api.toss.im}
+      client-id: ${APP_TOSS_CLIENT_ID:}
+      client-secret: ${APP_TOSS_CLIENT_SECRET:}
+      unlink-basic-auth: ${APP_TOSS_UNLINK_BASIC_AUTH:}
+      mtls:
+        enabled: true
+        cert-path: ${APP_TOSS_MTLS_CERT_PATH:/home/ubuntu/mtls/aniwhere_public.crt}
+        key-path: ${APP_TOSS_MTLS_KEY_PATH:/home/ubuntu/mtls/aniwhere_private.key}
+        skip-startup-check: ${APP_TOSS_MTLS_SKIP_STARTUP_CHECK:false}

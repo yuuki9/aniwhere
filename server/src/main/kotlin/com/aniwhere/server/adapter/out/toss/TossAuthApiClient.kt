@@ -3,12 +3,10 @@ package com.aniwhere.server.adapter.out.toss
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.config.AuthProperties
 import com.aniwhere.server.domain.auth.port.out.TossAuthPort
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -20,8 +18,6 @@ class TossAuthApiClient(
     @Qualifier("tossRestClientBuilder") private val restClientBuilder: RestClient.Builder,
     private val props: AuthProperties,
 ) : TossAuthPort {
-    private val log = LoggerFactory.getLogger(javaClass)
-
     private val objectMapper: ObjectMapper =
         jacksonObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
@@ -29,97 +25,56 @@ class TossAuthApiClient(
         val rest = restClientBuilder.baseUrl(props.toss.baseUrl).build()
         val normalizedReferrer = normalizeReferrer(referrer)
 
-        log.info(
-            "Toss generate-token request baseUrl={} referrerIn={} referrerOut={} authorizationCode={}",
-            props.toss.baseUrl,
-            referrer,
-            normalizedReferrer,
-            maskSecret(authorizationCode),
-        )
+        val generateTokenPath = "/api-partner/v1/apps-in-toss/user/oauth2/generate-token"
+        val generateTokenBody =
+            mapOf("authorizationCode" to authorizationCode, "referrer" to normalizedReferrer)
 
         val tokenResponseRaw =
             try {
                 rest.post()
-                    .uri("/api-partner/v1/apps-in-toss/user/oauth2/generate-token")
+                    .uri(generateTokenPath)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
-                    .body(mapOf("authorizationCode" to authorizationCode, "referrer" to normalizedReferrer))
+                    .body(generateTokenBody)
                     .retrieve()
                     .body(String::class.java)
             } catch (e: RestClientResponseException) {
-                log.warn(
-                    "Toss generate-token HTTP error status={} body={}",
-                    e.statusCode.value(),
-                    maskSensitiveJson(e.responseBodyAsString),
-                    e,
-                )
                 throw BadRequestException(
                     "토스 토큰 발급 HTTP 오류(status=${e.statusCode.value()}, ${describeTossGenerateTokenResponse(e.responseBodyAsString)})",
                 )
             }
 
         if (tokenResponseRaw.isNullOrBlank()) {
-            log.warn("Toss generate-token response body is empty")
             throw BadRequestException("토스 토큰 발급 응답이 비어 있습니다.")
         }
 
         val tokenResponse =
             runCatching {
                 objectMapper.readValue(tokenResponseRaw, GenerateTokenResponse::class.java)
-            }.getOrElse { e ->
-                log.warn(
-                    "Toss generate-token response parse failed body={}",
-                    maskSensitiveJson(tokenResponseRaw),
-                    e,
-                )
-                throw BadRequestException("토스 토큰 발급 응답 파싱에 실패했습니다.")
+            }.getOrElse { cause ->
+                throw BadRequestException("토스 토큰 발급 응답 파싱에 실패했습니다.", cause)
             }
 
         val accessToken = tokenResponse.success?.accessToken
         if (accessToken.isNullOrBlank()) {
             val diagnosis = describeTossGenerateTokenResponse(tokenResponseRaw)
-            log.warn(
-                "Toss generate-token missing accessToken diagnosis={} body={}",
-                diagnosis,
-                maskSensitiveJson(tokenResponseRaw),
-            )
             throw BadRequestException("토스 accessToken 응답이 비어 있습니다. ($diagnosis)")
         }
 
-        log.debug(
-            "Toss generate-token succeeded resultType={} accessToken={}",
-            tokenResponse.resultType ?: "(missing)",
-            maskSecret(accessToken),
-        )
-
+        val loginMePath = "/api-partner/v1/apps-in-toss/user/oauth2/login-me"
         val me =
             try {
                 rest.get()
-                    .uri("/api-partner/v1/apps-in-toss/user/oauth2/login-me")
+                    .uri(loginMePath)
                     .header("Authorization", "Bearer $accessToken")
                     .retrieve()
                     .body(LoginMeResponse::class.java)
             } catch (e: RestClientResponseException) {
-                log.warn(
-                    "Toss login-me HTTP error status={} body={}",
-                    e.statusCode.value(),
-                    maskSensitiveJson(e.responseBodyAsString),
-                    e,
-                )
                 throw BadRequestException("토스 사용자 조회 HTTP 오류(status=${e.statusCode.value()})")
-            } ?: run {
-                log.warn("Toss login-me response body is empty")
-                throw BadRequestException("토스 사용자 조회에 실패했습니다.")
-            }
+            } ?: throw BadRequestException("토스 사용자 조회에 실패했습니다.")
 
         val userKey = me.success?.userKey
-        if (userKey == null) {
-            log.warn(
-                "Toss login-me missing userKey resultType={}",
-                me.resultType ?: "(missing)",
-            )
-            throw BadRequestException("토스 userKey 응답이 비어 있습니다.")
-        }
+            ?: throw BadRequestException("토스 userKey 응답이 비어 있습니다.")
 
         return userKey
     }
@@ -158,47 +113,6 @@ class TossAuthApiClient(
             }
         }
         return errorNode.toString()
-    }
-
-    private fun maskSensitiveJson(raw: String?): String {
-        if (raw.isNullOrBlank()) return "(empty)"
-
-        return runCatching {
-            val node = objectMapper.readTree(raw)
-            maskJsonSecrets(node)
-            objectMapper.writeValueAsString(node)
-        }.getOrElse { maskSecret(raw) }
-    }
-
-    private fun maskJsonSecrets(node: JsonNode) {
-        when {
-            node.isObject -> {
-                val objectNode = node as ObjectNode
-                objectNode.fields().forEachRemaining { (fieldName, value) ->
-                    if (isSensitiveField(fieldName)) {
-                        if (value.isTextual) {
-                            objectNode.put(fieldName, maskSecret(value.asText()))
-                        }
-                    } else {
-                        maskJsonSecrets(value)
-                    }
-                }
-            }
-            node.isArray -> node.forEach(::maskJsonSecrets)
-        }
-    }
-
-    private fun isSensitiveField(fieldName: String): Boolean {
-        val normalized = fieldName.lowercase()
-        return normalized.contains("token") ||
-            normalized.contains("authorizationcode") ||
-            normalized == "code"
-    }
-
-    private fun maskSecret(value: String): String {
-        val trimmed = value.trim()
-        if (trimmed.length <= 8) return "***"
-        return "${trimmed.take(4)}...${trimmed.takeLast(4)}(len=${trimmed.length})"
     }
 
     data class GenerateTokenResponse(
