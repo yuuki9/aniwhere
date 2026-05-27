@@ -63,8 +63,8 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.match(source, /home-pending-card/)
   assert.doesNotMatch(source, /AitTop/)
   assert.match(source, /HomeSearchEntry/)
-  assert.match(source, /HomeCtaCarousel/)
-  assert.match(source, /home-cta-card/)
+  assert.match(source, /HomeCtaBannerList/)
+  assert.match(source, /home-cta-banner/)
   assert.match(source, /home-work-poster-card/)
   assert.match(source, /home-review-preview-section/)
   assert.doesNotMatch(source, /HomeQuickMenuSection/)
@@ -84,23 +84,23 @@ test('HomePage sends work poster searches to SearchPage with work scope and retu
   assert.doesNotMatch(source, /to=\{`\/explore\?workId=\$\{work\.id\}&view=list`\}/)
 })
 
-test('HomePage imports CTA images and routes only the map CTA for now', () => {
+test('HomePage imports CTA banner images and routes only the map CTA for now', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
-  assert.match(source, /homeCtaMapImage/)
-  assert.match(source, /homeCtaFavoritesImage/)
-  assert.match(source, /homeCtaReviewsImage/)
+  assert.match(source, /homeCtaNearbyBannerImage/)
+  assert.match(source, /homeCtaFavoritesBannerImage/)
+  assert.match(source, /homeCtaReviewsBannerImage/)
   assert.match(source, /const ctaCards = useMemo\(\(\) => buildHomeCtaCards\(\), \[\]\)/)
   assert.match(source, /card\.enabled && card\.href/)
   assert.match(source, /to=\{card\.href\}/)
   assert.doesNotMatch(source, /canUseAdminPreview/)
   assert.doesNotMatch(source, /isAdminUnlocked/)
-  assert.match(styles, /\.home-cta-carousel/)
-  assert.match(styles, /\.home-cta-card-disabled/)
+  assert.match(styles, /\.home-cta-banner-list/)
+  assert.match(styles, /\.home-cta-banner-disabled/)
 })
 
-test('Home CTA cards render as compact vertical-image curation carousel cards', () => {
+test('Home CTA routes render as one-column list banner items', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
   const tokens = fs.readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
@@ -109,24 +109,27 @@ test('Home CTA cards render as compact vertical-image curation carousel cards', 
   assert.match(source, /className="home-cta-image"/)
   assert.match(source, /card\.headlineLines\.map/)
   assert.doesNotMatch(source, /<small>\{card\.description\}<\/small>/)
+  assert.match(source, /home-cta-banner/)
+  assert.doesNotMatch(source, /home-cta-card/)
   assert.match(styles, /\.home-cta-section\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
-  assert.match(styles, /\.home-cta-carousel\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
-  assert.match(styles, /\.home-cta-carousel\s*\{[\s\S]*padding: var\(--ait-space-1\) var\(--ait-space-8\) var\(--ait-space-3\) 0;/)
-  assert.match(styles, /\.home-cta-card\s*\{[\s\S]*flex: 0 0 clamp\(224px, 57vw, 240px\);/)
-  assert.match(styles, /\.home-cta-card\s*\{[\s\S]*aspect-ratio:\s*4 \/ 5/)
-  assert.match(styles, /\.home-cta-card\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
-  assert.match(styles, /\.home-cta-card\s*\{[\s\S]*border: 1px solid var\(--ait-color-border\);/)
-  assert.equal(cssRuleBodies(styles, '.home-cta-card').some((rule) => /box-shadow:/.test(rule)), false)
-  assert.match(styles, /\.home-cta-media\s*\{[\s\S]*aspect-ratio:\s*4 \/ 5/)
+  assert.match(styles, /\.home-cta-banner-list\s*\{[\s\S]*display: grid;/)
+  assert.match(styles, /\.home-cta-banner-list\s*\{[\s\S]*gap: var\(--ait-space-3\);/)
+  assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*min-height: 96px;/)
+  assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*aspect-ratio:\s*4 \/ 1/)
+  assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*border: 1px solid var\(--ait-color-border\);/)
+  assert.equal(cssRuleBodies(styles, '.home-cta-banner').some((rule) => /box-shadow:/.test(rule)), false)
+  assert.match(styles, /\.home-cta-media\s*\{[\s\S]*position:\s*absolute/)
+  assert.match(styles, /\.home-cta-media\s*\{[\s\S]*inset:\s*0/)
   assert.match(styles, /\.home-cta-media\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
   assert.match(styles, /\.home-cta-image\s*\{[\s\S]*object-fit: cover/)
-  assert.match(styles, /\.home-cta-image\s*\{[\s\S]*transform: scale\(1\.08\);/)
-  assert.match(styles, /\.home-cta-image\s*\{[\s\S]*transform-origin: center center;/)
+  assert.match(styles, /\.home-cta-image\s*\{[\s\S]*object-position:\s*center center;/)
+  assert.equal(cssRuleBodies(styles, '.home-cta-image').some((rule) => /transform:/.test(rule)), false)
   assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*position:\s*absolute/)
-  assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: var\(--ait-space-6\) var\(--ait-space-4\) var\(--ait-space-5\);/)
-  assert.ok(cssRuleBodies(styles, '.home-cta-copy').some((rule) => /background:\s*linear-gradient\(180deg/.test(rule)))
+  assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: var\(--ait-space-4\);/)
+  assert.ok(cssRuleBodies(styles, '.home-cta-copy').some((rule) => /background:\s*linear-gradient\(90deg/.test(rule)))
   assert.match(styles, /\.home-cta-copy-line/)
-  assert.doesNotMatch(styles, /\.home-cta-card::after/)
+  assert.doesNotMatch(styles, /\.home-cta-card/)
+  assert.doesNotMatch(styles, /\.home-cta-carousel/)
   assert.doesNotMatch(tokens, /--ait-shadow|--shadow/)
 })
 
@@ -149,13 +152,13 @@ test('Home content sections keep a compact curation rhythm', () => {
   )
 })
 
-test('Home CTA image assets are vertical curation cards', () => {
-  const imageNames = ['home-cta-map.png', 'home-cta-favorites.png', 'home-cta-reviews.png']
+test('Home CTA banner assets are horizontal list banners', () => {
+  const imageNames = ['home-cta-nearby-banner.png', 'home-cta-favorites-banner.png', 'home-cta-reviews-banner.png']
 
   for (const imageName of imageNames) {
     assert.deepEqual(readPngDimensions(new URL(`../src/assets/images/${imageName}`, import.meta.url)), {
-      width: 1024,
-      height: 1536,
+      width: 1600,
+      height: 400,
     })
   }
 })

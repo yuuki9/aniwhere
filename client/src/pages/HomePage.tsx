@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import homeCtaFavoritesImage from '../assets/images/home-cta-favorites.png'
-import homeCtaMapImage from '../assets/images/home-cta-map.png'
-import homeCtaReviewsImage from '../assets/images/home-cta-reviews.png'
+import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
+import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.png'
+import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
 import { getPosts } from '../shared/api/community'
 import { getWorks } from '../shared/api/works'
 import { formatDateTime } from '../shared/lib/format'
@@ -17,9 +17,9 @@ import {
 } from './homeViewModel'
 
 const HOME_CTA_IMAGES: Record<HomeCtaCard['id'], string> = {
-  map: homeCtaMapImage,
-  favorites: homeCtaFavoritesImage,
-  reviews: homeCtaReviewsImage,
+  map: homeCtaNearbyBannerImage,
+  favorites: homeCtaFavoritesBannerImage,
+  reviews: homeCtaReviewsBannerImage,
 }
 
 function SearchIcon() {
@@ -42,7 +42,7 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
   )
 }
 
-function HomeCtaCardBody({ card }: { card: HomeCtaCard }) {
+function HomeCtaBannerBody({ card }: { card: HomeCtaCard }) {
   return (
     <>
       <span className="home-cta-media">
@@ -61,26 +61,26 @@ function HomeCtaCardBody({ card }: { card: HomeCtaCard }) {
   )
 }
 
-function HomeCtaCarousel({ cards }: { cards: HomeCtaCard[] }) {
+function HomeCtaBannerList({ cards }: { cards: HomeCtaCard[] }) {
   return (
     <section className="home-cta-section" aria-labelledby="home-cta-title">
       <div className="home-section-head">
         <h2 id="home-cta-title">오늘 어디를 둘러볼까요?</h2>
       </div>
-      <div className="home-cta-carousel" aria-label="매장 탐색 바로가기">
+      <div className="home-cta-banner-list" aria-label="매장 탐색 바로가기">
         {cards.map((card) =>
           card.enabled && card.href ? (
-            <Link className="home-cta-card" key={card.id} to={card.href}>
-              <HomeCtaCardBody card={card} />
+            <Link className="home-cta-banner" key={card.id} to={card.href}>
+              <HomeCtaBannerBody card={card} />
             </Link>
           ) : (
             <article
-              className="home-cta-card home-cta-card-disabled"
+              className="home-cta-banner home-cta-banner-disabled"
               key={card.id}
               aria-disabled="true"
               aria-label={`${card.headlineLines.join(' ')} 준비 중`}
             >
-              <HomeCtaCardBody card={card} />
+              <HomeCtaBannerBody card={card} />
             </article>
           ),
         )}
@@ -224,7 +224,7 @@ export function HomePage() {
   return (
     <main className="app-shell discover-shell">
       <HomeSearchEntry onSearch={() => navigate('/search')} />
-      <HomeCtaCarousel cards={ctaCards} />
+      <HomeCtaBannerList cards={ctaCards} />
       <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />
       <HomeReviewPreviewSection posts={reviewItems} isLoading={postsQuery.isLoading} isError={postsQuery.isError} />
     </main>
