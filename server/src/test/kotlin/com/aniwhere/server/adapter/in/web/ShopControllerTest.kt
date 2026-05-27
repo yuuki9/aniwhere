@@ -90,6 +90,18 @@ class ShopControllerTest {
     }
 
     @Test
+    fun `GET shops_{id} - averageRating과 reviewCount를 반환한다`() {
+        every { useCase.getShop(1L) } returns sampleShop.copy(
+            averageRating = BigDecimal("4.25"),
+            reviewCount = 12,
+        )
+        mvc.perform(get("/api/v1/shops/1"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.averageRating").value(4.25))
+            .andExpect(jsonPath("$.data.reviewCount").value(12))
+    }
+
+    @Test
     fun `GET shops - 샵 페이징 검색`() {
         every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("keyword", "테스트").param("page", "0").param("size", "20"))
@@ -101,6 +113,19 @@ class ShopControllerTest {
             .andExpect(jsonPath("$.code").doesNotExist())
             .andExpect(jsonPath("$.message").doesNotExist())
         verify { useCase.searchShops(emptySet(), emptySet(), "테스트", null, emptySet(), null, null, any()) }
+    }
+
+    @Test
+    fun `GET shops - 검색 결과에 averageRating과 reviewCount를 반환한다`() {
+        val shopWithRating = sampleShop.copy(
+            averageRating = BigDecimal("4.50"),
+            reviewCount = 8,
+        )
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(shopWithRating))
+        mvc.perform(get("/api/v1/shops").param("page", "0").param("size", "20"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.content[0].averageRating").value(4.50))
+            .andExpect(jsonPath("$.data.content[0].reviewCount").value(8))
     }
 
     @Test
