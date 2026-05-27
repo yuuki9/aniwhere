@@ -48,6 +48,12 @@ class ShopEntity(
     @BatchSize(size = 30)
     var images: MutableList<ShopImageEntity> = mutableListOf(),
 
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    var averageRating: BigDecimal? = null,
+
+    @Column(name = "review_count", nullable = false)
+    var reviewCount: Int = 0,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @Column(name = "updated_at", nullable = false)
