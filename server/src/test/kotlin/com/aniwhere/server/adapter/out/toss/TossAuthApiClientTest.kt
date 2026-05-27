@@ -2,7 +2,6 @@ package com.aniwhere.server.adapter.out.toss
 
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.config.AuthProperties
-import com.aniwhere.server.config.TossRestClientMtlsStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -36,7 +35,6 @@ class TossAuthApiClientTest {
             TossAuthApiClient(
                 RestClient.builder().baseUrl(baseUrl),
                 AuthProperties(toss = AuthProperties.Toss(baseUrl = baseUrl)),
-                TossRestClientMtlsStatus.disabled(),
             )
 
         try {
@@ -66,7 +64,6 @@ class TossAuthApiClientTest {
             TossAuthApiClient(
                 RestClient.builder().baseUrl(baseUrl),
                 AuthProperties(toss = AuthProperties.Toss(baseUrl = baseUrl)),
-                TossRestClientMtlsStatus.disabled(),
             )
 
         try {
@@ -74,6 +71,35 @@ class TossAuthApiClientTest {
                 .isInstanceOf(BadRequestException::class.java)
                 .hasMessageContaining("invalid_grant")
                 .hasMessageContaining("hasAccessToken=false")
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `generate-token 응답 파싱 실패 시 원본 예외를 cause로 보존한다`() {
+        val server = HttpServer.create(InetSocketAddress(0), 0)
+
+        server.createContext("/api-partner/v1/apps-in-toss/user/oauth2/generate-token") { exchange ->
+            val responseBody = """not-json"""
+            exchange.responseHeaders.add("Content-Type", "application/json")
+            exchange.sendResponseHeaders(200, responseBody.toByteArray().size.toLong())
+            exchange.responseBody.use { it.write(responseBody.toByteArray()) }
+        }
+        server.start()
+
+        val baseUrl = "http://127.0.0.1:${server.address.port}"
+        val client =
+            TossAuthApiClient(
+                RestClient.builder().baseUrl(baseUrl),
+                AuthProperties(toss = AuthProperties.Toss(baseUrl = baseUrl)),
+            )
+
+        try {
+            assertThatThrownBy { client.exchangeAndGetUserKey("code-1", "sandbox") }
+                .isInstanceOf(BadRequestException::class.java)
+                .hasMessageContaining("토스 토큰 발급 응답 파싱에 실패했습니다.")
+                .hasCauseInstanceOf(com.fasterxml.jackson.core.JsonParseException::class.java)
         } finally {
             server.stop(0)
         }

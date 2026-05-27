@@ -2,10 +2,10 @@ package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.UnauthorizedException
+import com.aniwhere.server.common.logging.LogMasking
 import com.aniwhere.server.config.AuthProperties
 import com.aniwhere.server.domain.auth.model.LoginResult
 import com.aniwhere.server.domain.auth.port.`in`.AuthUseCase
-import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import org.slf4j.LoggerFactory
@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val authUseCase: AuthUseCase,
     private val authProperties: AuthProperties,
-    private val objectMapper: ObjectMapper,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -32,16 +31,16 @@ class AuthController(
     fun tossLogin(
         @Valid @RequestBody request: TossLoginRequest,
     ): ApiResponse<LoginResult> {
+        val result = authUseCase.login(request.authorizationCode, request.referrer)
         log.info(
-            "Toss login request received body={}",
-            objectMapper.writeValueAsString(
-                mapOf(
-                    "authorizationCode" to request.authorizationCode,
-                    "referrer" to request.referrer,
-                ),
-            ),
+            "Toss login response sent success=true expiresIn={} role={} isNewUser={} accessToken={} refreshToken={}",
+            result.expiresIn,
+            result.role,
+            result.isNewUser,
+            LogMasking.maskSecret(result.accessToken),
+            LogMasking.maskSecret(result.refreshToken),
         )
-        return ApiResponse.ok(authUseCase.login(request.authorizationCode, request.referrer))
+        return ApiResponse.ok(result)
     }
 
     @PostMapping("/refresh")
