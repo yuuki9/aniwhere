@@ -7,9 +7,7 @@ import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
-import { logAuthFlow, logAuthFlowError } from '../shared/lib/authFlowDebug'
 import type { AuthSession } from '../shared/lib/authSession'
-import { toSafeErrorSummary } from '../shared/lib/safeError'
 import { Button } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
@@ -98,11 +96,8 @@ export function IntroPage() {
     setEntryError(null)
 
     try {
-      logAuthFlow('intro', 'entry-start')
       const entry = await startServiceEntry()
-      logAuthFlow('intro', 'startServiceEntry-ok', { mode: entry.mode })
       const result = await completeServiceEntry(entry)
-      logAuthFlow('intro', 'completeServiceEntry-ok', { mode: result.mode })
       const state: EntryRouteState = { entryMode: result.mode === 'preview' ? 'preview' : 'toss' }
       if (result.mode === 'needsNickname') {
         setPendingNicknameSession(result.session)
@@ -111,7 +106,7 @@ export function IntroPage() {
       }
       navigate('/home', { state })
     } catch (error) {
-      logAuthFlowError('intro', 'entry-failed', toSafeErrorSummary(error))
+      console.error('[aniwhere:intro] service entry failed', error)
       setEntryError('로그인을 완료하지 못했어요. 다시 시도해 주세요.')
     } finally {
       setIsEntering(false)

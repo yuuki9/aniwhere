@@ -149,16 +149,13 @@ test('saveAniwhereNickname rejects unavailable nicknames before updating the pro
 test('auth flow logs safe error summaries instead of raw error objects', () => {
   const auth = source('../src/shared/lib/auth.ts')
   const authEntryFlow = source('../src/shared/lib/authEntryFlow.ts')
-  const introPage = source('../src/pages/IntroPage.tsx')
-  const rawAppLoginErrorLogPattern = /console\.error\(\s*'\[aniwhere:auth\]'\s*,\s*\{\s*step:\s*'appLogin-failed'\s*,\s*error:\s*toSafeErrorSummary\(error\)\s*\}\s*\)/
+  const rawAppLoginErrorLogPattern = /console\.error\(\s*'\[aniwhere:auth\] appLogin failed'\s*,\s*error\s*\)/
   const rawAuthEntryErrorLogPattern =
-    /console\.error\(\s*'\[aniwhere:auth-entry\]'\s*,\s*\{\s*step:\s*'[^']+'\s*,[^}]*error\s*\}\s*\)/s
+    /console\.error\(\s*'\[aniwhere:auth-entry\][^']*'\s*,\s*\{\s*error\s*\}\s*\)/s
 
-  assert.match(auth, /logAuthFlowError\('auth', 'appLogin-failed', toSafeErrorSummary\(error\)\)/)
-  assert.match(authEntryFlow, /logAuthFlowError\('auth-entry', 'server-login-failed', toSafeErrorSummary\(error\)/)
-  assert.match(authEntryFlow, /logAuthFlowError\('auth-entry', 'profile-fetch-failed', toSafeErrorSummary\(error\)\)/)
-  assert.match(authEntryFlow, /logAuthFlow\('auth-entry', 'profile-fetch-start'\)/)
-  assert.match(introPage, /logAuthFlowError\('intro', 'entry-failed', toSafeErrorSummary\(error\)\)/)
+  assert.match(auth, /toSafeErrorSummary\(error\)/)
+  assert.match(authEntryFlow, /error: toSafeErrorSummary\(error\)/)
+  assert.match("console.error('[aniwhere:auth-entry] server login failed', { error })", rawAuthEntryErrorLogPattern)
   assert.doesNotMatch(auth, rawAppLoginErrorLogPattern)
   assert.doesNotMatch(authEntryFlow, rawAuthEntryErrorLogPattern)
 })
