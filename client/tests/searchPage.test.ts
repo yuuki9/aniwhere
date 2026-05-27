@@ -231,6 +231,17 @@ test('SearchPage treats keyword changes as replaceable search state instead of b
   assert.match(source, /onBack=\{handleSearchBack\}/)
 })
 
+test('SearchPage submits the TDS search field on Enter while preserving returnTo query routes', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /type KeyboardEvent/)
+  assert.match(source, /const handleSearchKeyDown = \(event: KeyboardEvent<HTMLInputElement>\) =>/)
+  assert.match(source, /if \(event\.key !== 'Enter'\) \{[\s\S]*?return[\s\S]*?\}/)
+  assert.match(source, /event\.preventDefault\(\)[\s\S]*moveToSearch\(keyword\)/)
+  assert.match(source, /onKeyDown=\{handleSearchKeyDown\}/)
+  assert.match(source, /next\.set\('returnTo', safeReturnTo\)/)
+})
+
 test('SearchPage renders the bundled location guide image for the empty search state', () => {
   const source = searchPageSource()
   const styles = appCssSource()

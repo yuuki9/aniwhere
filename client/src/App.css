@@ -1366,8 +1366,8 @@ p {
 .home-cta-card {
   display: block;
   position: relative;
-  flex: 0 0 240px;
-  aspect-ratio: 4 / 5;
+  flex: 0 0 min(82vw, 320px);
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   border: 0;
   border-radius: var(--ait-radius-md);
@@ -1375,6 +1375,14 @@ p {
   color: inherit;
   scroll-snap-align: start;
   text-decoration: none;
+}
+
+.home-cta-card::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.68) 42%, rgba(255, 255, 255, 0) 74%);
+  content: '';
+  pointer-events: none;
 }
 
 .home-cta-card:not(.home-cta-card-disabled):active {
@@ -1393,7 +1401,7 @@ p {
   display: block;
   position: absolute;
   inset: 0;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 3 / 2;
   height: auto;
   margin: 0;
   overflow: hidden;
@@ -1406,21 +1414,21 @@ p {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.08);
+  transform: none;
   transform-origin: center center;
 }
 
 .home-cta-copy {
   display: flex;
   position: absolute;
-  right: 0;
+  z-index: 1;
   bottom: 0;
   left: 0;
-  width: 100%;
+  width: min(64%, 196px);
   min-width: 0;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 0 16px 20px;
+  padding: 0 16px 18px;
   pointer-events: none;
 }
 

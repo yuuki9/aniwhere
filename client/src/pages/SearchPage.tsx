@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useMemo, useRef, useState } from 'react'
+import { type FormEvent, type KeyboardEvent, useCallback, useMemo, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopFacets, getShops } from '../shared/api/shops'
@@ -154,6 +154,15 @@ export function SearchPage() {
     moveToSearch(keyword)
   }
 
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') {
+      return
+    }
+
+    event.preventDefault()
+    moveToSearch(keyword)
+  }
+
   const movePage = (nextPage: number) => {
     moveToSearch(currentKeyword, nextPage)
   }
@@ -233,6 +242,7 @@ export function SearchPage() {
                 takeSpace={false}
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
+                onKeyDown={handleSearchKeyDown}
               />
             </form>
 

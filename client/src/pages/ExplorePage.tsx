@@ -691,7 +691,8 @@ export function ExplorePage() {
       )
     : null
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
-  const isListSheetOpen = routeViewMode === 'list' && selectedShopId == null
+  const isFullListView = routeViewMode === 'list' && selectedShopId == null
+  const isListSheetOpen = isFullListView
   const isExploreTopHidden = sheetMode === 'expanded'
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
@@ -909,6 +910,70 @@ export function ExplorePage() {
     }
   }
 
+  if (isFullListView) {
+    return (
+      <main className="map-page-shell">
+        <section className="map-page map-page-list-mode">
+          <div
+            className={[
+              'map-list-view',
+              usesTossNavigation ? 'map-surface-toss-navigation' : 'map-surface-local-navigation',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {!usesTossNavigation ? (
+              <AppTopNavigation className="map-route-navigation" showBack onBack={handleExploreBack} />
+            ) : null}
+
+            <div className="map-list-view-top">
+              <ExploreTopSearch
+                attachTriggerRef
+                filterTriggerRef={filterTriggerRef}
+                isFilterSheetOpen={isFilterSheetOpen}
+                appliedFilterCount={appliedFilterCount}
+                onSearchClick={() => navigate(searchHref)}
+                onFilterClick={() => setIsFilterSheetOpen(true)}
+              />
+              {renderAppliedFilterChips()}
+
+              {shopsError ? <p className="error-text map-inline-error map-inline-error-overlay">{shopsError}</p> : null}
+            </div>
+
+            <SearchFilterSheet
+              open={isFilterSheetOpen}
+              triggerRef={filterTriggerRef}
+              selectedFilters={selectedFilters}
+              viewportBounds={mapViewport?.bounds ?? mapViewportFilter}
+              onApplyFilters={applyFilters}
+              onClose={closeFilterSheet}
+            />
+
+            <MapResultsSheet
+              visible={isFullListView}
+              appliedFilters={null}
+              visibleShops={visibleShops}
+              totalShops={totalShops}
+              isLoading={shopsQuery.isLoading}
+              listRef={listScrollRef}
+              onScroll={handleListScroll}
+              onSelectShop={handleListSelectShop}
+            />
+
+            <MapOverlayControls
+              visible
+              showListToggle
+              isListSheetOpen
+              locationState={locationState}
+              onListClick={handleListFabClick}
+              onLocationClick={handleRequestLocation}
+            />
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="map-page-shell">
       <section className="map-page">
@@ -1020,18 +1085,6 @@ export function ExplorePage() {
             onInputChange={setAssistantInput}
             onSubmitQuestion={submitAssistantQuestion}
             onSelectRecommendation={(shopId) => handleSelectShop(shopId, 'map')}
-          />
-
-          <MapResultsSheet
-            visible={isListSheetOpen}
-            appliedFilters={renderAppliedFilterChips()}
-            visibleShops={visibleShops}
-            totalShops={totalShops}
-            isLoading={shopsQuery.isLoading}
-            listRef={listScrollRef}
-            onClose={() => handleSwitchView('map')}
-            onScroll={handleListScroll}
-            onSelectShop={handleListSelectShop}
           />
 
           <MapPeekSheet

@@ -165,16 +165,17 @@ test('ExplorePage extracts the list results sheet into a focused component', () 
   const resultsSheetSource = mapResultsSheetSource()
 
   assert.match(source, /<MapResultsSheet/)
-  assert.match(source, /onClose=\{\(\) => handleSwitchView\('map'\)\}/)
-  assert.match(resultsSheetSource, /import \{ BottomSheet \} from '@aniwhere\/tds-mobile'/)
-  assert.match(resultsSheetSource, /<BottomSheet[\s\S]*open=\{visible\}[\s\S]*onClose=\{onClose\}/)
-  assert.match(resultsSheetSource, /UNSAFE_disableFocusLock/)
-  assert.match(resultsSheetSource, /disableDimmer/)
-  assert.match(resultsSheetSource, /className="map-results-sheet-v2"/)
+  assert.match(source, /const isFullListView = routeViewMode === 'list' && selectedShopId == null/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*?<MapResultsSheet/)
+  assert.match(source, /visible=\{isFullListView\}/)
+  assert.doesNotMatch(resultsSheetSource, /import \{ BottomSheet \} from '@aniwhere\/tds-mobile'/)
+  assert.match(resultsSheetSource, /if \(!visible\) \{\s*return null\s*\}/)
+  assert.match(resultsSheetSource, /<section[\s\S]*className="map-results-list-panel"[\s\S]*aria-labelledby="map-results-list-title"/)
+  assert.doesNotMatch(resultsSheetSource, /role="dialog"/)
   assert.match(resultsSheetSource, /visibleShops\.map/)
   assert.match(resultsSheetSource, /formatRelativeUpdated/)
   assert.doesNotMatch(resultsSheetSource, /topSearch/)
-  assert.doesNotMatch(source, /className="map-results-sheet-v2"/)
+  assert.doesNotMatch(source, /className="map-results-list-panel"/)
   assert.doesNotMatch(source, /visibleShops\.map/)
 })
 
@@ -362,7 +363,7 @@ test('Explore list-map view switches replace history so removed chips do not res
   assert.match(source, /if \(isListSheetOpen\) \{\s*handleSwitchView\('map'\)/)
 })
 
-test('Explore list toggle stays available over a selected shop peek and opens a map-backed results sheet', () => {
+test('Explore list toggle stays available over a selected shop peek and opens the full list route', () => {
   const source = explorePageSource()
   const overlayControlsSource = mapOverlayControlsSource()
   const styles = exploreSearchCssSource()
@@ -376,6 +377,27 @@ test('Explore list toggle stays available over a selected shop peek and opens a 
   assert.doesNotMatch(source, /!\s*isListSheetOpen\s*\?\s*\([\s\S]*?<ShopMap/)
   assert.ok(peekListButtonRules.some((rule) => /z-index:\s*1080;/.test(rule)))
   assert.doesNotMatch(source, /if \(selectedShopId != null\) \{\s*return\s*\}/)
+})
+
+test('Explore list view is a full search and results surface instead of a map bottom sheet', () => {
+  const source = explorePageSource()
+  const styles = exploreSearchCssSource()
+  const fullListStart = source.indexOf('if (isFullListView)')
+  const fullListEnd = source.indexOf('\n  return (', fullListStart + 1)
+  const fullListBranch = source.slice(fullListStart, fullListEnd)
+
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*'map-list-view'/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*<ExploreTopSearch/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*<MapResultsSheet/)
+  assert.match(source, /if \(isFullListView\) \{[\s\S]*<MapOverlayControls/)
+  assert.doesNotMatch(fullListBranch, /<ShopMap/)
+  assert.doesNotMatch(fullListBranch, /<MapQuickChips/)
+  assert.doesNotMatch(fullListBranch, /map-chip-status/)
+  assert.ok(cssRuleBodies(styles, '.map-list-view').some((rule) => /height:\s*100dvh;/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-list-view').some((rule) => /display:\s*flex;/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-list-view-top').some((rule) => /flex:\s*0 0 auto;/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-results-list-panel').some((rule) => /flex:\s*1 1 auto;/.test(rule)))
+  assert.equal(cssRuleBodies(styles, '.map-results-sheet-v2').length, 0)
 })
 
 test('Explore detail shop changes replace history instead of stacking visited shops', () => {
@@ -567,17 +589,18 @@ test('Explore peek sheet keeps map controls clear of the selected shop summary',
   assert.ok(cssRuleBodies(styles, '.map-surface-sheet-peek .map-list-fab').some((rule) => /bottom:\s*calc\(var\(--map-control-bottom/.test(rule)))
 })
 
-test('Explore list sheet reserves space around the map toggle button', () => {
+test('Explore full list view reserves space around the map toggle button', () => {
   const styles = exploreSearchCssSource()
-  const listOpenRules = cssRuleBodies(styles, '.map-surface-app-v2.map-surface-list-open')
-  const sheetRules = cssRuleBodies(styles, '.map-results-sheet-v2')
-  const listButtonRules = cssRuleBodies(styles, '.map-surface-list-open .map-list-fab')
-  const listPanelRules = cssRuleBodies(styles, '.map-surface-list-open .map-results-sheet-list')
+  const listViewRules = cssRuleBodies(styles, '.map-list-view')
+  const panelRules = cssRuleBodies(styles, '.map-results-list-panel')
+  const listButtonRules = cssRuleBodies(styles, '.map-list-view .map-list-fab')
+  const listPanelRules = cssRuleBodies(styles, '.map-list-view .map-results-sheet-list')
 
-  assert.ok(listOpenRules.some((rule) => /--map-list-sheet-top:\s*clamp\(300px,\s*44dvh,\s*420px\);/.test(rule)))
-  assert.ok(sheetRules.some((rule) => /top:\s*var\(--map-list-sheet-top/.test(rule)))
-  assert.ok(sheetRules.some((rule) => /border-radius:\s*var\(--ait-component-sheet-radius\) var\(--ait-component-sheet-radius\) 0 0;/.test(rule)))
-  assert.ok(listButtonRules.some((rule) => /bottom:\s*calc\(100dvh - var\(--map-list-sheet-top/.test(rule)))
+  assert.ok(listViewRules.some((rule) => /--map-control-bottom:\s*max\(80px,\s*calc\(env\(safe-area-inset-bottom\) \+ 72px\)\);/.test(rule)))
+  assert.ok(panelRules.some((rule) => /overflow:\s*hidden;/.test(rule)))
+  assert.ok(panelRules.some((rule) => /border-radius:\s*0;/.test(rule)))
+  assert.ok(listButtonRules.some((rule) => /bottom:\s*max\(28px,\s*calc\(env\(safe-area-inset-bottom\) \+ 20px\)\);/.test(rule)))
+  assert.ok(listPanelRules.some((rule) => /flex:\s*1 1 auto;/.test(rule)))
   assert.ok(listPanelRules.some((rule) => /padding-bottom:\s*max\(104px,\s*calc\(env\(safe-area-inset-bottom\) \+ 96px\)\);/.test(rule)))
 })
 
