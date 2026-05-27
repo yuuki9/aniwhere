@@ -1,4 +1,12 @@
-import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, LiHTMLAttributes, ReactNode } from 'react'
+import type {
+  ButtonHTMLAttributes,
+  CSSProperties,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  LiHTMLAttributes,
+  ReactNode,
+  Ref,
+} from 'react'
 import { useEffect } from 'react'
 
 type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -62,6 +70,21 @@ type PublicSearchFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   takeSpace?: boolean
 }
 
+type PublicTextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'prefix'> & {
+  containerProps?: HTMLAttributes<HTMLDivElement>
+  containerRef?: Ref<HTMLDivElement>
+  hasError?: boolean
+  help?: ReactNode
+  label?: string
+  labelOption?: 'appear' | 'sustain'
+  paddingBottom?: CSSProperties['paddingBottom']
+  paddingTop?: CSSProperties['paddingTop']
+  prefix?: string
+  right?: ReactNode
+  suffix?: string
+  variant: 'box' | 'line' | 'big' | 'hero'
+}
+
 export function SearchField({
   className,
   fixed = false,
@@ -92,6 +115,52 @@ export function SearchField({
       value={value}
       {...props}
     />
+  )
+}
+
+export function TextField({
+  className,
+  containerProps,
+  containerRef,
+  hasError = false,
+  help,
+  id,
+  label,
+  labelOption = 'appear',
+  paddingBottom,
+  paddingTop,
+  prefix,
+  right,
+  suffix,
+  variant,
+  ...props
+}: PublicTextFieldProps) {
+  const { className: containerClassName, style: containerStyle, ...restContainerProps } = containerProps ?? {}
+  const shouldShowLabel = label != null && (labelOption === 'sustain' || String(props.value ?? '').length > 0)
+
+  return (
+    <div
+      className={['ait-text-field', containerClassName].filter(Boolean).join(' ')}
+      data-has-error={hasError ? 'true' : undefined}
+      data-label-option={labelOption}
+      data-variant={variant}
+      ref={containerRef}
+      style={{ paddingBottom, paddingTop, ...containerStyle }}
+      {...restContainerProps}
+    >
+      {shouldShowLabel ? (
+        <label className="ait-text-field-label" htmlFor={id}>
+          {label}
+        </label>
+      ) : null}
+      <span className="ait-text-field-control">
+        {prefix != null ? <span className="ait-text-field-affix">{prefix}</span> : null}
+        <input className={['ait-text-field-input', className].filter(Boolean).join(' ')} id={id} {...props} />
+        {suffix != null ? <span className="ait-text-field-affix">{suffix}</span> : null}
+        {right != null ? <span className="ait-text-field-right">{right}</span> : null}
+      </span>
+      {help != null ? <p className="ait-text-field-help">{help}</p> : null}
+    </div>
   )
 }
 

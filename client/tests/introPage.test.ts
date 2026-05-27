@@ -283,12 +283,15 @@ test('IntroPage renders a nickname setup step for new or unnamed Aniwhere users'
 
   assert.match(source, /nicknameInput/)
   assert.match(source, /saveAniwhereNickname\(nicknameInput,\s*pendingNicknameSession\.accessToken\)/)
+  assert.match(source, /import \{ Button, TextField \} from '@aniwhere\/tds-mobile'/)
+  assert.match(source, /<TextField/)
   assert.match(source, /애니웨어에서 사용할 닉네임/)
   assert.match(source, /닉네임 저장하기/)
+  assert.doesNotMatch(source, /<input\s*[\s\S]*className="intro-nickname-input"/)
   assert.match(source, /inputMode="text"/)
   assert.match(source, /maxLength=\{50\}/)
   assert.match(cssRuleBody(styles, '.intro-nickname-card'), /display:\s*grid;/)
-  assert.match(cssRuleBody(styles, '.intro-nickname-input'), /min-height:\s*52px;/)
+  assert.match(cssRuleBody(styles, '.intro-nickname-card .ait-text-field-input'), /min-height:\s*52px;/)
   assert.match(cssRuleBody(styles, '.intro-nickname-help'), /font-size:\s*var\(--ait-font-size-body-sm\);/)
 })
 

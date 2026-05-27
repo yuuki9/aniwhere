@@ -1019,6 +1019,66 @@ p {
   min-height: var(--ait-component-intro-action-height);
 }
 
+.ait-text-field {
+  display: grid;
+  width: 100%;
+  gap: var(--ait-space-2);
+}
+
+.ait-text-field-label {
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-title-sm);
+  font-weight: 700;
+  line-height: var(--ait-line-height-title);
+}
+
+.ait-text-field-control {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: var(--ait-space-2);
+  padding: var(--ait-space-0) var(--ait-space-5);
+  border: 1px solid var(--ait-color-border-strong);
+  border-radius: var(--ait-radius-lg);
+  background: var(--ait-color-gray-0);
+}
+
+.ait-text-field:focus-within .ait-text-field-control {
+  border-color: var(--ait-color-brand);
+}
+
+.ait-text-field-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  border: 0;
+  background: transparent;
+  color: var(--ait-color-gray-900);
+  font: inherit;
+  font-size: var(--ait-font-size-body-lg);
+  letter-spacing: 0;
+  outline: none;
+}
+
+.ait-text-field-input::placeholder {
+  color: var(--ait-color-gray-500);
+}
+
+.ait-text-field-affix,
+.ait-text-field-right {
+  flex: none;
+  color: var(--ait-color-gray-600);
+  font-size: var(--ait-font-size-body-md);
+  line-height: var(--ait-line-height-body);
+}
+
+.ait-text-field-help {
+  margin: 0;
+  color: var(--ait-color-gray-600);
+  font-size: var(--ait-font-size-body-sm);
+  line-height: var(--ait-line-height-body);
+}
+
 .ait-bottom-sheet-dimmer {
   position: fixed;
   inset: 0;
@@ -1085,33 +1145,8 @@ p {
   gap: var(--ait-space-3);
 }
 
-.intro-nickname-label {
-  color: var(--ait-color-gray-900);
-  font-size: var(--ait-font-size-title-sm);
-  font-weight: 700;
-  line-height: var(--ait-line-height-title);
-}
-
-.intro-nickname-input {
-  width: 100%;
+.intro-nickname-card .ait-text-field-input {
   min-height: 52px;
-  padding: var(--ait-space-4) var(--ait-space-5);
-  border: 1px solid var(--ait-color-border-strong);
-  border-radius: var(--ait-radius-lg);
-  background: var(--ait-color-gray-0);
-  color: var(--ait-color-gray-900);
-  font: inherit;
-  font-size: var(--ait-font-size-body-lg);
-  letter-spacing: 0;
-  outline: none;
-}
-
-.intro-nickname-input:focus {
-  border-color: var(--ait-color-brand);
-}
-
-.intro-nickname-input::placeholder {
-  color: var(--ait-color-gray-500);
 }
 
 .intro-nickname-help {

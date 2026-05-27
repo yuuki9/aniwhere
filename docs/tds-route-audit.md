@@ -411,6 +411,23 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/home` CTA label and frame follow-up | Product-approved / Regression fix | The local `home-section-head` title above the CTA stack was removed so the first actionable banner owns the surface directly. CTA copy was shortened to two compact lines and uses token-based body-large typography. A dark overlay was intentionally not used; the banner instead uses the stronger border token, an inset outline, and a gray-50 copy gradient so it separates from the white page without making the bright 3D assets read like ads. |
 | Runtime verification | Needs sandbox | `node --test tests/homeViewModel.test.ts` should verify the source/CSS contract. Local browser screenshot can show the 375px visual, but Apps in Toss sandbox still needs image decode, safe-area spacing, and native scroll confirmation. |
 
+### 2026-05-28 Toss Login Nickname Onboarding Follow-up
+
+Official docs checked with official web fallback in the current session:
+
+- Apps in Toss login development: https://developers-apps-in-toss.toss.im/login/develop.html
+- `appLogin` reference: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/%EB%A1%9C%EA%B7%B8%EC%9D%B8/appLogin.html
+- TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/intro` Toss login boundary | TDS-required / Apps in Toss-required | The official login docs still describe `appLogin()` as the client-side authorization-code step, with token exchange and user lookup handled by the server. Aniwhere keeps this boundary: the Intro CTA starts `appLogin()`, then the client sends the authorization code and referrer to Aniwhere's server before loading `/api/v1/users/me`. |
+| `/intro` nickname setup field | TDS-required / Product-approved adaptation | New or unnamed Aniwhere users now render the nickname input through the project `@aniwhere/tds-mobile` `TextField` facade. Apps in Toss builds resolve the facade to official `@toss/tds-mobile` `TextField`; public/domain builds use a local fallback that preserves the same label, helper, input, and token-compatible visual structure. |
+| Nickname copy and purpose | Product-approved | Nickname entry remains Aniwhere-owned profile setup, not another login or Toss identity step. The copy says the nickname is used inside Aniwhere and appears on reviews/comments. |
+| Runtime verification | Needs sandbox | Source tests verify the facade boundary and Intro source contract. Apps in Toss sandbox still needs uploaded `.ait` verification for `appLogin()`, server token exchange, missing-nickname display, keyboard behavior, and successful nickname save back to `/home`. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

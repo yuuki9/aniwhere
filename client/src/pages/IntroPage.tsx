@@ -8,7 +8,7 @@ import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
 import type { AuthSession } from '../shared/lib/authSession'
-import { Button } from '@aniwhere/tds-mobile'
+import { Button, TextField } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
 type IntroFeatureIconName = 'icon-star-mono' | 'icon-pin-mono' | 'icon-pencil-mono'
@@ -197,18 +197,17 @@ export function IntroPage() {
             </Button>
           ) : (
             <form className="intro-nickname-card" onSubmit={handleNicknameSubmit}>
-              <label className="intro-nickname-label" htmlFor="intro-nickname">
-                애니웨어에서 사용할 닉네임
-              </label>
-              <input
-                className="intro-nickname-input"
+              <TextField
                 id="intro-nickname"
                 inputMode="text"
+                label="애니웨어에서 사용할 닉네임"
+                labelOption="sustain"
                 maxLength={50}
                 onChange={(event) => setNicknameInput(event.target.value)}
                 placeholder="예: 굿즈탐험가"
                 type="text"
                 value={nicknameInput}
+                variant="box"
               />
               <p className="intro-nickname-help">후기와 댓글에 표시되는 이름이에요. 나중에 다시 바꿀 수 있어요.</p>
               <Button

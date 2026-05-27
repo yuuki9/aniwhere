@@ -11,6 +11,7 @@ const authApiSource = () => source('../src/shared/api/auth.ts')
 const usersApiSource = () => source('../src/shared/api/users.ts')
 const apiClientSource = () => source('../src/shared/api/client.ts')
 const publicTdsSource = () => source('../src/shared/ui/tdsMobile/public.tsx')
+const appsInTossTdsSource = () => source('../src/shared/ui/tdsMobile/apps-in-toss.tsx')
 const backendContractSource = () => source('../../docs/backend-api-contract.md')
 
 test('client API types expose the current Swagger response models', () => {
@@ -90,4 +91,12 @@ test('public TDS BottomSheet renders the dimmer only when it can close', () => {
 
   assert.match(publicTds, /!disableDimmer && onClose != null/)
   assert.match(publicTds, /<button\b(?=[^>]*className="ait-bottom-sheet-dimmer")(?=[^>]*onClick=\{onClose\})[^>]*\/?>/)
+})
+
+test('TDS mobile facade exposes TextField in public and Apps in Toss builds', () => {
+  const publicTds = publicTdsSource()
+  const appsInTossTds = appsInTossTdsSource()
+
+  assert.match(publicTds, /export function TextField/)
+  assert.match(appsInTossTds, /TextField/)
 })
