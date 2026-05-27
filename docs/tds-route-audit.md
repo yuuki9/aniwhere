@@ -380,6 +380,7 @@ Official docs checked with Apps in Toss MCP in the current session:
 
 - GridList: https://tossmini-docs.toss.im/tds-mobile/components/grid-list/
 - Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
 - ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
 - ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
 - Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
@@ -389,6 +390,7 @@ Official docs checked with Apps in Toss MCP in the current session:
 | --- | --- | --- |
 | `/home` CTA layout | Product-approved / Experiment | The three route CTAs move from the vertical horizontal carousel to a one-column list-banner stack inspired by the Apps in Toss ADS list banner rhythm. These remain app-owned routing CTAs, not SDK ad placements, so no ad labels, ad lifecycle, or reward behavior is implied. |
 | `/home` CTA media usage | Product-approved / Asset-informed | Three separately generated 1600x400 banner images from the local Downloads folder are bundled as `home-cta-*-banner.png`. The left side stays copy-safe, while the illustration occupies the center/right. TDS `Asset` informs the stable clipped media frame, and `ListRow`/`GridList` inform the list-like tap rhythm, but the exact banner surface remains app-owned. The previous vertical CTA assets (`home-cta-map.png`, `home-cta-favorites.png`, `home-cta-reviews.png`) remain in the repository, so reverting the isolated banner-conversion commit restores the 2026-05-27 vertical card path. |
+| `/home` CTA label and frame follow-up | Product-approved / Regression fix | The local `home-section-head` title above the CTA stack was removed so the first actionable banner owns the surface directly. CTA copy was shortened to two compact lines and uses token-based body-large typography. A dark overlay was intentionally not used; the banner instead uses the stronger border token, an inset outline, and a gray-50 copy gradient so it separates from the white page without making the bright 3D assets read like ads. |
 | Runtime verification | Needs sandbox | `node --test tests/homeViewModel.test.ts` should verify the source/CSS contract. Local browser screenshot can show the 375px visual, but Apps in Toss sandbox still needs image decode, safe-area spacing, and native scroll confirmation. |
 
 ### 2026-05-27 Explore List And Map View Split Follow-up

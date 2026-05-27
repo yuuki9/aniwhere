@@ -29,14 +29,14 @@ export function buildHomeCtaCards(): HomeCtaCard[] {
   return [
     {
       id: 'map',
-      headlineLines: ['가까운 매장부터', '한눈에 보기'],
+      headlineLines: ['가까운 매장', '지도에서 보기'],
       href: '/explore?view=map',
       enabled: true,
       imageAlt: '지도핀과 매장 실루엣을 보여주는 Aniwhere 안내 이미지',
     },
     {
       id: 'favorites',
-      headlineLines: ['많이 찜한 매장', '먼저 둘러보기'],
+      headlineLines: ['찜 많은 매장', '먼저 둘러보기'],
       href: null,
       enabled: false,
       imageAlt: '하트와 매장 카드를 보여주는 Aniwhere 안내 이미지',

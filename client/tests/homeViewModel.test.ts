@@ -49,8 +49,8 @@ test('buildHomeCtaCards uses two-line curation copy without helper descriptions'
   assert.deepEqual(
     cards.map((card) => card.headlineLines),
     [
-      ['가까운 매장부터', '한눈에 보기'],
-      ['많이 찜한 매장', '먼저 둘러보기'],
+      ['가까운 매장', '지도에서 보기'],
+      ['찜 많은 매장', '먼저 둘러보기'],
       ['후기 많은 매장', '믿고 찾아보기'],
     ],
   )
@@ -65,6 +65,7 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.match(source, /HomeSearchEntry/)
   assert.match(source, /HomeCtaBannerList/)
   assert.match(source, /home-cta-banner/)
+  assert.doesNotMatch(source, /id="home-cta-title"/)
   assert.match(source, /home-work-poster-card/)
   assert.match(source, /home-review-preview-section/)
   assert.doesNotMatch(source, /HomeQuickMenuSection/)
@@ -116,17 +117,22 @@ test('Home CTA routes render as one-column list banner items', () => {
   assert.match(styles, /\.home-cta-banner-list\s*\{[\s\S]*gap: var\(--ait-space-3\);/)
   assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*min-height: 96px;/)
   assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*aspect-ratio:\s*4 \/ 1/)
-  assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*border: 1px solid var\(--ait-color-border\);/)
+  assert.match(styles, /\.home-cta-section\s*\{[\s\S]*padding-top: var\(--ait-space-0\);/)
+  assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*border: 1px solid var\(--ait-color-border-strong\);/)
+  assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*outline: 1px solid var\(--ait-color-gray-150\);/)
+  assert.match(styles, /\.home-cta-banner\s*\{[\s\S]*background: var\(--ait-color-gray-50\);/)
   assert.equal(cssRuleBodies(styles, '.home-cta-banner').some((rule) => /box-shadow:/.test(rule)), false)
   assert.match(styles, /\.home-cta-media\s*\{[\s\S]*position:\s*absolute/)
   assert.match(styles, /\.home-cta-media\s*\{[\s\S]*inset:\s*0/)
-  assert.match(styles, /\.home-cta-media\s*\{[\s\S]*background: var\(--ait-color-gray-0\)/)
+  assert.match(styles, /\.home-cta-media\s*\{[\s\S]*background: var\(--ait-color-gray-50\)/)
   assert.match(styles, /\.home-cta-image\s*\{[\s\S]*object-fit: cover/)
   assert.match(styles, /\.home-cta-image\s*\{[\s\S]*object-position:\s*center center;/)
   assert.equal(cssRuleBodies(styles, '.home-cta-image').some((rule) => /transform:/.test(rule)), false)
   assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*position:\s*absolute/)
   assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: var\(--ait-space-4\);/)
   assert.ok(cssRuleBodies(styles, '.home-cta-copy').some((rule) => /background:\s*linear-gradient\(90deg/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.home-cta-copy strong').some((rule) => /font-size:\s*var\(--ait-font-size-body-lg\);/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.home-cta-copy strong').some((rule) => /line-height:\s*1\.22;/.test(rule)))
   assert.match(styles, /\.home-cta-copy-line/)
   assert.doesNotMatch(styles, /\.home-cta-card/)
   assert.doesNotMatch(styles, /\.home-cta-carousel/)

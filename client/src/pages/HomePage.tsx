@@ -63,10 +63,7 @@ function HomeCtaBannerBody({ card }: { card: HomeCtaCard }) {
 
 function HomeCtaBannerList({ cards }: { cards: HomeCtaCard[] }) {
   return (
-    <section className="home-cta-section" aria-labelledby="home-cta-title">
-      <div className="home-section-head">
-        <h2 id="home-cta-title">오늘 어디를 둘러볼까요?</h2>
-      </div>
+    <section className="home-cta-section" aria-label="매장 탐색 바로가기">
       <div className="home-cta-banner-list" aria-label="매장 탐색 바로가기">
         {cards.map((card) =>
           card.enabled && card.href ? (
