@@ -342,6 +342,25 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `Ait*` and `ait-*` boundary | TDS-required / Passed | `client/src` still has no route/page `Ait*` imports from `shared/ui/ait`. Remaining `ait-*` class names belong to the TDS public fallback/compatibility facade and token-compatible internal wrappers, not route-level Ait component usage. Shadow declarations were removed from those app-owned fallback styles as well. |
 | Runtime verification | Needs ADS screenshot | Source tests, lint, and build verify the CSS no longer contains `box-shadow`. ADS/device visual verification should still confirm that shadow removal does not reduce tap-target recognition on map controls, sheets, admin forms, and home curation cards. |
 
+### 2026-05-27 Home CTA Density Follow-up
+
+Official docs checked with official web fallback because `ax` was not on PATH in this session:
+
+- GridList: https://tossmini-docs.toss.im/tds-mobile/components/grid-list/
+- Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/check-first/
+- Asset.Image: https://tossmini-docs.toss.im/tds-mobile/components/Asset/asset/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` CTA card density | Product-approved / Asset-informed | The CTA rail remains app-owned because TDS Mobile GridList covers image/text menu grids but does not define Aniwhere's horizontal content-curation carousel. CTA cards are sized from the TOP20 poster art rhythm: the TOP20 poster card uses a 120px wide 3:4 art frame, and the CTA card uses a 240px wide 4:5 frame so it reads as roughly two poster widths while reducing height from the earlier 240px by 320px crop. The CTA image fills the media frame with `object-fit: cover` plus a slight `scale(1.08)` crop so the source image's white boundary does not make the card read as padded. The CTA section now owns the small gap before TOP20, and the TOP20 carousel bottom padding is reduced so the next review section does not feel pushed away by hidden rail padding. |
+| Runtime verification | Passed local / Needs sandbox | `node --test tests/homeViewModel.test.ts`, `npm run lint`, `npm run build`, and a local 375px browser check verified the compact rhythm, first CTA image fill, and `/explore?view=map` href. Apps in Toss sandbox should still confirm image crop, safe-area spacing, and HMR/device rendering. |
+
+### 2026-05-27 Home CTA Routing Follow-up
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` first CTA routing | Product-approved / Regression fix | The first CTA remains the active map exploration shortcut and links to `/explore?view=map` so Explore opens in map mode explicitly. Local browser verification confirmed clicking `a.home-cta-card` changes the address from `/home` to `/explore?view=map`. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

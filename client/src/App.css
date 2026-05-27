@@ -1342,7 +1342,8 @@ p {
 .home-cta-section {
   display: flex;
   flex-direction: column;
-  gap: var(--ait-space-5);
+  gap: var(--ait-space-4);
+  margin-bottom: var(--ait-space-2);
   padding-top: var(--ait-space-2);
   background: var(--ait-color-gray-0);
 }
@@ -1365,8 +1366,8 @@ p {
 .home-cta-card {
   display: block;
   position: relative;
-  flex: 0 0 clamp(224px, 64vw, 252px);
-  aspect-ratio: 2 / 3;
+  flex: 0 0 240px;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
   border: 0;
   border-radius: var(--ait-radius-md);
@@ -1392,7 +1393,7 @@ p {
   display: block;
   position: absolute;
   inset: 0;
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 4 / 5;
   height: auto;
   margin: 0;
   overflow: hidden;
@@ -1405,8 +1406,8 @@ p {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.14);
-  transform-origin: center top;
+  transform: scale(1.08);
+  transform-origin: center center;
 }
 
 .home-cta-copy {
@@ -1419,13 +1420,13 @@ p {
   min-width: 0;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 0 18px 32px;
+  padding: 0 16px 20px;
   pointer-events: none;
 }
 
 .home-cta-copy strong {
   color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-body-lg);
+  font-size: var(--ait-font-size-body-md);
   font-weight: 800;
   line-height: var(--ait-line-height-tight);
 }
@@ -1452,8 +1453,15 @@ p {
 .home-review-preview-section {
   display: flex;
   flex-direction: column;
-  gap: var(--ait-space-5);
   padding-top: var(--ait-space-3);
+}
+
+.home-issue-section {
+  gap: var(--ait-space-4);
+}
+
+.home-review-preview-section {
+  gap: var(--ait-space-5);
 }
 
 .home-pending-card {
@@ -1506,7 +1514,7 @@ p {
   display: flex;
   gap: var(--ait-space-4);
   overflow-x: auto;
-  padding: var(--ait-space-2) var(--ait-space-8) var(--ait-space-3) var(--ait-space-1);
+  padding: var(--ait-space-2) var(--ait-space-8) var(--ait-space-1) var(--ait-space-1);
   scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
@@ -1524,7 +1532,7 @@ p {
 }
 
 .home-work-poster-card {
-  flex: 0 0 132px;
+  flex: 0 0 120px;
   flex-direction: column;
   gap: var(--ait-space-3);
   scroll-snap-align: start;
