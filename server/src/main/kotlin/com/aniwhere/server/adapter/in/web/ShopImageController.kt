@@ -16,16 +16,39 @@ import java.util.concurrent.TimeUnit
 class ShopImageController(
     private val imageStorage: ShopImageStoragePort,
 ) {
+    @GetMapping("/{shopId}/reviews/{reviewId}/{filename:.+}")
+    fun getShopReviewImage(
+        @PathVariable shopId: Long,
+        @PathVariable reviewId: Long,
+        @PathVariable filename: String,
+    ): ResponseEntity<ByteArray> {
+        if (shopId <= 0 || reviewId <= 0) {
+            throw BadRequestException("이미지 경로가 올바르지 않습니다.")
+        }
+        validateFilename(filename)
+        return streamImage("$shopId/reviews/$reviewId/$filename")
+    }
+
     @GetMapping("/{shopId}/{filename:.+}")
     fun getShopImage(
         @PathVariable shopId: Long,
         @PathVariable filename: String,
     ): ResponseEntity<ByteArray> {
-        if (shopId <= 0 || filename.isBlank() || filename.contains("..") || filename.contains('/')) {
+        if (shopId <= 0) {
             throw BadRequestException("이미지 경로가 올바르지 않습니다.")
         }
+        validateFilename(filename)
+        return streamImage("$shopId/$filename")
+    }
 
-        val image = imageStorage.getObject("$shopId/$filename")
+    private fun validateFilename(filename: String) {
+        if (filename.isBlank() || filename.contains("..") || filename.contains('/')) {
+            throw BadRequestException("이미지 경로가 올바르지 않습니다.")
+        }
+    }
+
+    private fun streamImage(storageKey: String): ResponseEntity<ByteArray> {
+        val image = imageStorage.getObject(storageKey)
         val mediaType = runCatching { MediaType.parseMediaType(image.contentType) }
             .getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
 

@@ -35,6 +35,28 @@ class ShopImageControllerTest {
     }
 
     @Test
+    fun `getShopReviewImage - shopId reviewId filename으로 S3 이미지를 스트리밍한다`() {
+        val imageBytes = byteArrayOf(4, 5, 6)
+        val controller = ShopImageController(
+            object : ShopImageStoragePort {
+                override fun putObject(key: String, body: ByteArray, contentType: String) = error("not used")
+                override fun getObject(key: String): StoredShopImage {
+                    assertEquals("1/reviews/42/abc.jpg", key)
+                    return StoredShopImage(imageBytes, "image/jpeg")
+                }
+                override fun deleteObject(key: String) = error("not used")
+            },
+        )
+
+        val response = controller.getShopReviewImage(1, 42, "abc.jpg")
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals(MediaType.IMAGE_JPEG, response.headers.contentType)
+        assertEquals("nosniff", response.headers.getFirst("X-Content-Type-Options"))
+        assertArrayEquals(imageBytes, response.body)
+    }
+
+    @Test
     fun `getShopImage - 올바르지 않은 이미지 경로는 거절한다`() {
         val controller = ShopImageController(
             object : ShopImageStoragePort {
