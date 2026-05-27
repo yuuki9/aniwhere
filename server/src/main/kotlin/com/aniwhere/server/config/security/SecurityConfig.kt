@@ -38,6 +38,10 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.POST, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
                 it.requestMatchers(HttpMethod.PUT, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
                 it.requestMatchers(HttpMethod.DELETE, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
+                it.requestMatchers(HttpMethod.POST, "/api/v1/shops/*/reviews").authenticated()
+                it.requestMatchers(HttpMethod.PATCH, "/api/v1/shops/*/reviews/**").authenticated()
+                it.requestMatchers(HttpMethod.DELETE, "/api/v1/shops/*/reviews/**").authenticated()
+                it.requestMatchers(HttpMethod.PATCH, "/api/v1/admin/shops/*/reviews/**").hasAuthority("ROLE_ADMIN")
                 it.anyRequest().authenticated()
             }
             .addFilterBefore(JwtAuthenticationFilter(jwt), UsernamePasswordAuthenticationFilter::class.java)
