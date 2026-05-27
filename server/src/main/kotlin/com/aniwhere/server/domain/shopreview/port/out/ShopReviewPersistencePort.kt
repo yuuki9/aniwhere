@@ -19,6 +19,8 @@ interface ShopReviewPersistencePort {
     fun update(reviewId: Long, review: ShopReview): ShopReview
     fun updateStatus(reviewId: Long, shopId: Long, status: ShopReviewStatus): ShopReview
     fun saveReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>)
+    fun findReviewImageS3Keys(reviewId: Long): List<String>
+    fun replaceReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>)
     fun deleteById(reviewId: Long)
     fun recomputeShopRating(shopId: Long): ShopRatingAggregate
 }

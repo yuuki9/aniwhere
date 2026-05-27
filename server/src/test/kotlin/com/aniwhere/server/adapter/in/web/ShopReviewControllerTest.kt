@@ -1,6 +1,7 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.exception.EntityNotFoundException
+import com.aniwhere.server.common.exception.ForbiddenException
 import com.aniwhere.server.common.exception.GlobalExceptionHandler
 import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
@@ -22,6 +23,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -107,6 +109,66 @@ class ShopReviewControllerTest {
                 1L,
                 5,
                 "좋았어요",
+                match { parts ->
+                    parts.size == 1 &&
+                        parts[0].contentType == "image/jpeg" &&
+                        parts[0].bytes.contentEquals(byteArrayOf(1, 2, 3))
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `DELETE shop review - 작성자가 아니면 403`() {
+        mockAuthenticatedUser(11L)
+        every { useCase.deleteReview(11L, 1L, 5L) } throws ForbiddenException("Only the author can modify this review")
+
+        mvc.perform(delete("/api/v1/shops/1/reviews/5"))
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.success").value(false))
+    }
+
+    @Test
+    fun `DELETE shop review - 작성자면 200`() {
+        mockAuthenticatedUser(10L)
+        every { useCase.deleteReview(10L, 1L, 5L) } returns Unit
+
+        mvc.perform(delete("/api/v1/shops/1/reviews/5"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { useCase.deleteReview(10L, 1L, 5L) }
+    }
+
+    @Test
+    fun `PATCH shop review - rating content images를 useCase로 전달`() {
+        mockAuthenticatedUser(10L)
+        every {
+            useCase.updateReview(10L, 1L, 5L, 5, "수정본문", any())
+        } returns sampleReview.copy(rating = 5, content = "수정본문")
+        val image = MockMultipartFile("images", "a.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
+
+        mvc.perform(
+            multipart("/api/v1/shops/1/reviews/5")
+                .file(image)
+                .param("rating", "5")
+                .param("content", "  수정본문  ")
+                .with { request ->
+                    request.method = "PATCH"
+                    request
+                },
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.rating").value(5))
+
+        verify {
+            useCase.updateReview(
+                10L,
+                1L,
+                5L,
+                5,
+                "수정본문",
                 match { parts ->
                     parts.size == 1 &&
                         parts[0].contentType == "image/jpeg" &&

@@ -83,6 +83,29 @@ class ShopReviewPersistenceAdapter(
         reviewRepo.save(entity)
     }
 
+    override fun findReviewImageS3Keys(reviewId: Long): List<String> {
+        val entity = reviewRepo.findByIdOrNull(reviewId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        return entity.images.map { it.s3Key }
+    }
+
+    @Transactional(readOnly = false)
+    override fun replaceReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>) {
+        val entity = reviewRepo.findByIdOrNull(reviewId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        entity.images.clear()
+        rows.forEach { row ->
+            entity.images.add(
+                ShopReviewImageEntity(
+                    review = entity,
+                    s3Key = row.s3Key,
+                    sortOrder = row.sortOrder,
+                ),
+            )
+        }
+        reviewRepo.save(entity)
+    }
+
     @Transactional(readOnly = false)
     override fun deleteById(reviewId: Long) {
         reviewRepo.deleteById(reviewId)

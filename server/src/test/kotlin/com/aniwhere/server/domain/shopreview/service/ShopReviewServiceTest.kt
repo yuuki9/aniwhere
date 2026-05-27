@@ -4,6 +4,7 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.ForbiddenException
 import com.aniwhere.server.domain.auth.port.out.AuthPersistencePort
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
+import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.aniwhere.server.domain.shop.port.out.ShopImageStoragePort
 import com.aniwhere.server.domain.shopreview.model.ShopRatingAggregate
 import com.aniwhere.server.domain.shopreview.model.ShopReview
@@ -104,6 +105,32 @@ class ShopReviewServiceTest {
         assertThrows<ForbiddenException> {
             service.deleteReview(actorUserId = 11L, shopId = 1L, reviewId = 5L)
         }
+    }
+
+    @Test
+    fun `updateReview - 이미지 교체 시 기존 S3 키를 삭제하고 새 이미지를 저장한다`() {
+        every { port.findByIdAndShopId(5L, 1L) } returnsMany listOf(
+            sampleReview,
+            sampleReview.copy(rating = 5, content = "수정"),
+        )
+        every { port.findReviewImageS3Keys(5L) } returns listOf("1/reviews/5/old.jpg")
+        every { imageStorage.putObject(any(), any(), any()) } returns Unit
+        every { port.update(5L, any()) } returns sampleReview.copy(rating = 5, content = "수정")
+        every { port.replaceReviewImages(5L, any()) } returns Unit
+        every { port.recomputeShopRating(1L) } returns ShopRatingAggregate(BigDecimal("4.50"), 1)
+        val imagePart = ImageUploadPart(ShopServiceTest.tinyValidJpeg, "image/jpeg")
+
+        service.updateReview(
+            actorUserId = 10L,
+            shopId = 1L,
+            reviewId = 5L,
+            rating = 5,
+            content = "수정",
+            imageParts = listOf(imagePart),
+        )
+
+        verify { imageStorage.deleteObject("1/reviews/5/old.jpg") }
+        verify { port.replaceReviewImages(5L, any()) }
     }
 
     @Test

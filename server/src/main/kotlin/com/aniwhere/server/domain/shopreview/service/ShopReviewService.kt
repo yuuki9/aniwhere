@@ -92,29 +92,66 @@ class ShopReviewService(
         return port.findByIdAndShopId(reviewId, shopId) ?: saved
     }
 
-    @Transactional
+    @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
     override fun updateReview(
         actorUserId: Long,
         shopId: Long,
         reviewId: Long,
-        rating: Int,
-        content: String,
-        imageParts: List<ImageUploadPart>,
+        rating: Int?,
+        content: String?,
+        imageParts: List<ImageUploadPart>?,
     ): ShopReview {
-        validateRating(rating)
-        val trimmedContent = validateContent(content)
         val existing = port.findByIdAndShopId(reviewId, shopId)
             ?: throw EntityNotFoundException("Review not found: $reviewId")
         requireOwnership(actorUserId, existing.authorUserId)
-        if (imageParts.isNotEmpty()) {
-            // Image upload is implemented in Task 7.
+
+        val newRating = rating?.also { validateRating(it) } ?: existing.rating
+        val newContent = content?.let { validateContent(it) } ?: existing.content
+
+        if (imageParts != null) {
+            if (imageParts.size > MAX_REVIEW_IMAGES) {
+                throw BadRequestException("리뷰 이미지는 최대 ${MAX_REVIEW_IMAGES}장까지 등록할 수 있습니다.")
+            }
+            imageParts.forEach { validateImageUploadPart(it) }
+
+            val oldKeys = port.findReviewImageS3Keys(reviewId)
+            val rows = mutableListOf<ShopReviewImagePersistenceRow>()
+            val uploadedKeys = mutableListOf<String>()
+
+            try {
+                imageParts.forEachIndexed { index, part ->
+                    val key = "$shopId/reviews/$reviewId/${UUID.randomUUID()}.${extensionFor(part.contentType)}"
+                    imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
+                    uploadedKeys.add(key)
+                    rows.add(ShopReviewImagePersistenceRow(s3Key = key, sortOrder = index))
+                }
+
+                transactionTemplate.execute {
+                    port.update(reviewId, existing.copy(rating = newRating, content = newContent))
+                    port.replaceReviewImages(reviewId, rows)
+                    port.recomputeShopRating(shopId)
+                }
+
+                for (key in oldKeys) {
+                    runCatching { imageStorage.deleteObject(key) }
+                }
+            } catch (e: Exception) {
+                for (key in uploadedKeys) {
+                    runCatching { imageStorage.deleteObject(key) }
+                        .exceptionOrNull()
+                        ?.let { e.addSuppressed(it) }
+                }
+                throw e
+            }
+        } else {
+            transactionTemplate.execute {
+                port.update(reviewId, existing.copy(rating = newRating, content = newContent))
+                port.recomputeShopRating(shopId)
+            }
         }
-        val updated = port.update(
-            reviewId,
-            existing.copy(rating = rating, content = trimmedContent),
-        )
-        port.recomputeShopRating(shopId)
-        return updated
+
+        return port.findByIdAndShopId(reviewId, shopId)
+            ?: existing.copy(rating = newRating, content = newContent)
     }
 
     @Transactional

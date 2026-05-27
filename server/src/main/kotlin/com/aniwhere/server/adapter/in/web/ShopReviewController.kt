@@ -14,7 +14,9 @@ import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -53,6 +55,35 @@ class ShopReviewController(private val useCase: ShopReviewUseCase) {
             images.orEmpty().filter { !it.isEmpty }.map { it.requireImagePart() },
         ),
     )
+
+    @Operation(summary = "샵 리뷰 수정")
+    @PatchMapping(value = ["/{reviewId}"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun updateReview(
+        @PathVariable shopId: Long,
+        @PathVariable reviewId: Long,
+        @RequestParam(required = false) rating: Int?,
+        @RequestParam(required = false) content: String?,
+        @RequestPart(required = false) images: List<MultipartFile>?,
+    ) = ApiResponse.ok(
+        useCase.updateReview(
+            currentUserId(),
+            shopId,
+            reviewId,
+            rating,
+            content?.trim(),
+            images?.let { parts -> parts.filter { !it.isEmpty }.map { it.requireImagePart() } },
+        ),
+    )
+
+    @Operation(summary = "샵 리뷰 삭제")
+    @DeleteMapping("/{reviewId}")
+    fun deleteReview(
+        @PathVariable shopId: Long,
+        @PathVariable reviewId: Long,
+    ) = run {
+        useCase.deleteReview(currentUserId(), shopId, reviewId)
+        ApiResponse.ok()
+    }
 
     private fun currentUserId(): Long =
         (SecurityContextHolder.getContext().authentication?.principal as? SecurityPrincipal)?.userId
