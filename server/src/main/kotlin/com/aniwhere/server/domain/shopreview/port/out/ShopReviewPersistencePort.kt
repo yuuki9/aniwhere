@@ -6,6 +6,11 @@ import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
+data class ShopReviewImagePersistenceRow(
+    val s3Key: String,
+    val sortOrder: Int,
+)
+
 interface ShopReviewPersistencePort {
     fun existsShop(shopId: Long): Boolean
     fun save(review: ShopReview): ShopReview
@@ -13,5 +18,7 @@ interface ShopReviewPersistencePort {
     fun findByIdAndShopId(reviewId: Long, shopId: Long): ShopReview?
     fun update(reviewId: Long, review: ShopReview): ShopReview
     fun updateStatus(reviewId: Long, shopId: Long, status: ShopReviewStatus): ShopReview
+    fun saveReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>)
+    fun deleteById(reviewId: Long)
     fun recomputeShopRating(shopId: Long): ShopRatingAggregate
 }

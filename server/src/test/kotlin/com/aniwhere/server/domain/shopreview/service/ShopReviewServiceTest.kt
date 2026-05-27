@@ -3,18 +3,24 @@ package com.aniwhere.server.domain.shopreview.service
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.ForbiddenException
 import com.aniwhere.server.domain.auth.port.out.AuthPersistencePort
+import com.aniwhere.server.domain.shop.model.ImageUploadPart
+import com.aniwhere.server.domain.shop.port.out.ShopImageStoragePort
 import com.aniwhere.server.domain.shopreview.model.ShopRatingAggregate
 import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
 import io.mockk.every
-import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.SimpleTransactionStatus
+import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -27,7 +33,11 @@ class ShopReviewServiceTest {
     @MockK
     private lateinit var authPersistence: AuthPersistencePort
 
-    @InjectMockKs
+    @MockK
+    private lateinit var imageStorage: ShopImageStoragePort
+
+    private lateinit var transactionTemplate: TransactionTemplate
+
     private lateinit var service: ShopReviewService
 
     private val sampleReview = ShopReview(
@@ -41,11 +51,23 @@ class ShopReviewServiceTest {
         createdAt = LocalDateTime.now(),
     )
 
+    @BeforeEach
+    fun setUp() {
+        val tm = mockk<PlatformTransactionManager>()
+        every { tm.getTransaction(any()) } returns SimpleTransactionStatus(true)
+        every { tm.commit(any()) } returns Unit
+        every { tm.rollback(any()) } returns Unit
+        transactionTemplate = TransactionTemplate(tm)
+        service = ShopReviewService(port, authPersistence, imageStorage, transactionTemplate)
+        every { imageStorage.deleteObject(any()) } returns Unit
+    }
+
     @Test
     fun `createReview - VISIBLE 리뷰 저장 후 shops 집계를 갱신한다`() {
         every { port.existsShop(1L) } returns true
         every { port.save(any()) } answers { firstArg<ShopReview>().copy(id = 5L) }
         every { port.recomputeShopRating(1L) } returns ShopRatingAggregate(BigDecimal("4.50"), 2)
+        every { port.findByIdAndShopId(5L, 1L) } returns sampleReview.copy(rating = 5)
 
         val saved = service.createReview(
             authorUserId = 10L,
@@ -95,6 +117,22 @@ class ShopReviewServiceTest {
                 rating = 0,
                 content = "좋아요",
                 imageParts = emptyList(),
+            )
+        }
+    }
+
+    @Test
+    fun `createReview - 이미지가 5장을 초과하면 BadRequestException`() {
+        every { port.existsShop(1L) } returns true
+        val imageParts = List(6) { ImageUploadPart(byteArrayOf(1, 2, 3), "image/jpeg") }
+
+        assertThrows<BadRequestException> {
+            service.createReview(
+                authorUserId = 10L,
+                shopId = 1L,
+                rating = 5,
+                content = "좋아요",
+                imageParts = imageParts,
             )
         }
     }

@@ -2,19 +2,28 @@ package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.common.exception.GlobalExceptionHandler
+import com.aniwhere.server.config.security.SecurityPrincipal
+import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.verify
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageImpl
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDateTime
@@ -41,6 +50,11 @@ class ShopReviewControllerTest {
         createdAt = LocalDateTime.now(),
     )
 
+    @AfterEach
+    fun tearDown() {
+        SecurityContextHolder.clearContext()
+    }
+
     @Test
     fun `GET shops_{shopId}_reviews - 페이지네이션된 리뷰 목록 조회`() {
         every { useCase.listReviews(1L, any()) } returns PageImpl(listOf(sampleReview))
@@ -59,5 +73,52 @@ class ShopReviewControllerTest {
         mvc.perform(get("/api/v1/shops/999/reviews"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.success").value(false))
+    }
+
+    @Test
+    fun `POST shop review - rating 없으면 400`() {
+        mockAuthenticatedUser(10L)
+
+        mvc.perform(
+            multipart("/api/v1/shops/1/reviews")
+                .param("content", "본문"),
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `POST shop review - rating content images를 useCase로 전달`() {
+        mockAuthenticatedUser(10L)
+        every { useCase.createReview(10L, 1L, 5, "좋았어요", any()) } returns sampleReview.copy(rating = 5, content = "좋았어요")
+        val image = MockMultipartFile("images", "a.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
+
+        mvc.perform(
+            multipart("/api/v1/shops/1/reviews")
+                .file(image)
+                .param("rating", "5")
+                .param("content", "  좋았어요  "),
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.rating").value(5))
+
+        verify {
+            useCase.createReview(
+                10L,
+                1L,
+                5,
+                "좋았어요",
+                match { parts ->
+                    parts.size == 1 &&
+                        parts[0].contentType == "image/jpeg" &&
+                        parts[0].bytes.contentEquals(byteArrayOf(1, 2, 3))
+                },
+            )
+        }
+    }
+
+    private fun mockAuthenticatedUser(userId: Long) {
+        val principal = SecurityPrincipal(userId = userId, role = "ROLE_USER")
+        val auth = UsernamePasswordAuthenticationToken(principal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+        SecurityContextHolder.getContext().authentication = auth
     }
 }

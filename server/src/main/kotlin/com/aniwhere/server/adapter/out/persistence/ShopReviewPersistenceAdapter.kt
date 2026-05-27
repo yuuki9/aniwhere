@@ -9,6 +9,8 @@ import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shopreview.model.ShopRatingAggregate
 import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
+import com.aniwhere.server.adapter.out.persistence.entity.ShopReviewImageEntity
+import com.aniwhere.server.domain.shopreview.port.out.ShopReviewImagePersistenceRow
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -63,6 +65,27 @@ class ShopReviewPersistenceAdapter(
         entity.status = ShopReviewStatusEnum.valueOf(status.name)
         entity.updatedAt = java.time.LocalDateTime.now()
         return mapper.toDomain(reviewRepo.save(entity))
+    }
+
+    @Transactional(readOnly = false)
+    override fun saveReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>) {
+        val entity = reviewRepo.findByIdOrNull(reviewId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        rows.forEach { row ->
+            entity.images.add(
+                ShopReviewImageEntity(
+                    review = entity,
+                    s3Key = row.s3Key,
+                    sortOrder = row.sortOrder,
+                ),
+            )
+        }
+        reviewRepo.save(entity)
+    }
+
+    @Transactional(readOnly = false)
+    override fun deleteById(reviewId: Long) {
+        reviewRepo.deleteById(reviewId)
     }
 
     @Transactional(readOnly = false)
