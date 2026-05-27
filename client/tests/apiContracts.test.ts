@@ -89,5 +89,5 @@ test('public TDS BottomSheet renders the dimmer only when it can close', () => {
   const publicTds = publicTdsSource()
 
   assert.match(publicTds, /!disableDimmer && onClose != null/)
-  assert.match(publicTds, /className="ait-bottom-sheet-dimmer"[\s\S]*onClick=\{onClose\}/)
+  assert.match(publicTds, /<button\b(?=[^>]*className="ait-bottom-sheet-dimmer")(?=[^>]*onClick=\{onClose\})[^>]*\/?>/)
 })
