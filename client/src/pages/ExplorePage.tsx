@@ -562,10 +562,10 @@ export function ExplorePage() {
       return
     }
 
-    const shouldReturnToSourceList = routeState?.returnTo != null && isListSheetOpen
+    const shouldReturnToSourceList = safeRouteReturnTo != null && isListSheetOpen
 
     if (shouldReturnToSourceList) {
-      navigate(routeState.returnTo, { replace: true })
+      navigate(safeRouteReturnTo, { replace: true })
       return
     }
 

@@ -155,7 +155,7 @@ export function SearchPage() {
   }
 
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'Enter') {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
       return
     }
 

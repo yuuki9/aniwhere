@@ -38,7 +38,12 @@ function matchRegionIdForLocation({
     .filter(Boolean)
     .join(' ')
 
-  const matchedRegion = regions.find((region) => {
+  const matchedRegion = [...regions].sort((left, right) => {
+    const leftLength = normalizeRegionText(`${left.city ?? ''}${left.name}`).length
+    const rightLength = normalizeRegionText(`${right.city ?? ''}${right.name}`).length
+
+    return rightLength - leftLength
+  }).find((region) => {
     const regionName = normalizeRegionText(region.name)
     const cityRegionName = normalizeRegionText(`${region.city ?? ''}${region.name}`)
 

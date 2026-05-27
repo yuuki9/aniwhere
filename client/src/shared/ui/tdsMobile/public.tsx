@@ -226,7 +226,9 @@ export function BottomSheet({
 
   return (
     <>
-      {!disableDimmer ? <button aria-label="바텀시트 닫기" className="ait-bottom-sheet-dimmer" type="button" onClick={onClose} /> : null}
+      {!disableDimmer && onClose != null ? (
+        <button aria-label="바텀시트 닫기" className="ait-bottom-sheet-dimmer" type="button" onClick={onClose} />
+      ) : null}
       <section
         aria-describedby={ariaDescribedBy}
         aria-labelledby={ariaLabelledBy}

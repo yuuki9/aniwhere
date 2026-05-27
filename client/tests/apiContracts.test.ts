@@ -10,6 +10,7 @@ const communityApiSource = () => source('../src/shared/api/community.ts')
 const authApiSource = () => source('../src/shared/api/auth.ts')
 const usersApiSource = () => source('../src/shared/api/users.ts')
 const apiClientSource = () => source('../src/shared/api/client.ts')
+const publicTdsSource = () => source('../src/shared/ui/tdsMobile/public.tsx')
 const backendContractSource = () => source('../../docs/backend-api-contract.md')
 
 test('client API types expose the current Swagger response models', () => {
@@ -82,4 +83,11 @@ test('backend API contract notes keep shop facets aligned with deployed Swagger'
   assert.match(contract, /GET \/api\/v1\/shops\/facets` provides search facet payload \(`regions`, `categories`, `workTypes`\)/)
   assert.match(contract, /accepts optional `includeRegions`, `includeCategories`, and `includeWorkTypes`/)
   assert.match(contract, /does not expose `keyword`, selected filter IDs, `status`, `type`, or map bounds/)
+})
+
+test('public TDS BottomSheet renders the dimmer only when it can close', () => {
+  const publicTds = publicTdsSource()
+
+  assert.match(publicTds, /!disableDimmer && onClose != null/)
+  assert.match(publicTds, /className="ait-bottom-sheet-dimmer"[\s\S]*onClick=\{onClose\}/)
 })

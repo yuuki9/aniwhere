@@ -225,6 +225,8 @@ test('IntroPage offers a login-free home entry while Toss login is blocked', () 
   const source = introPageSource()
 
   assert.match(source, /로그인 없이 둘러보기/)
+  assert.match(source, /const handleEnterWithoutLogin = \(\) => \{\s*if \(isEntryAttemptInFlightRef\.current \|\| isEntering\)/)
+  assert.match(source, /className="intro-login-skip-button"[\s\S]*disabled=\{isEntering\}/)
   assert.match(source, /navigate\('\/home'\)/)
   assert.doesNotMatch(source, /임시 확인용 진입점/)
   assert.doesNotMatch(source, /홈에서 ADS UI 확인하기/)

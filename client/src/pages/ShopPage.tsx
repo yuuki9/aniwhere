@@ -45,19 +45,11 @@ export function ShopPage() {
   })
 
   const favoriteShopMutation = useMutation({
-    mutationFn: (nextFavorite: boolean) => {
-      const shop = shopQuery.data
-      if (!shop) {
-        throw new Error('매장 정보를 불러온 뒤 다시 시도해 주세요.')
-      }
-
-      return nextFavorite ? addFavoriteShop(shop.id) : removeFavoriteShop(shop.id)
-    },
-    onSuccess: (_result, nextFavorite) => {
-      const shop = shopQuery.data
-      if (shop) {
-        setFavoriteState({ shopId: shop.id, isFavorite: nextFavorite })
-      }
+    mutationFn: ({ shopId, nextFavorite }: { shopId: number; nextFavorite: boolean }) =>
+      nextFavorite ? addFavoriteShop(shopId) : removeFavoriteShop(shopId),
+    onSuccess: (_result, variables) => {
+      const nextFavorite = variables.nextFavorite
+      setFavoriteState({ shopId: variables.shopId, isFavorite: nextFavorite })
       setFavoriteToast(nextFavorite ? '관심 매장에 저장했어요.' : '관심 매장에서 해제했어요.')
     },
     onError: (error) => {
@@ -114,7 +106,7 @@ export function ShopPage() {
       return
     }
 
-    favoriteShopMutation.mutate(!isFavoriteShop)
+    favoriteShopMutation.mutate({ shopId: shop.id, nextFavorite: !isFavoriteShop })
   }
 
   return (

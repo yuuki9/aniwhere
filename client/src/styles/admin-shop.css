@@ -1114,14 +1114,6 @@
   z-index: 1;
 }
 
-.admin-shop-work-search-combobox .admin-shop-work-search-field :where(.css-1k7tx0) {
-  padding: 0;
-}
-
-.admin-shop-work-search-combobox :where(.css-12c4skh) {
-  display: contents;
-}
-
 .admin-shop-work-suggestion-panel {
   display: grid;
   gap: 0;

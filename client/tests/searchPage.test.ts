@@ -236,7 +236,7 @@ test('SearchPage submits the TDS search field on Enter while preserving returnTo
 
   assert.match(source, /type KeyboardEvent/)
   assert.match(source, /const handleSearchKeyDown = \(event: KeyboardEvent<HTMLInputElement>\) =>/)
-  assert.match(source, /if \(event\.key !== 'Enter'\) \{[\s\S]*?return[\s\S]*?\}/)
+  assert.match(source, /if \(event\.key !== 'Enter' \|\| event\.nativeEvent\.isComposing\) \{[\s\S]*?return[\s\S]*?\}/)
   assert.match(source, /event\.preventDefault\(\)[\s\S]*moveToSearch\(keyword\)/)
   assert.match(source, /onKeyDown=\{handleSearchKeyDown\}/)
   assert.match(source, /next\.set\('returnTo', safeReturnTo\)/)

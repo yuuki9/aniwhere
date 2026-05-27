@@ -1348,6 +1348,7 @@
   --map-control-gap: var(--ait-space-5);
   --map-route-navigation-top: max(var(--ait-space-4), calc(env(safe-area-inset-top) + var(--ait-space-2)));
   --map-route-navigation-space: calc(var(--map-route-navigation-top) + var(--ait-component-navigation-height));
+
   position: relative;
   display: flex;
   height: 100dvh;

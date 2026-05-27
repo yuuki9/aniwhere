@@ -123,6 +123,10 @@ export function IntroPage() {
   }
 
   const handleEnterWithoutLogin = () => {
+    if (isEntryAttemptInFlightRef.current || isEntering) {
+      return
+    }
+
     navigate('/home')
   }
 
@@ -220,7 +224,12 @@ export function IntroPage() {
             </form>
           )}
           {pendingNicknameSession == null ? (
-            <button className="intro-login-skip-button" type="button" onClick={handleEnterWithoutLogin}>
+            <button
+              className="intro-login-skip-button"
+              disabled={isEntering}
+              type="button"
+              onClick={handleEnterWithoutLogin}
+            >
               로그인 없이 둘러보기
             </button>
           ) : null}

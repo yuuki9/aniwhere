@@ -462,6 +462,7 @@ function WorkCatalogSearchSelectionSection({
         <SearchField
           className="admin-shop-work-search-field"
           placeholder="작품 이름으로 검색"
+          style={{ padding: 0 }}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           onDeleteClick={() => onQueryChange('')}

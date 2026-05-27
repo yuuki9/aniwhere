@@ -352,6 +352,8 @@ test('Explore detail back returns to the originating search route when opened fr
   assert.match(source, /type ExploreLocationState = \{\s*returnTo\?: string/)
   assert.match(source, /function isSafeExploreReturnTo\(returnTo: string \| undefined\)/)
   assert.match(source, /const safeRouteReturnTo = isSafeExploreReturnTo\(routeState\?\.returnTo\)/)
+  assert.match(source, /const shouldReturnToSourceList = safeRouteReturnTo != null && isListSheetOpen/)
+  assert.doesNotMatch(source, /navigate\(routeState\.returnTo/)
   assert.match(source, /if \(selectedShopId != null && safeRouteReturnTo\) \{\s*navigate\(safeRouteReturnTo, \{ replace: true \}\)/)
 })
 

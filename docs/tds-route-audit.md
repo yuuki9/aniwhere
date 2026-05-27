@@ -374,6 +374,24 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/home` CTA card orientation | Product-approved / Regression fixed | The horizontal `3:2` CTA density pass was reverted because the requested product direction is the earlier vertical content-curation CTA. Cards are restored to a compact `4:5` frame with the 1024x1536 vertical image assets cropped inside the card, and the image content is slightly scaled inside `home-cta-media` so the illustration fills the card frame more fully. The current no-shadow decision remains intact. TDS `Asset` informed the stable media frame; the carousel itself remains app-owned because the checked `GridList` docs cover image/text grid menus rather than Aniwhere's horizontal discovery rail. |
 | Runtime verification | Passed local / Needs sandbox | `node --test tests/homeViewModel.test.ts` verifies the vertical CTA CSS contract and image dimensions. ADS sandbox should still confirm the visual rhythm on the target device because local tests do not prove WebView safe area, image decode, or native scroll feel. |
 
+### 2026-05-27 Explore List And Map View Split Follow-up
+
+Official docs checked with official web fallback because Apps in Toss MCP was not loaded and `ax` was not on PATH in this session:
+
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- useBottomSheet: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-bottom-sheet/
+- Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore?shopId=:id` list FAB routing | Regression fixed | Clicking the map/list FAB while a selected-shop peek sheet is open clears `shopId` and `sheet`, then replaces the URL with `/explore?view=list`. The destination is now a full list route, not a map-attached result sheet. |
+| `/explore?view=list` full list surface | Product-approved / Regression fixed | The list view now follows the Olive Young reference split more closely: `/explore?view=map` owns the map surface, while `/explore?view=list` renders search, filter chips, and result rows in a full-height list surface without mounting `ShopMap`. The official `BottomSheet` component is not used for this state because the target behavior is a route-level list screen, not modal or persistent map disclosure. List cards remain app-owned but follow the checked ListRow rhythm and use the existing status pill/status copy. |
+| `/explore?view=list` map quick-chip isolation | Regression fixed | The full list route no longer renders the map-only `MapQuickChips`/`map-chip-status` toolbar. List mode keeps only removable applied filter chips, while map mode retains the quick status chip for map exploration. |
+| `/search?returnTo=/explore?view=list` submission | Regression fixed | The TDS `SearchField` did not reliably trigger the surrounding form submit on Enter in the local runtime, so SearchPage now handles Enter directly on the field and preserves the encoded list-route `returnTo` while writing `keyword` and `page=0`. |
+| Runtime verification | Passed local / Needs sandbox | `node --test tests/homeViewModel.test.ts`, `node --test tests/explorePage.test.ts`, `node --test tests/searchPage.test.ts`, `npm run lint`, `npm run build`, and local 375px browser checks verified horizontal CTA restoration, `/explore?view=list` without a map or map quick chip, visible search/filter/list rows, `/search?returnTo=%2Fexplore%3Fview%3Dlist` Enter search, and the floating map button changing the URL to `/explore?view=map`. Apps in Toss sandbox should still confirm native back behavior, list/FAB positioning, and native keyboard search submission on device. |
+
 ### 2026-05-28 Home CTA List Banner Experiment
 
 Official docs checked with Apps in Toss MCP in the current session:
@@ -392,24 +410,6 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/home` CTA media usage | Product-approved / Asset-informed | Three separately generated 1600x400 banner images from the local Downloads folder are bundled as `home-cta-*-banner.png`. The left side stays copy-safe, while the illustration occupies the center/right. TDS `Asset` informs the stable clipped media frame, and `ListRow`/`GridList` inform the list-like tap rhythm, but the exact banner surface remains app-owned. The previous vertical CTA assets (`home-cta-map.png`, `home-cta-favorites.png`, `home-cta-reviews.png`) remain in the repository, so reverting the isolated banner-conversion commit restores the 2026-05-27 vertical card path. |
 | `/home` CTA label and frame follow-up | Product-approved / Regression fix | The local `home-section-head` title above the CTA stack was removed so the first actionable banner owns the surface directly. CTA copy was shortened to two compact lines and uses token-based body-large typography. A dark overlay was intentionally not used; the banner instead uses the stronger border token, an inset outline, and a gray-50 copy gradient so it separates from the white page without making the bright 3D assets read like ads. |
 | Runtime verification | Needs sandbox | `node --test tests/homeViewModel.test.ts` should verify the source/CSS contract. Local browser screenshot can show the 375px visual, but Apps in Toss sandbox still needs image decode, safe-area spacing, and native scroll confirmation. |
-
-### 2026-05-27 Explore List And Map View Split Follow-up
-
-Official docs checked with official web fallback because Apps in Toss MCP was not loaded and `ax` was not on PATH in this session:
-
-- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
-- useBottomSheet: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-bottom-sheet/
-- Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
-- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
-- ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
-
-| Area | Current classification | Notes |
-| --- | --- | --- |
-| `/explore?shopId=:id` list FAB routing | Regression fixed | Clicking the map/list FAB while a selected-shop peek sheet is open clears `shopId` and `sheet`, then replaces the URL with `/explore?view=list`. The destination is now a full list route, not a map-attached result sheet. |
-| `/explore?view=list` full list surface | Product-approved / Regression fixed | The list view now follows the Olive Young reference split more closely: `/explore?view=map` owns the map surface, while `/explore?view=list` renders search, filter chips, and result rows in a full-height list surface without mounting `ShopMap`. The official `BottomSheet` component is not used for this state because the target behavior is a route-level list screen, not modal or persistent map disclosure. List cards remain app-owned but follow the checked ListRow rhythm and use the existing status pill/status copy. |
-| `/explore?view=list` map quick-chip isolation | Regression fixed | The full list route no longer renders the map-only `MapQuickChips`/`map-chip-status` toolbar. List mode keeps only removable applied filter chips, while map mode retains the quick status chip for map exploration. |
-| `/search?returnTo=/explore?view=list` submission | Regression fixed | The TDS `SearchField` did not reliably trigger the surrounding form submit on Enter in the local runtime, so SearchPage now handles Enter directly on the field and preserves the encoded list-route `returnTo` while writing `keyword` and `page=0`. |
-| Runtime verification | Passed local / Needs sandbox | `node --test tests/homeViewModel.test.ts`, `node --test tests/explorePage.test.ts`, `node --test tests/searchPage.test.ts`, `npm run lint`, `npm run build`, and local 375px browser checks verified horizontal CTA restoration, `/explore?view=list` without a map or map quick chip, visible search/filter/list rows, `/search?returnTo=%2Fexplore%3Fview%3Dlist` Enter search, and the floating map button changing the URL to `/explore?view=map`. Apps in Toss sandbox should still confirm native back behavior, list/FAB positioning, and native keyboard search submission on device. |
 
 ## PR Evidence Format
 
