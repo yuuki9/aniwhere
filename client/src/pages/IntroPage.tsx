@@ -7,11 +7,6 @@ import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
-import {
-  normalizeTossLoginReferrerForServer,
-  toMaskedAuthorizationCode,
-  type MaskedAuthorizationCode,
-} from '../shared/lib/authDebug'
 import type { AuthSession } from '../shared/lib/authSession'
 import { Button } from '@aniwhere/tds-mobile'
 
@@ -79,86 +74,6 @@ type EntryRouteState =
     entryMode: 'toss'
   }
 
-type AuthDebugEntry = {
-  authorizationCode: MaskedAuthorizationCode
-  referrer: string
-}
-
-type AuthDebugSnapshot = {
-  appLoginResult: AuthDebugEntry | null
-  serverLoginPayload: AuthDebugEntry | null
-}
-
-const EMPTY_AUTH_DEBUG_SNAPSHOT: AuthDebugSnapshot = {
-  appLoginResult: null,
-  serverLoginPayload: null,
-}
-
-function MaskedAuthorizationCodeView({ code }: { code: MaskedAuthorizationCode }) {
-  return (
-    <dl className="intro-auth-debug-code">
-      <div>
-        <dt>present</dt>
-        <dd>{String(code.present)}</dd>
-      </div>
-      <div>
-        <dt>length</dt>
-        <dd>{code.length}</dd>
-      </div>
-      {code.prefix != null ? (
-        <div>
-          <dt>prefix</dt>
-          <dd>{code.prefix}</dd>
-        </div>
-      ) : null}
-      {code.suffix != null ? (
-        <div>
-          <dt>suffix</dt>
-          <dd>{code.suffix}</dd>
-        </div>
-      ) : null}
-    </dl>
-  )
-}
-
-function AuthDebugGroup({ title, value }: { title: string; value: AuthDebugEntry | null }) {
-  if (value == null) {
-    return null
-  }
-
-  return (
-    <section className="intro-auth-debug-group">
-      <strong>{title}</strong>
-      <dl className="intro-auth-debug-meta">
-        <div>
-          <dt>authorizationCode</dt>
-          <dd>
-            <MaskedAuthorizationCodeView code={value.authorizationCode} />
-          </dd>
-        </div>
-        <div>
-          <dt>referrer</dt>
-          <dd>{value.referrer}</dd>
-        </div>
-      </dl>
-    </section>
-  )
-}
-
-function IntroAuthDebugPanel({ snapshot }: { snapshot: AuthDebugSnapshot }) {
-  if (snapshot.appLoginResult == null && snapshot.serverLoginPayload == null) {
-    return null
-  }
-
-  return (
-    <aside className="intro-auth-debug-panel" aria-label="ADS login debug">
-      <p>ADS login debug</p>
-      <AuthDebugGroup title="appLogin result" value={snapshot.appLoginResult} />
-      <AuthDebugGroup title="server login payload" value={snapshot.serverLoginPayload} />
-    </aside>
-  )
-}
-
 export function IntroPage() {
   const navigate = useNavigate()
   const isEntryAttemptInFlightRef = useRef(false)
@@ -166,7 +81,6 @@ export function IntroPage() {
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
   const [pendingNicknameSession, setPendingNicknameSession] = useState<AuthSession | null>(null)
-  const [authDebugSnapshot, setAuthDebugSnapshot] = useState<AuthDebugSnapshot>(EMPTY_AUTH_DEBUG_SNAPSHOT)
   const [nicknameInput, setNicknameInput] = useState('')
 
   useEffect(() => {
@@ -185,22 +99,9 @@ export function IntroPage() {
     isEntryAttemptInFlightRef.current = true
     setIsEntering(true)
     setEntryError(null)
-    setAuthDebugSnapshot(EMPTY_AUTH_DEBUG_SNAPSHOT)
 
     try {
       const entry = await startServiceEntry()
-      const debugEntry = {
-        authorizationCode: toMaskedAuthorizationCode(entry.authorizationCode),
-        referrer: entry.referrer,
-      }
-      const serverDebugEntry = {
-        authorizationCode: debugEntry.authorizationCode,
-        referrer: normalizeTossLoginReferrerForServer(entry.referrer),
-      }
-      setAuthDebugSnapshot({
-        appLoginResult: debugEntry,
-        serverLoginPayload: serverDebugEntry,
-      })
       const result = await completeServiceEntry(entry)
       const state: EntryRouteState = { entryMode: 'toss' }
       if (result.mode === 'needsNickname') {
@@ -324,7 +225,6 @@ export function IntroPage() {
             </button>
           ) : null}
           {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
-          <IntroAuthDebugPanel snapshot={authDebugSnapshot} />
         </div>
       </section>
     </main>

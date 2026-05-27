@@ -2,7 +2,6 @@ import { tossLogin } from '../api/auth'
 import { checkNicknameAvailability, getMyProfile, updateMyNickname } from '../api/users'
 import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../api/types'
 import type { EntryFlowResult } from './auth'
-import { normalizeTossLoginReferrerForServer, toMaskedAuthorizationCode } from './authDebug'
 import { createAuthSession, saveAuthSession, updateAuthSessionUser, type AuthSession } from './authSession'
 import { toSafeErrorSummary } from './safeError'
 
@@ -30,6 +29,11 @@ const defaultCompleteServiceEntryDeps: CompleteServiceEntryDeps = {
   saveSession: saveAuthSession,
 }
 
+function normalizeTossLoginReferrerForServer(value: string): string {
+  const normalized = value.trim()
+  return normalized.toUpperCase() === 'SANDBOX' ? 'sandbox' : normalized
+}
+
 export async function completeServiceEntry(
   entry: EntryFlowResult,
   deps: CompleteServiceEntryDeps = defaultCompleteServiceEntryDeps,
@@ -39,10 +43,6 @@ export async function completeServiceEntry(
     authorizationCode: entry.authorizationCode,
     referrer: normalizeTossLoginReferrerForServer(entry.referrer),
   }
-  console.info('[aniwhere:auth-debug] server login payload', {
-    authorizationCode: toMaskedAuthorizationCode(loginPayload.authorizationCode),
-    referrer: loginPayload.referrer,
-  })
 
   try {
     login = await deps.login(loginPayload)

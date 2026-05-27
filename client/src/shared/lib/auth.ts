@@ -1,5 +1,4 @@
 import { appLogin, getOperationalEnvironment } from '@apps-in-toss/web-framework'
-import { toMaskedAuthorizationCode } from './authDebug'
 import { toSafeErrorSummary } from './safeError'
 
 export const TOSS_LOGIN_UNAVAILABLE_MESSAGE = '토스 앱에서 로그인해 주세요.'
@@ -32,11 +31,6 @@ export async function startServiceEntry(): Promise<EntryFlowResult> {
     console.error('[aniwhere:auth] appLogin failed', toSafeErrorSummary(error))
     throw error
   }
-
-  console.info('[aniwhere:auth-debug] appLogin result', {
-    authorizationCode: toMaskedAuthorizationCode(result.authorizationCode),
-    referrer: result.referrer,
-  })
 
   return {
     mode: 'toss',

@@ -1129,66 +1129,6 @@ p {
   text-align: center;
 }
 
-.intro-auth-debug-panel {
-  display: grid;
-  width: 100%;
-  gap: var(--ait-space-4);
-  padding: var(--ait-space-4);
-  border: 1px solid #fecaca;
-  border-radius: var(--ait-radius-md);
-  background: #fff7f7;
-  color: var(--ait-color-gray-900);
-  font-size: var(--ait-font-size-caption);
-  line-height: var(--ait-line-height-body);
-  overflow-wrap: anywhere;
-  text-align: left;
-}
-
-.intro-auth-debug-panel p {
-  color: var(--ait-color-red-700);
-  font-size: var(--ait-font-size-body-sm);
-  font-weight: 700;
-}
-
-.intro-auth-debug-group {
-  display: grid;
-  gap: var(--ait-space-2);
-}
-
-.intro-auth-debug-group strong {
-  color: var(--ait-color-gray-900);
-  font-size: var(--ait-font-size-caption);
-}
-
-.intro-auth-debug-meta,
-.intro-auth-debug-code {
-  display: grid;
-  gap: var(--ait-space-2);
-  margin: 0;
-}
-
-.intro-auth-debug-meta > div,
-.intro-auth-debug-code > div {
-  display: grid;
-  gap: var(--ait-space-1);
-}
-
-.intro-auth-debug-code {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding-top: var(--ait-space-1);
-}
-
-.intro-auth-debug-panel dt {
-  color: var(--ait-color-gray-600);
-  font-weight: 700;
-}
-
-.intro-auth-debug-panel dd {
-  margin: 0;
-  color: var(--ait-color-gray-900);
-  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
-}
-
 .intro-footer-actions {
   align-items: stretch;
   min-width: min(100%, 280px);

@@ -258,26 +258,20 @@ test('IntroPage blocks concurrent login attempts before requesting a Toss author
   assert.match(source, /if\s*\(\s*isEntryAttemptInFlightRef\.current\s*\)\s*\{\s*return\s*\}/)
 })
 
-test('IntroPage exposes a masked ADS login debug panel after appLogin returns', () => {
+test('IntroPage keeps ADS login debug details out of the visible surface', () => {
   const source = introPageSource()
   const styles = appCssSource()
 
-  assert.match(source, /type AuthDebugSnapshot/)
-  assert.match(source, /IntroAuthDebugPanel/)
-  assert.match(source, /toMaskedAuthorizationCode\(entry\.authorizationCode\)/)
-  assert.match(source, /normalizeTossLoginReferrerForServer\(entry\.referrer\)/)
-  assert.match(source, /appLogin result/)
-  assert.match(source, /server login payload/)
-  assert.match(source, /authorizationCode/)
-  assert.match(source, /referrer/)
-  assert.match(source, /prefix/)
-  assert.match(source, /suffix/)
-  assert.match(source, /length/)
-  assert.match(cssRuleBody(styles, '.intro-auth-debug-panel'), /overflow-wrap:\s*anywhere;/)
-  assert.match(
-    cssRuleBodies(styles, '.intro-auth-debug-code').at(-1) ?? '',
-    /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/,
-  )
+  assert.doesNotMatch(source, /type AuthDebugSnapshot/)
+  assert.doesNotMatch(source, /IntroAuthDebugPanel/)
+  assert.doesNotMatch(source, /AuthDebugEntry/)
+  assert.doesNotMatch(source, /toMaskedAuthorizationCode/)
+  assert.doesNotMatch(source, /normalizeTossLoginReferrerForServer/)
+  assert.doesNotMatch(source, /ADS login debug/)
+  assert.doesNotMatch(source, /appLogin result/)
+  assert.doesNotMatch(source, /server login payload/)
+  assert.doesNotMatch(styles, /\.intro-auth-debug-panel/)
+  assert.doesNotMatch(styles, /\.intro-auth-debug-code/)
   assert.doesNotMatch(source, /entry\.authorizationCode\}/)
 })
 
