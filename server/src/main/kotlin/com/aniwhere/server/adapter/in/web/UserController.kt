@@ -2,12 +2,16 @@ package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.UnauthorizedException
+import com.aniwhere.server.common.logging.LogMasking
 import com.aniwhere.server.config.security.SecurityPrincipal
+import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import org.slf4j.LoggerFactory
 import org.springdoc.core.annotations.ParameterObject
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -28,9 +32,40 @@ import org.springframework.web.bind.annotation.RestController
 class UserController(
     private val userUseCase: UserUseCase,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     @Operation(summary = "내 회원 상세 조회")
     @GetMapping("/me")
-    fun getMyProfile() = ApiResponse.ok(userUseCase.getMyProfile(currentUserId()))
+    fun getMyProfile(request: HttpServletRequest): ApiResponse<UserSummary> {
+        val authorizationHeader = request.getHeader("Authorization")
+        val hasBearerHeader = authorizationHeader?.startsWith("Bearer ") == true
+        val userId = currentUserIdOrNull()
+        if (userId == null) {
+            log.warn(
+                "GET /users/me request unauthenticated hasBearerHeader={} authorization={}",
+                hasBearerHeader,
+                summarizeAuthorizationHeader(authorizationHeader),
+            )
+            throw UnauthorizedException("Authentication required")
+        }
+
+        log.info(
+            "GET /users/me request authenticated userId={} hasBearerHeader={} authorization={}",
+            userId,
+            hasBearerHeader,
+            summarizeAuthorizationHeader(authorizationHeader),
+        )
+
+        val profile = userUseCase.getMyProfile(userId)
+        log.info(
+            "GET /users/me response sent userId={} userKey={} hasNickname={} status={}",
+            profile.id,
+            profile.userKey,
+            !profile.nickname.isNullOrBlank(),
+            profile.status,
+        )
+        return ApiResponse.ok(profile)
+    }
 
     @Operation(summary = "회원 목록 조회 (관리자)")
     @GetMapping
@@ -58,6 +93,16 @@ class UserController(
 
     private fun currentUserId(): Long =
         currentUserIdOrNull() ?: throw UnauthorizedException("Authentication required")
+
+    private fun summarizeAuthorizationHeader(authorizationHeader: String?): String {
+        if (authorizationHeader.isNullOrBlank()) {
+            return "(missing)"
+        }
+        if (!authorizationHeader.startsWith("Bearer ")) {
+            return "(non-bearer)"
+        }
+        return "Bearer ${LogMasking.maskSecret(authorizationHeader.removePrefix("Bearer ").trim())}"
+    }
 }
 
 data class UpdateNicknameRequest(
