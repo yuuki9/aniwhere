@@ -15,6 +15,7 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -78,7 +79,7 @@ class ShopReviewServiceTest {
             imageParts = emptyList(),
         )
 
-        assert(saved.rating == 5)
+        assertEquals(5, saved.rating)
         verify { port.recomputeShopRating(1L) }
     }
 

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.math.RoundingMode
 
 @Component
@@ -50,8 +51,8 @@ class ShopReviewPersistenceAdapter(
 
     @Transactional(readOnly = false)
     override fun update(reviewId: Long, review: ShopReview): ShopReview {
-        val entity = reviewRepo.findByIdOrNull(reviewId)
-            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        val entity = reviewRepo.findByIdAndShopId(reviewId, review.shopId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId for shop: ${review.shopId}")
         entity.rating = review.rating
         entity.content = review.content
         entity.updatedAt = java.time.LocalDateTime.now()
@@ -121,7 +122,7 @@ class ShopReviewPersistenceAdapter(
             null
         } else {
             reviewRepo.calculateAverageRating(shopId, visible)
-                ?.setScale(2, RoundingMode.HALF_UP)
+                ?.let { BigDecimal.valueOf(it).setScale(2, RoundingMode.HALF_UP) }
         }
         shop.averageRating = avg
         shop.reviewCount = count

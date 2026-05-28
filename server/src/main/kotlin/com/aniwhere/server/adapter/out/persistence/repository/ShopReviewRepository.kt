@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
-import java.math.BigDecimal
 
 interface ShopReviewRepository : JpaRepository<ShopReviewEntity, Long> {
     fun findByShopIdAndStatusOrderByCreatedAtDesc(
@@ -18,7 +17,7 @@ interface ShopReviewRepository : JpaRepository<ShopReviewEntity, Long> {
     fun findByIdAndShopId(id: Long, shopId: Long): ShopReviewEntity?
 
     @Query("SELECT AVG(r.rating) FROM ShopReviewEntity r WHERE r.shopId = :shopId AND r.status = :status")
-    fun calculateAverageRating(shopId: Long, status: ShopReviewStatusEnum): BigDecimal?
+    fun calculateAverageRating(shopId: Long, status: ShopReviewStatusEnum): Double?
 
     fun countByShopIdAndStatus(shopId: Long, status: ShopReviewStatusEnum): Long
 }
