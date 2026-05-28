@@ -7,6 +7,7 @@ CREATE TABLE shop_reviews (
     rating TINYINT NOT NULL,
     content TEXT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'VISIBLE',
+    like_count INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     CONSTRAINT fk_shop_reviews_shop FOREIGN KEY (shop_id) REFERENCES shops (id) ON DELETE CASCADE,
@@ -27,3 +28,16 @@ CREATE TABLE shop_review_images (
 );
 
 CREATE INDEX idx_shop_review_images_review ON shop_review_images (review_id);
+
+CREATE TABLE shop_review_likes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    CONSTRAINT fk_shop_review_likes_review FOREIGN KEY (review_id) REFERENCES shop_reviews (id) ON DELETE CASCADE,
+    CONSTRAINT fk_shop_review_likes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT uk_shop_review_likes_review_user UNIQUE (review_id, user_id)
+);
+
+CREATE INDEX idx_shop_review_likes_review ON shop_review_likes (review_id);
+CREATE INDEX idx_shop_review_likes_user ON shop_review_likes (user_id);

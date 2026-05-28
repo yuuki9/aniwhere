@@ -16,6 +16,7 @@ interface ShopReviewPersistencePort {
     fun save(review: ShopReview): ShopReview
     fun findVisibleByShopId(shopId: Long, pageable: Pageable): Page<ShopReview>
     fun findByIdAndShopId(reviewId: Long, shopId: Long): ShopReview?
+    fun findVisibleByIdAndShopId(reviewId: Long, shopId: Long): ShopReview?
     fun update(reviewId: Long, review: ShopReview): ShopReview
     fun updateStatus(reviewId: Long, shopId: Long, status: ShopReviewStatus): ShopReview
     fun saveReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>)
@@ -23,4 +24,8 @@ interface ShopReviewPersistencePort {
     fun replaceReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>)
     fun deleteById(reviewId: Long)
     fun recomputeShopRating(shopId: Long): ShopRatingAggregate
+    fun existsReviewLike(reviewId: Long, userId: Long): Boolean
+    fun saveReviewLike(reviewId: Long, userId: Long)
+    fun deleteReviewLike(reviewId: Long, userId: Long)
+    fun findLikedReviewIds(userId: Long, reviewIds: Collection<Long>): Set<Long>
 }

@@ -30,6 +30,7 @@ class ShopReviewMapper(
                     sortOrder = image.sortOrder,
                 )
             },
+            likeCount = entity.likeCount,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
         )

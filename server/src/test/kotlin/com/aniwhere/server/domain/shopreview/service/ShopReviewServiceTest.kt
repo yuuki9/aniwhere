@@ -8,6 +8,7 @@ import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.aniwhere.server.domain.shopreview.port.out.ReviewImageStoragePort
 import com.aniwhere.server.domain.shopreview.model.ShopRatingAggregate
 import com.aniwhere.server.domain.shopreview.model.ShopReview
+import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
 import io.mockk.every
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.SimpleTransactionStatus
 import org.springframework.transaction.support.TransactionTemplate
@@ -163,5 +166,41 @@ class ShopReviewServiceTest {
                 imageParts = imageParts,
             )
         }
+    }
+
+    @Test
+    fun `likeReview - VISIBLE 리뷰에 좋아요를 저장한다`() {
+        every { port.existsShop(1L) } returns true
+        every { port.findVisibleByIdAndShopId(5L, 1L) } returns sampleReview
+        every { port.saveReviewLike(5L, 10L) } returns Unit
+
+        service.likeReview(userId = 10L, shopId = 1L, reviewId = 5L)
+
+        verify { port.saveReviewLike(5L, 10L) }
+    }
+
+    @Test
+    fun `unlikeReview - 좋아요를 삭제한다`() {
+        every { port.existsShop(1L) } returns true
+        every { port.findVisibleByIdAndShopId(5L, 1L) } returns sampleReview
+        every { port.deleteReviewLike(5L, 10L) } returns Unit
+
+        service.unlikeReview(userId = 10L, shopId = 1L, reviewId = 5L)
+
+        verify { port.deleteReviewLike(5L, 10L) }
+    }
+
+    @Test
+    fun `listReviews - viewerUserId가 있으면 likedByMe를 채운다`() {
+        every { port.existsShop(1L) } returns true
+        every { port.findVisibleByShopId(1L, any()) } returns PageImpl(
+            listOf(sampleReview.copy(id = 5L), sampleReview.copy(id = 6L)),
+        )
+        every { port.findLikedReviewIds(10L, listOf(5L, 6L)) } returns setOf(5L)
+
+        val page = service.listReviews(1L, ShopReviewSort.NEWEST, PageRequest.of(0, 20), 10L)
+
+        assertEquals(true, page.content[0].likedByMe)
+        assertEquals(false, page.content[1].likedByMe)
     }
 }

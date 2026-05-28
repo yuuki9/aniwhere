@@ -5,6 +5,7 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.UnauthorizedException
 import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
+import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -35,8 +36,9 @@ class ShopReviewController(private val useCase: ShopReviewUseCase) {
     @GetMapping
     fun listReviews(
         @PathVariable shopId: Long,
+        @RequestParam(defaultValue = "NEWEST") sort: ShopReviewSort,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
-    ) = ApiResponse.ok(useCase.listReviews(shopId, pageable))
+    ) = ApiResponse.ok(useCase.listReviews(shopId, sort, pageable, currentUserIdOrNull()))
 
     @Operation(summary = "샵 리뷰 작성")
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -85,9 +87,32 @@ class ShopReviewController(private val useCase: ShopReviewUseCase) {
         ApiResponse.ok()
     }
 
-    private fun currentUserId(): Long =
+    @Operation(summary = "샵 리뷰 좋아요")
+    @PostMapping("/{reviewId}/likes")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun likeReview(
+        @PathVariable shopId: Long,
+        @PathVariable reviewId: Long,
+    ) = run {
+        useCase.likeReview(currentUserId(), shopId, reviewId)
+        ApiResponse.ok()
+    }
+
+    @Operation(summary = "샵 리뷰 좋아요 취소")
+    @DeleteMapping("/{reviewId}/likes")
+    fun unlikeReview(
+        @PathVariable shopId: Long,
+        @PathVariable reviewId: Long,
+    ) = run {
+        useCase.unlikeReview(currentUserId(), shopId, reviewId)
+        ApiResponse.ok()
+    }
+
+    private fun currentUserIdOrNull(): Long? =
         (SecurityContextHolder.getContext().authentication?.principal as? SecurityPrincipal)?.userId
-            ?: throw UnauthorizedException("Authentication required")
+
+    private fun currentUserId(): Long = currentUserIdOrNull()
+        ?: throw UnauthorizedException("Authentication required")
 }
 
 private fun MultipartFile.requireImagePart(): ImageUploadPart {
