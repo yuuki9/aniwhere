@@ -114,6 +114,7 @@ test('TDS mobile facade exposes onboarding primitives in public and Apps in Toss
   const appsInTossTds = appsInTossTdsSource()
 
   assert.match(publicTds, /export const Asset/)
+  assert.match(publicTds, /Image: AssetImage/)
   assert.match(publicTds, /Lottie: AssetLottie/)
   assert.match(publicTds, /export const Modal/)
   assert.match(publicTds, /Overlay: ModalOverlay/)

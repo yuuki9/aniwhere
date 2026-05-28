@@ -31,6 +31,36 @@ type PublicAssetLottieProps = HTMLAttributes<HTMLSpanElement> & {
   'aria-hidden'?: boolean
 }
 
+type PublicAssetImageProps = HTMLAttributes<HTMLSpanElement> & {
+  alt: string
+  src: string
+  frameShape?: { width?: number; height?: number; radius?: number | string }
+}
+
+function AssetImage({
+  alt,
+  className,
+  frameShape,
+  src,
+  style,
+  ...props
+}: PublicAssetImageProps) {
+  return (
+    <span
+      className={['ait-asset-image', className].filter(Boolean).join(' ')}
+      style={{
+        width: frameShape?.width,
+        height: frameShape?.height,
+        borderRadius: frameShape?.radius,
+        ...style,
+      }}
+      {...props}
+    >
+      <img alt={alt} src={src} />
+    </span>
+  )
+}
+
 function AssetLottie({
   className,
   frameShape,
@@ -58,6 +88,7 @@ export const Asset = {
   frameShape: {
     CleanW60: { width: 60, height: 60 },
   },
+  Image: AssetImage,
   Lottie: AssetLottie,
 }
 

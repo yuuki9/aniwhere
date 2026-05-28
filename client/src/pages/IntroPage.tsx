@@ -8,7 +8,7 @@ import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
 import type { AuthSession } from '../shared/lib/authSession'
-import { BottomSheet, Button, TextField } from '@aniwhere/tds-mobile'
+import { Asset, BottomSheet, Button, TextField } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
 type IntroFeatureIconName = 'icon-star-mono' | 'icon-pin-mono' | 'icon-pencil-mono'
@@ -72,10 +72,52 @@ function IntroNavigation() {
 type EntryRouteState =
   {
     entryMode: 'mock' | 'toss'
+    welcomeEmoji?: string
     welcomeNickname?: string
   }
 
 const NICKNAME_REQUIRED_MESSAGE = '닉네임을 한 글자 이상 입력해 주세요.'
+const DEFAULT_PROFILE_EMOJI_ID = 'alien'
+const PROFILE_EMOJI_FRAME = { width: 72, height: 72, radius: 36 }
+
+const profileEmojiOptions = [
+  {
+    id: 'alien',
+    label: '초록 외계인',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F47D.png',
+    symbol: '👽',
+  },
+  {
+    id: 'fire',
+    label: '파란 불꽃',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F525.png',
+    symbol: '🔥',
+  },
+  {
+    id: 'skull',
+    label: '해골',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F480.png',
+    symbol: '💀',
+  },
+  {
+    id: 'bomb',
+    label: '폭탄',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F4A3.png',
+    symbol: '💣',
+  },
+  {
+    id: 'seedling',
+    label: '새싹',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F331.png',
+    symbol: '🌱',
+  },
+] as const
+
+type ProfileEmojiOption = (typeof profileEmojiOptions)[number]
+
+function getProfileEmojiOption(id: string) {
+  return profileEmojiOptions.find((option) => option.id === id) ?? profileEmojiOptions[0]
+}
 
 type NicknameOnboardingSheetProps = {
   error: string | null
@@ -83,8 +125,10 @@ type NicknameOnboardingSheetProps = {
   isSaving: boolean
   onChange: (value: string) => void
   onClose: () => void
+  onEmojiChange: (id: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   open: boolean
+  selectedEmoji: ProfileEmojiOption
   touched: boolean
 }
 
@@ -94,8 +138,10 @@ function NicknameOnboardingSheet({
   isSaving,
   onChange,
   onClose,
+  onEmojiChange,
   onSubmit,
   open,
+  selectedEmoji,
   touched,
 }: NicknameOnboardingSheetProps) {
   const hasLengthError = touched && input.trim().length < 1
@@ -129,6 +175,30 @@ function NicknameOnboardingSheet({
       open={open}
     >
       <form className="intro-nickname-card" id="intro-nickname-form" onSubmit={onSubmit}>
+        <div className="intro-profile-emoji-panel" aria-label="프로필 이모지 선택">
+          <Asset.Image
+            alt=""
+            className="intro-profile-emoji-preview"
+            frameShape={PROFILE_EMOJI_FRAME}
+            src={selectedEmoji.src}
+          />
+          <div className="intro-profile-emoji-options" role="radiogroup" aria-label="프로필 이모지">
+            {profileEmojiOptions.map((option) => (
+              <button
+                aria-checked={option.id === selectedEmoji.id}
+                aria-label={option.label}
+                className="intro-profile-emoji-option"
+                data-selected={option.id === selectedEmoji.id ? 'true' : undefined}
+                key={option.id}
+                onClick={() => onEmojiChange(option.id)}
+                role="radio"
+                type="button"
+              >
+                <Asset.Image alt="" frameShape={{ width: 40, height: 40, radius: 20 }} src={option.src} />
+              </button>
+            ))}
+          </div>
+        </div>
         <TextField
           hasError={hasError}
           help={fieldHelp}
@@ -159,6 +229,8 @@ export function IntroPage() {
   const [nicknameInput, setNicknameInput] = useState('')
   const [nicknameTouched, setNicknameTouched] = useState(false)
   const [nicknameError, setNicknameError] = useState<string | null>(null)
+  const [selectedProfileEmojiId, setSelectedProfileEmojiId] = useState(DEFAULT_PROFILE_EMOJI_ID)
+  const selectedProfileEmoji = getProfileEmojiOption(selectedProfileEmojiId)
   const isNicknameSheetOpen = pendingNicknameSession != null || isMockNicknameOnboardingOpen
 
   useEffect(() => {
@@ -214,6 +286,7 @@ export function IntroPage() {
     setNicknameInput('')
     setNicknameTouched(false)
     setNicknameError(null)
+    setSelectedProfileEmojiId(DEFAULT_PROFILE_EMOJI_ID)
     setEntryError(null)
   }
 
@@ -223,6 +296,7 @@ export function IntroPage() {
     setNicknameInput('')
     setNicknameTouched(false)
     setNicknameError(null)
+    setSelectedProfileEmojiId(DEFAULT_PROFILE_EMOJI_ID)
   }
 
   const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -241,7 +315,11 @@ export function IntroPage() {
 
     if (isMockNicknameFlow) {
       navigate('/home', {
-        state: { entryMode: 'mock', welcomeNickname: nickname } satisfies EntryRouteState,
+        state: {
+          entryMode: 'mock',
+          welcomeEmoji: selectedProfileEmoji.symbol,
+          welcomeNickname: nickname,
+        } satisfies EntryRouteState,
       })
       return
     }
@@ -253,7 +331,11 @@ export function IntroPage() {
     try {
       const user = await saveAniwhereNickname(nickname, pendingNicknameSession.accessToken)
       navigate('/home', {
-        state: { entryMode: 'toss', welcomeNickname: user.nickname ?? nickname } satisfies EntryRouteState,
+        state: {
+          entryMode: 'toss',
+          welcomeEmoji: selectedProfileEmoji.symbol,
+          welcomeNickname: user.nickname ?? nickname,
+        } satisfies EntryRouteState,
       })
     } catch (error) {
       setNicknameError(error instanceof Error ? error.message : '닉네임을 저장하지 못했어요. 다시 시도해 주세요.')
@@ -334,8 +416,10 @@ export function IntroPage() {
         isSaving={isSavingNickname}
         onChange={handleNicknameChange}
         onClose={handleNicknameSheetClose}
+        onEmojiChange={setSelectedProfileEmojiId}
         onSubmit={handleNicknameSubmit}
         open={isNicknameSheetOpen}
+        selectedEmoji={selectedProfileEmoji}
         touched={nicknameTouched}
       />
     </main>

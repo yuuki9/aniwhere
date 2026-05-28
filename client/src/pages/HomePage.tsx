@@ -21,16 +21,25 @@ const HOME_CTA_IMAGES: Record<HomeCtaCard['id'], string> = {
 }
 
 type HomeRouteState = {
+  welcomeEmoji?: string
   welcomeNickname?: string
 }
 
-function readWelcomeNickname(state: unknown) {
-  if (state == null || typeof state !== 'object' || !('welcomeNickname' in state)) {
+function readWelcomeProfile(state: unknown) {
+  if (state == null || typeof state !== 'object') {
     return null
   }
 
   const value = (state as HomeRouteState).welcomeNickname
-  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
+  if (typeof value !== 'string' || value.trim() === '') {
+    return null
+  }
+
+  const emoji = (state as HomeRouteState).welcomeEmoji
+  return {
+    emoji: typeof emoji === 'string' && emoji.trim() !== '' ? emoji.trim() : null,
+    nickname: value.trim(),
+  }
 }
 
 function SearchIcon() {
@@ -202,7 +211,7 @@ function HomeReviewPreviewSection() {
 export function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [welcomeNickname, setWelcomeNickname] = useState(() => readWelcomeNickname(location.state))
+  const [welcomeProfile, setWelcomeProfile] = useState(() => readWelcomeProfile(location.state))
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
   const canEnterAdmin = useMemo(() => isAdminRole(readAuthSession()?.role), [])
   const worksQuery = useQuery({
@@ -218,10 +227,14 @@ export function HomePage() {
   return (
     <main className="app-shell discover-shell">
       <Toast
-        open={welcomeNickname != null}
-        text={welcomeNickname != null ? `${welcomeNickname}님 반가워요!` : ''}
+        open={welcomeProfile != null}
+        text={
+          welcomeProfile != null
+            ? `${welcomeProfile.emoji != null ? `${welcomeProfile.emoji} ` : ''}${welcomeProfile.nickname}님 반가워요!`
+            : ''
+        }
         position="top"
-        onClose={() => setWelcomeNickname(null)}
+        onClose={() => setWelcomeProfile(null)}
       />
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />

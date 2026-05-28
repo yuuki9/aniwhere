@@ -1187,6 +1187,22 @@ p {
   line-height: 1;
 }
 
+.ait-asset-image {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--ait-color-blue-50);
+}
+
+.ait-asset-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .intro-mobile-actions {
   display: flex;
   flex-direction: column;
@@ -1220,7 +1236,7 @@ p {
 .intro-nickname-card {
   display: grid;
   width: 100%;
-  gap: var(--ait-space-2);
+  gap: var(--ait-space-5);
 }
 
 .intro-nickname-sheet {
@@ -1230,6 +1246,41 @@ p {
 
 .intro-nickname-sheet-title {
   margin: 0;
+}
+
+.intro-profile-emoji-panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--ait-space-4);
+}
+
+.intro-profile-emoji-preview {
+  background: var(--ait-color-blue-50);
+}
+
+.intro-profile-emoji-options {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--ait-space-2);
+}
+
+.intro-profile-emoji-option {
+  display: inline-flex;
+  width: 100%;
+  aspect-ratio: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ait-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-gray-100);
+  cursor: pointer;
+}
+
+.intro-profile-emoji-option[data-selected='true'] {
+  border-color: var(--ait-color-brand);
+  background: var(--ait-color-blue-50);
 }
 
 .intro-nickname-card .ait-text-field-input {

@@ -82,10 +82,13 @@ test('HomePage shows a top welcome toast from Toss nickname entry state', () => 
 
   assert.match(source, /import \{ Toast \} from '@aniwhere\/tds-mobile'/)
   assert.match(source, /useLocation\(\)/)
-  assert.match(source, /readWelcomeNickname\(location\.state\)/)
+  assert.match(source, /readWelcomeProfile\(location\.state\)/)
+  assert.match(source, /welcomeEmoji/)
   assert.match(source, /<Toast/)
   assert.match(source, /position="top"/)
-  assert.match(source, /`\$\{welcomeNickname\}님 반가워요!`/)
+  assert.match(source, /welcomeProfile\.emoji/)
+  assert.match(source, /welcomeProfile\.nickname/)
+  assert.match(source, /님 반가워요!/)
 })
 
 test('HomePage sends work poster searches to SearchPage with work scope and return target', () => {
