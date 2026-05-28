@@ -29,6 +29,7 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/works/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/shop-images/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/v1/review-images/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/users").hasAuthority("ROLE_ADMIN")
@@ -38,6 +39,10 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.POST, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
                 it.requestMatchers(HttpMethod.PUT, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
                 it.requestMatchers(HttpMethod.DELETE, "/api/v1/shops/**").hasAuthority("ROLE_ADMIN")
+                it.requestMatchers(HttpMethod.POST, "/api/v1/shops/*/reviews").authenticated()
+                it.requestMatchers(HttpMethod.PATCH, "/api/v1/shops/*/reviews/**").authenticated()
+                it.requestMatchers(HttpMethod.DELETE, "/api/v1/shops/*/reviews/**").authenticated()
+                it.requestMatchers(HttpMethod.PATCH, "/api/v1/admin/shops/*/reviews/**").hasAuthority("ROLE_ADMIN")
                 it.anyRequest().authenticated()
             }
             .addFilterBefore(JwtAuthenticationFilter(jwt), UsernamePasswordAuthenticationFilter::class.java)

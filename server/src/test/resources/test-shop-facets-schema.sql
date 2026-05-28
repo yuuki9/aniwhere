@@ -36,6 +36,8 @@ CREATE TABLE shops (
     visit_tip TEXT,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    average_rating DECIMAL(3, 2),
+    review_count INT NOT NULL DEFAULT 0,
     CONSTRAINT fk_shops_region FOREIGN KEY (region_id) REFERENCES regions(id)
 );
 

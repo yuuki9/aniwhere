@@ -47,6 +47,8 @@ class ShopMapper(
                 )
             },
         description = e.detail?.description,
+        averageRating = e.averageRating,
+        reviewCount = e.reviewCount,
         createdAt = e.createdAt,
         updatedAt = e.updatedAt,
     )

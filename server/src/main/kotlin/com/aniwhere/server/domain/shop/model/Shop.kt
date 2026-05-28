@@ -26,6 +26,8 @@ data class Shop(
     val links: List<ShopLink> = emptyList(),
     val images: List<ShopImage> = emptyList(),
     val description: String? = null,
+    val averageRating: BigDecimal? = null,
+    val reviewCount: Int = 0,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
 )
