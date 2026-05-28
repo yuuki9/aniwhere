@@ -1019,6 +1019,24 @@ p {
   min-height: var(--ait-component-intro-action-height);
 }
 
+.ait-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-blue-50);
+  color: var(--ait-color-brand);
+  font-size: var(--ait-font-size-body-sm);
+  font-weight: 700;
+  line-height: var(--ait-line-height-body);
+}
+
+.ait-badge[data-size='small'] {
+  min-height: 24px;
+  padding: var(--ait-space-0) var(--ait-space-3);
+}
+
 .ait-text-field {
   display: grid;
   width: 100%;
@@ -1088,7 +1106,36 @@ p {
 }
 
 .ait-bottom-sheet {
-  z-index: 1050;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1090;
+  width: 100%;
+  max-height: min(78dvh, 640px);
+  overflow: auto;
+  border-radius: var(--ait-radius-xl) var(--ait-radius-xl) var(--ait-space-0) var(--ait-space-0);
+  background: var(--ait-color-gray-0);
+  padding: var(--ait-space-7) var(--ait-space-6) calc(var(--ait-space-6) + env(safe-area-inset-bottom));
+}
+
+.ait-bottom-sheet-cta {
+  margin-top: var(--ait-space-5);
+}
+
+.ait-bottom-sheet-header {
+  color: var(--ait-color-text-primary);
+  font-size: var(--ait-font-size-title-md);
+  font-weight: 700;
+  line-height: var(--ait-line-height-title);
+  letter-spacing: 0;
+}
+
+.ait-bottom-sheet-header-description {
+  margin-top: var(--ait-space-2);
+  color: var(--ait-color-text-secondary);
+  font-size: var(--ait-font-size-body-md);
+  line-height: var(--ait-line-height-body);
 }
 
 .ait-bottom-sheet-double-cta {
@@ -1173,31 +1220,16 @@ p {
 .intro-nickname-card {
   display: grid;
   width: 100%;
-  gap: var(--ait-space-3);
-}
-
-.intro-nickname-modal {
-  padding: var(--ait-space-6);
-}
-
-.intro-nickname-modal-head {
-  display: grid;
   gap: var(--ait-space-2);
 }
 
-.intro-nickname-modal-head h2 {
-  margin: 0;
-  color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-title-md);
-  line-height: 1.25;
-  letter-spacing: 0;
+.intro-nickname-sheet {
+  display: grid;
+  gap: var(--ait-space-4);
 }
 
-.intro-nickname-modal-head p {
+.intro-nickname-sheet-title {
   margin: 0;
-  color: var(--ait-color-text-secondary);
-  font-size: var(--ait-font-size-body-md);
-  line-height: var(--ait-line-height-body);
 }
 
 .intro-nickname-card .ait-text-field-input {

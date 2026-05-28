@@ -428,23 +428,26 @@ Official docs checked with official web fallback in the current session:
 | Nickname copy and purpose | Product-approved | Nickname entry remains Aniwhere-owned profile setup, not another login or Toss identity step. The copy says the nickname is used inside Aniwhere and appears on reviews/comments. |
 | Runtime verification | Needs sandbox | Source tests verify the facade boundary and Intro source contract. Apps in Toss sandbox still needs uploaded `.ait` verification for `appLogin()`, server token exchange, missing-nickname display, keyboard behavior, and successful nickname save back to `/home`. |
 
-### 2026-05-28 Toss Login Nickname Modal And Admin Entry Follow-up
+### 2026-05-28 Toss Login Nickname Sheet And Admin Entry Follow-up
 
 Official docs checked with official web fallback in the current session:
 
 - Apps in Toss login intro: https://developers-apps-in-toss.toss.im/login/intro.html
 - Modal: https://tossmini-docs.toss.im/tds-mobile/components/modal/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
 - TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
 - Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- Apps in Toss game profile setup reference: https://developers-apps-in-toss.toss.im/game-center/intro.html
 
 | Area | Current classification | Notes |
 | --- | --- | --- |
 | Toss service-use consent | Apps in Toss-required / Needs console verification | The official login intro states that login terms and partner service terms are configured in the Apps in Toss console and the user consent screen is automatically constructed from that setup. Aniwhere does not add a duplicate in-app terms screen; missing consent in the uploaded build should be verified against console login setup and whether the sandbox account already consented. |
-| `/intro` nickname modal | TDS-required / Product-approved | Missing-nickname users now complete Aniwhere profile setup in a TDS `Modal` containing a TDS `TextField`. Empty values surface `hasError` and `help` copy inside the field, and the existing save flow calls Swagger-backed nickname availability before updating `/api/v1/users/me/nickname`. |
-| `/intro` nickname mock entry | Product-approved / ADS adjustment aid | The secondary intro action is now `닉네임 설정하고 입장` and opens the same `NicknameOnboardingModal` without starting `appLogin()`. Mock submission validates one or more characters and advances to the same welcome state, but intentionally skips the backend nickname availability/update calls so ADS/local layout tuning can reuse the exact real-login modal surface without mutating user data. |
-| `/intro` welcome state | Product-approved / TDS-informed | Successful nickname save keeps the user in the modal and switches to a welcome state before `/home`. The confetti visual follows the official `Top.RightAssetContent` plus `Asset.Lottie` example using `https://static.toss.im/lotties-common/confetti-spot.json`. |
+| `/intro` nickname sheet | TDS-required / Product-approved | Missing-nickname users now complete Aniwhere profile setup in a TDS `BottomSheet` containing TDS `Top`, `TextField`, and bottom CTA `Button`. The copy was shortened to the game profile setup rhythm: `애니웨어에서 사용할 닉네임이 필요해요`, `닉네임`, input, and `확인`. Empty values surface `hasError` and `help` copy inside the field, and the real save flow still calls Swagger-backed nickname availability before updating `/api/v1/users/me/nickname`. |
+| `/intro` nickname mock entry | Product-approved / ADS adjustment aid | The secondary intro action is now `닉네임 설정하고 입장` and opens the same `NicknameOnboardingSheet` without starting `appLogin()`. Mock submission validates one or more characters and routes to `/home` with the same welcome-toast state, but intentionally skips the backend nickname availability/update calls so ADS/local layout tuning can reuse the exact real-login sheet surface without mutating user data. |
+| `/home` welcome toast | Product-approved / TDS-informed | Existing named users who complete Toss login and users who just saved a nickname enter `/home` with route state that renders a top TDS `Toast`: `{nickname}님 반가워요!`. This replaces the previous confetti welcome panel so login completion stays compact and matches the game profile setup reference. |
+| Nickname emoji | Follow-up API decision | The current Swagger/user profile contract stores only `nickname`; no emoji/avatar field is available for Aniwhere profile persistence. TDS exposes image/emoji-like asset shapes and selectors, but Aniwhere should not add emoji selection until the backend contract has a field and product decision for where that emoji appears. |
 | `/home` admin entry | Product-approved / API-required | Home shows a small operation-management entry after the primary CTA stack only when the stored Toss login session role is admin-like (`ADMIN`, `ROLE_ADMIN`, or `*_ADMIN`). It links to `/admin` and preserves the existing `AdminAccessGate`; no admin bypass or auto-redirect is introduced. |
-| Runtime verification | Needs sandbox | Local source tests and builds can verify contract and bundle shape, but the Toss consent screen, official Modal animation, TDS Lottie rendering, and authenticated admin role visibility require Apps in Toss sandbox verification. |
+| Runtime verification | Needs sandbox | Local source tests and builds can verify contract and bundle shape, but the Toss consent screen, official BottomSheet animation, TDS Lottie rendering, and authenticated admin role visibility require Apps in Toss sandbox verification. |
 
 ### 2026-05-28 Main Backend Contract Follow-up
 

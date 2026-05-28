@@ -1,11 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
 import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.png'
 import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
 import { getWorks } from '../shared/api/works'
 import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
+import { Toast } from '@aniwhere/tds-mobile'
 import {
   buildHomeCtaCards,
   buildHomeWorkPreviewItems,
@@ -17,6 +18,19 @@ const HOME_CTA_IMAGES: Record<HomeCtaCard['id'], string> = {
   map: homeCtaNearbyBannerImage,
   favorites: homeCtaFavoritesBannerImage,
   reviews: homeCtaReviewsBannerImage,
+}
+
+type HomeRouteState = {
+  welcomeNickname?: string
+}
+
+function readWelcomeNickname(state: unknown) {
+  if (state == null || typeof state !== 'object' || !('welcomeNickname' in state)) {
+    return null
+  }
+
+  const value = (state as HomeRouteState).welcomeNickname
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
 }
 
 function SearchIcon() {
@@ -187,6 +201,8 @@ function HomeReviewPreviewSection() {
 
 export function HomePage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [welcomeNickname, setWelcomeNickname] = useState(() => readWelcomeNickname(location.state))
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
   const canEnterAdmin = useMemo(() => isAdminRole(readAuthSession()?.role), [])
   const worksQuery = useQuery({
@@ -201,6 +217,12 @@ export function HomePage() {
 
   return (
     <main className="app-shell discover-shell">
+      <Toast
+        open={welcomeNickname != null}
+        text={welcomeNickname != null ? `${welcomeNickname}님 반가워요!` : ''}
+        position="top"
+        onClose={() => setWelcomeNickname(null)}
+      />
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />
       {canEnterAdmin ? <HomeAdminEntry /> : null}

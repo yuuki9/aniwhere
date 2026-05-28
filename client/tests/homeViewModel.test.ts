@@ -77,6 +77,17 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.doesNotMatch(source, /role="status"/)
 })
 
+test('HomePage shows a top welcome toast from Toss nickname entry state', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+
+  assert.match(source, /import \{ Toast \} from '@aniwhere\/tds-mobile'/)
+  assert.match(source, /useLocation\(\)/)
+  assert.match(source, /readWelcomeNickname\(location\.state\)/)
+  assert.match(source, /<Toast/)
+  assert.match(source, /position="top"/)
+  assert.match(source, /`\$\{welcomeNickname\}님 반가워요!`/)
+})
+
 test('HomePage sends work poster searches to SearchPage with work scope and return target', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
 

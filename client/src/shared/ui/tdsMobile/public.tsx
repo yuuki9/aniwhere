@@ -378,12 +378,13 @@ type PublicBottomSheetProps = HTMLAttributes<HTMLElement> & {
   headerDescription?: ReactNode
   cta?: ReactNode
   disableDimmer?: boolean
+  maxHeight?: number | `${number}vh`
   ariaLabelledBy?: string
   ariaDescribedBy?: string
   UNSAFE_disableFocusLock?: boolean
 }
 
-export function BottomSheet({
+function BottomSheetRoot({
   children,
   className,
   cta,
@@ -394,6 +395,8 @@ export function BottomSheet({
   disableDimmer = false,
   ariaLabelledBy,
   ariaDescribedBy,
+  maxHeight,
+  style,
   UNSAFE_disableFocusLock = false,
   ...props
 }: PublicBottomSheetProps) {
@@ -412,6 +415,10 @@ export function BottomSheet({
         className={['ait-bottom-sheet', className].filter(Boolean).join(' ')}
         data-disable-focus-lock={UNSAFE_disableFocusLock ? 'true' : undefined}
         role="dialog"
+        style={{
+          ...(maxHeight != null ? { maxHeight } : {}),
+          ...style,
+        }}
         {...props}
       >
         {header}
@@ -422,6 +429,27 @@ export function BottomSheet({
     </>
   )
 }
+
+function BottomSheetHeader({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['ait-bottom-sheet-header', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function BottomSheetHeaderDescription({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['ait-bottom-sheet-header-description', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </div>
+  )
+}
+
+export const BottomSheet = Object.assign(BottomSheetRoot, {
+  Header: BottomSheetHeader,
+  HeaderDescription: BottomSheetHeaderDescription,
+})
 
 export function Toast({
   open,
