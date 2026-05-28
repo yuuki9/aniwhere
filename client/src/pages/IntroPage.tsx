@@ -199,21 +199,6 @@ function NicknameOnboardingSheet({
     <BottomSheet
       ariaLabelledBy="intro-nickname-title"
       className="intro-nickname-sheet"
-      cta={
-        <div className="intro-nickname-sheet-cta">
-          <Button
-            color="primary"
-            display="block"
-            disabled={isSaving}
-            form="intro-nickname-form"
-            size="xlarge"
-            type="submit"
-            variant="fill"
-          >
-            {isSaving ? '확인 중이에요' : '확인'}
-          </Button>
-        </div>
-      }
       header={
         <BottomSheet.Header className="intro-nickname-sheet-title">
           <span id="intro-nickname-title">애니웨어에서 사용할 닉네임이 필요해요</span>
@@ -267,6 +252,11 @@ function NicknameOnboardingSheet({
           value={input}
           variant="box"
         />
+        <div className="intro-nickname-sheet-cta">
+          <Button color="primary" display="block" disabled={isSaving} size="xlarge" type="submit" variant="fill">
+            {isSaving ? '확인 중이에요' : '확인'}
+          </Button>
+        </div>
       </form>
     </BottomSheet>
   )

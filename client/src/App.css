@@ -1248,17 +1248,8 @@ p {
   margin: 0;
 }
 
-.intro-nickname-sheet .ait-bottom-sheet-cta {
-  margin-top: var(--ait-space-3);
-  padding: var(--ait-space-6);
-}
-
-.intro-nickname-sheet .css-1c90wlj {
-  padding: var(--ait-space-6);
-}
-
 .intro-nickname-sheet-cta {
-  padding: 0 var(--ait-space-8) var(--ait-space-8);
+  padding: var(--ait-space-1) var(--ait-space-8) var(--ait-space-8);
 }
 
 .intro-profile-emoji-panel {
