@@ -16,6 +16,13 @@ app:
       api-public-url: http://localhost:8080
       use-api-proxy-urls: true
       skip-startup-bucket-check: true
+    review-images:
+      bucket: dev-review-bucket
+      region: ap-northeast-2
+      public-base-url: http://localhost:8080
+      api-public-url: http://localhost:8080
+      use-api-proxy-urls: true
+      skip-startup-bucket-check: true
   auth:
     jwt:
       issuer: aniwhere-dev

@@ -5,11 +5,12 @@ import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.common.exception.ForbiddenException
 import com.aniwhere.server.domain.auth.port.out.AuthPersistencePort
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
-import com.aniwhere.server.domain.shop.port.out.ShopImageStoragePort
 import com.aniwhere.server.domain.shop.service.ShopImagePayloadValidator
+import com.aniwhere.server.domain.shopreview.model.ReviewImageKeys
 import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
+import com.aniwhere.server.domain.shopreview.port.out.ReviewImageStoragePort
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewImagePersistenceRow
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
 import org.springframework.data.domain.Page
@@ -18,14 +19,13 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
-import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
 class ShopReviewService(
     private val port: ShopReviewPersistencePort,
     private val authPersistence: AuthPersistencePort,
-    private val imageStorage: ShopImageStoragePort,
+    private val imageStorage: ReviewImageStoragePort,
     private val transactionTemplate: TransactionTemplate,
 ) : ShopReviewUseCase {
 
@@ -69,7 +69,7 @@ class ShopReviewService(
 
         try {
             imageParts.forEachIndexed { index, part ->
-                val key = "$shopId/reviews/$reviewId/${UUID.randomUUID()}.${extensionFor(part.contentType)}"
+                val key = ReviewImageKeys.gallery(reviewId, index, extensionFor(part.contentType))
                 imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
                 uploadedKeys.add(key)
                 rows.add(ShopReviewImagePersistenceRow(s3Key = key, sortOrder = index))
@@ -120,7 +120,7 @@ class ShopReviewService(
 
             try {
                 imageParts.forEachIndexed { index, part ->
-                    val key = "$shopId/reviews/$reviewId/${UUID.randomUUID()}.${extensionFor(part.contentType)}"
+                    val key = ReviewImageKeys.gallery(reviewId, index, extensionFor(part.contentType))
                     imageStorage.putObject(key, part.bytes, normalizeContentType(part.contentType))
                     uploadedKeys.add(key)
                     rows.add(ShopReviewImagePersistenceRow(s3Key = key, sortOrder = index))

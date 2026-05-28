@@ -5,7 +5,7 @@ import com.aniwhere.server.common.exception.ForbiddenException
 import com.aniwhere.server.domain.auth.port.out.AuthPersistencePort
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.service.ShopServiceTest
-import com.aniwhere.server.domain.shop.port.out.ShopImageStoragePort
+import com.aniwhere.server.domain.shopreview.port.out.ReviewImageStoragePort
 import com.aniwhere.server.domain.shopreview.model.ShopRatingAggregate
 import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
@@ -35,7 +35,7 @@ class ShopReviewServiceTest {
     private lateinit var authPersistence: AuthPersistencePort
 
     @MockK
-    private lateinit var imageStorage: ShopImageStoragePort
+    private lateinit var imageStorage: ReviewImageStoragePort
 
     private lateinit var transactionTemplate: TransactionTemplate
 
@@ -113,7 +113,7 @@ class ShopReviewServiceTest {
             sampleReview,
             sampleReview.copy(rating = 5, content = "수정"),
         )
-        every { port.findReviewImageS3Keys(5L) } returns listOf("1/reviews/5/old.jpg")
+        every { port.findReviewImageS3Keys(5L) } returns listOf("img/review/5/gallery-1.jpg")
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
         every { port.update(5L, any()) } returns sampleReview.copy(rating = 5, content = "수정")
         every { port.replaceReviewImages(5L, any()) } returns Unit
@@ -129,7 +129,7 @@ class ShopReviewServiceTest {
             imageParts = listOf(imagePart),
         )
 
-        verify { imageStorage.deleteObject("1/reviews/5/old.jpg") }
+        verify { imageStorage.deleteObject("img/review/5/gallery-1.jpg") }
         verify { port.replaceReviewImages(5L, any()) }
     }
 
