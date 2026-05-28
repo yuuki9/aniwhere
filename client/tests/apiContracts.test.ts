@@ -93,10 +93,17 @@ test('public TDS BottomSheet renders the dimmer only when it can close', () => {
   assert.match(publicTds, /<button\b(?=[^>]*className="ait-bottom-sheet-dimmer")(?=[^>]*onClick=\{onClose\})[^>]*\/?>/)
 })
 
-test('TDS mobile facade exposes TextField in public and Apps in Toss builds', () => {
+test('TDS mobile facade exposes onboarding primitives in public and Apps in Toss builds', () => {
   const publicTds = publicTdsSource()
   const appsInTossTds = appsInTossTdsSource()
 
+  assert.match(publicTds, /export const Asset/)
+  assert.match(publicTds, /Lottie: AssetLottie/)
+  assert.match(publicTds, /export const Modal/)
+  assert.match(publicTds, /Overlay: ModalOverlay/)
+  assert.match(publicTds, /Content: ModalContent/)
   assert.match(publicTds, /export function TextField/)
+  assert.match(appsInTossTds, /Asset/)
+  assert.match(appsInTossTds, /Modal/)
   assert.match(appsInTossTds, /TextField/)
 })

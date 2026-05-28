@@ -8,7 +8,7 @@ import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
 import type { AuthSession } from '../shared/lib/authSession'
-import { Button, TextField } from '@aniwhere/tds-mobile'
+import { Asset, Button, Modal, TextField, Top } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
 type IntroFeatureIconName = 'icon-star-mono' | 'icon-pin-mono' | 'icon-pencil-mono'
@@ -74,6 +74,121 @@ type EntryRouteState =
     entryMode: 'toss'
   }
 
+const CONFETTI_LOTTIE_SRC = 'https://static.toss.im/lotties-common/confetti-spot.json'
+const NICKNAME_REQUIRED_MESSAGE = '닉네임을 한 글자 이상 입력해 주세요.'
+
+type NicknameStep = 'input' | 'welcome'
+
+type NicknameOnboardingModalProps = {
+  error: string | null
+  input: string
+  isSaving: boolean
+  onChange: (value: string) => void
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onWelcomeHome: () => void
+  open: boolean
+  savedNickname: string
+  step: NicknameStep
+  touched: boolean
+}
+
+function NicknameOnboardingModal({
+  error,
+  input,
+  isSaving,
+  onChange,
+  onSubmit,
+  onWelcomeHome,
+  open,
+  savedNickname,
+  step,
+  touched,
+}: NicknameOnboardingModalProps) {
+  const hasLengthError = touched && input.trim().length < 1
+  const fieldHelp = error ?? (hasLengthError ? NICKNAME_REQUIRED_MESSAGE : '후기와 댓글에 표시되는 이름이에요.')
+  const hasError = error != null || hasLengthError
+
+  return (
+    <Modal open={open}>
+      <Modal.Overlay />
+      <Modal.Content
+        aria-describedby={step === 'input' ? 'intro-nickname-help' : 'intro-welcome-description'}
+        aria-labelledby={step === 'input' ? 'intro-nickname-title' : 'intro-welcome-title'}
+        className="intro-nickname-modal"
+      >
+        {step === 'input' ? (
+          <form className="intro-nickname-card" onSubmit={onSubmit}>
+            <div className="intro-nickname-modal-head">
+              <h2 id="intro-nickname-title">애니웨어에서 사용할 닉네임을 정해 주세요</h2>
+              <p>토스 로그인은 완료됐어요. 이제 애니웨어 안에서 보일 이름만 설정하면 돼요.</p>
+            </div>
+            <TextField
+              hasError={hasError}
+              help={fieldHelp}
+              id="intro-nickname"
+              inputMode="text"
+              label="애니웨어에서 사용할 닉네임"
+              labelOption="sustain"
+              maxLength={50}
+              onChange={(event) => onChange(event.target.value)}
+              placeholder="예: 굿즈탐험가"
+              type="text"
+              value={input}
+              variant="box"
+            />
+            <p className="intro-nickname-help" id="intro-nickname-help">
+              저장 전에 닉네임 중복 여부를 확인해요.
+            </p>
+            <Button
+              color="primary"
+              display="block"
+              disabled={isSaving}
+              size="xlarge"
+              type="submit"
+              variant="fill"
+            >
+              {isSaving ? '확인 중이에요' : '닉네임 저장하기'}
+            </Button>
+          </form>
+        ) : (
+          <div className="intro-welcome-panel">
+            <Top
+              className="intro-welcome-top"
+              right={
+                <Top.RightAssetContent
+                  content={
+                    <Asset.Lottie
+                      aria-hidden={true}
+                      frameShape={Asset.frameShape.CleanW60}
+                      loop={true}
+                      src={CONFETTI_LOTTIE_SRC}
+                    />
+                  }
+                />
+              }
+              subtitleBottom={
+                <Top.SubtitleParagraph id="intro-welcome-description">
+                  이제 저장된 닉네임으로 후기와 댓글을 남길 수 있어요.
+                </Top.SubtitleParagraph>
+              }
+              title={
+                <Top.TitleParagraph id="intro-welcome-title">
+                  환영합니다
+                  <br />
+                  {savedNickname}님
+                </Top.TitleParagraph>
+              }
+            />
+            <Button color="primary" display="block" onClick={onWelcomeHome} size="xlarge" variant="fill">
+              홈으로 가기
+            </Button>
+          </div>
+        )}
+      </Modal.Content>
+    </Modal>
+  )
+}
+
 export function IntroPage() {
   const navigate = useNavigate()
   const isEntryAttemptInFlightRef = useRef(false)
@@ -82,6 +197,10 @@ export function IntroPage() {
   const [entryError, setEntryError] = useState<string | null>(null)
   const [pendingNicknameSession, setPendingNicknameSession] = useState<AuthSession | null>(null)
   const [nicknameInput, setNicknameInput] = useState('')
+  const [nicknameTouched, setNicknameTouched] = useState(false)
+  const [nicknameError, setNicknameError] = useState<string | null>(null)
+  const [nicknameStep, setNicknameStep] = useState<NicknameStep>('input')
+  const [savedNickname, setSavedNickname] = useState('')
 
   useEffect(() => {
     document.body.classList.add('intro-route-body')
@@ -107,6 +226,10 @@ export function IntroPage() {
       if (result.mode === 'needsNickname') {
         setPendingNicknameSession(result.session)
         setNicknameInput(result.user.nickname ?? '')
+        setNicknameTouched(false)
+        setNicknameError(null)
+        setNicknameStep('input')
+        setSavedNickname('')
         return
       }
       navigate('/home', { state })
@@ -136,17 +259,38 @@ export function IntroPage() {
       return
     }
 
+    setNicknameTouched(true)
+    const nickname = nicknameInput.trim()
+    if (nickname.length < 1) {
+      setNicknameError(NICKNAME_REQUIRED_MESSAGE)
+      return
+    }
+
     setIsSavingNickname(true)
+    setNicknameError(null)
     setEntryError(null)
 
     try {
-      await saveAniwhereNickname(nicknameInput, pendingNicknameSession.accessToken)
-      navigate('/home', { state: { entryMode: 'toss' } satisfies EntryRouteState })
+      const user = await saveAniwhereNickname(nickname, pendingNicknameSession.accessToken)
+      setSavedNickname(user.nickname ?? nickname)
+      setNicknameStep('welcome')
     } catch (error) {
-      setEntryError(error instanceof Error ? error.message : '닉네임을 저장하지 못했어요. 다시 시도해 주세요.')
+      setNicknameError(error instanceof Error ? error.message : '닉네임을 저장하지 못했어요. 다시 시도해 주세요.')
     } finally {
       setIsSavingNickname(false)
     }
+  }
+
+  const handleNicknameChange = (value: string) => {
+    setNicknameInput(value)
+    if (nicknameTouched || nicknameError != null) {
+      setNicknameTouched(true)
+      setNicknameError(value.trim().length < 1 ? NICKNAME_REQUIRED_MESSAGE : null)
+    }
+  }
+
+  const handleWelcomeHome = () => {
+    navigate('/home', { state: { entryMode: 'toss' } satisfies EntryRouteState })
   }
 
   return (
@@ -184,44 +328,16 @@ export function IntroPage() {
         </ul>
 
         <div className="intro-mobile-actions">
-          {pendingNicknameSession == null ? (
-            <Button
-              color="primary"
-              display="block"
-              disabled={isEntering}
-              onClick={handleStart}
-              size="xlarge"
-              variant="fill"
-            >
-              {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
-            </Button>
-          ) : (
-            <form className="intro-nickname-card" onSubmit={handleNicknameSubmit}>
-              <TextField
-                id="intro-nickname"
-                inputMode="text"
-                label="애니웨어에서 사용할 닉네임"
-                labelOption="sustain"
-                maxLength={50}
-                onChange={(event) => setNicknameInput(event.target.value)}
-                placeholder="예: 굿즈탐험가"
-                type="text"
-                value={nicknameInput}
-                variant="box"
-              />
-              <p className="intro-nickname-help">후기와 댓글에 표시되는 이름이에요. 나중에 다시 바꿀 수 있어요.</p>
-              <Button
-                color="primary"
-                display="block"
-                disabled={isSavingNickname}
-                size="xlarge"
-                type="submit"
-                variant="fill"
-              >
-                {isSavingNickname ? '저장 중이에요' : '닉네임 저장하기'}
-              </Button>
-            </form>
-          )}
+          <Button
+            color="primary"
+            display="block"
+            disabled={isEntering || pendingNicknameSession != null}
+            onClick={handleStart}
+            size="xlarge"
+            variant="fill"
+          >
+            {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
+          </Button>
           {pendingNicknameSession == null ? (
             <button
               className="intro-login-skip-button"
@@ -235,6 +351,18 @@ export function IntroPage() {
           {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
         </div>
       </section>
+      <NicknameOnboardingModal
+        error={nicknameError}
+        input={nicknameInput}
+        isSaving={isSavingNickname}
+        onChange={handleNicknameChange}
+        onSubmit={handleNicknameSubmit}
+        onWelcomeHome={handleWelcomeHome}
+        open={pendingNicknameSession != null}
+        savedNickname={savedNickname}
+        step={nicknameStep}
+        touched={nicknameTouched}
+      />
     </main>
   )
 }

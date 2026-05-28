@@ -101,6 +101,26 @@ test('HomePage imports CTA banner images and routes only the map CTA for now', (
   assert.match(styles, /\.home-cta-banner-disabled/)
 })
 
+test('HomePage shows the admin entry only for server admin roles', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+  const authSession = fs.readFileSync(new URL('../src/shared/lib/authSession.ts', import.meta.url), 'utf8')
+  const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+
+  assert.match(source, /import \{ isAdminRole, readAuthSession \} from '..\/shared\/lib\/authSession'/)
+  assert.match(source, /function HomeAdminEntry\(\)/)
+  assert.match(source, /className="home-admin-entry-card"/)
+  assert.match(source, /to="\/admin"/)
+  assert.match(source, /const canEnterAdmin = useMemo\(\(\) => isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
+  assert.match(source, /\{canEnterAdmin \? <HomeAdminEntry \/> : null\}/)
+  assert.match(authSession, /export function isAdminRole/)
+  assert.match(authSession, /normalized === 'ADMIN'/)
+  assert.match(authSession, /normalized === 'ROLE_ADMIN'/)
+  assert.match(authSession, /normalized\?\.endsWith\('_ADMIN'\)/)
+  assert.match(styles, /\.home-admin-entry-section/)
+  assert.match(styles, /\.home-admin-entry-card\s*\{[\s\S]*min-height: 64px;/)
+  assert.match(styles, /\.home-admin-entry-card\s*\{[\s\S]*border: 1px solid var\(--ait-color-border\);/)
+})
+
 test('Home CTA routes render as one-column list banner items', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')

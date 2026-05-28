@@ -70,6 +70,11 @@ export function updateAuthSessionUser(user: UserSummary) {
   saveAuthSession({ ...session, user })
 }
 
+export function isAdminRole(role: string | null | undefined) {
+  const normalized = role?.trim().toUpperCase()
+  return normalized === 'ADMIN' || normalized === 'ROLE_ADMIN' || normalized?.endsWith('_ADMIN') === true
+}
+
 export function getStoredAccessToken() {
   return readAuthSession()?.accessToken ?? null
 }

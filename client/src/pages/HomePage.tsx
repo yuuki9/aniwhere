@@ -6,6 +6,7 @@ import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.pn
 import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
 import { getPosts } from '../shared/api/community'
 import { getWorks } from '../shared/api/works'
+import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
 import { formatDateTime } from '../shared/lib/format'
 import {
   buildHomeCtaCards,
@@ -82,6 +83,22 @@ function HomeCtaBannerList({ cards }: { cards: HomeCtaCard[] }) {
           ),
         )}
       </div>
+    </section>
+  )
+}
+
+function HomeAdminEntry() {
+  return (
+    <section className="home-admin-entry-section" aria-label="관리자 메뉴">
+      <Link className="home-admin-entry-card" to="/admin">
+        <span className="home-admin-entry-copy">
+          <strong>운영 관리</strong>
+          <small>매장 등록과 검수 화면으로 이동해요.</small>
+        </span>
+        <span className="home-admin-entry-arrow" aria-hidden="true">
+          →
+        </span>
+      </Link>
     </section>
   )
 }
@@ -199,6 +216,7 @@ function HomeReviewPreviewSection({ posts, isLoading, isError }: {
 export function HomePage() {
   const navigate = useNavigate()
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
+  const canEnterAdmin = useMemo(() => isAdminRole(readAuthSession()?.role), [])
   const worksQuery = useQuery({
     queryKey: ['works', 'home-preview'],
     queryFn: getWorks,
@@ -222,6 +240,7 @@ export function HomePage() {
     <main className="app-shell discover-shell">
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />
+      {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />
       <HomeReviewPreviewSection posts={reviewItems} isLoading={postsQuery.isLoading} isError={postsQuery.isError} />
     </main>

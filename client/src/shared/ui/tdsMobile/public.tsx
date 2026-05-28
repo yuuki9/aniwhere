@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import type {
   ButtonHTMLAttributes,
   CSSProperties,
@@ -21,6 +22,43 @@ type PublicBadgeProps = HTMLAttributes<HTMLSpanElement> & {
   color?: 'blue' | 'teal' | 'green' | 'red' | 'yellow' | 'elephant'
   size: 'xsmall' | 'small' | 'medium' | 'large'
   variant: 'fill' | 'weak'
+}
+
+type PublicAssetLottieProps = HTMLAttributes<HTMLSpanElement> & {
+  src: string
+  frameShape?: { width?: number; height?: number }
+  loop?: boolean
+  'aria-hidden'?: boolean
+}
+
+function AssetLottie({
+  className,
+  frameShape,
+  src,
+  style,
+  ...props
+}: PublicAssetLottieProps) {
+  return (
+    <span
+      className={['ait-asset-lottie', className].filter(Boolean).join(' ')}
+      data-src={src}
+      style={{
+        width: frameShape?.width,
+        height: frameShape?.height,
+        ...style,
+      }}
+      {...props}
+    >
+      {'\u{1F389}'}
+    </span>
+  )
+}
+
+export const Asset = {
+  frameShape: {
+    CleanW60: { width: 60, height: 60 },
+  },
+  Lottie: AssetLottie,
 }
 
 export function Badge({ className, color = 'blue', size, variant, ...props }: PublicBadgeProps) {
@@ -164,6 +202,50 @@ export function TextField({
   )
 }
 
+type PublicModalProps = {
+  children: ReactNode
+  open: boolean
+  onOpenChange?: (open: boolean) => void
+  onExited?: () => void
+}
+
+type PublicModalOverlayProps = Omit<HTMLAttributes<HTMLDivElement>, 'onClick'> & {
+  onClick?: () => void
+}
+
+type PublicModalContentProps = HTMLAttributes<HTMLDivElement>
+
+function ModalRoot({ children, open }: PublicModalProps) {
+  if (!open) {
+    return null
+  }
+
+  return <>{children}</>
+}
+
+function ModalOverlay({ className, onClick, ...props }: PublicModalOverlayProps) {
+  return (
+    <div
+      className={['ait-modal-overlay', className].filter(Boolean).join(' ')}
+      onClick={onClick}
+      {...props}
+    />
+  )
+}
+
+function ModalContent({ children, className, ...props }: PublicModalContentProps) {
+  return (
+    <div className={['ait-modal-content', className].filter(Boolean).join(' ')} role="dialog" {...props}>
+      {children}
+    </div>
+  )
+}
+
+export const Modal = Object.assign(ModalRoot, {
+  Overlay: ModalOverlay,
+  Content: ModalContent,
+})
+
 type PublicListRowProps = LiHTMLAttributes<HTMLLIElement> & {
   border?: 'none' | 'indented'
   contents?: ReactNode
@@ -225,7 +307,7 @@ type PublicTopProps = {
   right?: ReactNode
 }
 
-export function Top({
+function TopRoot({
   className,
   lower,
   lowerGap,
@@ -245,13 +327,39 @@ export function Top({
       ) : null}
       <div className="ait-top-copy">
         <h1>{title}</h1>
-        {subtitleBottom != null ? <p>{subtitleBottom}</p> : null}
+        {subtitleBottom != null ? <div className="ait-top-subtitle-bottom">{subtitleBottom}</div> : null}
       </div>
       {right != null ? <div>{right}</div> : null}
       {lower != null ? <div style={lowerGap != null ? { marginTop: lowerGap } : undefined}>{lower}</div> : null}
     </div>
   )
 }
+
+function TopTitleParagraph({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['ait-top-title-paragraph', className].filter(Boolean).join(' ')} role="heading" aria-level={1} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function TopSubtitleParagraph({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={['ait-top-subtitle-paragraph', className].filter(Boolean).join(' ')} {...props}>{children}</div>
+}
+
+function TopRightAssetContent({ content, className, ...props }: HTMLAttributes<HTMLDivElement> & { content: ReactNode }) {
+  return (
+    <div className={['ait-top-right-asset-content', className].filter(Boolean).join(' ')} {...props}>
+      {content}
+    </div>
+  )
+}
+
+export const Top = Object.assign(TopRoot, {
+  RightAssetContent: TopRightAssetContent,
+  SubtitleParagraph: TopSubtitleParagraph,
+  TitleParagraph: TopTitleParagraph,
+})
 
 type PublicToastProps = {
   open: boolean
