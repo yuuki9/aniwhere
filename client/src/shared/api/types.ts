@@ -111,6 +111,8 @@ export type Shop = {
   links: ShopLink[]
   images: ShopImage[]
   description: string | null
+  averageRating: number | null
+  reviewCount: number
   createdAt: string
   updatedAt: string
 }
@@ -189,25 +191,29 @@ export type MapAssistantReply = {
   recommendations: MapAssistantRecommendation[]
 }
 
-export type Post = {
-  id: number
-  title: string
-  content: string
-  authorUserId: number
-  authorNickname: string
-  viewCount: number
-  likeCount: number
-  createdAt: string
-  updatedAt: string
+export type ShopReviewStatus = 'VISIBLE' | 'HIDDEN' | 'DELETED'
+export type ShopReviewSort = 'NEWEST' | 'OLDEST' | 'RATING_HIGH' | 'RATING_LOW'
+export type UserAppRole = 'ADMIN' | 'USER'
+
+export type ShopReviewImage = {
+  id: number | null
+  url: string
+  sortOrder: number
 }
 
-export type Comment = {
+export type ShopReview = {
   id: number
-  postId: number
-  content: string
+  shopId: number
   authorUserId: number
   authorNickname: string
+  rating: number
+  content: string
+  status: ShopReviewStatus
+  images: ShopReviewImage[]
+  likeCount: number
+  likedByMe: boolean
   createdAt: string
+  updatedAt: string | null
 }
 
 export type ShopSearchParams = {
@@ -235,15 +241,24 @@ export type PagingParams = {
   sort?: string[]
 }
 
-export type CreatePostPayload = {
-  title: string
-  content: string
-  authorNickname: string
+export type ShopReviewListParams = PagingParams & {
+  sort?: ShopReviewSort
 }
 
-export type UpdatePostPayload = {
-  title: string
+export type CreateShopReviewPayload = {
+  rating: number
   content: string
+  images?: File[]
+}
+
+export type UpdateShopReviewPayload = {
+  rating?: number
+  content?: string
+  images?: File[]
+}
+
+export type UpdateUserRolePayload = {
+  role: UserAppRole
 }
 
 export type CreateCommentPayload = {
@@ -279,6 +294,7 @@ export type UserSummary = {
   userKey: number
   nickname: string | null
   status: string
+  role: string
   lastLoginAt: string | null
   createdAt: string
 }

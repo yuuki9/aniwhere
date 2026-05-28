@@ -36,6 +36,12 @@ When the backend contract changes:
 - `GET /api/v1/shops` keeps compatibility for both `category` (name filter) and `categoryIds[]` (ID filter); when both are present, both filters are applied.
 - `ShopRequest` sends `categoryIds` and `workIds` arrays for create/update.
 - `Shop.categories` is `CategorySummary[]` (`id`, `name`), not `string[]`.
+- `Shop` responses now include `averageRating` and `reviewCount` for shop-review summaries.
+- Legacy `/api/v1/posts` community endpoints are removed. Frontend review work must use shop-scoped review APIs.
+- `GET /api/v1/shops/{shopId}/reviews` returns `PageResponse<ShopReview>` and accepts `sort=NEWEST|OLDEST|RATING_HIGH|RATING_LOW`.
+- `POST /api/v1/shops/{shopId}/reviews` and `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}` use multipart form data with `rating`, `content`, and optional `images`.
+- `POST/DELETE /api/v1/shops/{shopId}/reviews/{reviewId}/likes` toggles review likes.
+- `UserSummary` includes `role`, and `PATCH /api/v1/admin/users/{userId}/role` accepts `{ "role": "ADMIN" | "USER" }`.
 
 ## Contract Sync Checklist
 

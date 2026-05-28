@@ -103,11 +103,15 @@ export function MapDetailSupplementSections({
     return (
       <section className="section map-sheet-info-card map-sheet-tab-panel map-place-review-card" id="map-place-review">
         <div className="map-place-review-copy">
-          <span>방문 리뷰를 기다리고 있어요.</span>
-          <p>다녀온 매장 이야기와 굿즈 정보를 리뷰로 남기면 다음 방문자에게 도움이 돼요.</p>
+          <span>{shop.reviewCount > 0 ? `방문 리뷰 ${shop.reviewCount}개` : '방문 리뷰를 기다리고 있어요.'}</span>
+          <p>
+            {shop.averageRating != null
+              ? `평균 별점 ${shop.averageRating.toFixed(1)}점이에요.`
+              : '다녀온 매장 이야기와 굿즈 정보를 리뷰로 남기면 다음 방문자에게 도움이 돼요.'}
+          </p>
         </div>
-        <Link className="map-place-review-button" to={`/community?shopId=${shop.id}`}>
-          리뷰 남기기
+        <Link className="map-place-review-button" to={`/shop/detail/${shop.id}`}>
+          리뷰 보기
         </Link>
       </section>
     )

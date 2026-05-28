@@ -19,10 +19,10 @@ function cssRuleBodies(css: string, selector: string) {
   return Array.from(matches, (match) => match[1])
 }
 
-test('homeViewModel exports home CTA, work preview, and review preview builders', () => {
+test('homeViewModel exports home CTA and work preview builders', () => {
   assert.deepEqual(
     Object.keys(homeViewModel).sort(),
-    ['buildHomeCtaCards', 'buildHomeReviewPreviewItems', 'buildHomeWorkPreviewItems'],
+    ['buildHomeCtaCards', 'buildHomeWorkPreviewItems'],
   )
 })
 
@@ -68,6 +68,9 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.doesNotMatch(source, /id="home-cta-title"/)
   assert.match(source, /home-work-poster-card/)
   assert.match(source, /home-review-preview-section/)
+  assert.match(source, /매장별 리뷰로 정리 중이에요/)
+  assert.doesNotMatch(source, /getPosts/)
+  assert.doesNotMatch(source, /buildHomeReviewPreviewItems/)
   assert.doesNotMatch(source, /HomeQuickMenuSection/)
   assert.doesNotMatch(source, /API/)
   assert.doesNotMatch(source, /aria-live="polite"/)

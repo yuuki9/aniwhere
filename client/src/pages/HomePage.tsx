@@ -4,16 +4,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
 import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.png'
 import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
-import { getPosts } from '../shared/api/community'
 import { getWorks } from '../shared/api/works'
 import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
-import { formatDateTime } from '../shared/lib/format'
 import {
   buildHomeCtaCards,
-  buildHomeReviewPreviewItems,
   buildHomeWorkPreviewItems,
   type HomeCtaCard,
-  type HomeReviewPreviewItem,
   type HomeWorkPreviewItem,
 } from './homeViewModel'
 
@@ -175,40 +171,16 @@ function HomeIssueSection({ works, isLoading, isError }: {
   )
 }
 
-function HomeReviewCard({ post }: { post: HomeReviewPreviewItem }) {
-  return (
-    <Link className="home-review-card" to={`/community/${post.id}`}>
-      <strong>{post.title}</strong>
-      <p>{post.excerpt}</p>
-      <small>
-        {post.authorNickname} · {formatDateTime(post.createdAt)}
-      </small>
-    </Link>
-  )
-}
-
-function HomeReviewPreviewSection({ posts, isLoading, isError }: {
-  posts: HomeReviewPreviewItem[]
-  isLoading: boolean
-  isError: boolean
-}) {
+function HomeReviewPreviewSection() {
   return (
     <section aria-labelledby="home-review-preview-title" className="home-review-preview-section">
       <div className="home-section-head">
-        <h2 id="home-review-preview-title">최근 방문 후기</h2>
+        <h2 id="home-review-preview-title">방문 리뷰</h2>
       </div>
-      {isLoading ? <HomePendingCard title="글을 불러오는 중이에요" description="잠시만 기다려 주세요." /> : null}
-      {isError ? <HomePendingCard title="글을 불러오지 못했어요" description="커뮤니티에서 다시 확인할 수 있어요." /> : null}
-      {!isLoading && !isError && posts.length === 0 ? (
-        <HomePendingCard title="아직 올라온 글이 없어요" description="방문 이야기가 모이면 보여드릴게요." />
-      ) : null}
-      {posts.length > 0 ? (
-        <div className="home-review-list">
-          {posts.map((post) => (
-            <HomeReviewCard key={post.id} post={post} />
-          ))}
-        </div>
-      ) : null}
+      <HomePendingCard
+        title="매장별 리뷰로 정리 중이에요"
+        description="리뷰는 각 매장 상세 화면의 리뷰 탭에서 확인할 수 있어요."
+      />
     </section>
   )
 }
@@ -222,18 +194,9 @@ export function HomePage() {
     queryFn: getWorks,
     staleTime: 1000 * 60 * 10,
   })
-  const postsQuery = useQuery({
-    queryKey: ['posts', 'home-preview'],
-    queryFn: () => getPosts({ page: 0, size: 2, sort: ['createdAt,desc'] }),
-    staleTime: 1000 * 60 * 3,
-  })
   const workItems = useMemo(
     () => buildHomeWorkPreviewItems(worksQuery.data ?? []),
     [worksQuery.data],
-  )
-  const reviewItems = useMemo(
-    () => buildHomeReviewPreviewItems(postsQuery.data?.content ?? []),
-    [postsQuery.data?.content],
   )
 
   return (
@@ -242,7 +205,7 @@ export function HomePage() {
       <HomeCtaBannerList cards={ctaCards} />
       {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />
-      <HomeReviewPreviewSection posts={reviewItems} isLoading={postsQuery.isLoading} isError={postsQuery.isError} />
+      <HomeReviewPreviewSection />
     </main>
   )
 }

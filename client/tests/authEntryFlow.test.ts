@@ -57,6 +57,7 @@ const userWithNickname: UserSummary = {
   userKey: 443731104,
   nickname: '굿즈탐험가',
   status: 'ACTIVE',
+  role: 'ROLE_USER',
   lastLoginAt: null,
   createdAt: '2026-05-24T00:00:00',
 }

@@ -16,7 +16,7 @@ export function createAuthSession(login: LoginResult, user: UserSummary | null):
     accessToken: login.accessToken,
     refreshToken: login.refreshToken,
     accessTokenExpiresAt: login.expiresIn,
-    role: login.role,
+    role: user?.role ?? login.role,
     user,
   }
 }
@@ -67,7 +67,7 @@ export function updateAuthSessionUser(user: UserSummary) {
     return
   }
 
-  saveAuthSession({ ...session, user })
+  saveAuthSession({ ...session, role: user.role, user })
 }
 
 export function isAdminRole(role: string | null | undefined) {

@@ -445,6 +445,22 @@ Official docs checked with official web fallback in the current session:
 | `/home` admin entry | Product-approved / API-required | Home shows a small operation-management entry after the primary CTA stack only when the stored Toss login session role is admin-like (`ADMIN`, `ROLE_ADMIN`, or `*_ADMIN`). It links to `/admin` and preserves the existing `AdminAccessGate`; no admin bypass or auto-redirect is introduced. |
 | Runtime verification | Needs sandbox | Local source tests and builds can verify contract and bundle shape, but the Toss consent screen, official Modal animation, TDS Lottie rendering, and authenticated admin role visibility require Apps in Toss sandbox verification. |
 
+### 2026-05-28 Main Backend Contract Follow-up
+
+Official docs checked with official web fallback in the current session:
+
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Review API migration | API-required / Product-approved | Backend `main` removed legacy `/api/v1/posts` community endpoints and added shop-scoped review APIs under `/api/v1/shops/{shopId}/reviews`. Client stale post request helpers were removed, and `/community` now routes to an API-safe review 안내 surface until a fuller shop-review composer is designed. |
+| `/home` recent review preview | API-required / Product-approved | Home no longer fetches removed `GET /api/v1/posts`. The section now explains that reviews are organized per shop because there is no aggregate recent-review Swagger endpoint yet. |
+| `/shop/detail/:shopId` review summary | Product-approved / API-required | Shop detail now reads `Shop.averageRating`, `Shop.reviewCount`, and the first page of `GET /api/v1/shops/{shopId}/reviews` to expose current backend review data without inventing a cross-shop feed. |
+| `/explore` review tab link | Regression fixed / API-required | The selected-shop review tab no longer links to `/community?shopId=...`; it links to the shop detail route where the new shop-scoped review data can be shown. |
+| Runtime verification | Needs sandbox | Source tests, lint, and build can verify removed post endpoints and new API types. Authenticated review create/update/like flows still need a product UI pass and Apps in Toss sandbox verification before launch. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

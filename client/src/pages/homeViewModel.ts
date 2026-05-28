@@ -1,4 +1,4 @@
-import type { Post, WorkCatalogItem } from '../shared/api/types'
+import type { WorkCatalogItem } from '../shared/api/types'
 
 export type HomeCtaCard = {
   id: 'map' | 'favorites' | 'reviews'
@@ -15,14 +15,6 @@ export type HomeWorkPreviewItem = {
   subtitle: string | null
   coverUrl: string | null
   badgeLabel: string
-}
-
-export type HomeReviewPreviewItem = {
-  id: number
-  title: string
-  excerpt: string
-  authorNickname: string
-  createdAt: string
 }
 
 export function buildHomeCtaCards(): HomeCtaCard[] {
@@ -73,12 +65,3 @@ export const buildHomeWorkPreviewItems = (works: WorkCatalogItem[]): HomeWorkPre
       coverUrl: work.coverUrl,
       badgeLabel: '취급 매장 보기',
     }))
-
-export const buildHomeReviewPreviewItems = (posts: Post[]): HomeReviewPreviewItem[] =>
-  posts.slice(0, 2).map((post) => ({
-    id: post.id,
-    title: post.title,
-    excerpt: post.content.trim().slice(0, 72),
-    authorNickname: post.authorNickname,
-    createdAt: post.createdAt,
-  }))
