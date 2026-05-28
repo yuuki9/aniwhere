@@ -71,7 +71,7 @@ function IntroNavigation() {
 
 type EntryRouteState =
   {
-    entryMode: 'toss'
+    entryMode: 'mock' | 'toss'
   }
 
 const CONFETTI_LOTTIE_SRC = 'https://static.toss.im/lotties-common/confetti-spot.json'
@@ -196,11 +196,13 @@ export function IntroPage() {
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
   const [pendingNicknameSession, setPendingNicknameSession] = useState<AuthSession | null>(null)
+  const [isMockNicknameOnboardingOpen, setIsMockNicknameOnboardingOpen] = useState(false)
   const [nicknameInput, setNicknameInput] = useState('')
   const [nicknameTouched, setNicknameTouched] = useState(false)
   const [nicknameError, setNicknameError] = useState<string | null>(null)
   const [nicknameStep, setNicknameStep] = useState<NicknameStep>('input')
   const [savedNickname, setSavedNickname] = useState('')
+  const isNicknameModalOpen = pendingNicknameSession != null || isMockNicknameOnboardingOpen
 
   useEffect(() => {
     document.body.classList.add('intro-route-body')
@@ -225,6 +227,7 @@ export function IntroPage() {
       const state: EntryRouteState = { entryMode: 'toss' }
       if (result.mode === 'needsNickname') {
         setPendingNicknameSession(result.session)
+        setIsMockNicknameOnboardingOpen(false)
         setNicknameInput(result.user.nickname ?? '')
         setNicknameTouched(false)
         setNicknameError(null)
@@ -245,17 +248,25 @@ export function IntroPage() {
     }
   }
 
-  const handleEnterWithoutLogin = () => {
+  const handleMockNicknameStart = () => {
     if (isEntryAttemptInFlightRef.current || isEntering) {
       return
     }
 
-    navigate('/home')
+    setPendingNicknameSession(null)
+    setIsMockNicknameOnboardingOpen(true)
+    setNicknameInput('')
+    setNicknameTouched(false)
+    setNicknameError(null)
+    setNicknameStep('input')
+    setSavedNickname('')
+    setEntryError(null)
   }
 
   const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (pendingNicknameSession == null) {
+    const isMockNicknameFlow = pendingNicknameSession == null && isMockNicknameOnboardingOpen
+    if (pendingNicknameSession == null && !isMockNicknameFlow) {
       return
     }
 
@@ -263,6 +274,12 @@ export function IntroPage() {
     const nickname = nicknameInput.trim()
     if (nickname.length < 1) {
       setNicknameError(NICKNAME_REQUIRED_MESSAGE)
+      return
+    }
+
+    if (isMockNicknameFlow) {
+      setSavedNickname(nickname)
+      setNicknameStep('welcome')
       return
     }
 
@@ -290,7 +307,9 @@ export function IntroPage() {
   }
 
   const handleWelcomeHome = () => {
-    navigate('/home', { state: { entryMode: 'toss' } satisfies EntryRouteState })
+    navigate('/home', {
+      state: { entryMode: pendingNicknameSession == null ? 'mock' : 'toss' } satisfies EntryRouteState,
+    })
   }
 
   return (
@@ -331,21 +350,21 @@ export function IntroPage() {
           <Button
             color="primary"
             display="block"
-            disabled={isEntering || pendingNicknameSession != null}
+            disabled={isEntering || isNicknameModalOpen}
             onClick={handleStart}
             size="xlarge"
             variant="fill"
           >
             {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
           </Button>
-          {pendingNicknameSession == null ? (
+          {!isNicknameModalOpen ? (
             <button
               className="intro-login-skip-button"
               disabled={isEntering}
               type="button"
-              onClick={handleEnterWithoutLogin}
+              onClick={handleMockNicknameStart}
             >
-              로그인 없이 둘러보기
+              닉네임 설정하고 입장
             </button>
           ) : null}
           {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
@@ -358,7 +377,7 @@ export function IntroPage() {
         onChange={handleNicknameChange}
         onSubmit={handleNicknameSubmit}
         onWelcomeHome={handleWelcomeHome}
-        open={pendingNicknameSession != null}
+        open={isNicknameModalOpen}
         savedNickname={savedNickname}
         step={nicknameStep}
         touched={nicknameTouched}

@@ -221,13 +221,16 @@ test('IntroPage does not enter home without completing Toss login', async () => 
   assert.match(actionsRule, /align-items:\s*center;/)
 })
 
-test('IntroPage offers a login-free home entry while Toss login is blocked', () => {
+test('IntroPage offers a nickname setup mock entry while Toss login is blocked', () => {
   const source = introPageSource()
 
-  assert.match(source, /로그인 없이 둘러보기/)
-  assert.match(source, /const handleEnterWithoutLogin = \(\) => \{\s*if \(isEntryAttemptInFlightRef\.current \|\| isEntering\)/)
+  assert.match(source, /닉네임 설정하고 입장/)
+  assert.match(source, /const handleMockNicknameStart = \(\) => \{\s*if \(isEntryAttemptInFlightRef\.current \|\| isEntering\)/)
   assert.match(source, /className="intro-login-skip-button"[\s\S]*disabled=\{isEntering\}/)
-  assert.match(source, /navigate\('\/home'\)/)
+  assert.match(source, /setIsMockNicknameOnboardingOpen\(true\)/)
+  assert.match(source, /open=\{isNicknameModalOpen\}/)
+  assert.match(source, /pendingNicknameSession == null && isMockNicknameOnboardingOpen/)
+  assert.doesNotMatch(source, /로그인 없이 둘러보기/)
   assert.doesNotMatch(source, /임시 확인용 진입점/)
   assert.doesNotMatch(source, /홈에서 ADS UI 확인하기/)
 })
@@ -308,6 +311,35 @@ test('IntroPage renders a nickname setup step for new or unnamed Aniwhere users'
   assert.match(cssRuleBody(styles, '.intro-nickname-card .ait-text-field-input'), /min-height:\s*52px;/)
   assert.match(cssRuleBody(styles, '.intro-nickname-help'), /font-size:\s*var\(--ait-font-size-body-sm\);/)
   assert.match(cssRuleBody(styles, '.intro-welcome-panel'), /display:\s*grid;/)
+})
+
+test('IntroPage opens the shared nickname modal from the ADS mock entry', async () => {
+  const { IntroPage } = await loadIntroPage()
+  const { container, dom, previousGlobals } = setupDom()
+  const root = createRoot(container)
+
+  try {
+    await act(async () => {
+      root.render(React.createElement(MemoryRouter, null, React.createElement(IntroPage)))
+    })
+
+    const mockEntry = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('닉네임 설정하고 입장'),
+    )
+
+    assert.ok(mockEntry, 'mock nickname entry should render')
+
+    await act(async () => {
+      mockEntry.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
+    })
+
+    assert.match(container.textContent ?? '', /애니웨어에서 사용할 닉네임을 정해 주세요/)
+    assert.match(container.textContent ?? '', /토스 로그인은 완료됐어요/)
+    assert.ok(container.querySelector('.intro-nickname-modal'), 'shared nickname modal should open')
+    assert.equal(container.querySelector<HTMLInputElement>('#intro-nickname')?.value, '')
+  } finally {
+    cleanupDom(dom, previousGlobals, root)
+  }
 })
 
 test('TDS public fallback preserves rounded block button behavior', () => {
