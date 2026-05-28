@@ -17,6 +17,8 @@ interface UserRepository : JpaRepository<UserEntity, Long> {
 
 interface AdminRepository : JpaRepository<AdminEntity, Long> {
     fun existsByUser_Id(userId: Long): Boolean
+
+    fun findByUser_Id(userId: Long): AdminEntity?
 }
 
 interface RefreshTokenRepository : JpaRepository<RefreshTokenEntity, Long> {

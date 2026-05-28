@@ -1,6 +1,7 @@
 package com.aniwhere.server.adapter.out.persistence
 
 import com.aniwhere.server.adapter.out.persistence.entity.UserEntity
+import com.aniwhere.server.adapter.out.persistence.repository.AdminRepository
 import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.user.model.UserSummary
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class UserPersistenceAdapter(
     private val userRepo: UserRepository,
+    private val adminRepo: AdminRepository,
 ) : UserPersistencePort {
     override fun listUsers(pageable: Pageable): Page<UserSummary> = userRepo.findAll(pageable).map { it.toSummary() }
 
@@ -32,14 +34,18 @@ class UserPersistenceAdapter(
         user.nickname = nickname
         return userRepo.save(user).toSummary()
     }
-}
 
-private fun UserEntity.toSummary() =
-    UserSummary(
-        id = id ?: error("User id must not be null"),
-        userKey = userKey,
-        nickname = nickname,
-        status = status,
-        lastLoginAt = lastLoginAt,
-        createdAt = createdAt,
-    )
+    private fun UserEntity.toSummary(): UserSummary {
+        val userId = id ?: error("User id must not be null")
+        val role = if (adminRepo.existsByUser_Id(userId)) "ROLE_ADMIN" else "ROLE_USER"
+        return UserSummary(
+            id = userId,
+            userKey = userKey,
+            nickname = nickname,
+            status = status,
+            role = role,
+            lastLoginAt = lastLoginAt,
+            createdAt = createdAt,
+        )
+    }
+}

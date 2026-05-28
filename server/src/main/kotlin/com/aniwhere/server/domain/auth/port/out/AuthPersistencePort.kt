@@ -13,6 +13,8 @@ interface AuthPersistencePort {
     fun createUser(userKey: Long): AuthUserRecord
     fun touchLastLogin(userId: Long, whenAt: LocalDateTime)
     fun isAdmin(userId: Long): Boolean
+    fun grantAdmin(userId: Long)
+    fun revokeAdmin(userId: Long): Boolean
     fun saveRefreshToken(userId: Long, tokenHash: String, expiresAt: LocalDateTime)
     fun revokeRefreshToken(tokenHash: String): Boolean
     fun revokeAllRefreshTokens(userId: Long)
