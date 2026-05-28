@@ -6,15 +6,21 @@ export type MapDetailTab = 'info' | 'works' | 'photos' | 'review'
 type MapDetailSummaryCardProps = {
   shop: Shop
   activeTab: MapDetailTab
+  isFavorite: boolean
+  isFavoritePending: boolean
   photoCount: number
   onTabChange: (tab: MapDetailTab) => void
+  onToggleFavorite: () => void
 }
 
 export function MapDetailSummaryCard({
   shop,
   activeTab,
+  isFavorite,
+  isFavoritePending,
   photoCount,
   onTabChange,
+  onToggleFavorite,
 }: MapDetailSummaryCardProps) {
   const [keywordExpansion, setKeywordExpansion] = useState({ isExpanded: false, signature: '' })
   const [shouldShowKeywordMore, setShouldShowKeywordMore] = useState(false)
@@ -47,8 +53,23 @@ export function MapDetailSummaryCard({
 
   return (
     <section className="section map-sheet-summary-card map-sheet-identity-card" id="map-place-home">
-      <div className="map-sheet-identity-copy">
-        <h1>{shop.name}</h1>
+      <div className="map-sheet-identity-head">
+        <div className="map-sheet-identity-copy">
+          <h1>{shop.name}</h1>
+        </div>
+        <button
+          aria-label={isFavorite ? '관심 매장 해제' : '관심 매장 추가'}
+          aria-pressed={isFavorite}
+          className="map-place-favorite-button"
+          data-favorite={isFavorite ? 'true' : 'false'}
+          disabled={isFavoritePending}
+          type="button"
+          onClick={onToggleFavorite}
+        >
+          <svg className="map-place-favorite-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+            <path d="M12 20s-7-4.4-9.2-9.2C1.2 7.3 3.4 4 6.9 4c2 0 3.5 1 4.3 2.4C12 5 13.5 4 15.5 4c3.5 0 5.7 3.3 4.1 6.8C19 15.6 12 20 12 20Z" />
+          </svg>
+        </button>
       </div>
 
       {keywords.length > 0 ? (

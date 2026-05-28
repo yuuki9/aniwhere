@@ -3,7 +3,7 @@ import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
-import { getShop, getShopFacets, getShops } from '../shared/api/shops'
+import { addFavoriteShop, getShop, getShopFacets, getShops, removeFavoriteShop } from '../shared/api/shops'
 import type { AdminShopPhoto, Shop } from '../shared/api/types'
 import {
   calculateDistanceKm,
@@ -31,10 +31,12 @@ import {
   canBuildNaverWebDirectionUrl,
 } from '../shared/lib/naverDirections'
 import { isAppsInTossRuntime } from '../shared/lib/auth'
+import { getStoredAccessToken } from '../shared/lib/authSession'
 import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
+import { Toast } from '@aniwhere/tds-mobile'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
 import { MapDetailMediaSection } from './explore/MapDetailMediaSection'
@@ -185,6 +187,8 @@ export function ExplorePage() {
   const [isPeekDragging, setIsPeekDragging] = useState(false)
   const [expandedDragOffset, setExpandedDragOffset] = useState(0)
   const [isExpandedDragging, setIsExpandedDragging] = useState(false)
+  const [favoriteShopIds, setFavoriteShopIds] = useState<Set<number>>(() => new Set())
+  const [favoriteToast, setFavoriteToast] = useState<string | null>(null)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantInput, setAssistantInput] = useState('')
   const [assistantMessages, setAssistantMessages] = useState<MapAssistantMessage[]>([
@@ -326,6 +330,7 @@ export function ExplorePage() {
     selectedShopId == null || shopsWithDistance.some((shop) => shop.id === selectedShopId)
 
   const detailShop = activeShopDetailQuery.data ?? activeShop ?? null
+  const isFavoriteDetailShop = detailShop != null && favoriteShopIds.has(detailShop.id)
 
   useEffect(() => {
     if (
@@ -392,6 +397,26 @@ export function ExplorePage() {
           content: error instanceof Error ? error.message : 'AI 탐색 응답을 불러오지 못했습니다.',
         },
       ])
+    },
+  })
+
+  const favoriteShopMutation = useMutation({
+    mutationFn: ({ shopId, nextFavorite }: { shopId: number; nextFavorite: boolean }) =>
+      nextFavorite ? addFavoriteShop(shopId) : removeFavoriteShop(shopId),
+    onSuccess: (_result, variables) => {
+      setFavoriteShopIds((current) => {
+        const next = new Set(current)
+        if (variables.nextFavorite) {
+          next.add(variables.shopId)
+        } else {
+          next.delete(variables.shopId)
+        }
+        return next
+      })
+      setFavoriteToast(variables.nextFavorite ? '관심 매장에 저장했어요.' : '관심 매장에서 해제했어요.')
+    },
+    onError: (error) => {
+      setFavoriteToast(error instanceof Error ? error.message : '관심 매장을 저장하지 못했어요.')
     },
   })
 
@@ -667,6 +692,19 @@ export function ExplorePage() {
     },
     [toggleActiveStatusFilter],
   )
+
+  const handleToggleFavoriteShop = () => {
+    if (!detailShop || favoriteShopMutation.isPending) {
+      return
+    }
+
+    if (!getStoredAccessToken()) {
+      setFavoriteToast('로그인하면 관심 매장을 저장할 수 있어요.')
+      return
+    }
+
+    favoriteShopMutation.mutate({ shopId: detailShop.id, nextFavorite: !isFavoriteDetailShop })
+  }
 
   const shopsError = shopsQuery.isError ? (shopsQuery.error as Error).message : null
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
@@ -976,6 +1014,12 @@ export function ExplorePage() {
 
   return (
     <main className="map-page-shell">
+      <Toast
+        higherThanCTA
+        open={favoriteToast != null}
+        text={favoriteToast ?? ''}
+        onClose={() => setFavoriteToast(null)}
+      />
       <section className="map-page">
         <div
           className={[
@@ -1144,8 +1188,11 @@ export function ExplorePage() {
                   <MapDetailSummaryCard
                     shop={detailShop}
                     activeTab={activeDetailTab}
+                    isFavorite={isFavoriteDetailShop}
+                    isFavoritePending={favoriteShopMutation.isPending}
                     photoCount={detailMediaItems.length}
                     onTabChange={setDetailTab}
+                    onToggleFavorite={handleToggleFavoriteShop}
                   />
 
                   {activeDetailTab === 'info' ? (

@@ -392,6 +392,27 @@ Official docs checked with official web fallback because Apps in Toss MCP was no
 | `/search?returnTo=/explore?view=list` submission | Regression fixed | The TDS `SearchField` did not reliably trigger the surrounding form submit on Enter in the local runtime, so SearchPage now handles Enter directly on the field and preserves the encoded list-route `returnTo` while writing `keyword` and `page=0`. |
 | Runtime verification | Passed local / Needs sandbox | `node --test tests/homeViewModel.test.ts`, `node --test tests/explorePage.test.ts`, `node --test tests/searchPage.test.ts`, `npm run lint`, `npm run build`, and local 375px browser checks verified horizontal CTA restoration, `/explore?view=list` without a map or map quick chip, visible search/filter/list rows, `/search?returnTo=%2Fexplore%3Fview%3Dlist` Enter search, and the floating map button changing the URL to `/explore?view=map`. Apps in Toss sandbox should still confirm native back behavior, list/FAB positioning, and native keyboard search submission on device. |
 
+### 2026-05-28 Explore Favorite Action Follow-up
+
+Official docs checked with Apps in Toss MCP:
+
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+
+Swagger checked:
+
+- `POST /api/v1/shops/{id}/favorite` (`operationId: addFavoriteShop`)
+- `DELETE /api/v1/shops/{id}/favorite` (`operationId: removeFavoriteShop`)
+- Both return `ApiResponseUnit`; `Shop` does not expose an initial favorite-state field.
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore` selected shop favorite action | Product-approved / API-required | The expanded shop detail summary now exposes a 44px app-owned heart icon button. It calls Swagger-backed `addFavoriteShop` and `removeFavoriteShop` through `client/src/shared/api/shops.ts`, uses the stored Aniwhere auth token, and shows TDS `Toast` feedback through `@aniwhere/tds-mobile`. Because the current Swagger `Shop` schema has no favorite-state field, the button starts unselected on first render and updates local route state only after a successful mutation. |
+| Button placement | Product-approved | The action sits beside the shop identity title rather than becoming a quick filter chip. This keeps `/explore` quick chips API-backed filters only, avoids reintroducing the removed visual-only favorite chip, and keeps the action scoped to the selected shop decision surface. |
+| Runtime verification | Needs sandbox | Source tests verify endpoint wiring and CSS token usage. Authenticated mutation behavior still needs Apps in Toss sandbox/device verification after login because local unauthenticated browser checks can only verify the login-required toast path. |
+
 ### 2026-05-28 Home CTA List Banner Experiment
 
 Official docs checked with Apps in Toss MCP in the current session:
