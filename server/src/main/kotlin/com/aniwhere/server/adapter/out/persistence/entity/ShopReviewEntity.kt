@@ -26,6 +26,9 @@ class ShopReviewEntity(
     @Column(nullable = false, length = 20)
     var status: ShopReviewStatusEnum = ShopReviewStatusEnum.VISIBLE,
 
+    @Column(name = "like_count", nullable = false)
+    var likeCount: Int = 0,
+
     @OneToMany(mappedBy = "review", cascade = [CascadeType.ALL], orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     var images: MutableList<ShopReviewImageEntity> = mutableListOf(),

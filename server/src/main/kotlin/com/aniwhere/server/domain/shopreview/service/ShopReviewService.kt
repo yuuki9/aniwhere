@@ -8,12 +8,15 @@ import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.service.ShopImagePayloadValidator
 import com.aniwhere.server.domain.shopreview.model.ReviewImageKeys
 import com.aniwhere.server.domain.shopreview.model.ShopReview
+import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
+import com.aniwhere.server.domain.shopreview.model.toPageable
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import com.aniwhere.server.domain.shopreview.port.out.ReviewImageStoragePort
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewImagePersistenceRow
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -29,9 +32,15 @@ class ShopReviewService(
     private val transactionTemplate: TransactionTemplate,
 ) : ShopReviewUseCase {
 
-    override fun listReviews(shopId: Long, pageable: Pageable): Page<ShopReview> {
+    override fun listReviews(
+        shopId: Long,
+        sort: ShopReviewSort,
+        pageable: Pageable,
+        viewerUserId: Long?,
+    ): Page<ShopReview> {
         if (!port.existsShop(shopId)) throw EntityNotFoundException("Shop not found: $shopId")
-        return port.findVisibleByShopId(shopId, pageable)
+        val page = port.findVisibleByShopId(shopId, sort.toPageable(pageable))
+        return enrichWithLikeState(page, viewerUserId)
     }
 
     @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
@@ -176,6 +185,31 @@ class ShopReviewService(
         val updated = port.updateStatus(reviewId, shopId, status)
         port.recomputeShopRating(shopId)
         return updated
+    }
+
+    @Transactional
+    override fun likeReview(userId: Long, shopId: Long, reviewId: Long) {
+        if (!port.existsShop(shopId)) throw EntityNotFoundException("Shop not found: $shopId")
+        port.findVisibleByIdAndShopId(reviewId, shopId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        port.saveReviewLike(reviewId, userId)
+    }
+
+    @Transactional
+    override fun unlikeReview(userId: Long, shopId: Long, reviewId: Long) {
+        if (!port.existsShop(shopId)) throw EntityNotFoundException("Shop not found: $shopId")
+        port.findVisibleByIdAndShopId(reviewId, shopId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        port.deleteReviewLike(reviewId, userId)
+    }
+
+    private fun enrichWithLikeState(page: Page<ShopReview>, viewerUserId: Long?): Page<ShopReview> {
+        if (viewerUserId == null || page.isEmpty) return page
+        val likedIds = port.findLikedReviewIds(viewerUserId, page.content.mapNotNull { it.id })
+        val enriched = page.content.map { review ->
+            review.copy(likedByMe = review.id in likedIds)
+        }
+        return PageImpl(enriched, page.pageable, page.totalElements)
     }
 
     private fun compensateCreateReviewFailure(original: Exception, reviewId: Long, uploadedKeys: List<String>) {

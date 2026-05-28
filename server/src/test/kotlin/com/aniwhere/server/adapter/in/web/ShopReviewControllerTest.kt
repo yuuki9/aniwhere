@@ -6,6 +6,7 @@ import com.aniwhere.server.common.exception.GlobalExceptionHandler
 import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shopreview.model.ShopReview
+import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import com.ninjasquad.springmockk.MockkBean
@@ -26,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDateTime
@@ -59,7 +61,7 @@ class ShopReviewControllerTest {
 
     @Test
     fun `GET shops_{shopId}_reviews - 페이지네이션된 리뷰 목록 조회`() {
-        every { useCase.listReviews(1L, any()) } returns PageImpl(listOf(sampleReview))
+        every { useCase.listReviews(1L, ShopReviewSort.NEWEST, any(), null) } returns PageImpl(listOf(sampleReview))
 
         mvc.perform(get("/api/v1/shops/1/reviews"))
             .andExpect(status().isOk)
@@ -69,8 +71,18 @@ class ShopReviewControllerTest {
     }
 
     @Test
+    fun `GET shops_{shopId}_reviews - sort 파라미터를 useCase로 전달`() {
+        every { useCase.listReviews(1L, ShopReviewSort.RATING_HIGH, any(), null) } returns PageImpl(emptyList())
+
+        mvc.perform(get("/api/v1/shops/1/reviews").param("sort", "RATING_HIGH"))
+            .andExpect(status().isOk)
+
+        verify { useCase.listReviews(1L, ShopReviewSort.RATING_HIGH, any(), null) }
+    }
+
+    @Test
     fun `GET shops_{shopId}_reviews - 샵이 없으면 404`() {
-        every { useCase.listReviews(999L, any()) } throws EntityNotFoundException("Shop not found: 999")
+        every { useCase.listReviews(999L, ShopReviewSort.NEWEST, any(), null) } throws EntityNotFoundException("Shop not found: 999")
 
         mvc.perform(get("/api/v1/shops/999/reviews"))
             .andExpect(status().isNotFound)
@@ -138,6 +150,30 @@ class ShopReviewControllerTest {
             .andExpect(jsonPath("$.success").value(true))
 
         verify { useCase.deleteReview(10L, 1L, 5L) }
+    }
+
+    @Test
+    fun `POST shop review like - 인증 사용자면 201`() {
+        mockAuthenticatedUser(10L)
+        every { useCase.likeReview(10L, 1L, 5L) } returns Unit
+
+        mvc.perform(post("/api/v1/shops/1/reviews/5/likes"))
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { useCase.likeReview(10L, 1L, 5L) }
+    }
+
+    @Test
+    fun `DELETE shop review like - 인증 사용자면 200`() {
+        mockAuthenticatedUser(10L)
+        every { useCase.unlikeReview(10L, 1L, 5L) } returns Unit
+
+        mvc.perform(delete("/api/v1/shops/1/reviews/5/likes"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify { useCase.unlikeReview(10L, 1L, 5L) }
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.aniwhere.server.adapter.out.persistence
 import com.aniwhere.server.adapter.out.persistence.entity.ShopReviewStatusEnum
 import com.aniwhere.server.adapter.out.persistence.mapper.ShopReviewMapper
 import com.aniwhere.server.adapter.out.persistence.repository.ShopRepository
+import com.aniwhere.server.adapter.out.persistence.repository.ShopReviewLikeRepository
 import com.aniwhere.server.adapter.out.persistence.repository.ShopReviewRepository
 import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
@@ -10,6 +11,7 @@ import com.aniwhere.server.domain.shopreview.model.ShopRatingAggregate
 import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.adapter.out.persistence.entity.ShopReviewImageEntity
+import com.aniwhere.server.adapter.out.persistence.entity.ShopReviewLikeEntity
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewImagePersistenceRow
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
 import org.springframework.data.domain.Page
@@ -24,6 +26,7 @@ import java.math.RoundingMode
 @Transactional(readOnly = true)
 class ShopReviewPersistenceAdapter(
     private val reviewRepo: ShopReviewRepository,
+    private val reviewLikeRepo: ShopReviewLikeRepository,
     private val shopRepo: ShopRepository,
     private val userRepo: UserRepository,
     private val mapper: ShopReviewMapper,
@@ -40,7 +43,7 @@ class ShopReviewPersistenceAdapter(
     }
 
     override fun findVisibleByShopId(shopId: Long, pageable: Pageable): Page<ShopReview> =
-        reviewRepo.findByShopIdAndStatusOrderByCreatedAtDesc(
+        reviewRepo.findByShopIdAndStatus(
             shopId,
             ShopReviewStatusEnum.VISIBLE,
             pageable,
@@ -48,6 +51,11 @@ class ShopReviewPersistenceAdapter(
 
     override fun findByIdAndShopId(reviewId: Long, shopId: Long): ShopReview? =
         reviewRepo.findByIdAndShopId(reviewId, shopId)?.let(mapper::toDomain)
+
+    override fun findVisibleByIdAndShopId(reviewId: Long, shopId: Long): ShopReview? =
+        reviewRepo.findByIdAndShopId(reviewId, shopId)
+            ?.takeIf { it.status == ShopReviewStatusEnum.VISIBLE }
+            ?.let(mapper::toDomain)
 
     @Transactional(readOnly = false)
     override fun update(reviewId: Long, review: ShopReview): ShopReview {
@@ -128,5 +136,30 @@ class ShopReviewPersistenceAdapter(
         shop.reviewCount = count
         shopRepo.save(shop)
         return ShopRatingAggregate(averageRating = avg, reviewCount = count)
+    }
+
+    override fun existsReviewLike(reviewId: Long, userId: Long): Boolean =
+        reviewLikeRepo.existsByReview_IdAndUser_Id(reviewId, userId)
+
+    @Transactional(readOnly = false)
+    override fun saveReviewLike(reviewId: Long, userId: Long) {
+        if (existsReviewLike(reviewId, userId)) return
+        val review = reviewRepo.findByIdOrNull(reviewId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        val user = userRepo.findByIdOrNull(userId)
+            ?: throw EntityNotFoundException("User not found: $userId")
+        reviewLikeRepo.save(ShopReviewLikeEntity(review = review, user = user))
+        reviewRepo.incrementLikeCount(reviewId)
+    }
+
+    @Transactional(readOnly = false)
+    override fun deleteReviewLike(reviewId: Long, userId: Long) {
+        if (reviewLikeRepo.deleteByReview_IdAndUser_Id(reviewId, userId) == 0L) return
+        reviewRepo.decrementLikeCount(reviewId)
+    }
+
+    override fun findLikedReviewIds(userId: Long, reviewIds: Collection<Long>): Set<Long> {
+        if (reviewIds.isEmpty()) return emptySet()
+        return reviewLikeRepo.findReviewIdsByUserIdAndReviewIdIn(userId, reviewIds).toSet()
     }
 }
