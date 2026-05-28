@@ -79,14 +79,9 @@ type EntryRouteState =
 const NICKNAME_REQUIRED_MESSAGE = '닉네임을 한 글자 이상 입력해 주세요.'
 const DEFAULT_PROFILE_EMOJI_ID = 'alien'
 const PROFILE_EMOJI_FRAME = { width: 72, height: 72, radius: 36 }
+const PROFILE_EMOJI_RAIL_FRAME = { width: 40, height: 40, radius: 20 }
 
 const profileEmojiOptions = [
-  {
-    id: 'alien',
-    label: '초록 외계인',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F47D.png',
-    symbol: '👽',
-  },
   {
     id: 'fire',
     label: '파란 불꽃',
@@ -100,6 +95,12 @@ const profileEmojiOptions = [
     symbol: '💀',
   },
   {
+    id: 'alien',
+    label: '초록 외계인',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F47D.png',
+    symbol: '👽',
+  },
+  {
     id: 'bomb',
     label: '폭탄',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F4A3.png',
@@ -111,12 +112,40 @@ const profileEmojiOptions = [
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F331.png',
     symbol: '🌱',
   },
+  {
+    id: 'sunglasses',
+    label: '선글라스 얼굴',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F60E.png',
+    symbol: '😎',
+  },
+  {
+    id: 'sparkles',
+    label: '반짝이',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u2728.png',
+    symbol: '✨',
+  },
+  {
+    id: 'rocket',
+    label: '로켓',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F680.png',
+    symbol: '🚀',
+  },
+  {
+    id: 'game',
+    label: '게임 패드',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F3AE.png',
+    symbol: '🎮',
+  },
 ] as const
 
 type ProfileEmojiOption = (typeof profileEmojiOptions)[number]
 
 function getProfileEmojiOption(id: string) {
-  return profileEmojiOptions.find((option) => option.id === id) ?? profileEmojiOptions[0]
+  return (
+    profileEmojiOptions.find((option) => option.id === id) ??
+    profileEmojiOptions.find((option) => option.id === DEFAULT_PROFILE_EMOJI_ID) ??
+    profileEmojiOptions[0]
+  )
 }
 
 type NicknameOnboardingSheetProps = {
@@ -176,27 +205,29 @@ function NicknameOnboardingSheet({
     >
       <form className="intro-nickname-card" id="intro-nickname-form" onSubmit={onSubmit}>
         <div className="intro-profile-emoji-panel" aria-label="프로필 이모지 선택">
-          <Asset.Image
-            alt=""
-            className="intro-profile-emoji-preview"
-            frameShape={PROFILE_EMOJI_FRAME}
-            src={selectedEmoji.src}
-          />
           <div className="intro-profile-emoji-options" role="radiogroup" aria-label="프로필 이모지">
-            {profileEmojiOptions.map((option) => (
-              <button
-                aria-checked={option.id === selectedEmoji.id}
-                aria-label={option.label}
-                className="intro-profile-emoji-option"
-                data-selected={option.id === selectedEmoji.id ? 'true' : undefined}
-                key={option.id}
-                onClick={() => onEmojiChange(option.id)}
-                role="radio"
-                type="button"
-              >
-                <Asset.Image alt="" frameShape={{ width: 40, height: 40, radius: 20 }} src={option.src} />
-              </button>
-            ))}
+            {profileEmojiOptions.map((option) => {
+              const isSelected = option.id === selectedEmoji.id
+
+              return (
+                <button
+                  aria-checked={isSelected}
+                  aria-label={isSelected ? `${option.label}, 선택됨` : option.label}
+                  className="intro-profile-emoji-option"
+                  data-selected={isSelected ? 'true' : undefined}
+                  key={option.id}
+                  onClick={() => onEmojiChange(option.id)}
+                  role="radio"
+                  type="button"
+                >
+                  <Asset.Image
+                    alt=""
+                    frameShape={isSelected ? PROFILE_EMOJI_FRAME : PROFILE_EMOJI_RAIL_FRAME}
+                    src={option.src}
+                  />
+                </button>
+              )
+            })}
           </div>
         </div>
         <TextField

@@ -1250,36 +1250,54 @@ p {
 
 .intro-profile-emoji-panel {
   display: grid;
-  justify-items: center;
-  gap: var(--ait-space-4);
-}
-
-.intro-profile-emoji-preview {
-  background: var(--ait-color-blue-50);
+  gap: var(--ait-space-2);
+  min-width: 0;
 }
 
 .intro-profile-emoji-options {
-  display: grid;
+  display: flex;
+  min-height: 72px;
   width: 100%;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  justify-content: flex-start;
   gap: var(--ait-space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: var(--ait-space-1) 0;
+  scrollbar-width: none;
+}
+
+.intro-profile-emoji-options::-webkit-scrollbar {
+  display: none;
 }
 
 .intro-profile-emoji-option {
   display: inline-flex;
-  width: 100%;
-  aspect-ratio: 1;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
   align-items: center;
   justify-content: center;
-  padding: var(--ait-space-1);
-  border: 1px solid transparent;
+  padding: 0;
+  border: 0;
   border-radius: var(--ait-radius-full);
+  outline: 2px solid transparent;
+  outline-offset: 0;
   background: var(--ait-color-gray-100);
   cursor: pointer;
+  transition:
+    flex-basis 160ms ease,
+    width 160ms ease,
+    height 160ms ease,
+    outline-color 160ms ease,
+    background 160ms ease;
 }
 
 .intro-profile-emoji-option[data-selected='true'] {
-  border-color: var(--ait-color-brand);
+  flex-basis: 72px;
+  width: 72px;
+  height: 72px;
+  outline-color: var(--ait-color-brand);
   background: var(--ait-color-blue-50);
 }
 
