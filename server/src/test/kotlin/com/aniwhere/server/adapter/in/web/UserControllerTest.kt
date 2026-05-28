@@ -109,6 +109,7 @@ class UserControllerTest {
             userKey = 443731104L,
             nickname = nickname,
             status = "ACTIVE",
+            role = "ROLE_USER",
             lastLoginAt = null,
             createdAt = LocalDateTime.now(),
         )

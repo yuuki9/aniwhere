@@ -2,7 +2,9 @@ package com.aniwhere.server.domain.user.service
 
 import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
+import com.aniwhere.server.domain.auth.port.out.AuthPersistencePort
 import com.aniwhere.server.domain.user.model.NicknameAvailabilityResult
+import com.aniwhere.server.domain.user.model.UserAppRole
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
 import com.aniwhere.server.domain.user.port.out.UserPersistencePort
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class UserService(
     private val persistence: UserPersistencePort,
+    private val authPersistence: AuthPersistencePort,
 ) : UserUseCase {
     override fun listUsers(pageable: Pageable): Page<UserSummary> = persistence.listUsers(pageable)
 
@@ -41,6 +44,25 @@ class UserService(
         val normalized = normalizeNickname(nickname)
         val available = persistence.isNicknameTaken(normalized, requesterUserId).not()
         return NicknameAvailabilityResult(normalized, available)
+    }
+
+    @Transactional
+    override fun updateUserRole(actorUserId: Long, targetUserId: Long, role: UserAppRole): UserSummary {
+        val targetUser = getExistingUser(targetUserId)
+        val currentRole = UserAppRole.fromSecurityRole(targetUser.role)
+        if (currentRole == role) {
+            return targetUser
+        }
+        if (actorUserId == targetUserId && role == UserAppRole.USER) {
+            throw BadRequestException("자신의 관리자 권한은 해제할 수 없습니다.")
+        }
+
+        when (role) {
+            UserAppRole.ADMIN -> authPersistence.grantAdmin(targetUserId)
+            UserAppRole.USER -> authPersistence.revokeAdmin(targetUserId)
+        }
+        authPersistence.revokeAllRefreshTokens(targetUserId)
+        return getExistingUser(targetUserId)
     }
 
     private fun normalizeNickname(raw: String): String {

@@ -3,6 +3,7 @@ package com.aniwhere.server.adapter.out.persistence
 import com.aniwhere.server.adapter.out.persistence.entity.RefreshTokenEntity
 import com.aniwhere.server.adapter.out.persistence.entity.TossUnlinkEventEntity
 import com.aniwhere.server.adapter.out.persistence.entity.UserEntity
+import com.aniwhere.server.adapter.out.persistence.entity.AdminEntity
 import com.aniwhere.server.adapter.out.persistence.repository.AdminRepository
 import com.aniwhere.server.adapter.out.persistence.repository.RefreshTokenRepository
 import com.aniwhere.server.adapter.out.persistence.repository.TossUnlinkEventRepository
@@ -12,6 +13,7 @@ import com.aniwhere.server.domain.auth.port.out.AuthUserRecord
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import com.aniwhere.server.common.exception.EntityNotFoundException
 
 @Component
 class AuthPersistenceAdapter(
@@ -35,6 +37,22 @@ class AuthPersistenceAdapter(
     }
 
     override fun isAdmin(userId: Long): Boolean = adminRepo.existsByUser_Id(userId)
+
+    @Transactional
+    override fun grantAdmin(userId: Long) {
+        if (adminRepo.existsByUser_Id(userId)) {
+            return
+        }
+        val user = userRepo.findById(userId).orElseThrow { EntityNotFoundException("User not found: $userId") }
+        adminRepo.save(AdminEntity(user = user))
+    }
+
+    @Transactional
+    override fun revokeAdmin(userId: Long): Boolean {
+        val admin = adminRepo.findByUser_Id(userId) ?: return false
+        adminRepo.delete(admin)
+        return true
+    }
 
     override fun saveRefreshToken(userId: Long, tokenHash: String, expiresAt: LocalDateTime) {
         val user = userRepo.findById(userId).orElseThrow()
