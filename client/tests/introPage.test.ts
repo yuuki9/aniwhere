@@ -324,6 +324,8 @@ test('IntroPage renders a nickname setup step for new or unnamed Aniwhere users'
   assert.match(cssRuleBody(styles, '.ait-bottom-sheet'), /border-radius:\s*var\(--ait-radius-xl\)/)
   assert.match(cssRuleBody(styles, '.intro-nickname-sheet'), /display:\s*grid;/)
   assert.match(cssRuleBody(styles, '.intro-nickname-sheet .ait-bottom-sheet-cta'), /margin-top:\s*var\(--ait-space-3\);/)
+  assert.match(cssRuleBody(styles, '.intro-nickname-sheet .ait-bottom-sheet-cta'), /padding:\s*var\(--ait-space-6\);/)
+  assert.match(cssRuleBody(styles, '.intro-nickname-sheet .css-1c90wlj'), /padding:\s*var\(--ait-space-6\);/)
   assert.match(cssRuleBody(styles, '.intro-nickname-sheet-cta'), /padding:\s*0 var\(--ait-space-8\) var\(--ait-space-8\);/)
   assert.match(cssRuleBody(styles, '.ait-bottom-sheet-header'), /font-size:\s*var\(--ait-font-size-title-md\);/)
   assert.match(cssRuleBody(styles, '.intro-nickname-card'), /display:\s*grid;/)
