@@ -200,17 +200,19 @@ function NicknameOnboardingSheet({
       ariaLabelledBy="intro-nickname-title"
       className="intro-nickname-sheet"
       cta={
-        <Button
-          color="primary"
-          display="block"
-          disabled={isSaving}
-          form="intro-nickname-form"
-          size="xlarge"
-          type="submit"
-          variant="fill"
-        >
-          {isSaving ? '확인 중이에요' : '확인'}
-        </Button>
+        <div className="intro-nickname-sheet-cta">
+          <Button
+            color="primary"
+            display="block"
+            disabled={isSaving}
+            form="intro-nickname-form"
+            size="xlarge"
+            type="submit"
+            variant="fill"
+          >
+            {isSaving ? '확인 중이에요' : '확인'}
+          </Button>
+        </div>
       }
       header={
         <BottomSheet.Header className="intro-nickname-sheet-title">

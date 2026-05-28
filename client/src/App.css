@@ -1248,6 +1248,10 @@ p {
   margin: 0;
 }
 
+.intro-nickname-sheet-cta {
+  padding-inline: var(--ait-space-2);
+}
+
 .intro-profile-emoji-panel {
   display: grid;
   gap: var(--ait-space-2);
