@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
@@ -78,8 +78,8 @@ type EntryRouteState =
 
 const NICKNAME_REQUIRED_MESSAGE = '닉네임을 한 글자 이상 입력해 주세요.'
 const DEFAULT_PROFILE_EMOJI_ID = 'alien'
-const PROFILE_EMOJI_FRAME = { width: 72, height: 72, radius: 36 }
-const PROFILE_EMOJI_RAIL_FRAME = { width: 40, height: 40, radius: 20 }
+const PROFILE_EMOJI_FRAME = { width: 58, height: 58, radius: 29 }
+const PROFILE_EMOJI_RAIL_FRAME = { width: 34, height: 34, radius: 17 }
 
 const profileEmojiOptions = [
   {
@@ -87,54 +87,63 @@ const profileEmojiOptions = [
     label: '파란 불꽃',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F525.png',
     symbol: '🔥',
+    tone: '#ffe3e3',
   },
   {
     id: 'skull',
     label: '해골',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F480.png',
     symbol: '💀',
+    tone: '#e9eef5',
   },
   {
     id: 'alien',
     label: '초록 외계인',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F47D.png',
     symbol: '👽',
+    tone: '#d9f7be',
   },
   {
     id: 'bomb',
     label: '폭탄',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F4A3.png',
     symbol: '💣',
+    tone: '#e8eaef',
   },
   {
     id: 'seedling',
     label: '새싹',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F331.png',
     symbol: '🌱',
+    tone: '#dff8e8',
   },
   {
     id: 'sunglasses',
     label: '선글라스 얼굴',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F60E.png',
     symbol: '😎',
+    tone: '#fff0b8',
   },
   {
     id: 'sparkles',
     label: '반짝이',
     src: 'https://static.toss.im/2d-emojis/png/4x/u2728.png',
     symbol: '✨',
+    tone: '#fff4bf',
   },
   {
     id: 'rocket',
     label: '로켓',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F680.png',
     symbol: '🚀',
+    tone: '#e6f0ff',
   },
   {
     id: 'game',
     label: '게임 패드',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F3AE.png',
     symbol: '🎮',
+    tone: '#eadfff',
   },
 ] as const
 
@@ -173,9 +182,18 @@ function NicknameOnboardingSheet({
   selectedEmoji,
   touched,
 }: NicknameOnboardingSheetProps) {
+  const selectedEmojiButtonRef = useRef<HTMLButtonElement | null>(null)
   const hasLengthError = touched && input.trim().length < 1
   const fieldHelp = error ?? (hasLengthError ? NICKNAME_REQUIRED_MESSAGE : undefined)
   const hasError = error != null || hasLengthError
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    selectedEmojiButtonRef.current?.scrollIntoView?.({ block: 'nearest', inline: 'center' })
+  }, [open, selectedEmoji.id])
 
   return (
     <BottomSheet
@@ -217,11 +235,14 @@ function NicknameOnboardingSheet({
                   data-selected={isSelected ? 'true' : undefined}
                   key={option.id}
                   onClick={() => onEmojiChange(option.id)}
+                  ref={isSelected ? selectedEmojiButtonRef : undefined}
                   role="radio"
+                  style={{ '--intro-profile-emoji-tone': option.tone } as CSSProperties}
                   type="button"
                 >
                   <Asset.Image
                     alt=""
+                    className="intro-profile-emoji-image"
                     frameShape={isSelected ? PROFILE_EMOJI_FRAME : PROFILE_EMOJI_RAIL_FRAME}
                     src={option.src}
                   />

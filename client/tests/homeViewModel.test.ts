@@ -166,7 +166,7 @@ test('Home CTA routes render as one-column list banner items', () => {
   assert.match(styles, /\.home-cta-image\s*\{[\s\S]*object-position:\s*center center;/)
   assert.equal(cssRuleBodies(styles, '.home-cta-image').some((rule) => /transform:/.test(rule)), false)
   assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*position:\s*absolute/)
-  assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: var\(--ait-space-4\);/)
+  assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: var\(--ait-space-8\);/)
   assert.ok(cssRuleBodies(styles, '.home-cta-copy').some((rule) => /background:\s*linear-gradient\(90deg/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.home-cta-copy strong').some((rule) => /font-size:\s*var\(--ait-font-size-body-lg\);/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.home-cta-copy strong').some((rule) => /line-height:\s*1\.22;/.test(rule)))
