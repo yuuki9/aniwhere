@@ -9,7 +9,7 @@ export function PostDetailPage() {
         <div className="hero-copy">
           <span className="eyebrow">REVIEWS</span>
           <h1>커뮤니티 게시글은 매장 리뷰로 이전됐어요</h1>
-          <p>기존 게시글 상세 API는 제거되어, 방문 후기는 매장 상세 화면의 리뷰 영역에서 다룰 예정입니다.</p>
+          <p>기존 게시글 상세 API는 제거되어, 방문 후기는 이제 매장 상세 화면의 리뷰 영역에서 확인하고 남길 수 있습니다.</p>
           <div className="hero-action-row">
             <Link className="primary-action" to="/explore?view=list">
               매장 찾아보기

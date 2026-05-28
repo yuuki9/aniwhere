@@ -10,7 +10,7 @@ Nickname entry is not a second login or a replacement for Toss identity. It is A
 
 Recommended user-facing framing:
 
-- `후기와 제보에 표시될 닉네임을 정해주세요`
+- `애니웨어에서 사용할 닉네임이 필요해요`
 - Secondary help copy should explain that the name is used inside Aniwhere, not in Toss.
 
 ## Official Docs Checked

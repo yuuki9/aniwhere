@@ -67,7 +67,10 @@ test('client API functions cover Swagger paths added for facets, favorites, auth
   assert.match(shopReviews, /\/api\/v1\/shops\/\$\{shopId\}\/reviews/)
   assert.match(shopReviews, /export function createShopReview/)
   assert.match(shopReviews, /export function updateShopReview/)
+  assert.match(shopReviews, /export function deleteShopReview/)
   assert.match(shopReviews, /export function likeShopReview/)
+  assert.match(shopReviews, /export function unlikeShopReview/)
+  assert.match(shopReviews, /shopReviewDetailPath\(shopId, reviewId\)/)
   assert.match(shopReviews, /\/likes/)
   assert.match(shopReviews, /export function updateShopReviewStatus/)
   assert.doesNotMatch(shopReviews, /\/api\/v1\/posts/)
@@ -83,6 +86,7 @@ test('client API functions cover Swagger paths added for facets, favorites, auth
   assert.match(users, /export function updateMyNickname/)
   assert.match(users, /export function updateUserRole/)
   assert.match(users, /\/api\/v1\/admin\/users\/\$\{userId\}\/role/)
+  assert.match(users, /export function updateUserRole[\s\S]*method:\s*'PATCH'/)
   assert.match(users, /export function listUsers/)
 
   assert.match(client, /Authorization/)

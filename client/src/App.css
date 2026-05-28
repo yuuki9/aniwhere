@@ -1313,6 +1313,12 @@ p {
   background: var(--intro-profile-emoji-tone);
 }
 
+.intro-profile-emoji-option:focus-visible {
+  outline-width: 3px;
+  outline-color: color-mix(in srgb, var(--intro-profile-emoji-tone) 70%, var(--ait-color-brand));
+  outline-offset: 3px;
+}
+
 .intro-nickname-card .ait-text-field-input {
   min-height: 52px;
 }

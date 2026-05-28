@@ -241,7 +241,7 @@ export type PagingParams = {
   sort?: string[]
 }
 
-export type ShopReviewListParams = PagingParams & {
+export type ShopReviewListParams = Omit<PagingParams, 'sort'> & {
   sort?: ShopReviewSort
 }
 
