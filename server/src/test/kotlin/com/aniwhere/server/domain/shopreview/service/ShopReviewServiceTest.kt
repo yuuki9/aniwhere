@@ -203,4 +203,18 @@ class ShopReviewServiceTest {
         assertEquals(true, page.content[0].likedByMe)
         assertEquals(false, page.content[1].likedByMe)
     }
+
+    @Test
+    fun `listMyReviews - 내 리뷰 목록을 조회하고 likedByMe를 채운다`() {
+        every { port.existsUser(10L) } returns true
+        every { port.findByAuthorUserIdExcludingDeleted(10L, any()) } returns PageImpl(
+            listOf(sampleReview.copy(id = 5L)),
+        )
+        every { port.findLikedReviewIds(10L, listOf(5L)) } returns setOf(5L)
+
+        val page = service.listMyReviews(10L, ShopReviewSort.NEWEST, PageRequest.of(0, 20))
+
+        assertEquals(1, page.content.size)
+        assertEquals(true, page.content[0].likedByMe)
+    }
 }

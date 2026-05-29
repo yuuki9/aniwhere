@@ -2,6 +2,7 @@ package com.aniwhere.server.adapter.out.persistence.entity
 
 import jakarta.persistence.*
 import org.hibernate.annotations.BatchSize
+import org.hibernate.annotations.Formula
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -53,6 +54,9 @@ class ShopEntity(
 
     @Column(name = "review_count", nullable = false)
     var reviewCount: Int = 0,
+
+    @Formula("(select count(*) from user_favorite_shops ufs where ufs.shop_id = id)")
+    var favoriteCount: Int = 0,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

@@ -4,6 +4,8 @@ import com.aniwhere.server.adapter.`in`.web.UserController
 import com.aniwhere.server.common.config.CorsConfig
 import com.aniwhere.server.common.exception.GlobalExceptionHandler
 import com.aniwhere.server.config.AuthProperties
+import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
+import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
 import com.ninjasquad.springmockk.MockkBean
 import org.hamcrest.Matchers.containsString
@@ -38,6 +40,12 @@ class SecurityConfigCorsTest {
 
     @MockkBean
     private lateinit var userUseCase: UserUseCase
+
+    @MockkBean
+    private lateinit var favoriteUseCase: UserFavoriteUseCase
+
+    @MockkBean
+    private lateinit var shopReviewUseCase: ShopReviewUseCase
 
     @Test
     fun `OPTIONS users_me preflight allows authorization header`() {

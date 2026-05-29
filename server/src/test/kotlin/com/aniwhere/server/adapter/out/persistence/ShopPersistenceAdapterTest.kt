@@ -213,6 +213,7 @@ class ShopPersistenceAdapterTest {
             includeRegions = true,
             includeCategories = true,
             includeWorkTypes = true,
+            includeSorts = true,
         )
 
         assertEquals(1.toShort(), result.regions.single().id)
@@ -221,6 +222,11 @@ class ShopPersistenceAdapterTest {
         assertEquals("피규어", result.categories.single().name)
         assertEquals(setOf("ANIMATION", "GAME"), result.workTypes.map { it.value }.toSet())
         assertEquals(setOf("애니메이션", "게임"), result.workTypes.map { it.label }.toSet())
+        assertEquals(
+            setOf("NEWEST", "REVIEW_COUNT_DESC", "FAVORITE_COUNT_DESC"),
+            result.sorts.map { it.value }.toSet(),
+        )
+        assertEquals(setOf("최신순", "리뷰 많은순", "즐겨찾기 많은순"), result.sorts.map { it.label }.toSet())
     }
 
     @Test
@@ -228,7 +234,7 @@ class ShopPersistenceAdapterTest {
         every { regionRepo.findAllWithShopCount() } returns emptyList()
         every { categoryRepo.findAllWithShopCount() } returns emptyList()
 
-        adapter.findFacets(includeRegions = true, includeCategories = true, includeWorkTypes = true)
+        adapter.findFacets(includeRegions = true, includeCategories = true, includeWorkTypes = true, includeSorts = true)
 
         verify(exactly = 0) { shopRepo.findRegionFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         verify(exactly = 0) { shopRepo.findCategoryFacetCounts(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
@@ -246,11 +252,13 @@ class ShopPersistenceAdapterTest {
             includeRegions = false,
             includeCategories = true,
             includeWorkTypes = false,
+            includeSorts = false,
         )
 
         assertTrue(result.regions.isEmpty())
         assertEquals(1, result.categories.size)
         assertTrue(result.workTypes.isEmpty())
+        assertTrue(result.sorts.isEmpty())
         verify(exactly = 0) { regionRepo.findAllWithShopCount() }
         verify(exactly = 1) { categoryRepo.findAllWithShopCount() }
     }

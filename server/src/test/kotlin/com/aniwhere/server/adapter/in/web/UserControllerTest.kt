@@ -1,6 +1,13 @@
 package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.config.security.SecurityPrincipal
+import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
+import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopStatus
+import com.aniwhere.server.domain.shopreview.model.ShopReview
+import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
+import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
+import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import com.aniwhere.server.domain.user.model.NicknameAvailabilityResult
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
@@ -23,6 +30,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
 import java.time.LocalDateTime
 
 @WebMvcTest(UserController::class)
@@ -36,6 +44,12 @@ class UserControllerTest {
 
     @MockkBean
     private lateinit var userUseCase: UserUseCase
+
+    @MockkBean
+    private lateinit var favoriteUseCase: UserFavoriteUseCase
+
+    @MockkBean
+    private lateinit var shopReviewUseCase: ShopReviewUseCase
 
     @AfterEach
     fun clearContext() {
@@ -101,6 +115,54 @@ class UserControllerTest {
             .andExpect(jsonPath("$.data.nickname").value("새닉네임"))
 
         verify { userUseCase.updateNickname(10L, "새닉네임") }
+    }
+
+    @Test
+    fun `GET users_me_favorite_shops - 내 즐겨찾기 매장 목록 조회`() {
+        mockAuthenticatedUser(10L, "ROLE_USER")
+        every { favoriteUseCase.listFavoriteShops(10L) } returns listOf(
+            Shop(
+                id = 100L,
+                name = "최애샵",
+                address = "서울시 마포구",
+                px = BigDecimal("126.9200"),
+                py = BigDecimal("37.5500"),
+                status = ShopStatus.ACTIVE,
+            ),
+        )
+
+        mvc.perform(get("/api/v1/users/me/favorite-shops"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].id").value(100))
+            .andExpect(jsonPath("$.data[0].name").value("최애샵"))
+
+        verify { favoriteUseCase.listFavoriteShops(10L) }
+    }
+
+    @Test
+    fun `GET users_me_reviews - 내 리뷰 목록 조회`() {
+        mockAuthenticatedUser(10L, "ROLE_USER")
+        val review = ShopReview(
+            id = 5L,
+            shopId = 100L,
+            authorUserId = 10L,
+            authorNickname = "내닉네임",
+            rating = 4,
+            content = "좋은 샵이에요",
+            status = ShopReviewStatus.VISIBLE,
+            createdAt = LocalDateTime.now(),
+        )
+        every { shopReviewUseCase.listMyReviews(10L, ShopReviewSort.NEWEST, any()) } returns PageImpl(listOf(review))
+
+        mvc.perform(get("/api/v1/users/me/reviews"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.content.length()").value(1))
+            .andExpect(jsonPath("$.data.content[0].id").value(5))
+            .andExpect(jsonPath("$.data.content[0].shopId").value(100))
+            .andExpect(jsonPath("$.data.content[0].content").value("좋은 샵이에요"))
+
+        verify { shopReviewUseCase.listMyReviews(10L, ShopReviewSort.NEWEST, any()) }
     }
 
     private fun sampleUser(userId: Long, nickname: String?) =

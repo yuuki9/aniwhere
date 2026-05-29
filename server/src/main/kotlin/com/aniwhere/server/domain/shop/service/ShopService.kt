@@ -6,7 +6,9 @@ import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
+import com.aniwhere.server.domain.shop.model.ShopSort
 import com.aniwhere.server.domain.shop.model.ShopStatus
+import com.aniwhere.server.domain.shop.model.toPageable
 import com.aniwhere.server.domain.work.model.WorkType
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
@@ -65,10 +67,12 @@ class ShopService(
         includeRegions: Boolean,
         includeCategories: Boolean,
         includeWorkTypes: Boolean,
+        includeSorts: Boolean,
     ): ShopFacetResponse = port.findFacets(
         includeRegions = includeRegions,
         includeCategories = includeCategories,
         includeWorkTypes = includeWorkTypes,
+        includeSorts = includeSorts,
     )
 
     override fun searchShops(
@@ -79,9 +83,19 @@ class ShopService(
         workIds: Set<Int>,
         workType: WorkType?,
         status: ShopStatus?,
+        sort: ShopSort,
         pageable: Pageable,
     ): Page<Shop> =
-        port.findAll(regionIds, categoryIds, keyword, workKeyword, workIds, workType, status, pageable)
+        port.findAll(
+            regionIds,
+            categoryIds,
+            keyword,
+            workKeyword,
+            workIds,
+            workType,
+            status,
+            sort.toPageable(pageable),
+        )
 
     @Transactional
     override fun createShop(shop: Shop): Shop {

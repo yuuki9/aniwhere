@@ -8,6 +8,7 @@ import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopSort
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import com.aniwhere.server.domain.work.model.WorkType
@@ -59,7 +60,8 @@ class ShopController(
             "`keyword`: 샵 이름(`shops.name`) 부분 일치(LIKE). " +
             "`workKeyword`: 취급 작품 `works.name` / `works.korean_title` 부분 일치(LIKE, 두 컬럼 OR). " +
             "`workIds`: 전달한 `works.id` 집합을 하나 이상 취급하는 매장만. " +
-            "필터 그룹 간에는 AND, 같은 그룹의 다중 값은 OR.",
+            "필터 그룹 간에는 AND, 같은 그룹의 다중 값은 OR. " +
+            "`sort`: NEWEST(기본), REVIEW_COUNT_DESC, FAVORITE_COUNT_DESC.",
     )
     @GetMapping
     fun searchShops(
@@ -70,6 +72,7 @@ class ShopController(
         @RequestParam(required = false) workIds: List<Int>?,
         @RequestParam(required = false) workType: String?,
         @RequestParam(required = false) status: String?,
+        @RequestParam(defaultValue = "NEWEST") sort: ShopSort,
         @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<Page<Shop>> {
         val kw = keyword?.trim()?.takeIf { it.isNotEmpty() }
@@ -82,6 +85,7 @@ class ShopController(
             workIds.orEmpty().toSet(),
             workType.toWorkTypeOrNull(),
             status.toShopStatusOrNull(),
+            sort,
             pageable,
         )
         return if (page.totalElements == 0L) {
@@ -97,11 +101,13 @@ class ShopController(
         @RequestParam(required = false) includeRegions: Boolean?,
         @RequestParam(required = false) includeCategories: Boolean?,
         @RequestParam(required = false) includeWorkTypes: Boolean?,
+        @RequestParam(required = false) includeSorts: Boolean?,
     ): ApiResponse<ShopFacetResponse> = ApiResponse.ok(
         useCase.getShopFacets(
             includeRegions = includeRegions ?: true,
             includeCategories = includeCategories ?: true,
             includeWorkTypes = includeWorkTypes ?: true,
+            includeSorts = includeSorts ?: true,
         ),
     )
 
