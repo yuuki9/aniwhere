@@ -26,6 +26,7 @@ data class UserSummary(
     val id: Long,
     val userKey: Long,
     val nickname: String?,
+    val emojiIconFilename: String?,
     val status: String,
     val role: String,
     val lastLoginAt: LocalDateTime?,

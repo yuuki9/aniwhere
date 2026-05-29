@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS users (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_key BIGINT NOT NULL,
     nickname VARCHAR(50) NULL,
+    emoji_icon_filename VARCHAR(255) NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     last_login_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

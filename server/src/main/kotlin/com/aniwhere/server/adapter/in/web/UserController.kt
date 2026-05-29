@@ -86,7 +86,7 @@ class UserController(
     @PatchMapping("/me/nickname")
     fun updateNickname(
         @Valid @RequestBody request: UpdateNicknameRequest,
-    ) = ApiResponse.ok(userUseCase.updateNickname(currentUserId(), request.nickname))
+    ) = ApiResponse.ok(userUseCase.updateNickname(currentUserId(), request.nickname, request.emojiIconFilename))
 
     private fun currentUserIdOrNull(): Long? =
         (SecurityContextHolder.getContext().authentication?.principal as? SecurityPrincipal)?.userId
@@ -107,4 +107,5 @@ class UserController(
 
 data class UpdateNicknameRequest(
     @field:NotBlank val nickname: String,
+    val emojiIconFilename: String? = null,
 )

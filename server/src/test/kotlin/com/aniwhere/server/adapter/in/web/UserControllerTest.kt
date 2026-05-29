@@ -90,24 +90,33 @@ class UserControllerTest {
     @Test
     fun `PATCH users_me_nickname - 내 닉네임 수정`() {
         mockAuthenticatedUser(10L, "ROLE_USER")
-        every { userUseCase.updateNickname(10L, "새닉네임") } returns sampleUser(10L, "새닉네임")
+        every { userUseCase.updateNickname(10L, "새닉네임", "mashiro.png") } returns sampleUser(10L, "새닉네임", "mashiro.png")
 
         mvc.perform(
             patch("/api/v1/users/me/nickname")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(UpdateNicknameRequest("새닉네임"))),
+                .content(
+                    mapper.writeValueAsString(
+                        UpdateNicknameRequest(
+                            nickname = "새닉네임",
+                            emojiIconFilename = "mashiro.png",
+                        ),
+                    ),
+                ),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.nickname").value("새닉네임"))
+            .andExpect(jsonPath("$.data.emojiIconFilename").value("mashiro.png"))
 
-        verify { userUseCase.updateNickname(10L, "새닉네임") }
+        verify { userUseCase.updateNickname(10L, "새닉네임", "mashiro.png") }
     }
 
-    private fun sampleUser(userId: Long, nickname: String?) =
+    private fun sampleUser(userId: Long, nickname: String?, emojiIconFilename: String? = null) =
         UserSummary(
             id = userId,
             userKey = 443731104L,
             nickname = nickname,
+            emojiIconFilename = emojiIconFilename,
             status = "ACTIVE",
             role = "ROLE_USER",
             lastLoginAt = null,

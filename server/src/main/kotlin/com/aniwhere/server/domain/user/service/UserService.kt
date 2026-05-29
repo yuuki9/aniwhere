@@ -27,11 +27,12 @@ class UserService(
     override fun getUserDetail(userId: Long): UserSummary = getExistingUser(userId)
 
     @Transactional
-    override fun updateNickname(userId: Long, nickname: String): UserSummary {
+    override fun updateNickname(userId: Long, nickname: String, emojiIconFilename: String?): UserSummary {
         val user = getExistingUser(userId)
         val normalized = normalizeNickname(nickname)
+        val normalizedEmojiIconFilename = normalizeEmojiIconFilename(emojiIconFilename)
         try {
-            return persistence.updateNickname(user.id, normalized)
+            return persistence.updateNickname(user.id, normalized, normalizedEmojiIconFilename)
         } catch (e: DataIntegrityViolationException) {
             if (isNicknameUniqueViolation(e)) {
                 throw BadRequestException("이미 사용 중인 닉네임입니다.")
@@ -69,6 +70,16 @@ class UserService(
         val normalized = raw.trim()
         if (normalized.isBlank()) throw BadRequestException("nickname must not be blank")
         if (normalized.length > 50) throw BadRequestException("nickname must be at most 50 characters")
+        return normalized
+    }
+
+    private fun normalizeEmojiIconFilename(raw: String?): String? {
+        val normalized = raw?.trim() ?: return null
+        if (normalized.isBlank()) throw BadRequestException("emojiIconFilename must not be blank")
+        if (normalized.length > 255) throw BadRequestException("emojiIconFilename must be at most 255 characters")
+        if (normalized.contains("/") || normalized.contains("\\")) {
+            throw BadRequestException("emojiIconFilename must be a filename only")
+        }
         return normalized
     }
 

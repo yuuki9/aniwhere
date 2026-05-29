@@ -8,5 +8,5 @@ interface UserPersistencePort {
     fun listUsers(pageable: Pageable): Page<UserSummary>
     fun findUser(userId: Long): UserSummary?
     fun isNicknameTaken(nickname: String, excludeUserId: Long? = null): Boolean
-    fun updateNickname(userId: Long, nickname: String): UserSummary
+    fun updateNickname(userId: Long, nickname: String, emojiIconFilename: String?): UserSummary
 }
