@@ -16,6 +16,21 @@ import org.springframework.data.jpa.repository.Query
 import java.math.BigDecimal
 
 interface ShopRepository : JpaRepository<ShopEntity, Long> {
+    @Query(
+        """
+        SELECT DISTINCT s FROM ShopEntity s
+        LEFT JOIN FETCH s.region
+        WHERE s.py BETWEEN :swLat AND :neLat
+          AND s.px BETWEEN :swLng AND :neLng
+        """,
+    )
+    fun findWithinBounds(
+        swLat: BigDecimal,
+        swLng: BigDecimal,
+        neLat: BigDecimal,
+        neLng: BigDecimal,
+    ): List<ShopEntity>
+
     @Query("""
         SELECT DISTINCT s FROM ShopEntity s
         LEFT JOIN FETCH s.region

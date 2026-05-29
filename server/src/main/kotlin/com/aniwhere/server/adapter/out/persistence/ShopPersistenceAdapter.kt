@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 
 @Component
 @Transactional(readOnly = true)
@@ -42,6 +43,14 @@ class ShopPersistenceAdapter(
      */
     @Transactional(readOnly = true)
     override fun findById(id: Long) = shopRepo.findByIdOrNull(id)?.let(shopMapper::toDomain)
+
+    @Transactional(readOnly = true)
+    override fun findWithinBounds(
+        swLat: BigDecimal,
+        swLng: BigDecimal,
+        neLat: BigDecimal,
+        neLng: BigDecimal,
+    ): List<Shop> = shopRepo.findWithinBounds(swLat, swLng, neLat, neLng).map(shopMapper::toDomain)
 
     @Transactional(readOnly = true)
     override fun findFacets(

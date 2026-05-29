@@ -41,6 +41,19 @@ class ShopController(
     @GetMapping("/{id}")
     fun getShop(@PathVariable id: Long) = ApiResponse.ok(useCase.getShop(id))
 
+    @Operation(summary = "현재 위치 기준 반경 1km 매장 목록 조회")
+    @GetMapping("/nearby")
+    fun getNearbyShops(
+        @RequestParam lat: BigDecimal,
+        @RequestParam lng: BigDecimal,
+    ): ApiResponse<List<Shop>> = ApiResponse.ok(
+        useCase.getNearbyShops(
+            latitude = lat,
+            longitude = lng,
+            radiusKm = NEARBY_RADIUS_KM,
+        ),
+    )
+
     @Operation(
         summary = "샵 검색 (페이징). 결과가 없을 때 `code`·`message` 로 안내. " +
             "`keyword`: 샵 이름(`shops.name`) 부분 일치(LIKE). " +
@@ -168,6 +181,7 @@ class ShopController(
     private companion object {
         const val EMPTY_SHOP_SEARCH_CODE = "EMPTY_RESULT"
         const val EMPTY_SHOP_SEARCH_MESSAGE = "선택하신 필터 조건에 맞는 굿즈샵이 없습니다."
+        val NEARBY_RADIUS_KM: BigDecimal = BigDecimal("1.0")
     }
 
     private fun currentUserId(): Long =
