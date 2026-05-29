@@ -29,9 +29,10 @@ class UserPersistenceAdapter(
         }
 
     @Transactional
-    override fun updateNickname(userId: Long, nickname: String): UserSummary {
+    override fun updateNickname(userId: Long, nickname: String, emojiIconFilename: String?): UserSummary {
         val user = userRepo.findByIdOrNull(userId) ?: throw EntityNotFoundException("User not found: $userId")
         user.nickname = nickname
+        user.emojiIconFilename = emojiIconFilename
         return userRepo.save(user).toSummary()
     }
 
@@ -42,6 +43,7 @@ class UserPersistenceAdapter(
             id = userId,
             userKey = userKey,
             nickname = nickname,
+            emojiIconFilename = emojiIconFilename,
             status = status,
             role = role,
             lastLoginAt = lastLoginAt,

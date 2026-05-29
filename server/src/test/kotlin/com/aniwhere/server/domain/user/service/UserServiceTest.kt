@@ -24,12 +24,12 @@ class UserServiceTest {
     @Test
     fun `닉네임 unique 제약 위반이면 수정 실패`() {
         every { persistence.findUser(1L) } returns sampleUser(userId = 1L, nickname = "기존닉네임")
-        every { persistence.updateNickname(1L, "중복닉네임") } throws DataIntegrityViolationException(
+        every { persistence.updateNickname(1L, "중복닉네임", "emoji.png") } throws DataIntegrityViolationException(
             "duplicate key value violates unique constraint",
             ConstraintViolationException("duplicate key", SQLException("duplicate"), "uk_users_nickname_ci"),
         )
 
-        assertThatThrownBy { service.updateNickname(1L, "중복닉네임") }
+        assertThatThrownBy { service.updateNickname(1L, "중복닉네임", "emoji.png") }
             .isInstanceOf(BadRequestException::class.java)
             .hasMessageContaining("이미 사용 중인 닉네임")
     }
@@ -37,12 +37,24 @@ class UserServiceTest {
     @Test
     fun `닉네임 수정 성공`() {
         every { persistence.findUser(1L) } returns sampleUser(userId = 1L, nickname = null)
-        every { persistence.updateNickname(1L, "새닉네임") } returns sampleUser(userId = 1L, nickname = "새닉네임")
+        every {
+            persistence.updateNickname(1L, "새닉네임", "mashiro.png")
+        } returns sampleUser(userId = 1L, nickname = "새닉네임", emojiIconFilename = "mashiro.png")
 
-        val result = service.updateNickname(1L, "  새닉네임 ")
+        val result = service.updateNickname(1L, "  새닉네임 ", "  mashiro.png ")
 
         assertThat(result.nickname).isEqualTo("새닉네임")
-        verify { persistence.updateNickname(1L, "새닉네임") }
+        assertThat(result.emojiIconFilename).isEqualTo("mashiro.png")
+        verify { persistence.updateNickname(1L, "새닉네임", "mashiro.png") }
+    }
+
+    @Test
+    fun `이모지 파일명에 경로가 포함되면 실패`() {
+        every { persistence.findUser(1L) } returns sampleUser(userId = 1L, nickname = null)
+
+        assertThatThrownBy { service.updateNickname(1L, "닉네임", "emoji/mashiro.png") }
+            .isInstanceOf(BadRequestException::class.java)
+            .hasMessageContaining("filename only")
     }
 
     @Test
@@ -99,11 +111,17 @@ class UserServiceTest {
             .hasMessageContaining("자신의 관리자 권한")
     }
 
-    private fun sampleUser(userId: Long, nickname: String?, role: String = "ROLE_USER") =
+    private fun sampleUser(
+        userId: Long,
+        nickname: String?,
+        role: String = "ROLE_USER",
+        emojiIconFilename: String? = null,
+    ) =
         UserSummary(
             id = userId,
             userKey = 443731104L,
             nickname = nickname,
+            emojiIconFilename = emojiIconFilename,
             status = "ACTIVE",
             role = role,
             lastLoginAt = null,

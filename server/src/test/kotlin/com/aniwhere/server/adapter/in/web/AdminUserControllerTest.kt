@@ -62,6 +62,7 @@ class AdminUserControllerTest {
             id = userId,
             userKey = 443731104L,
             nickname = "닉네임",
+            emojiIconFilename = null,
             status = "ACTIVE",
             role = role,
             lastLoginAt = null,
