@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
@@ -8,7 +8,7 @@ import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
 import type { AuthSession } from '../shared/lib/authSession'
-import { Button } from '@aniwhere/tds-mobile'
+import { Asset, BottomSheet, Button, TextField } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
 type IntroFeatureIconName = 'icon-star-mono' | 'icon-pin-mono' | 'icon-pencil-mono'
@@ -71,8 +71,196 @@ function IntroNavigation() {
 
 type EntryRouteState =
   {
-    entryMode: 'toss'
+    entryMode: 'mock' | 'toss'
+    welcomeEmoji?: string
+    welcomeNickname?: string
   }
+
+const NICKNAME_REQUIRED_MESSAGE = '닉네임을 한 글자 이상 입력해 주세요.'
+const DEFAULT_PROFILE_EMOJI_ID = 'alien'
+const PROFILE_EMOJI_FRAME = { width: 58, height: 58, radius: 29 }
+const PROFILE_EMOJI_RAIL_FRAME = { width: 34, height: 34, radius: 17 }
+
+const profileEmojiOptions = [
+  {
+    id: 'fire',
+    label: '파란 불꽃',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F525.png',
+    symbol: '🔥',
+    tone: '#ffe3e3',
+  },
+  {
+    id: 'skull',
+    label: '해골',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F480.png',
+    symbol: '💀',
+    tone: '#e9eef5',
+  },
+  {
+    id: 'alien',
+    label: '초록 외계인',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F47D.png',
+    symbol: '👽',
+    tone: '#d9f7be',
+  },
+  {
+    id: 'bomb',
+    label: '폭탄',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F4A3.png',
+    symbol: '💣',
+    tone: '#e8eaef',
+  },
+  {
+    id: 'seedling',
+    label: '새싹',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F331.png',
+    symbol: '🌱',
+    tone: '#dff8e8',
+  },
+  {
+    id: 'sunglasses',
+    label: '선글라스 얼굴',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F60E.png',
+    symbol: '😎',
+    tone: '#fff0b8',
+  },
+  {
+    id: 'sparkles',
+    label: '반짝이',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u2728.png',
+    symbol: '✨',
+    tone: '#fff4bf',
+  },
+  {
+    id: 'rocket',
+    label: '로켓',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F680.png',
+    symbol: '🚀',
+    tone: '#e6f0ff',
+  },
+  {
+    id: 'game',
+    label: '게임 패드',
+    src: 'https://static.toss.im/2d-emojis/png/4x/u1F3AE.png',
+    symbol: '🎮',
+    tone: '#eadfff',
+  },
+] as const
+
+type ProfileEmojiOption = (typeof profileEmojiOptions)[number]
+
+function getProfileEmojiOption(id: string) {
+  return (
+    profileEmojiOptions.find((option) => option.id === id) ??
+    profileEmojiOptions.find((option) => option.id === DEFAULT_PROFILE_EMOJI_ID) ??
+    profileEmojiOptions[0]
+  )
+}
+
+type NicknameOnboardingSheetProps = {
+  error: string | null
+  input: string
+  isSaving: boolean
+  onChange: (value: string) => void
+  onClose: () => void
+  onEmojiChange: (id: string) => void
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  open: boolean
+  selectedEmoji: ProfileEmojiOption
+  touched: boolean
+}
+
+function NicknameOnboardingSheet({
+  error,
+  input,
+  isSaving,
+  onChange,
+  onClose,
+  onEmojiChange,
+  onSubmit,
+  open,
+  selectedEmoji,
+  touched,
+}: NicknameOnboardingSheetProps) {
+  const selectedEmojiButtonRef = useRef<HTMLButtonElement | null>(null)
+  const hasLengthError = touched && input.trim().length < 1
+  const fieldHelp = error ?? (hasLengthError ? NICKNAME_REQUIRED_MESSAGE : undefined)
+  const hasError = error != null || hasLengthError
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    selectedEmojiButtonRef.current?.scrollIntoView?.({ block: 'nearest', inline: 'center' })
+  }, [open, selectedEmoji.id])
+
+  return (
+    <BottomSheet
+      ariaLabelledBy="intro-nickname-title"
+      className="intro-nickname-sheet"
+      header={
+        <BottomSheet.Header className="intro-nickname-sheet-title">
+          <span id="intro-nickname-title">애니웨어에서 사용할 닉네임이 필요해요</span>
+        </BottomSheet.Header>
+      }
+      maxHeight="72vh"
+      onClose={onClose}
+      open={open}
+    >
+      <form className="intro-nickname-card" id="intro-nickname-form" onSubmit={onSubmit}>
+        <div className="intro-profile-emoji-panel" aria-label="프로필 이모지 선택">
+          <div className="intro-profile-emoji-options" role="radiogroup" aria-label="프로필 이모지">
+            {profileEmojiOptions.map((option) => {
+              const isSelected = option.id === selectedEmoji.id
+
+              return (
+                <button
+                  aria-checked={isSelected}
+                  aria-label={isSelected ? `${option.label}, 선택됨` : option.label}
+                  className="intro-profile-emoji-option"
+                  data-selected={isSelected ? 'true' : undefined}
+                  key={option.id}
+                  onClick={() => onEmojiChange(option.id)}
+                  ref={isSelected ? selectedEmojiButtonRef : undefined}
+                  role="radio"
+                  style={{ '--intro-profile-emoji-tone': option.tone } as CSSProperties}
+                  type="button"
+                >
+                  <Asset.Image
+                    alt=""
+                    className="intro-profile-emoji-image"
+                    frameShape={isSelected ? PROFILE_EMOJI_FRAME : PROFILE_EMOJI_RAIL_FRAME}
+                    src={option.src}
+                  />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <TextField
+          hasError={hasError}
+          help={fieldHelp}
+          id="intro-nickname"
+          inputMode="text"
+          label="닉네임"
+          labelOption="sustain"
+          maxLength={50}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="예: 굿즈탐험가"
+          type="text"
+          value={input}
+          variant="box"
+        />
+        <div className="intro-nickname-sheet-cta">
+          <Button color="primary" display="block" disabled={isSaving} size="xlarge" type="submit" variant="fill">
+            {isSaving ? '확인 중이에요' : '확인'}
+          </Button>
+        </div>
+      </form>
+    </BottomSheet>
+  )
+}
 
 export function IntroPage() {
   const navigate = useNavigate()
@@ -81,7 +269,13 @@ export function IntroPage() {
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
   const [pendingNicknameSession, setPendingNicknameSession] = useState<AuthSession | null>(null)
+  const [isMockNicknameOnboardingOpen, setIsMockNicknameOnboardingOpen] = useState(false)
   const [nicknameInput, setNicknameInput] = useState('')
+  const [nicknameTouched, setNicknameTouched] = useState(false)
+  const [nicknameError, setNicknameError] = useState<string | null>(null)
+  const [selectedProfileEmojiId, setSelectedProfileEmojiId] = useState(DEFAULT_PROFILE_EMOJI_ID)
+  const selectedProfileEmoji = getProfileEmojiOption(selectedProfileEmojiId)
+  const isNicknameSheetOpen = pendingNicknameSession != null || isMockNicknameOnboardingOpen
 
   useEffect(() => {
     document.body.classList.add('intro-route-body')
@@ -103,13 +297,17 @@ export function IntroPage() {
     try {
       const entry = await startServiceEntry()
       const result = await completeServiceEntry(entry)
-      const state: EntryRouteState = { entryMode: 'toss' }
       if (result.mode === 'needsNickname') {
         setPendingNicknameSession(result.session)
+        setIsMockNicknameOnboardingOpen(false)
         setNicknameInput(result.user.nickname ?? '')
+        setNicknameTouched(false)
+        setNicknameError(null)
         return
       }
-      navigate('/home', { state })
+      navigate('/home', {
+        state: { entryMode: 'toss', welcomeNickname: result.user.nickname ?? undefined } satisfies EntryRouteState,
+      })
     } catch (error) {
       const message = error instanceof Error ? error.message : '로그인을 완료하지 못했어요. 다시 시도해 주세요.'
       if (message !== TOSS_LOGIN_UNAVAILABLE_MESSAGE) {
@@ -122,30 +320,79 @@ export function IntroPage() {
     }
   }
 
-  const handleEnterWithoutLogin = () => {
+  const handleMockNicknameStart = () => {
     if (isEntryAttemptInFlightRef.current || isEntering) {
       return
     }
 
-    navigate('/home')
+    setPendingNicknameSession(null)
+    setIsMockNicknameOnboardingOpen(true)
+    setNicknameInput('')
+    setNicknameTouched(false)
+    setNicknameError(null)
+    setSelectedProfileEmojiId(DEFAULT_PROFILE_EMOJI_ID)
+    setEntryError(null)
+  }
+
+  const handleNicknameSheetClose = () => {
+    setPendingNicknameSession(null)
+    setIsMockNicknameOnboardingOpen(false)
+    setNicknameInput('')
+    setNicknameTouched(false)
+    setNicknameError(null)
+    setSelectedProfileEmojiId(DEFAULT_PROFILE_EMOJI_ID)
   }
 
   const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (pendingNicknameSession == null) {
+    const isMockNicknameFlow = pendingNicknameSession == null && isMockNicknameOnboardingOpen
+    if (pendingNicknameSession == null && !isMockNicknameFlow) {
+      return
+    }
+
+    setNicknameTouched(true)
+    const nickname = nicknameInput.trim()
+    if (nickname.length < 1) {
+      setNicknameError(NICKNAME_REQUIRED_MESSAGE)
+      return
+    }
+
+    if (isMockNicknameFlow) {
+      navigate('/home', {
+        state: {
+          entryMode: 'mock',
+          welcomeEmoji: selectedProfileEmoji.symbol,
+          welcomeNickname: nickname,
+        } satisfies EntryRouteState,
+      })
       return
     }
 
     setIsSavingNickname(true)
+    setNicknameError(null)
     setEntryError(null)
 
     try {
-      await saveAniwhereNickname(nicknameInput, pendingNicknameSession.accessToken)
-      navigate('/home', { state: { entryMode: 'toss' } satisfies EntryRouteState })
+      const user = await saveAniwhereNickname(nickname, pendingNicknameSession.accessToken)
+      navigate('/home', {
+        state: {
+          entryMode: 'toss',
+          welcomeEmoji: selectedProfileEmoji.symbol,
+          welcomeNickname: user.nickname ?? nickname,
+        } satisfies EntryRouteState,
+      })
     } catch (error) {
-      setEntryError(error instanceof Error ? error.message : '닉네임을 저장하지 못했어요. 다시 시도해 주세요.')
+      setNicknameError(error instanceof Error ? error.message : '닉네임을 저장하지 못했어요. 다시 시도해 주세요.')
     } finally {
       setIsSavingNickname(false)
+    }
+  }
+
+  const handleNicknameChange = (value: string) => {
+    setNicknameInput(value)
+    if (nicknameTouched || nicknameError != null) {
+      setNicknameTouched(true)
+      setNicknameError(value.trim().length < 1 ? NICKNAME_REQUIRED_MESSAGE : null)
     }
   }
 
@@ -184,58 +431,41 @@ export function IntroPage() {
         </ul>
 
         <div className="intro-mobile-actions">
-          {pendingNicknameSession == null ? (
-            <Button
-              color="primary"
-              display="block"
-              disabled={isEntering}
-              onClick={handleStart}
-              size="xlarge"
-              variant="fill"
-            >
-              {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
-            </Button>
-          ) : (
-            <form className="intro-nickname-card" onSubmit={handleNicknameSubmit}>
-              <label className="intro-nickname-label" htmlFor="intro-nickname">
-                애니웨어에서 사용할 닉네임
-              </label>
-              <input
-                className="intro-nickname-input"
-                id="intro-nickname"
-                inputMode="text"
-                maxLength={50}
-                onChange={(event) => setNicknameInput(event.target.value)}
-                placeholder="예: 굿즈탐험가"
-                type="text"
-                value={nicknameInput}
-              />
-              <p className="intro-nickname-help">후기와 댓글에 표시되는 이름이에요. 나중에 다시 바꿀 수 있어요.</p>
-              <Button
-                color="primary"
-                display="block"
-                disabled={isSavingNickname}
-                size="xlarge"
-                type="submit"
-                variant="fill"
-              >
-                {isSavingNickname ? '저장 중이에요' : '닉네임 저장하기'}
-              </Button>
-            </form>
-          )}
-          {pendingNicknameSession == null ? (
+          <Button
+            color="primary"
+            display="block"
+            disabled={isEntering || isNicknameSheetOpen}
+            onClick={handleStart}
+            size="xlarge"
+            variant="fill"
+          >
+            {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
+          </Button>
+          {!isNicknameSheetOpen ? (
             <button
               className="intro-login-skip-button"
               disabled={isEntering}
               type="button"
-              onClick={handleEnterWithoutLogin}
+              onClick={handleMockNicknameStart}
             >
-              로그인 없이 둘러보기
+              닉네임 설정하고 입장
             </button>
           ) : null}
           {entryError ? <p className="intro-entry-error">{entryError}</p> : null}
         </div>
       </section>
+      <NicknameOnboardingSheet
+        error={nicknameError}
+        input={nicknameInput}
+        isSaving={isSavingNickname}
+        onChange={handleNicknameChange}
+        onClose={handleNicknameSheetClose}
+        onEmojiChange={setSelectedProfileEmojiId}
+        onSubmit={handleNicknameSubmit}
+        open={isNicknameSheetOpen}
+        selectedEmoji={selectedProfileEmoji}
+        touched={nicknameTouched}
+      />
     </main>
   )
 }

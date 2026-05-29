@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { addFavoriteShop, getShop, removeFavoriteShop } from '../shared/api/shops'
+import { listShopReviews } from '../shared/api/shopReviews'
 import { formatDateTime, formatRelativeUpdated, linkTypeToLabel, statusToLabel } from '../shared/lib/format'
 import { getStoredAccessToken } from '../shared/lib/authSession'
 import { StatusPill } from '../shared/ui/StatusPill'
@@ -42,6 +43,12 @@ export function ShopPage() {
     queryFn: () => getShopPhotos(parsedId),
     enabled: Number.isFinite(parsedId),
     staleTime: Infinity,
+  })
+
+  const reviewsQuery = useQuery({
+    queryKey: ['shop-reviews', parsedId, 'NEWEST'],
+    queryFn: () => listShopReviews(parsedId, { page: 0, size: 3, sort: 'NEWEST' }),
+    enabled: Number.isFinite(parsedId),
   })
 
   const favoriteShopMutation = useMutation({
@@ -171,6 +178,9 @@ export function ShopPage() {
             <div className="shop-detail-summary-meta">
               <span>{statusToLabel(shop.status)}</span>
               <span>{formatFloorLabel(shop.floor)}</span>
+              <span>
+                {shop.averageRating != null ? `평점 ${shop.averageRating.toFixed(1)}` : '평점 준비 중'} · 리뷰 {shop.reviewCount}
+              </span>
               <span>{formatRelativeUpdated(shop.updatedAt)}</span>
             </div>
 
@@ -220,6 +230,38 @@ export function ShopPage() {
               </div>
             </section>
           ) : null}
+
+          <section className="section shop-detail-reviews-card">
+            <div className="section-header">
+              <div>
+                <h2>방문 리뷰</h2>
+              </div>
+              <span className="meta-text">{shop.reviewCount}개</span>
+            </div>
+            {reviewsQuery.isLoading ? <p className="meta-text">리뷰를 불러오는 중입니다.</p> : null}
+            {reviewsQuery.isError ? (
+              <p className="error-text">{(reviewsQuery.error as Error).message}</p>
+            ) : null}
+            {reviewsQuery.data?.content.length === 0 ? (
+              <p className="meta-text">아직 등록된 방문 리뷰가 없습니다.</p>
+            ) : null}
+            {reviewsQuery.data?.content.length ? (
+              <div className="source-list">
+                {reviewsQuery.data.content.map((review) => (
+                  <article className="source-card source-card-rich" key={review.id}>
+                    <div className="source-card-header">
+                      <strong>{review.authorNickname}</strong>
+                      <span className="meta-text">
+                        별점 {review.rating} · 좋아요 {review.likeCount}
+                      </span>
+                    </div>
+                    <p>{review.content}</p>
+                    {review.createdAt ? <p>{formatDateTime(review.createdAt)}</p> : null}
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </section>
 
           <section className="section shop-detail-links-card">
             <div className="section-header">

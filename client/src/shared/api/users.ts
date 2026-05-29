@@ -4,6 +4,7 @@ import type {
   PageResponse,
   PagingParams,
   UpdateNicknamePayload,
+  UpdateUserRolePayload,
   UserSummary,
 } from './types'
 
@@ -33,6 +34,14 @@ export function checkNicknameAvailability(nickname: string, authToken?: string |
 
 export function updateMyNickname(payload: UpdateNicknamePayload, authToken?: string | null) {
   return request<UserSummary>('/api/v1/users/me/nickname', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    authToken,
+  })
+}
+
+export function updateUserRole(userId: number, payload: UpdateUserRolePayload, authToken?: string | null) {
+  return request<UserSummary>(`/api/v1/admin/users/${userId}/role`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
     authToken,

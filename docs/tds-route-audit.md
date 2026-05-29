@@ -272,7 +272,7 @@ Official docs checked with official web fallback because `ax` was not on PATH in
 
 | Area | Current classification | Notes |
 | --- | --- | --- |
-| `/intro` login-free home entry | Product-approved / Temporary unblock | While Toss login token exchange is blocked in sandbox, intro exposes a secondary `로그인 없이 둘러보기` action that routes to `/home`. The primary Toss login CTA remains first and unchanged, so this is a temporary exploration bypass rather than a replacement login path. Runtime login still needs sandbox verification. |
+| `/intro` login-free home entry | Superseded by 2026-05-28 nickname mock entry | The earlier `로그인 없이 둘러보기` bypass routed directly to `/home` while Toss login token exchange was blocked in sandbox. It has been replaced by a nickname setup mock entry so ADS/local visual adjustments happen through the same modal surface used by real Toss login onboarding. |
 | `/explore` list results sheet | TDS-required / Product-approved adaptation | `MapResultsSheet` now renders through the `@aniwhere/tds-mobile` `BottomSheet` facade. It uses `disableDimmer` and `UNSAFE_disableFocusLock` because the list mode is part of the map exploration surface rather than a blocking modal task. Peek and expanded shop detail sheets remain app-owned persistent map-attached surfaces because they are coupled to URL state, drag gestures, and native/browser back folding; replacing them should remain a separate behavior migration with sandbox evidence. |
 | `/explore` quick status chip | Product-approved / Regression fix | `영업중` remains a map quick chip backed by the `status=ACTIVE` shop API parameter, but it no longer creates a duplicate applied filter chip labelled `Open`. The active quick chip itself is the visible state affordance. |
 | `/explore` sheet controls | Product-approved / Regression fix | The selected-shop peek sheet stays app-owned. After the list sheet moved to TDS `BottomSheet`, the existing map list FAB could visually overlap the peek summary at 375px. Peek mode now gets a dedicated `map-surface-sheet-peek` surface class that lifts the shared zoom/list control stack with a responsive `--map-control-bottom` value and hides only the current-location FAB while the shop route/summary action is visible. In list-sheet mode, the map toggle FAB is lifted and the scrollable result panel reserves bottom padding so sheet content and the FAB do not compete. The list FAB remains available instead of being hidden. |
@@ -410,6 +410,61 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/home` CTA media usage | Product-approved / Asset-informed | Three separately generated 1600x400 banner images from the local Downloads folder are bundled as `home-cta-*-banner.png`. The left side stays copy-safe, while the illustration occupies the center/right. TDS `Asset` informs the stable clipped media frame, and `ListRow`/`GridList` inform the list-like tap rhythm, but the exact banner surface remains app-owned. The previous vertical CTA assets (`home-cta-map.png`, `home-cta-favorites.png`, `home-cta-reviews.png`) remain in the repository, so reverting the isolated banner-conversion commit restores the 2026-05-27 vertical card path. |
 | `/home` CTA label and frame follow-up | Product-approved / Regression fix | The local `home-section-head` title above the CTA stack was removed so the first actionable banner owns the surface directly. CTA copy was shortened to two compact lines and uses token-based body-large typography. A dark overlay was intentionally not used; the banner instead uses the stronger border token, an inset outline, and a gray-50 copy gradient so it separates from the white page without making the bright 3D assets read like ads. |
 | Runtime verification | Needs sandbox | `node --test tests/homeViewModel.test.ts` should verify the source/CSS contract. Local browser screenshot can show the 375px visual, but Apps in Toss sandbox still needs image decode, safe-area spacing, and native scroll confirmation. |
+
+### 2026-05-28 Toss Login Nickname Onboarding Follow-up
+
+Official docs checked with official web fallback in the current session:
+
+- Apps in Toss login development: https://developers-apps-in-toss.toss.im/login/develop.html
+- `appLogin` reference: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/%EB%A1%9C%EA%B7%B8%EC%9D%B8/appLogin.html
+- TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/intro` Toss login boundary | TDS-required / Apps in Toss-required | The official login docs still describe `appLogin()` as the client-side authorization-code step, with token exchange and user lookup handled by the server. Aniwhere keeps this boundary: the Intro CTA starts `appLogin()`, then the client sends the authorization code and referrer to Aniwhere's server before loading `/api/v1/users/me`. |
+| `/intro` nickname setup field | TDS-required / Product-approved adaptation | New or unnamed Aniwhere users now render the nickname input through the project `@aniwhere/tds-mobile` `TextField` facade. Apps in Toss builds resolve the facade to official `@toss/tds-mobile` `TextField`; public/domain builds use a local fallback that preserves the same label, helper, input, and token-compatible visual structure. |
+| Nickname copy and purpose | Product-approved | Nickname entry remains Aniwhere-owned profile setup, not another login or Toss identity step. The copy says the nickname is used inside Aniwhere and appears on reviews/comments. |
+| Runtime verification | Needs sandbox | Source tests verify the facade boundary and Intro source contract. Apps in Toss sandbox still needs uploaded `.ait` verification for `appLogin()`, server token exchange, missing-nickname display, keyboard behavior, and successful nickname save back to `/home`. |
+
+### 2026-05-28 Toss Login Nickname Sheet And Admin Entry Follow-up
+
+Official docs checked with official web fallback in the current session:
+
+- Apps in Toss login intro: https://developers-apps-in-toss.toss.im/login/intro.html
+- Modal: https://tossmini-docs.toss.im/tds-mobile/components/modal/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- Asset.Image: https://tossmini-docs.toss.im/tds-mobile/components/Asset/asset/
+- TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
+- Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- Apps in Toss game profile setup reference: https://developers-apps-in-toss.toss.im/game-center/intro.html
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Toss service-use consent | Apps in Toss-required / Needs console verification | The official login intro states that login terms and partner service terms are configured in the Apps in Toss console and the user consent screen is automatically constructed from that setup. Aniwhere does not add a duplicate in-app terms screen; missing consent in the uploaded build should be verified against console login setup and whether the sandbox account already consented. |
+| `/intro` nickname sheet | TDS-required / Product-approved | Missing-nickname users now complete Aniwhere profile setup in a TDS `BottomSheet` containing TDS `BottomSheet.Header`, `Asset.Image`, `TextField`, and bottom CTA `Button`. The copy was shortened to the game profile setup rhythm: `애니웨어에서 사용할 닉네임이 필요해요`, emoji profile selection, `닉네임`, input, and `확인`. Empty values surface `hasError` and `help` copy inside the field, and the real save flow still calls Swagger-backed nickname availability before updating `/api/v1/users/me/nickname`. |
+| `/intro` nickname mock entry | Product-approved / ADS adjustment aid | The secondary intro action is now `닉네임 설정하고 입장` and opens the same `NicknameOnboardingSheet` without starting `appLogin()`. Mock submission validates one or more characters and routes to `/home` with the same welcome-toast state, but intentionally skips the backend nickname availability/update calls so ADS/local layout tuning can reuse the exact real-login sheet surface without mutating user data. |
+| `/home` welcome toast | Product-approved / TDS-informed | Existing named users who complete Toss login and users who just saved a nickname enter `/home` with route state that renders a top TDS `Toast`: `{emoji} {nickname}님 반가워요!` when an emoji was selected, otherwise `{nickname}님 반가워요!`. This replaces the previous confetti welcome panel so login completion stays compact and matches the game profile setup reference. |
+| Nickname emoji | Follow-up API decision / Product-approved | The current Swagger/user profile contract stores only `nickname`; no emoji/avatar field is available for Aniwhere profile persistence yet. The frontend now lets users choose one curated Toss static emoji asset from a 9-item horizontal rail, with the selected item expanded and supported by an icon-specific color like the Apps in Toss game profile setup reference. The selected emoji is carried in route state for the welcome toast only. When the backend adds a stable profile emoji field, wire this selected `id` or server-agreed key into the nickname/profile save payload instead of embedding emoji into the nickname string. |
+| `/home` admin entry | Product-approved / API-required | Home shows a small operation-management entry after the primary CTA stack only when the stored Toss login session role is admin-like (`ADMIN`, `ROLE_ADMIN`, or `*_ADMIN`). It links to `/admin` and preserves the existing `AdminAccessGate`; no admin bypass or auto-redirect is introduced. |
+| Runtime verification | Needs sandbox | Local source tests and builds can verify contract and bundle shape, but the Toss consent screen, official BottomSheet animation, TDS Lottie rendering, and authenticated admin role visibility require Apps in Toss sandbox verification. |
+
+### 2026-05-28 Main Backend Contract Follow-up
+
+Official docs checked with official web fallback in the current session:
+
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Review API migration | API-required / Product-approved | Backend `main` removed legacy `/api/v1/posts` community endpoints and added shop-scoped review APIs under `/api/v1/shops/{shopId}/reviews`. Client stale post request helpers were removed, and `/community` now routes to an API-safe review 안내 surface until a fuller shop-review composer is designed. |
+| `/home` recent review preview | API-required / Product-approved | Home no longer fetches removed `GET /api/v1/posts`. The section now explains that reviews are organized per shop because there is no aggregate recent-review Swagger endpoint yet. |
+| `/shop/detail/:shopId` review summary | Product-approved / API-required | Shop detail now reads `Shop.averageRating`, `Shop.reviewCount`, and the first page of `GET /api/v1/shops/{shopId}/reviews` to expose current backend review data without inventing a cross-shop feed. |
+| `/explore` review tab link | Regression fixed / API-required | The selected-shop review tab no longer links to `/community?shopId=...`; it links to the shop detail route where the new shop-scoped review data can be shown. |
+| Runtime verification | Needs sandbox | Source tests, lint, and build can verify removed post endpoints and new API types. Authenticated review create/update/like flows still need a product UI pass and Apps in Toss sandbox verification before launch. |
 
 ## PR Evidence Format
 

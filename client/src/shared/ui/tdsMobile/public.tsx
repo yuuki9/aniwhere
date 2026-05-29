@@ -1,4 +1,13 @@
-import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, LiHTMLAttributes, ReactNode } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import type {
+  ButtonHTMLAttributes,
+  CSSProperties,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  LiHTMLAttributes,
+  ReactNode,
+  Ref,
+} from 'react'
 import { useEffect } from 'react'
 
 type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -13,6 +22,74 @@ type PublicBadgeProps = HTMLAttributes<HTMLSpanElement> & {
   color?: 'blue' | 'teal' | 'green' | 'red' | 'yellow' | 'elephant'
   size: 'xsmall' | 'small' | 'medium' | 'large'
   variant: 'fill' | 'weak'
+}
+
+type PublicAssetLottieProps = HTMLAttributes<HTMLSpanElement> & {
+  src: string
+  frameShape?: { width?: number; height?: number }
+  loop?: boolean
+  'aria-hidden'?: boolean
+}
+
+type PublicAssetImageProps = HTMLAttributes<HTMLSpanElement> & {
+  alt: string
+  src: string
+  frameShape?: { width?: number; height?: number; radius?: number | string }
+}
+
+function AssetImage({
+  alt,
+  className,
+  frameShape,
+  src,
+  style,
+  ...props
+}: PublicAssetImageProps) {
+  return (
+    <span
+      className={['ait-asset-image', className].filter(Boolean).join(' ')}
+      style={{
+        width: frameShape?.width,
+        height: frameShape?.height,
+        borderRadius: frameShape?.radius,
+        ...style,
+      }}
+      {...props}
+    >
+      <img alt={alt} src={src} />
+    </span>
+  )
+}
+
+function AssetLottie({
+  className,
+  frameShape,
+  src,
+  style,
+  ...props
+}: PublicAssetLottieProps) {
+  return (
+    <span
+      className={['ait-asset-lottie', className].filter(Boolean).join(' ')}
+      data-src={src}
+      style={{
+        width: frameShape?.width,
+        height: frameShape?.height,
+        ...style,
+      }}
+      {...props}
+    >
+      {'\u{1F389}'}
+    </span>
+  )
+}
+
+export const Asset = {
+  frameShape: {
+    CleanW60: { width: 60, height: 60 },
+  },
+  Image: AssetImage,
+  Lottie: AssetLottie,
 }
 
 export function Badge({ className, color = 'blue', size, variant, ...props }: PublicBadgeProps) {
@@ -62,6 +139,21 @@ type PublicSearchFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   takeSpace?: boolean
 }
 
+type PublicTextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'prefix'> & {
+  containerProps?: HTMLAttributes<HTMLDivElement>
+  containerRef?: Ref<HTMLDivElement>
+  hasError?: boolean
+  help?: ReactNode
+  label?: string
+  labelOption?: 'appear' | 'sustain'
+  paddingBottom?: CSSProperties['paddingBottom']
+  paddingTop?: CSSProperties['paddingTop']
+  prefix?: string
+  right?: ReactNode
+  suffix?: string
+  variant: 'box' | 'line' | 'big' | 'hero'
+}
+
 export function SearchField({
   className,
   fixed = false,
@@ -94,6 +186,96 @@ export function SearchField({
     />
   )
 }
+
+export function TextField({
+  className,
+  containerProps,
+  containerRef,
+  hasError = false,
+  help,
+  id,
+  label,
+  labelOption = 'appear',
+  paddingBottom,
+  paddingTop,
+  prefix,
+  right,
+  suffix,
+  variant,
+  ...props
+}: PublicTextFieldProps) {
+  const { className: containerClassName, style: containerStyle, ...restContainerProps } = containerProps ?? {}
+  const shouldShowLabel = label != null && (labelOption === 'sustain' || String(props.value ?? '').length > 0)
+
+  return (
+    <div
+      className={['ait-text-field', containerClassName].filter(Boolean).join(' ')}
+      data-has-error={hasError ? 'true' : undefined}
+      data-label-option={labelOption}
+      data-variant={variant}
+      ref={containerRef}
+      style={{ paddingBottom, paddingTop, ...containerStyle }}
+      {...restContainerProps}
+    >
+      {shouldShowLabel ? (
+        <label className="ait-text-field-label" htmlFor={id}>
+          {label}
+        </label>
+      ) : null}
+      <span className="ait-text-field-control">
+        {prefix != null ? <span className="ait-text-field-affix">{prefix}</span> : null}
+        <input className={['ait-text-field-input', className].filter(Boolean).join(' ')} id={id} {...props} />
+        {suffix != null ? <span className="ait-text-field-affix">{suffix}</span> : null}
+        {right != null ? <span className="ait-text-field-right">{right}</span> : null}
+      </span>
+      {help != null ? <p className="ait-text-field-help">{help}</p> : null}
+    </div>
+  )
+}
+
+type PublicModalProps = {
+  children: ReactNode
+  open: boolean
+  onOpenChange?: (open: boolean) => void
+  onExited?: () => void
+}
+
+type PublicModalOverlayProps = Omit<HTMLAttributes<HTMLDivElement>, 'onClick'> & {
+  onClick?: () => void
+}
+
+type PublicModalContentProps = HTMLAttributes<HTMLDivElement>
+
+function ModalRoot({ children, open }: PublicModalProps) {
+  if (!open) {
+    return null
+  }
+
+  return <>{children}</>
+}
+
+function ModalOverlay({ className, onClick, ...props }: PublicModalOverlayProps) {
+  return (
+    <div
+      className={['ait-modal-overlay', className].filter(Boolean).join(' ')}
+      onClick={onClick}
+      {...props}
+    />
+  )
+}
+
+function ModalContent({ children, className, ...props }: PublicModalContentProps) {
+  return (
+    <div className={['ait-modal-content', className].filter(Boolean).join(' ')} role="dialog" {...props}>
+      {children}
+    </div>
+  )
+}
+
+export const Modal = Object.assign(ModalRoot, {
+  Overlay: ModalOverlay,
+  Content: ModalContent,
+})
 
 type PublicListRowProps = LiHTMLAttributes<HTMLLIElement> & {
   border?: 'none' | 'indented'
@@ -156,7 +338,7 @@ type PublicTopProps = {
   right?: ReactNode
 }
 
-export function Top({
+function TopRoot({
   className,
   lower,
   lowerGap,
@@ -176,13 +358,39 @@ export function Top({
       ) : null}
       <div className="ait-top-copy">
         <h1>{title}</h1>
-        {subtitleBottom != null ? <p>{subtitleBottom}</p> : null}
+        {subtitleBottom != null ? <div className="ait-top-subtitle-bottom">{subtitleBottom}</div> : null}
       </div>
       {right != null ? <div>{right}</div> : null}
       {lower != null ? <div style={lowerGap != null ? { marginTop: lowerGap } : undefined}>{lower}</div> : null}
     </div>
   )
 }
+
+function TopTitleParagraph({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['ait-top-title-paragraph', className].filter(Boolean).join(' ')} role="heading" aria-level={1} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function TopSubtitleParagraph({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={['ait-top-subtitle-paragraph', className].filter(Boolean).join(' ')} {...props}>{children}</div>
+}
+
+function TopRightAssetContent({ content, className, ...props }: HTMLAttributes<HTMLDivElement> & { content: ReactNode }) {
+  return (
+    <div className={['ait-top-right-asset-content', className].filter(Boolean).join(' ')} {...props}>
+      {content}
+    </div>
+  )
+}
+
+export const Top = Object.assign(TopRoot, {
+  RightAssetContent: TopRightAssetContent,
+  SubtitleParagraph: TopSubtitleParagraph,
+  TitleParagraph: TopTitleParagraph,
+})
 
 type PublicToastProps = {
   open: boolean
@@ -201,12 +409,13 @@ type PublicBottomSheetProps = HTMLAttributes<HTMLElement> & {
   headerDescription?: ReactNode
   cta?: ReactNode
   disableDimmer?: boolean
+  maxHeight?: number | `${number}vh`
   ariaLabelledBy?: string
   ariaDescribedBy?: string
   UNSAFE_disableFocusLock?: boolean
 }
 
-export function BottomSheet({
+function BottomSheetRoot({
   children,
   className,
   cta,
@@ -217,6 +426,8 @@ export function BottomSheet({
   disableDimmer = false,
   ariaLabelledBy,
   ariaDescribedBy,
+  maxHeight,
+  style,
   UNSAFE_disableFocusLock = false,
   ...props
 }: PublicBottomSheetProps) {
@@ -235,6 +446,10 @@ export function BottomSheet({
         className={['ait-bottom-sheet', className].filter(Boolean).join(' ')}
         data-disable-focus-lock={UNSAFE_disableFocusLock ? 'true' : undefined}
         role="dialog"
+        style={{
+          ...(maxHeight != null ? { maxHeight } : {}),
+          ...style,
+        }}
         {...props}
       >
         {header}
@@ -245,6 +460,27 @@ export function BottomSheet({
     </>
   )
 }
+
+function BottomSheetHeader({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['ait-bottom-sheet-header', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function BottomSheetHeaderDescription({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['ait-bottom-sheet-header-description', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </div>
+  )
+}
+
+export const BottomSheet = Object.assign(BottomSheetRoot, {
+  Header: BottomSheetHeader,
+  HeaderDescription: BottomSheetHeaderDescription,
+})
 
 export function Toast({
   open,

@@ -19,10 +19,10 @@ function cssRuleBodies(css: string, selector: string) {
   return Array.from(matches, (match) => match[1])
 }
 
-test('homeViewModel exports home CTA, work preview, and review preview builders', () => {
+test('homeViewModel exports home CTA and work preview builders', () => {
   assert.deepEqual(
     Object.keys(homeViewModel).sort(),
-    ['buildHomeCtaCards', 'buildHomeReviewPreviewItems', 'buildHomeWorkPreviewItems'],
+    ['buildHomeCtaCards', 'buildHomeWorkPreviewItems'],
   )
 })
 
@@ -68,10 +68,27 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.doesNotMatch(source, /id="home-cta-title"/)
   assert.match(source, /home-work-poster-card/)
   assert.match(source, /home-review-preview-section/)
+  assert.match(source, /매장별 리뷰로 정리 중이에요/)
+  assert.doesNotMatch(source, /getPosts/)
+  assert.doesNotMatch(source, /buildHomeReviewPreviewItems/)
   assert.doesNotMatch(source, /HomeQuickMenuSection/)
   assert.doesNotMatch(source, /API/)
   assert.doesNotMatch(source, /aria-live="polite"/)
   assert.doesNotMatch(source, /role="status"/)
+})
+
+test('HomePage shows a top welcome toast from Toss nickname entry state', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+
+  assert.match(source, /import \{ Toast \} from '@aniwhere\/tds-mobile'/)
+  assert.match(source, /useLocation\(\)/)
+  assert.match(source, /readWelcomeProfile\(location\.state\)/)
+  assert.match(source, /welcomeEmoji/)
+  assert.match(source, /<Toast/)
+  assert.match(source, /position="top"/)
+  assert.match(source, /welcomeProfile\.emoji/)
+  assert.match(source, /welcomeProfile\.nickname/)
+  assert.match(source, /님 반가워요!/)
 })
 
 test('HomePage sends work poster searches to SearchPage with work scope and return target', () => {
@@ -99,6 +116,26 @@ test('HomePage imports CTA banner images and routes only the map CTA for now', (
   assert.doesNotMatch(source, /isAdminUnlocked/)
   assert.match(styles, /\.home-cta-banner-list/)
   assert.match(styles, /\.home-cta-banner-disabled/)
+})
+
+test('HomePage shows the admin entry only for server admin roles', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+  const authSession = fs.readFileSync(new URL('../src/shared/lib/authSession.ts', import.meta.url), 'utf8')
+  const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+
+  assert.match(source, /import \{ isAdminRole, readAuthSession \} from '..\/shared\/lib\/authSession'/)
+  assert.match(source, /function HomeAdminEntry\(\)/)
+  assert.match(source, /className="home-admin-entry-card"/)
+  assert.match(source, /to="\/admin"/)
+  assert.match(source, /const canEnterAdmin = useMemo\(\(\) => isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
+  assert.match(source, /\{canEnterAdmin \? <HomeAdminEntry \/> : null\}/)
+  assert.match(authSession, /export function isAdminRole/)
+  assert.match(authSession, /normalized === 'ADMIN'/)
+  assert.match(authSession, /normalized === 'ROLE_ADMIN'/)
+  assert.match(authSession, /normalized\?\.endsWith\('_ADMIN'\)/)
+  assert.match(styles, /\.home-admin-entry-section/)
+  assert.match(styles, /\.home-admin-entry-card\s*\{[\s\S]*min-height: 64px;/)
+  assert.match(styles, /\.home-admin-entry-card\s*\{[\s\S]*border: 1px solid var\(--ait-color-border\);/)
 })
 
 test('Home CTA routes render as one-column list banner items', () => {
@@ -129,7 +166,7 @@ test('Home CTA routes render as one-column list banner items', () => {
   assert.match(styles, /\.home-cta-image\s*\{[\s\S]*object-position:\s*center center;/)
   assert.equal(cssRuleBodies(styles, '.home-cta-image').some((rule) => /transform:/.test(rule)), false)
   assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*position:\s*absolute/)
-  assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: var\(--ait-space-4\);/)
+  assert.match(styles, /\.home-cta-copy\s*\{[\s\S]*padding: var\(--ait-space-8\);/)
   assert.ok(cssRuleBodies(styles, '.home-cta-copy').some((rule) => /background:\s*linear-gradient\(90deg/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.home-cta-copy strong').some((rule) => /font-size:\s*var\(--ait-font-size-body-lg\);/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.home-cta-copy strong').some((rule) => /line-height:\s*1\.22;/.test(rule)))
