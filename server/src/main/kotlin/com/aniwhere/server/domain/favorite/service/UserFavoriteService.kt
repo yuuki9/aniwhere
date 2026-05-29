@@ -4,6 +4,7 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
 import com.aniwhere.server.domain.favorite.port.out.UserFavoritePersistencePort
+import com.aniwhere.server.domain.shop.model.Shop
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -12,6 +13,11 @@ import org.springframework.transaction.annotation.Transactional
 class UserFavoriteService(
     private val port: UserFavoritePersistencePort,
 ) : UserFavoriteUseCase {
+    override fun listFavoriteShops(userId: Long): List<Shop> {
+        if (userId <= 0) throw BadRequestException("userId must be positive")
+        if (!port.existsUser(userId)) throw EntityNotFoundException("User not found: $userId")
+        return port.findFavoriteShops(userId)
+    }
 
     @Transactional
     override fun addFavoriteWork(userId: Long, workId: Int) {

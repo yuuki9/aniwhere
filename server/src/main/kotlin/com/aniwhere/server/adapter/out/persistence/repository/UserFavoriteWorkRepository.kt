@@ -14,6 +14,8 @@ interface UserFavoriteWorkRepository : JpaRepository<UserFavoriteWorkEntity, Lon
 }
 
 interface UserFavoriteShopRepository : JpaRepository<UserFavoriteShopEntity, Long> {
+    @Query("select ufs from UserFavoriteShopEntity ufs where ufs.user.id = :userId order by ufs.createdAt desc, ufs.id desc")
+    fun findAllByUserIdOrderByCreatedAtDesc(@Param("userId") userId: Long): List<UserFavoriteShopEntity>
     fun existsByUser_IdAndShopId(userId: Long, shopId: Long): Boolean
     fun deleteByUser_IdAndShopId(userId: Long, shopId: Long): Long
 }

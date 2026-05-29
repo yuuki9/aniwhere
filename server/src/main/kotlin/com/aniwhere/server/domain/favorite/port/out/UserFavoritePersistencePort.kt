@@ -1,9 +1,12 @@
 package com.aniwhere.server.domain.favorite.port.out
 
+import com.aniwhere.server.domain.shop.model.Shop
+
 interface UserFavoritePersistencePort {
     fun existsUser(userId: Long): Boolean
     fun existsWork(workId: Int): Boolean
     fun existsShop(shopId: Long): Boolean
+    fun findFavoriteShops(userId: Long): List<Shop>
 
     fun existsFavoriteWork(userId: Long, workId: Int): Boolean
     fun saveFavoriteWork(userId: Long, workId: Int)

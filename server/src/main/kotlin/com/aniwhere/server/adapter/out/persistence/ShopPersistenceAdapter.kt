@@ -16,7 +16,9 @@ import com.aniwhere.server.domain.shop.model.FacetWorkTypeItem
 import com.aniwhere.server.common.exception.EntityNotFoundException
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
+import com.aniwhere.server.domain.shop.model.ShopSort
 import com.aniwhere.server.domain.shop.model.ShopStatus
+import com.aniwhere.server.domain.shop.model.toFacetItem
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
 import com.aniwhere.server.domain.shop.port.out.ShopPersistencePort
 import com.aniwhere.server.domain.work.model.WorkType
@@ -57,6 +59,7 @@ class ShopPersistenceAdapter(
         includeRegions: Boolean,
         includeCategories: Boolean,
         includeWorkTypes: Boolean,
+        includeSorts: Boolean,
     ): ShopFacetResponse = ShopFacetResponse(
         regions = if (includeRegions) {
             regionRepo.findAllWithShopCount().map { FacetRegionItem(id = it.id, name = it.name) }
@@ -70,6 +73,11 @@ class ShopPersistenceAdapter(
         },
         workTypes = if (includeWorkTypes) {
             WorkType.entries.map { it.toFacetItem() }
+        } else {
+            emptyList()
+        },
+        sorts = if (includeSorts) {
+            ShopSort.entries.map { it.toFacetItem() }
         } else {
             emptyList()
         },

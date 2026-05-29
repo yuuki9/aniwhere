@@ -43,6 +43,17 @@ class ShopReviewService(
         return enrichWithLikeState(page, viewerUserId)
     }
 
+    override fun listMyReviews(
+        userId: Long,
+        sort: ShopReviewSort,
+        pageable: Pageable,
+    ): Page<ShopReview> {
+        if (userId <= 0) throw BadRequestException("userId must be positive")
+        if (!port.existsUser(userId)) throw EntityNotFoundException("User not found: $userId")
+        val page = port.findByAuthorUserIdExcludingDeleted(userId, sort.toPageable(pageable))
+        return enrichWithLikeState(page, userId)
+    }
+
     @Transactional(readOnly = false, propagation = Propagation.NOT_SUPPORTED)
     override fun createReview(
         authorUserId: Long,

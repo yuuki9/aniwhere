@@ -14,6 +14,11 @@ interface ShopReviewUseCase {
         pageable: Pageable,
         viewerUserId: Long? = null,
     ): Page<ShopReview>
+    fun listMyReviews(
+        userId: Long,
+        sort: ShopReviewSort,
+        pageable: Pageable,
+    ): Page<ShopReview>
     fun createReview(
         authorUserId: Long,
         shopId: Long,

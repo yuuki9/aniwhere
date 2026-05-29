@@ -2,9 +2,11 @@ package com.aniwhere.server.adapter.`in`.web
 
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
+import com.aniwhere.server.domain.shop.model.ShopSort
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.shop.model.FacetCategoryItem
 import com.aniwhere.server.domain.shop.model.FacetRegionItem
+import com.aniwhere.server.domain.shop.model.FacetSortItem
 import com.aniwhere.server.domain.shop.model.FacetWorkTypeItem
 import com.aniwhere.server.domain.shop.port.`in`.ShopUseCase
 import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
@@ -94,16 +96,18 @@ class ShopControllerTest {
         every { useCase.getShop(1L) } returns sampleShop.copy(
             averageRating = BigDecimal("4.25"),
             reviewCount = 12,
+            favoriteCount = 34,
         )
         mvc.perform(get("/api/v1/shops/1"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.averageRating").value(4.25))
             .andExpect(jsonPath("$.data.reviewCount").value(12))
+            .andExpect(jsonPath("$.data.favoriteCount").value(34))
     }
 
     @Test
     fun `GET shops - 샵 페이징 검색`() {
-        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("keyword", "테스트").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content.length()").value(1))
@@ -112,7 +116,7 @@ class ShopControllerTest {
             .andExpect(jsonPath("$.data.totalElements").value(1))
             .andExpect(jsonPath("$.code").doesNotExist())
             .andExpect(jsonPath("$.message").doesNotExist())
-        verify { useCase.searchShops(emptySet(), emptySet(), "테스트", null, emptySet(), null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), "테스트", null, emptySet(), null, null, ShopSort.NEWEST, any()) }
     }
 
     @Test
@@ -138,21 +142,23 @@ class ShopControllerTest {
     }
 
     @Test
-    fun `GET shops - 검색 결과에 averageRating과 reviewCount를 반환한다`() {
+    fun `GET shops - 검색 결과에 averageRating reviewCount favoriteCount를 반환한다`() {
         val shopWithRating = sampleShop.copy(
             averageRating = BigDecimal("4.50"),
             reviewCount = 8,
+            favoriteCount = 21,
         )
-        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(shopWithRating))
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(shopWithRating))
         mvc.perform(get("/api/v1/shops").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content[0].averageRating").value(4.50))
             .andExpect(jsonPath("$.data.content[0].reviewCount").value(8))
+            .andExpect(jsonPath("$.data.content[0].favoriteCount").value(21))
     }
 
     @Test
     fun `GET shops - keyword 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(emptySet(), emptySet(), "원피스", null, emptySet(), null, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(emptySet(), emptySet(), "원피스", null, emptySet(), null, null, ShopSort.NEWEST, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("keyword", " 원피스 ")
@@ -160,12 +166,12 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(emptySet(), emptySet(), "원피스", null, emptySet(), null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), "원피스", null, emptySet(), null, null, ShopSort.NEWEST, any()) }
     }
 
     @Test
     fun `GET shops - workIds 를 그대로 유스케이스에 전달`() {
-        every { useCase.searchShops(emptySet(), emptySet(), null, null, setOf(42), null, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(emptySet(), emptySet(), null, null, setOf(42), null, null, ShopSort.NEWEST, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("workIds", "42")
@@ -173,12 +179,12 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(emptySet(), emptySet(), null, null, setOf(42), null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, setOf(42), null, null, ShopSort.NEWEST, any()) }
     }
 
     @Test
     fun `GET shops - workKeyword 앞뒤 공백은 trim 후 전달`() {
-        every { useCase.searchShops(emptySet(), emptySet(), null, "주술회전", emptySet(), null, null, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(emptySet(), emptySet(), null, "주술회전", emptySet(), null, null, ShopSort.NEWEST, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(
             get("/api/v1/shops")
                 .param("workKeyword", " 주술회전 ")
@@ -186,21 +192,21 @@ class ShopControllerTest {
                 .param("size", "20"),
         )
             .andExpect(status().isOk)
-        verify { useCase.searchShops(emptySet(), emptySet(), null, "주술회전", emptySet(), null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, "주술회전", emptySet(), null, null, ShopSort.NEWEST, any()) }
     }
 
     @Test
     fun `GET shops - status 필터를 domain enum으로 전달`() {
-        every { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, ShopStatus.ACTIVE, any()) } returns PageImpl(listOf(sampleShop))
+        every { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, ShopStatus.ACTIVE, ShopSort.NEWEST, any()) } returns PageImpl(listOf(sampleShop))
         mvc.perform(get("/api/v1/shops").param("status", "ACTIVE").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
-        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, ShopStatus.ACTIVE, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, ShopStatus.ACTIVE, ShopSort.NEWEST, any()) }
     }
 
     @Test
     fun `GET shops - 검색 결과가 없으면 code 와 안내 메시지`() {
         val pageable = PageRequest.of(0, 20)
-        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(emptyList(), pageable, 0)
+        every { useCase.searchShops(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(emptyList(), pageable, 0)
         mvc.perform(get("/api/v1/shops").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
@@ -211,11 +217,11 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops - keyword 가 공백만이면 필터 미적용(null)`() {
-        every { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, null, any()) } returns PageImpl(emptyList())
+        every { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, null, ShopSort.NEWEST, any()) } returns PageImpl(emptyList())
         mvc.perform(get("/api/v1/shops").param("keyword", "   ").param("page", "0").param("size", "20"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.code").value("EMPTY_RESULT"))
-        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), null, null, ShopSort.NEWEST, any()) }
     }
 
     @Test
@@ -229,6 +235,7 @@ class ShopControllerTest {
                 emptySet(),
                 null,
                 null,
+                ShopSort.NEWEST,
                 any(),
             )
         } returns PageImpl(listOf(sampleShop))
@@ -251,6 +258,7 @@ class ShopControllerTest {
                 emptySet(),
                 null,
                 null,
+                ShopSort.NEWEST,
                 any(),
             )
         }
@@ -259,7 +267,7 @@ class ShopControllerTest {
     @Test
     fun `GET shops - workType 앞뒤 공백은 trim 후 enum으로 전달`() {
         every {
-            useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), WorkType.GAME, null, any())
+            useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), WorkType.GAME, null, ShopSort.NEWEST, any())
         } returns PageImpl(listOf(sampleShop))
 
         mvc.perform(
@@ -270,7 +278,41 @@ class ShopControllerTest {
         )
             .andExpect(status().isOk)
 
-        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), WorkType.GAME, null, any()) }
+        verify { useCase.searchShops(emptySet(), emptySet(), null, null, emptySet(), WorkType.GAME, null, ShopSort.NEWEST, any()) }
+    }
+
+    @Test
+    fun `GET shops - sort 파라미터를 useCase로 전달`() {
+        every {
+            useCase.searchShops(
+                emptySet(),
+                emptySet(),
+                null,
+                null,
+                emptySet(),
+                null,
+                null,
+                ShopSort.FAVORITE_COUNT_DESC,
+                any(),
+            )
+        } returns PageImpl(listOf(sampleShop))
+
+        mvc.perform(get("/api/v1/shops").param("sort", "FAVORITE_COUNT_DESC"))
+            .andExpect(status().isOk)
+
+        verify {
+            useCase.searchShops(
+                emptySet(),
+                emptySet(),
+                null,
+                null,
+                emptySet(),
+                null,
+                null,
+                ShopSort.FAVORITE_COUNT_DESC,
+                any(),
+            )
+        }
     }
 
     @Test
@@ -286,10 +328,15 @@ class ShopControllerTest {
 
     @Test
     fun `GET shops_facets - 응답은 regions categories workTypes 배열을 포함`() {
-        every { useCase.getShopFacets(true, true, true) } returns ShopFacetResponse(
+        every { useCase.getShopFacets(true, true, true, true) } returns ShopFacetResponse(
             regions = listOf(FacetRegionItem(id = 1, name = "홍대")),
             categories = listOf(FacetCategoryItem(id = 2, name = "굿즈")),
             workTypes = listOf(FacetWorkTypeItem(value = "GAME", label = "게임")),
+            sorts = listOf(
+                FacetSortItem(value = "NEWEST", label = "최신순"),
+                FacetSortItem(value = "REVIEW_COUNT_DESC", label = "리뷰 많은순"),
+                FacetSortItem(value = "FAVORITE_COUNT_DESC", label = "즐겨찾기 많은순"),
+            ),
         )
 
         mvc.perform(get("/api/v1/shops/facets"))
@@ -297,40 +344,46 @@ class ShopControllerTest {
             .andExpect(jsonPath("$.data.regions[0].id").value(1))
             .andExpect(jsonPath("$.data.categories[0].id").value(2))
             .andExpect(jsonPath("$.data.workTypes[0].value").value("GAME"))
+            .andExpect(jsonPath("$.data.sorts[0].value").value("NEWEST"))
+            .andExpect(jsonPath("$.data.sorts[1].value").value("REVIEW_COUNT_DESC"))
+            .andExpect(jsonPath("$.data.sorts[2].value").value("FAVORITE_COUNT_DESC"))
             .andExpect(jsonPath("$.data.works").doesNotExist())
             .andExpect(jsonPath("$.data.statuses").doesNotExist())
     }
 
     @Test
     fun `GET shops_facets - 파라미터 없이 옵션 목록 조회`() {
-        every { useCase.getShopFacets(true, true, true) } returns ShopFacetResponse()
+        every { useCase.getShopFacets(true, true, true, true) } returns ShopFacetResponse()
 
         mvc.perform(get("/api/v1/shops/facets"))
             .andExpect(status().isOk)
 
-        verify { useCase.getShopFacets(true, true, true) }
+        verify { useCase.getShopFacets(true, true, true, true) }
     }
 
     @Test
     fun `GET shops_facets - include 파라미터로 요소 포함 여부를 제어`() {
-        every { useCase.getShopFacets(false, true, false) } returns ShopFacetResponse(
+        every { useCase.getShopFacets(false, true, false, false) } returns ShopFacetResponse(
             regions = emptyList(),
             categories = listOf(FacetCategoryItem(id = 2, name = "굿즈")),
             workTypes = emptyList(),
+            sorts = emptyList(),
         )
 
         mvc.perform(
             get("/api/v1/shops/facets")
                 .param("includeRegions", "false")
                 .param("includeCategories", "true")
-                .param("includeWorkTypes", "false"),
+                .param("includeWorkTypes", "false")
+                .param("includeSorts", "false"),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.regions.length()").value(0))
             .andExpect(jsonPath("$.data.categories[0].id").value(2))
             .andExpect(jsonPath("$.data.workTypes.length()").value(0))
+            .andExpect(jsonPath("$.data.sorts.length()").value(0))
 
-        verify { useCase.getShopFacets(false, true, false) }
+        verify { useCase.getShopFacets(false, true, false, false) }
     }
 
     @Test
