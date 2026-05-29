@@ -173,7 +173,7 @@ class UserControllerTest {
         verify { shopReviewUseCase.listMyReviews(10L, ShopReviewSort.NEWEST, any()) }
     }
 
-    private fun sampleUser(userId: Long, nickname: String?) =
+    private fun sampleUser(userId: Long, nickname: String?, emojiIconFilename: String? = null) =
         UserSummary(
             id = userId,
             userKey = 443731104L,
