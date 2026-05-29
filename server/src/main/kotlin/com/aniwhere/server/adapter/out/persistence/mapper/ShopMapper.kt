@@ -49,6 +49,7 @@ class ShopMapper(
         description = e.detail?.description,
         averageRating = e.averageRating,
         reviewCount = e.reviewCount,
+        favoriteCount = e.favoriteCount,
         createdAt = e.createdAt,
         updatedAt = e.updatedAt,
     )

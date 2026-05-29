@@ -15,6 +15,12 @@ interface ShopReviewRepository : JpaRepository<ShopReviewEntity, Long> {
         pageable: Pageable,
     ): Page<ShopReviewEntity>
 
+    fun findByAuthor_IdAndStatusIn(
+        authorId: Long,
+        statuses: Collection<ShopReviewStatusEnum>,
+        pageable: Pageable,
+    ): Page<ShopReviewEntity>
+
     fun findByIdAndShopId(id: Long, shopId: Long): ShopReviewEntity?
 
     @Query("SELECT AVG(r.rating) FROM ShopReviewEntity r WHERE r.shopId = :shopId AND r.status = :status")

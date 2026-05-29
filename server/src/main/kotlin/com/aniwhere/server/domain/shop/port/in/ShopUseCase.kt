@@ -3,6 +3,7 @@ package com.aniwhere.server.domain.shop.port.`in`
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shop.model.ShopSort
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.work.model.WorkType
 import org.springframework.data.domain.Page
@@ -16,6 +17,7 @@ interface ShopUseCase {
         includeRegions: Boolean = true,
         includeCategories: Boolean = true,
         includeWorkTypes: Boolean = true,
+        includeSorts: Boolean = true,
     ): ShopFacetResponse
     fun searchShops(
         regionIds: Set<Short>,
@@ -25,6 +27,7 @@ interface ShopUseCase {
         workIds: Set<Int>,
         workType: WorkType?,
         status: ShopStatus?,
+        sort: ShopSort,
         pageable: Pageable,
     ): Page<Shop>
     fun createShop(shop: Shop): Shop

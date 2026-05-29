@@ -22,6 +22,7 @@ interface ShopPersistencePort {
         includeRegions: Boolean = true,
         includeCategories: Boolean = true,
         includeWorkTypes: Boolean = true,
+        includeSorts: Boolean = true,
     ): ShopFacetResponse
     fun findAll(
         regionIds: Set<Short>,

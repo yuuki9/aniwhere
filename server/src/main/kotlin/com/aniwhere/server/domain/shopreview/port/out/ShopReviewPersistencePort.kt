@@ -12,9 +12,11 @@ data class ShopReviewImagePersistenceRow(
 )
 
 interface ShopReviewPersistencePort {
+    fun existsUser(userId: Long): Boolean
     fun existsShop(shopId: Long): Boolean
     fun save(review: ShopReview): ShopReview
     fun findVisibleByShopId(shopId: Long, pageable: Pageable): Page<ShopReview>
+    fun findByAuthorUserIdExcludingDeleted(authorUserId: Long, pageable: Pageable): Page<ShopReview>
     fun findByIdAndShopId(reviewId: Long, shopId: Long): ShopReview?
     fun findVisibleByIdAndShopId(reviewId: Long, shopId: Long): ShopReview?
     fun update(reviewId: Long, review: ShopReview): ShopReview

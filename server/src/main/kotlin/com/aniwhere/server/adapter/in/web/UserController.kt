@@ -4,6 +4,10 @@ import com.aniwhere.server.common.dto.ApiResponse
 import com.aniwhere.server.common.exception.UnauthorizedException
 import com.aniwhere.server.common.logging.LogMasking
 import com.aniwhere.server.config.security.SecurityPrincipal
+import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
+import com.aniwhere.server.domain.shop.model.Shop
+import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
+import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
 import io.swagger.v3.oas.annotations.Operation
@@ -31,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController
 @Validated
 class UserController(
     private val userUseCase: UserUseCase,
+    private val favoriteUseCase: UserFavoriteUseCase,
+    private val shopReviewUseCase: ShopReviewUseCase,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -81,6 +87,18 @@ class UserController(
     fun checkNicknameAvailability(
         @RequestParam @NotBlank nickname: String,
     ) = ApiResponse.ok(userUseCase.checkNicknameAvailability(currentUserIdOrNull(), nickname))
+
+    @Operation(summary = "내 즐겨찾기 매장 목록 조회")
+    @GetMapping("/me/favorite-shops")
+    fun listMyFavoriteShops(): ApiResponse<List<Shop>> =
+        ApiResponse.ok(favoriteUseCase.listFavoriteShops(currentUserId()))
+
+    @Operation(summary = "내 리뷰 목록 조회")
+    @GetMapping("/me/reviews")
+    fun listMyReviews(
+        @RequestParam(defaultValue = "NEWEST") sort: ShopReviewSort,
+        @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
+    ) = ApiResponse.ok(shopReviewUseCase.listMyReviews(currentUserId(), sort, pageable))
 
     @Operation(summary = "내 닉네임 수정")
     @PatchMapping("/me/nickname")

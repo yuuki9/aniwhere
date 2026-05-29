@@ -32,6 +32,8 @@ class ShopReviewPersistenceAdapter(
     private val mapper: ShopReviewMapper,
 ) : ShopReviewPersistencePort {
 
+    override fun existsUser(userId: Long): Boolean = userRepo.existsById(userId)
+
     override fun existsShop(shopId: Long): Boolean = shopRepo.existsById(shopId)
 
     @Transactional(readOnly = false)
@@ -46,6 +48,13 @@ class ShopReviewPersistenceAdapter(
         reviewRepo.findByShopIdAndStatus(
             shopId,
             ShopReviewStatusEnum.VISIBLE,
+            pageable,
+        ).map(mapper::toDomain)
+
+    override fun findByAuthorUserIdExcludingDeleted(authorUserId: Long, pageable: Pageable): Page<ShopReview> =
+        reviewRepo.findByAuthor_IdAndStatusIn(
+            authorUserId,
+            MY_REVIEW_STATUSES,
             pageable,
         ).map(mapper::toDomain)
 
@@ -161,5 +170,9 @@ class ShopReviewPersistenceAdapter(
     override fun findLikedReviewIds(userId: Long, reviewIds: Collection<Long>): Set<Long> {
         if (reviewIds.isEmpty()) return emptySet()
         return reviewLikeRepo.findReviewIdsByUserIdAndReviewIdIn(userId, reviewIds).toSet()
+    }
+
+    private companion object {
+        val MY_REVIEW_STATUSES = setOf(ShopReviewStatusEnum.VISIBLE, ShopReviewStatusEnum.HIDDEN)
     }
 }

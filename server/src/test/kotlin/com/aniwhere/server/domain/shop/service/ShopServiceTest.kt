@@ -6,6 +6,7 @@ import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shop.model.ShopFacetResponse
 import com.aniwhere.server.domain.shop.model.ShopImageRole
+import com.aniwhere.server.domain.shop.model.ShopSort
 import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.work.model.WorkType
 import com.aniwhere.server.domain.shop.port.out.ShopImagePersistenceRow
@@ -78,7 +79,7 @@ class ShopServiceTest {
     @Test
     fun `searchShops - 페이징 검색`() {
         val pageable = PageRequest.of(0, 20)
-        every { port.findAll(any(), any(), any(), any(), any(), any(), any(), pageable) } returns PageImpl(listOf(sampleShop))
+        every { port.findAll(any(), any(), any(), any(), any(), any(), any(), any()) } returns PageImpl(listOf(sampleShop))
         val result = service.searchShops(
             regionIds = setOf(1),
             categoryIds = emptySet(),
@@ -87,10 +88,22 @@ class ShopServiceTest {
             workIds = emptySet(),
             workType = WorkType.GAME,
             status = ShopStatus.ACTIVE,
+            sort = ShopSort.NEWEST,
             pageable = pageable,
         )
         assertEquals(1, result.totalElements)
-        verify { port.findAll(setOf(1), emptySet(), "테스트", null, emptySet(), WorkType.GAME, ShopStatus.ACTIVE, pageable) }
+        verify {
+            port.findAll(
+                setOf(1),
+                emptySet(),
+                "테스트",
+                null,
+                emptySet(),
+                WorkType.GAME,
+                ShopStatus.ACTIVE,
+                match { it.pageNumber == 0 && it.pageSize == 20 && it.sort.getOrderFor("createdAt")?.isDescending == true },
+            )
+        }
     }
 
     @Test
@@ -126,12 +139,17 @@ class ShopServiceTest {
     @Test
     fun `getShopFacets - 옵션 목록을 persistence port에서 조회한다`() {
         val expected = ShopFacetResponse()
-        every { port.findFacets(true, false, true) } returns expected
+        every { port.findFacets(true, false, true, true) } returns expected
 
-        val result = service.getShopFacets(includeRegions = true, includeCategories = false, includeWorkTypes = true)
+        val result = service.getShopFacets(
+            includeRegions = true,
+            includeCategories = false,
+            includeWorkTypes = true,
+            includeSorts = true,
+        )
 
         assertSame(expected, result)
-        verify(exactly = 1) { port.findFacets(true, false, true) }
+        verify(exactly = 1) { port.findFacets(true, false, true, true) }
     }
 
     @Test
