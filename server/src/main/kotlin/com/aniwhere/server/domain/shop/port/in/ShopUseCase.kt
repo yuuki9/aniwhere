@@ -7,9 +7,11 @@ import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.work.model.WorkType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import java.math.BigDecimal
 
 interface ShopUseCase {
     fun getShop(id: Long): Shop
+    fun getNearbyShops(latitude: BigDecimal, longitude: BigDecimal, radiusKm: BigDecimal): List<Shop>
     fun getShopFacets(
         includeRegions: Boolean = true,
         includeCategories: Boolean = true,

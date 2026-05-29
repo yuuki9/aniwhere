@@ -94,6 +94,30 @@ class ShopServiceTest {
     }
 
     @Test
+    fun `getNearbyShops - 반경 1km 이내 매장만 거리순으로 반환`() {
+        val fartherShop = sampleShop.copy(
+            id = 2L,
+            name = "먼샵",
+            py = BigDecimal("37.5179462"),
+        )
+        val closerShop = sampleShop.copy(
+            id = 3L,
+            name = "가까운샵",
+            py = BigDecimal("37.4990462"),
+        )
+        every { port.findWithinBounds(any(), any(), any(), any()) } returns listOf(fartherShop, closerShop, sampleShop)
+
+        val result = service.getNearbyShops(
+            latitude = BigDecimal("37.4979462"),
+            longitude = BigDecimal("127.0276368"),
+            radiusKm = BigDecimal("1.0"),
+        )
+
+        assertEquals(listOf(1L, 3L), result.mapNotNull { it.id })
+        verify(exactly = 1) { port.findWithinBounds(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `createShop - 샵 생성 성공`() {
         every { port.save(any()) } returns sampleShop
         assertNotNull(service.createShop(sampleShop.copy(id = null)).id)

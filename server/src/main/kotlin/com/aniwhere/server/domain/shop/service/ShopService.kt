@@ -18,7 +18,14 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
+import java.math.BigDecimal
 import java.util.UUID
+import kotlin.math.atan2
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @Service
 @Transactional(readOnly = true)
@@ -29,6 +36,30 @@ class ShopService(
 ) : ShopUseCase {
     override fun getShop(id: Long) =
         port.findById(id) ?: throw EntityNotFoundException("Shop not found: $id")
+
+    override fun getNearbyShops(
+        latitude: BigDecimal,
+        longitude: BigDecimal,
+        radiusKm: BigDecimal,
+    ): List<Shop> {
+        val lat = latitude.toDouble()
+        val lng = longitude.toDouble()
+        val radius = radiusKm.toDouble()
+        validateNearbyRequest(lat, lng, radius)
+
+        val bounds = calculateNearbyBounds(lat, lng, radius)
+        return port.findWithinBounds(bounds.swLat, bounds.swLng, bounds.neLat, bounds.neLng)
+            .mapNotNull { shop ->
+                val distanceKm = haversineKm(lat, lng, shop.py.toDouble(), shop.px.toDouble())
+                if (distanceKm <= radius) {
+                    shop to distanceKm
+                } else {
+                    null
+                }
+            }
+            .sortedBy { it.second }
+            .map { it.first }
+    }
 
     override fun getShopFacets(
         includeRegions: Boolean,
@@ -237,6 +268,8 @@ class ShopService(
 
     private companion object {
         const val MAX_GALLERY_IMAGES = 6
+        const val EARTH_RADIUS_KM = 6371.0
+        const val LATITUDE_KM_PER_DEGREE = 111.32
         private val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
 
         fun normalizeContentType(raw: String): String {
@@ -251,7 +284,49 @@ class ShopService(
             "image/gif" -> "gif"
             else -> "bin"
         }
+
+        private fun validateNearbyRequest(latitude: Double, longitude: Double, radiusKm: Double) {
+            if (!latitude.isFinite() || latitude !in -90.0..90.0) {
+                throw BadRequestException("lat must be between -90 and 90.")
+            }
+            if (!longitude.isFinite() || longitude !in -180.0..180.0) {
+                throw BadRequestException("lng must be between -180 and 180.")
+            }
+            if (!radiusKm.isFinite() || radiusKm <= 0.0) {
+                throw BadRequestException("radiusKm must be greater than 0.")
+            }
+        }
+
+        private fun calculateNearbyBounds(latitude: Double, longitude: Double, radiusKm: Double): NearbyBoundsDecimal {
+            val latDelta = radiusKm / LATITUDE_KM_PER_DEGREE
+            val lngDenominator = LATITUDE_KM_PER_DEGREE * cos(Math.toRadians(latitude)).let {
+                if (it == 0.0) Double.MIN_VALUE else abs(it)
+            }
+            val lngDelta = radiusKm / lngDenominator
+            return NearbyBoundsDecimal(
+                swLat = (latitude - latDelta).coerceAtLeast(-90.0).toBigDecimal(),
+                swLng = (longitude - lngDelta).coerceAtLeast(-180.0).toBigDecimal(),
+                neLat = (latitude + latDelta).coerceAtMost(90.0).toBigDecimal(),
+                neLng = (longitude + lngDelta).coerceAtMost(180.0).toBigDecimal(),
+            )
+        }
+
+        private fun haversineKm(fromLat: Double, fromLng: Double, toLat: Double, toLng: Double): Double {
+            val latDistance = Math.toRadians(toLat - fromLat)
+            val lngDistance = Math.toRadians(toLng - fromLng)
+            val startLat = Math.toRadians(fromLat)
+            val endLat = Math.toRadians(toLat)
+            val a = sin(latDistance / 2).pow(2.0) + sin(lngDistance / 2).pow(2.0) * cos(startLat) * cos(endLat)
+            return EARTH_RADIUS_KM * 2 * atan2(sqrt(a), sqrt(1 - a))
+        }
     }
+
+    private data class NearbyBoundsDecimal(
+        val swLat: BigDecimal,
+        val swLng: BigDecimal,
+        val neLat: BigDecimal,
+        val neLng: BigDecimal,
+    )
 
     private fun invalidateFacetCache() = Unit
 }

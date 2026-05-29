@@ -7,6 +7,7 @@ import com.aniwhere.server.domain.shop.model.ShopStatus
 import com.aniwhere.server.domain.work.model.WorkType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import java.math.BigDecimal
 
 data class ShopImagePersistenceRow(
     val s3Key: String,
@@ -16,6 +17,7 @@ data class ShopImagePersistenceRow(
 
 interface ShopPersistencePort {
     fun findById(id: Long): Shop?
+    fun findWithinBounds(swLat: BigDecimal, swLng: BigDecimal, neLat: BigDecimal, neLng: BigDecimal): List<Shop>
     fun findFacets(
         includeRegions: Boolean = true,
         includeCategories: Boolean = true,

@@ -116,6 +116,28 @@ class ShopControllerTest {
     }
 
     @Test
+    fun `GET shops_nearby - 좌표 기준 반경 1km 매장 목록 조회`() {
+        every { useCase.getNearbyShops(any(), any(), any()) } returns listOf(sampleShop)
+
+        mvc.perform(
+            get("/api/v1/shops/nearby")
+                .param("lat", "37.4979462")
+                .param("lng", "127.0276368"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].name").value("테스트샵"))
+
+        verify {
+            useCase.getNearbyShops(
+                BigDecimal("37.4979462"),
+                BigDecimal("127.0276368"),
+                BigDecimal("1.0"),
+            )
+        }
+    }
+
+    @Test
     fun `GET shops - 검색 결과에 averageRating과 reviewCount를 반환한다`() {
         val shopWithRating = sampleShop.copy(
             averageRating = BigDecimal("4.50"),
