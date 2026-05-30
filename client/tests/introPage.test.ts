@@ -286,7 +286,8 @@ test('IntroPage renders a nickname setup step for new or unnamed Aniwhere users'
   const styles = appCssSource()
 
   assert.match(source, /nicknameInput/)
-  assert.match(source, /saveAniwhereNickname\(nickname,\s*pendingNicknameSession\.accessToken\)/)
+  assert.match(source, /emojiIconFilename: 'u1F47D\.png'/)
+  assert.match(source, /saveAniwhereNickname\(nickname,\s*pendingNicknameSession\.accessToken,\s*selectedProfileEmoji\.emojiIconFilename\)/)
   assert.match(source, /import \{ Asset, BottomSheet, Button, TextField \} from '@aniwhere\/tds-mobile'/)
   assert.match(source, /const profileEmojiOptions = \[/)
   assert.match(source, /DEFAULT_PROFILE_EMOJI_ID = 'alien'/)
