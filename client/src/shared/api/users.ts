@@ -3,6 +3,7 @@ import type {
   NicknameAvailabilityResult,
   PageResponse,
   PagingParams,
+  Shop,
   UpdateNicknamePayload,
   UpdateUserRolePayload,
   UserSummary,
@@ -10,6 +11,10 @@ import type {
 
 export function getMyProfile(authToken?: string | null) {
   return request<UserSummary>('/api/v1/users/me', { authToken })
+}
+
+export function listMyFavoriteShops(authToken?: string | null) {
+  return request<Shop[]>('/api/v1/users/me/favorite-shops', { authToken })
 }
 
 export function listUsers(params: PagingParams = {}, authToken?: string | null) {

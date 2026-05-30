@@ -1,102 +1,63 @@
-import { type FormEvent, type KeyboardEvent, useCallback, useMemo, useRef, useState } from 'react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { getShopFacets, getShops } from '../shared/api/shops'
-import type { Shop } from '../shared/api/types'
-import { formatRelativeUpdated } from '../shared/lib/format'
+import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { requestCurrentLocation } from '../shared/lib/location'
-import { pushRecentSearch, readRecentSearches } from '../shared/lib/searchHistory'
 import {
-  SHOP_FACET_GC_TIME_MS,
-  SHOP_FACET_STALE_TIME_MS,
-  shopFacetQueryKey,
-} from '../shared/lib/shopFacetQuery'
+  clearRecentSearches,
+  pushRecentSearch,
+  readRecentSearches,
+  removeRecentSearch,
+} from '../shared/lib/searchHistory'
 import {
   countShopFilters,
   parseShopFilters,
-  removeAppliedShopFilterChip,
-  toShopSearchParams,
   writeShopFilters,
-  type AppliedShopFilterChip,
   type ShopFilters,
 } from '../shared/lib/shopFilters'
+import { isAppsInTossRuntime } from '../shared/lib/auth'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
-import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
+import { MapSearchFieldForm } from '../shared/ui/MapSearchFieldShell'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
-import { StatusPill } from '../shared/ui/StatusPill'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
 import { buildNearbyExploreHref } from './searchNearby'
-import { SearchField } from '@aniwhere/tds-mobile'
-
-const SEARCH_PAGE_SIZE = 8
-
-const buildExploreHref = (shopId: number) => {
-  const next = new URLSearchParams()
-
-  next.set('shopId', String(shopId))
-  return `/explore?${next.toString()}`
-}
-
-const buildShopMeta = (shop: Shop) =>
-  [shop.regionName, ...shop.categories.slice(0, 2).map((category) => category.name)].filter(Boolean)
-    .join(' · ')
-
-const buildShopAddress = (shop: Shop) => [shop.address, shop.floor].filter(Boolean).join(' · ')
 
 type SearchScope = 'shop' | 'work'
 
-async function searchShopsFromSearchBar({
-  currentSearchScope,
-  currentKeyword,
-  currentPage,
+function readSafeReturnTo(value: string | null) {
+  return value?.startsWith('/') && !value.startsWith('//') ? value : null
+}
+
+function buildExploreSearchHref({
+  keyword,
+  scope,
   selectedFilters,
 }: {
-  currentSearchScope: SearchScope
-  currentKeyword: string
-  currentPage: number
+  keyword: string
+  scope: SearchScope
   selectedFilters: ShopFilters
 }) {
-  const searchKeyword = currentKeyword || undefined
-  const selectedSearchParams = toShopSearchParams(selectedFilters)
+  const trimmed = keyword.trim()
+  const next = writeShopFilters(new URLSearchParams(), selectedFilters)
 
-  if (currentSearchScope === 'work') {
-    return getShops({
-      page: currentPage,
-      size: SEARCH_PAGE_SIZE,
-      workKeyword: searchKeyword,
-      ...selectedSearchParams,
-    })
+  next.set('view', 'list')
+
+  if (scope === 'work') {
+    next.set('scope', 'work')
   }
 
-  const shopResults = await getShops({
-    page: currentPage,
-    size: SEARCH_PAGE_SIZE,
-    keyword: searchKeyword,
-    ...selectedSearchParams,
-  })
-
-  if (shopResults.content.length > 0 || currentPage > 0) {
-    return shopResults
+  if (trimmed) {
+    next.set('keyword', trimmed)
   }
 
-  return getShops({
-    page: currentPage,
-    size: SEARCH_PAGE_SIZE,
-    workKeyword: searchKeyword,
-    ...selectedSearchParams,
-  })
+  return `/explore?${next.toString()}`
 }
 
 export function SearchPage() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword') ?? ''
-  const currentPage = Number(searchParams.get('page') ?? '0')
   const selectedFilters = useMemo(() => parseShopFilters(searchParams), [searchParams])
-  const returnTo = searchParams.get('returnTo')
-  const safeReturnTo = returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : null
+  const safeReturnTo = readSafeReturnTo(searchParams.get('returnTo'))
   const [keyword, setKeyword] = useState(currentKeyword)
   const [recentSearches, setRecentSearches] = useState(() => readRecentSearches())
   const [nearbyState, setNearbyState] = useState<'idle' | 'loading' | 'error'>('idle')
@@ -104,54 +65,29 @@ export function SearchPage() {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
   const appliedFilterCount = countShopFilters(selectedFilters)
-  const hasSearchCriteria = currentKeyword.trim().length > 0 || appliedFilterCount > 0
-  const searchReturnTo = `${location.pathname}${location.search}`
+  const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
+
+  useEffect(() => {
+    setKeyword(currentKeyword)
+  }, [currentKeyword])
 
   const closeFilterSheet = useCallback(() => {
     setIsFilterSheetOpen(false)
   }, [])
 
-  const resultQuery = useQuery({
-    queryKey: ['shops', 'search-page-results', currentSearchScope, currentKeyword, selectedFilters, currentPage],
-    queryFn: () => searchShopsFromSearchBar({ currentSearchScope, currentKeyword, currentPage, selectedFilters }),
-    placeholderData: keepPreviousData,
-    enabled: hasSearchCriteria,
-  })
-
-  const appliedFacetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: false }
-  const appliedFacetQuery = useQuery({
-    queryKey: shopFacetQueryKey(appliedFacetParams),
-    queryFn: () => getShopFacets(appliedFacetParams),
-    staleTime: SHOP_FACET_STALE_TIME_MS,
-    gcTime: SHOP_FACET_GC_TIME_MS,
-    enabled: appliedFilterCount > 0,
-  })
-
-  const moveToSearch = (nextKeyword: string, nextPage = 0) => {
+  const submitSearchToExplore = (nextKeyword: string) => {
     const trimmed = nextKeyword.trim()
-    const next = writeShopFilters(new URLSearchParams(), selectedFilters)
-
-    if (safeReturnTo) {
-      next.set('returnTo', safeReturnTo)
-    }
-
-    if (currentSearchScope === 'work') {
-      next.set('scope', 'work')
-    }
 
     if (trimmed) {
-      next.set('keyword', trimmed)
       setRecentSearches(pushRecentSearch(trimmed))
     }
 
-    next.set('page', String(nextPage))
-    setSearchParams(next, { replace: true })
-    setKeyword(trimmed)
+    navigate(buildExploreSearchHref({ keyword: trimmed, scope: currentSearchScope, selectedFilters }))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    moveToSearch(keyword)
+    submitSearchToExplore(keyword)
   }
 
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -160,30 +96,10 @@ export function SearchPage() {
     }
 
     event.preventDefault()
-    moveToSearch(keyword)
-  }
-
-  const movePage = (nextPage: number) => {
-    moveToSearch(currentKeyword, nextPage)
+    submitSearchToExplore(keyword)
   }
 
   const handleSearchBack = () => {
-    if (currentKeyword.trim()) {
-      const next = writeShopFilters(new URLSearchParams(), selectedFilters)
-
-      if (safeReturnTo) {
-        next.set('returnTo', safeReturnTo)
-      }
-
-      if (currentSearchScope === 'work') {
-        next.set('scope', 'work')
-      }
-
-      setSearchParams(next, { replace: true })
-      setKeyword('')
-      return
-    }
-
     if (safeReturnTo) {
       navigate(safeReturnTo, { replace: true })
       return
@@ -193,22 +109,16 @@ export function SearchPage() {
   }
 
   const applyFilters = (nextFilters: ShopFilters) => {
-    const next = writeShopFilters(searchParams, nextFilters)
-
-    next.set('page', '0')
-    setSearchParams(next, { replace: true })
+    navigate(buildExploreSearchHref({ keyword, scope: currentSearchScope, selectedFilters: nextFilters }))
   }
 
-  const removeAppliedFilterChip = useCallback(
-    (chip: AppliedShopFilterChip) => {
-      const nextFilters = removeAppliedShopFilterChip(selectedFilters, chip)
-      const next = writeShopFilters(searchParams, nextFilters)
+  const removeRecentSearchItem = (item: string) => {
+    setRecentSearches(removeRecentSearch(item))
+  }
 
-      next.set('page', '0')
-      setSearchParams(next, { replace: true })
-    },
-    [searchParams, selectedFilters, setSearchParams],
-  )
+  const clearAllRecentSearches = () => {
+    setRecentSearches(clearRecentSearches())
+  }
 
   const handleNearbySearch = async () => {
     if (nearbyState === 'loading') {
@@ -228,176 +138,128 @@ export function SearchPage() {
   }
 
   return (
-    <main className="search-screen-shell">
-      <AppTopNavigation className="search-route-navigation" showBack onBack={handleSearchBack} />
-      <section className="search-screen search-screen-v2">
-        <header className="search-screen-top search-screen-top-v2">
-          <div className="search-screen-toolrow">
-            <form className="search-screen-form" onSubmit={handleSubmit}>
-              <SearchField
+    <main className="map-page-shell">
+      <section className="map-page map-page-list-mode">
+        <div
+          className={[
+            'map-list-view',
+            usesTossNavigation ? 'map-surface-toss-navigation' : 'map-surface-local-navigation',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {!usesTossNavigation ? (
+            <AppTopNavigation className="map-route-navigation" showBack onBack={handleSearchBack} />
+          ) : null}
+
+          <div className="map-list-view-top">
+            <div className="map-search-row search-screen-toolrow">
+              <MapSearchFieldForm
                 autoFocus
-                aria-label="검색어 입력"
-                onDeleteClick={() => setKeyword('')}
-                placeholder="매장, 지역, 작품 이름 검색"
-                takeSpace={false}
                 value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
+                onChange={setKeyword}
+                onClear={() => setKeyword('')}
                 onKeyDown={handleSearchKeyDown}
+                onSubmit={handleSubmit}
               />
-            </form>
 
-            <button
-              className="search-filter-button"
-              type="button"
-              ref={filterTriggerRef}
-              onClick={() => setIsFilterSheetOpen(true)}
-              aria-controls="search-filter-sheet"
-              aria-expanded={isFilterSheetOpen}
-              aria-label={appliedFilterCount > 0 ? `필터 ${appliedFilterCount}개 적용됨` : '필터 열기'}
-            >
-              <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-                <path d="M4 7h10" />
-                <path d="M18 7h2" />
-                <path d="M4 17h2" />
-                <path d="M10 17h10" />
-                <circle cx="16" cy="7" r="2" />
-                <circle cx="8" cy="17" r="2" />
-              </svg>
-              {appliedFilterCount > 0 ? <small>{appliedFilterCount}</small> : null}
-            </button>
-          </div>
-
-          <AppliedFilterChips
-            filters={selectedFilters}
-            facets={appliedFacetQuery.data}
-            onRemoveFilter={removeAppliedFilterChip}
-          />
-        </header>
-
-        <SearchFilterSheet
-          open={isFilterSheetOpen}
-          triggerRef={filterTriggerRef}
-          keyword={currentKeyword}
-          selectedFilters={selectedFilters}
-          onApplyFilters={applyFilters}
-          onClose={closeFilterSheet}
-        />
-
-        {!hasSearchCriteria ? (
-          <div className="search-screen-content search-screen-content-v2">
-            <section className="search-history-section">
-              <div className="search-history-head">
-                <strong>최근 검색어</strong>
-              </div>
-
-              {recentSearches.length > 0 ? (
-                <div className="search-history-list">
-                  {recentSearches.map((item) => (
-                    <button className="search-history-item" key={item} type="button" onClick={() => moveToSearch(item)}>
-                      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="7" />
-                        <path d="M12 8v4l3 2" />
-                      </svg>
-                      <strong>{item}</strong>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="search-history-empty">
-                  <strong>최근 검색 기록이 없습니다.</strong>
-                  <small>매장, 지역, 작품 이름으로 찾을 수 있어요.</small>
-                </div>
-              )}
-            </section>
-
-            <section className="search-location-card" aria-labelledby="search-location-title">
-              <div className="search-location-visual" aria-hidden="true">
-                <img className="search-location-image" src={searchLocationGuideUrl} alt="" />
-              </div>
-              <div className="search-location-copy">
-                <strong id="search-location-title">
-                  내 위치에서 가까운 매장을
-                  <br />
-                  찾아볼까요?
-                </strong>
-              </div>
               <button
-                className="search-location-button"
-                disabled={nearbyState === 'loading'}
+                className="search-filter-button map-filter-button"
                 type="button"
-                onClick={handleNearbySearch}
+                ref={filterTriggerRef}
+                onClick={() => setIsFilterSheetOpen(true)}
+                aria-controls="search-filter-sheet"
+                aria-expanded={isFilterSheetOpen}
+                aria-label={appliedFilterCount > 0 ? `필터 ${appliedFilterCount}개 적용됨` : '필터 열기'}
               >
-                {nearbyState === 'loading' ? '위치 확인 중' : '가까운 매장 찾기'}
+                <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+                  <path d="M4 7h10" />
+                  <path d="M18 7h2" />
+                  <path d="M4 17h2" />
+                  <path d="M10 17h10" />
+                  <circle cx="16" cy="7" r="2" />
+                  <circle cx="8" cy="17" r="2" />
+                </svg>
+                {appliedFilterCount > 0 ? <small>{appliedFilterCount}</small> : null}
               </button>
-              {nearbyError ? <small className="search-location-error">{nearbyError}</small> : null}
-            </section>
-          </div>
-        ) : (
-          <div className="search-screen-content search-screen-content-v2">
-            {resultQuery.isLoading ? <small className="meta-text">검색 결과를 불러오는 중입니다.</small> : null}
-            {resultQuery.isError ? <small className="error-text">{(resultQuery.error as Error).message}</small> : null}
-
-            <div className="search-result-head">
-              <strong>매장 목록</strong>
-              <small>{resultQuery.data?.totalElements ?? 0}곳</small>
             </div>
-
-            {resultQuery.data?.content.length === 0 ? (
-              <div className="search-history-empty">
-                <strong>검색 결과가 없습니다.</strong>
-                <small>다른 매장, 지역, 작품 이름으로 다시 검색해보세요.</small>
-              </div>
-            ) : null}
-
-            <div className="search-result-list">
-              {(resultQuery.data?.content ?? []).map((shop) => {
-                const shopMeta = buildShopMeta(shop)
-                const shopAddress = buildShopAddress(shop)
-
-                return (
-                  <article className="search-result-card" key={shop.id}>
-                    <Link
-                      className="search-result-link"
-                      to={buildExploreHref(shop.id)}
-                      state={{ returnTo: searchReturnTo }}
-                    >
-                      <div className="search-result-body">
-                        <div className="search-result-name">
-                          <strong>{shop.name}</strong>
-                          <StatusPill status={shop.status} />
-                        </div>
-                        {shopMeta ? <small className="search-result-meta">{shopMeta}</small> : null}
-                        <small className="search-result-address">{shopAddress}</small>
-                        <small className="search-result-updated">{formatRelativeUpdated(shop.updatedAt)}</small>
-                      </div>
-                    </Link>
-                  </article>
-                )
-              })}
-            </div>
-
-            {resultQuery.data && resultQuery.data.totalPages > 1 ? (
-              <div className="search-result-pager">
-                <button
-                  className="ghost-action compact-action"
-                  disabled={currentPage === 0}
-                  type="button"
-                  onClick={() => movePage(currentPage - 1)}
-                >
-                  이전
-                </button>
-                <button
-                  className="ghost-action compact-action"
-                  disabled={resultQuery.data?.last}
-                  type="button"
-                  onClick={() => movePage(currentPage + 1)}
-                >
-                  다음
-                </button>
-              </div>
-            ) : null}
           </div>
-        )}
+
+          <SearchFilterSheet
+            open={isFilterSheetOpen}
+            triggerRef={filterTriggerRef}
+            keyword={currentKeyword}
+            selectedFilters={selectedFilters}
+            onApplyFilters={applyFilters}
+            onClose={closeFilterSheet}
+          />
+
+          <section className="map-results-list-panel" aria-label="검색">
+            <div className="map-results-sheet-list search-route-precontent">
+              <section className="search-history-section">
+                <div className="search-history-head">
+                  <strong>최근 검색어</strong>
+                  {recentSearches.length > 0 ? (
+                    <button className="search-history-clear-all" type="button" onClick={clearAllRecentSearches}>
+                      전체 삭제
+                    </button>
+                  ) : null}
+                </div>
+
+                {recentSearches.length > 0 ? (
+                  <div className="search-history-chip-list">
+                    {recentSearches.map((item) => (
+                      <span className="search-history-chip" key={item}>
+                        <button
+                          className="search-history-chip-label"
+                          type="button"
+                          onClick={() => submitSearchToExplore(item)}
+                        >
+                          <span>{item}</span>
+                        </button>
+                        <button
+                          className="search-history-chip-remove applied-filter-chip-close"
+                          type="button"
+                          aria-label={`${item} 삭제`}
+                          onClick={() => removeRecentSearchItem(item)}
+                        >
+                          x
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="search-history-empty">
+                    <strong>최근 검색 기록이 없습니다.</strong>
+                    <small>매장, 지역, 작품 이름으로 찾을 수 있어요.</small>
+                  </div>
+                )}
+              </section>
+
+              <section className="search-location-card" aria-labelledby="search-location-title">
+                <div className="search-location-visual" aria-hidden="true">
+                  <img className="search-location-image" src={searchLocationGuideUrl} alt="" />
+                </div>
+                <div className="search-location-copy">
+                  <strong id="search-location-title">
+                    현위치에서 가까운 매장을
+                    <br />
+                    찾아볼까요?
+                  </strong>
+                </div>
+                <button
+                  className="search-location-button"
+                  disabled={nearbyState === 'loading'}
+                  type="button"
+                  onClick={handleNearbySearch}
+                >
+                  {nearbyState === 'loading' ? '위치 확인 중' : '가까운 매장 찾기'}
+                </button>
+                {nearbyError ? <small className="search-location-error">{nearbyError}</small> : null}
+              </section>
+            </div>
+          </section>
+        </div>
       </section>
     </main>
   )

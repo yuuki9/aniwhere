@@ -39,3 +39,34 @@ export function pushRecentSearch(keyword: string) {
 
   return next
 }
+
+export function removeRecentSearch(keyword: string) {
+  const trimmed = keyword.trim()
+  if (!trimmed || typeof window === 'undefined') {
+    return []
+  }
+
+  const next = readRecentSearches().filter((item) => item !== trimmed)
+
+  try {
+    window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next))
+  } catch {
+    return next
+  }
+
+  return next
+}
+
+export function clearRecentSearches() {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  try {
+    window.localStorage.removeItem(SEARCH_HISTORY_KEY)
+  } catch {
+    return []
+  }
+
+  return []
+}

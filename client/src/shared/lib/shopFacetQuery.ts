@@ -5,6 +5,7 @@ export type ShopFacetQueryParams = {
   includeRegions?: boolean
   includeCategories?: boolean
   includeWorkTypes?: boolean
+  includeSorts?: boolean
 }
 
 export function normalizeShopFacetQueryParams(params: ShopFacetQueryParams = {}): ShopFacetQueryParams {
@@ -12,6 +13,7 @@ export function normalizeShopFacetQueryParams(params: ShopFacetQueryParams = {})
     ...(params.includeRegions != null ? { includeRegions: params.includeRegions } : {}),
     ...(params.includeCategories != null ? { includeCategories: params.includeCategories } : {}),
     ...(params.includeWorkTypes != null ? { includeWorkTypes: params.includeWorkTypes } : {}),
+    ...(params.includeSorts != null ? { includeSorts: params.includeSorts } : {}),
   }
 }
 

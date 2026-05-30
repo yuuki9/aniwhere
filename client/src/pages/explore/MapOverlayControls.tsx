@@ -19,11 +19,13 @@ export function MapOverlayControls({
     return null
   }
 
+  const listToggleLabel = isListSheetOpen ? '지도보기' : '목록보기'
+
   return (
     <>
       {showListToggle ? (
         <button
-          aria-label={isListSheetOpen ? '지도 보기' : '목록 보기'}
+          aria-label={listToggleLabel}
           className={`map-list-fab ${isListSheetOpen ? 'map-list-fab-map' : ''}`}
           type="button"
           onClick={onListClick}
@@ -46,6 +48,7 @@ export function MapOverlayControls({
               </svg>
             )}
           </span>
+          <span className="map-list-fab-label">{listToggleLabel}</span>
         </button>
       ) : null}
 

@@ -26,7 +26,7 @@ test('homeViewModel exports home CTA and work preview builders', () => {
   )
 })
 
-test('buildHomeCtaCards keeps the map CTA active and future sort CTAs disabled', () => {
+test('buildHomeCtaCards routes all store CTA cards to explore with backend sort filters', () => {
   const cards = homeViewModel.buildHomeCtaCards()
 
   assert.deepEqual(
@@ -35,11 +35,11 @@ test('buildHomeCtaCards keeps the map CTA active and future sort CTAs disabled',
   )
   assert.deepEqual(
     cards.map((card) => card.enabled),
-    [true, false, false],
+    [true, true, true],
   )
   assert.equal(cards[0].href, '/explore?view=map')
-  assert.equal(cards[1].href, null)
-  assert.equal(cards[2].href, null)
+  assert.equal(cards[1].href, '/explore?view=map&sort=FAVORITE_COUNT_DESC')
+  assert.equal(cards[2].href, '/explore?view=map&sort=REVIEW_COUNT_DESC')
   assert.equal(cards.some((card) => card.href?.startsWith('/search')), false)
 })
 
@@ -50,8 +50,8 @@ test('buildHomeCtaCards uses two-line curation copy without helper descriptions'
     cards.map((card) => card.headlineLines),
     [
       ['가까운 매장', '지도에서 보기'],
-      ['찜 많은 매장', '먼저 둘러보기'],
-      ['후기 많은 매장', '믿고 찾아보기'],
+      ['관심 많은 매장', '먼저 둘러보기'],
+      ['리뷰 많은 매장', '믿고 찾아보기'],
     ],
   )
   assert.equal(cards.some((card) => 'description' in card), false)
@@ -62,6 +62,7 @@ test('HomePage uses user-facing sections without live region attributes', () => 
 
   assert.match(source, /home-pending-card/)
   assert.doesNotMatch(source, /AitTop/)
+  assert.match(source, /SHOP_SEARCH_PLACEHOLDER/)
   assert.match(source, /HomeSearchEntry/)
   assert.match(source, /HomeCtaBannerList/)
   assert.match(source, /home-cta-banner/)
@@ -91,18 +92,36 @@ test('HomePage shows a top welcome toast from Toss nickname entry state', () => 
   assert.match(source, /님 반가워요!/)
 })
 
-test('HomePage sends work poster searches to SearchPage with work scope and return target', () => {
+test('HomePage sends work poster searches directly to the explore list with work scope', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
 
   assert.match(source, /function buildHomeWorkSearchHref\(workName: string\)/)
+  assert.match(source, /params\.set\('view', 'list'\)/)
   assert.match(source, /params\.set\('scope', 'work'\)/)
   assert.match(source, /params\.set\('keyword', workName\)/)
-  assert.match(source, /params\.set\('returnTo', '\/home'\)/)
+  assert.doesNotMatch(source, /params\.set\('returnTo', '\/home'\)/)
   assert.match(source, /to=\{buildHomeWorkSearchHref\(work\.name\)\}/)
-  assert.doesNotMatch(source, /to=\{`\/explore\?workId=\$\{work\.id\}&view=list`\}/)
+  assert.match(source, /return `\/explore\?\$\{params\.toString\(\)\}`/)
 })
 
-test('HomePage imports CTA banner images and routes only the map CTA for now', () => {
+test('HomePage keeps the shared map search entry visible with its icon', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+  const styles = [
+    '../src/App.css',
+    '../src/styles/explore-search.css',
+  ]
+    .map((path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8'))
+    .join('\n')
+
+  assert.match(source, /function HomeSearchEntry/)
+  assert.match(source, /className="map-search-field home-search-entry"/)
+  assert.match(source, /<SearchIcon \/>/)
+  assert.match(styles, /\.map-search-field svg\s*\{[\s\S]*width:\s*22px;/)
+  assert.match(styles, /\.map-search-field svg\s*\{[\s\S]*stroke:\s*currentcolor;/)
+  assert.match(styles, /\.home-search-entry\s*\{[\s\S]*min-height:\s*52px;/)
+})
+
+test('HomePage imports CTA banner images and routes enabled CTA cards', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
@@ -129,6 +148,7 @@ test('HomePage shows the admin entry only for server admin roles', () => {
   assert.match(source, /to="\/admin"/)
   assert.match(source, /const canEnterAdmin = useMemo\(\(\) => isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
   assert.match(source, /\{canEnterAdmin \? <HomeAdminEntry \/> : null\}/)
+  assert.ok(source.indexOf('{canEnterAdmin ? <HomeAdminEntry /> : null}') < source.indexOf('<HomeSearchEntry'))
   assert.match(authSession, /export function isAdminRole/)
   assert.match(authSession, /normalized === 'ADMIN'/)
   assert.match(authSession, /normalized === 'ROLE_ADMIN'/)

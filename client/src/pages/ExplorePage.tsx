@@ -3,7 +3,8 @@ import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
-import { addFavoriteShop, getShop, getShopFacets, getShops, removeFavoriteShop } from '../shared/api/shops'
+import { addFavoriteShop, getNearbyShops, getShop, getShopFacets, getShops, removeFavoriteShop } from '../shared/api/shops'
+import { listMyFavoriteShops } from '../shared/api/users'
 import type { AdminShopPhoto, Shop } from '../shared/api/types'
 import {
   calculateDistanceKm,
@@ -54,7 +55,8 @@ const MAP_FETCH_SIZE = 200
 const EMPTY_SHOPS: Shop[] = []
 const DETAIL_MEDIA_TONES = ['blue', 'orange', 'mint', 'violet'] as const
 const MAP_QUICK_CHIPS: MapQuickChipItem[] = [
-  { id: 'active', label: '영업중' },
+  { id: 'hours', label: '영업중', icon: 'time', ariaLabel: '영업중 필터', hidden: true },
+  { id: 'favorite', label: '관심매장', icon: 'star' },
 ]
 const isMapAssistantEnabled = false
 const ASSISTANT_SUGGESTIONS = ['홍대에서 피규어 많은 곳', '피규어 종류가 많은 매장', '초행자에게 추천할 만한 곳']
@@ -154,6 +156,27 @@ function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
   return isInsideLatitude && isInsideLongitude
 }
 
+function shopMatchesClientKeyword(shop: Shop, keyword: string, scope: 'shop' | 'work') {
+  const normalizedKeyword = keyword.trim().toLocaleLowerCase()
+
+  if (!normalizedKeyword) {
+    return true
+  }
+
+  const values =
+    scope === 'work'
+      ? shop.works.map((work) => work.name)
+      : [
+          shop.name,
+          shop.address,
+          shop.regionName,
+          ...shop.categories.map((category) => category.name),
+          ...shop.works.map((work) => work.name),
+        ]
+
+  return values.some((value) => value?.toLocaleLowerCase().includes(normalizedKeyword))
+}
+
 export function ExplorePage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -161,12 +184,15 @@ export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedFilters = useMemo(() => parseShopFilters(searchParams), [searchParams])
   const selectedSearchParams = useMemo(() => toShopSearchParams(selectedFilters), [selectedFilters])
+  const authToken = useMemo(() => getStoredAccessToken(), [])
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
   const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
   const routeViewMode: ViewMode =
     viewParam === 'list' ? 'list' : viewParam === 'map' ? 'map' : nearbyRequest ? 'list' : 'map'
+  const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
+  const currentKeyword = searchParams.get('keyword')?.trim() ?? ''
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
   const sheetMode: SheetMode = selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
@@ -180,6 +206,7 @@ export function ExplorePage() {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const [mapViewport, setMapViewport] = useState<MapViewport | null>(null)
   const [mapViewportFilter, setMapViewportFilter] = useState<MapBounds | null>(null)
+  const [mapAreaSearchCenter, setMapAreaSearchCenter] = useState<MapViewport['center'] | null>(null)
   const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
   const [detailTab, setDetailTab] = useState<MapDetailTab>('info')
@@ -188,6 +215,7 @@ export function ExplorePage() {
   const [expandedDragOffset, setExpandedDragOffset] = useState(0)
   const [isExpandedDragging, setIsExpandedDragging] = useState(false)
   const [favoriteShopIds, setFavoriteShopIds] = useState<Set<number>>(() => new Set())
+  const [favoriteQuickChipActive, setFavoriteQuickChipActive] = useState(false)
   const [favoriteToast, setFavoriteToast] = useState<string | null>(null)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantInput, setAssistantInput] = useState('')
@@ -217,30 +245,89 @@ export function ExplorePage() {
   const hasAppliedFilterChips = appliedFilterCount > 0
   const activeMapQuickChips = useMemo(
     () => ({
-      active: selectedFilters.status === 'ACTIVE',
+      favorite: favoriteQuickChipActive,
     }),
-    [selectedFilters.status],
+    [favoriteQuickChipActive],
   )
+  const isMapAreaNearbySearchActive = mapAreaSearchCenter != null && !favoriteQuickChipActive
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
   const safeRouteReturnTo = isSafeExploreReturnTo(routeState?.returnTo)
-  const searchReturnTo = `${location.pathname}${location.search}`
-  const searchHref = `/search?returnTo=${encodeURIComponent(searchReturnTo)}`
+  const searchReturnTo = useMemo(() => {
+    const next = new URLSearchParams(searchParams)
+
+    next.delete('shopId')
+    next.delete('sheet')
+    next.set('view', 'list')
+
+    return `${location.pathname}?${next.toString()}`
+  }, [location.pathname, searchParams])
+  const searchHref = useMemo(() => {
+    const next = writeShopFilters(new URLSearchParams(), selectedFilters)
+
+    next.set('returnTo', searchReturnTo)
+
+    if (currentSearchScope === 'work') {
+      next.set('scope', 'work')
+    }
+
+    if (currentKeyword) {
+      next.set('keyword', currentKeyword)
+    }
+
+    return `/search?${next.toString()}`
+  }, [currentKeyword, currentSearchScope, searchReturnTo, selectedFilters])
+  const exploreSearchParams = useMemo(
+    () => ({
+      ...selectedSearchParams,
+      ...(currentKeyword
+        ? currentSearchScope === 'work'
+          ? { workKeyword: currentKeyword }
+          : { keyword: currentKeyword }
+        : {}),
+    }),
+    [currentKeyword, currentSearchScope, selectedSearchParams],
+  )
 
   const shopsQuery = useQuery({
-    queryKey: ['shops', 'explore-map-source', selectedSearchParams],
-    queryFn: () => getShops({ page: 0, size: MAP_FETCH_SIZE, ...selectedSearchParams }),
+    queryKey: ['shops', 'explore-map-source', exploreSearchParams],
+    queryFn: () => getShops({ page: 0, size: MAP_FETCH_SIZE, ...exploreSearchParams }),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
 
-  const appliedFacetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: false }
+  const favoriteShopsQuery = useQuery({
+    queryKey: ['users', 'me', 'favorite-shops'],
+    queryFn: () => listMyFavoriteShops(authToken),
+    enabled: favoriteQuickChipActive && authToken != null,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+
+  const mapAreaNearbyQuery = useQuery({
+    queryKey: ['shops', 'nearby-map-area', mapAreaSearchCenter],
+    queryFn: () => {
+      if (mapAreaSearchCenter == null) {
+        return EMPTY_SHOPS
+      }
+
+      return getNearbyShops({ lat: mapAreaSearchCenter.latitude, lng: mapAreaSearchCenter.longitude })
+    },
+    enabled: mapAreaSearchCenter != null && !favoriteQuickChipActive,
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+
+  const appliedFacetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: true, includeSorts: true }
   const appliedFacetQuery = useQuery({
     queryKey: shopFacetQueryKey(appliedFacetParams),
     queryFn: () => getShopFacets(appliedFacetParams),
     staleTime: SHOP_FACET_STALE_TIME_MS,
     gcTime: SHOP_FACET_GC_TIME_MS,
+    refetchOnMount: 'always',
     enabled: hasAppliedFilterChips,
   })
 
@@ -260,7 +347,39 @@ export function ExplorePage() {
     staleTime: Infinity,
   })
 
-  const allShops = useMemo(() => shopsQuery.data?.content ?? EMPTY_SHOPS, [shopsQuery.data?.content])
+  const allShops = useMemo(
+    () => {
+      const sourceShops = favoriteQuickChipActive
+        ? favoriteShopsQuery.data ?? EMPTY_SHOPS
+        : isMapAreaNearbySearchActive
+          ? mapAreaNearbyQuery.data ?? EMPTY_SHOPS
+          : shopsQuery.data?.content ?? EMPTY_SHOPS
+
+      if (selectedFilters.sort == null) {
+        return sourceShops
+      }
+
+      return [...sourceShops].sort((a, b) => {
+        if (selectedFilters.sort === 'REVIEW_COUNT_DESC') {
+          return b.reviewCount - a.reviewCount
+        }
+
+        if (selectedFilters.sort === 'FAVORITE_COUNT_DESC') {
+          return b.favoriteCount - a.favoriteCount
+        }
+
+        return 0
+      })
+    },
+    [
+      favoriteQuickChipActive,
+      favoriteShopsQuery.data,
+      isMapAreaNearbySearchActive,
+      mapAreaNearbyQuery.data,
+      selectedFilters.sort,
+      shopsQuery.data?.content,
+    ],
+  )
 
   const filteredShops = useMemo(() => {
     return allShops.filter((shop) => {
@@ -272,13 +391,47 @@ export function ExplorePage() {
         return false
       }
 
+      if (
+        selectedSearchParams.categoryIds != null &&
+        selectedSearchParams.categoryIds.length > 0 &&
+        !selectedSearchParams.categoryIds.some((categoryId) => shop.categoryIds?.includes(categoryId))
+      ) {
+        return false
+      }
+
+      if (
+        selectedSearchParams.workIds != null &&
+        selectedSearchParams.workIds.length > 0 &&
+        !selectedSearchParams.workIds.some((workId) => shop.workIds?.includes(workId))
+      ) {
+        return false
+      }
+
+      if (selectedSearchParams.status != null && shop.status !== selectedSearchParams.status) {
+        return false
+      }
+
       if (mapViewportFilter && !isShopInsideMapBounds(shop, mapViewportFilter)) {
+        return false
+      }
+
+      if (isMapAreaNearbySearchActive && !shopMatchesClientKeyword(shop, currentKeyword, currentSearchScope)) {
         return false
       }
 
       return true
     })
-  }, [allShops, mapViewportFilter, selectedSearchParams.regionIds])
+  }, [
+    allShops,
+    currentKeyword,
+    currentSearchScope,
+    isMapAreaNearbySearchActive,
+    mapViewportFilter,
+    selectedSearchParams.categoryIds,
+    selectedSearchParams.regionIds,
+    selectedSearchParams.status,
+    selectedSearchParams.workIds,
+  ])
 
   const shopsWithDistance = useMemo(() => {
     const nextShops = filteredShops.map((shop) => {
@@ -306,8 +459,12 @@ export function ExplorePage() {
       ? nextShops.filter((shop) => shop.distanceKm != null && shop.distanceKm <= nearbyRequest.radiusKm)
       : nextShops
 
+    if (selectedFilters.sort != null) {
+      return radiusFilteredShops
+    }
+
     return [...radiusFilteredShops].sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity))
-  }, [effectiveUserLocation, filteredShops, nearbyRequest])
+  }, [effectiveUserLocation, filteredShops, nearbyRequest, selectedFilters.sort])
 
   const mappableShops = useMemo(
     () => shopsWithDistance.filter((shop) => Number.isFinite(shop.px) && Number.isFinite(shop.py)),
@@ -328,6 +485,21 @@ export function ExplorePage() {
   }, [selectedShopId, shopsWithDistance])
   const selectedShopIsInFilteredResults =
     selectedShopId == null || shopsWithDistance.some((shop) => shop.id === selectedShopId)
+  const activeShopsQueryIsPlaceholder = favoriteQuickChipActive
+    ? false
+    : isMapAreaNearbySearchActive
+      ? mapAreaNearbyQuery.isPlaceholderData
+      : shopsQuery.isPlaceholderData
+  const activeShopsQueryIsSuccess = favoriteQuickChipActive
+    ? favoriteShopsQuery.isSuccess
+    : isMapAreaNearbySearchActive
+      ? mapAreaNearbyQuery.isSuccess
+      : shopsQuery.isSuccess
+  const activeShopsQueryIsLoading = favoriteQuickChipActive
+    ? favoriteShopsQuery.isLoading
+    : isMapAreaNearbySearchActive
+      ? mapAreaNearbyQuery.isLoading
+      : shopsQuery.isLoading
 
   const detailShop = activeShopDetailQuery.data ?? activeShop ?? null
   const isFavoriteDetailShop = detailShop != null && favoriteShopIds.has(detailShop.id)
@@ -336,8 +508,8 @@ export function ExplorePage() {
     if (
       selectedShopId == null ||
       appliedFilterCount === 0 ||
-      shopsQuery.isPlaceholderData ||
-      !shopsQuery.isSuccess ||
+      activeShopsQueryIsPlaceholder ||
+      !activeShopsQueryIsSuccess ||
       selectedShopIsInFilteredResults
     ) {
       return
@@ -361,8 +533,8 @@ export function ExplorePage() {
     selectedShopIsInFilteredResults,
     selectionOrigin,
     setSearchParams,
-    shopsQuery.isPlaceholderData,
-    shopsQuery.isSuccess,
+    activeShopsQueryIsPlaceholder,
+    activeShopsQueryIsSuccess,
   ])
 
   const assistantMutation = useMutation({
@@ -647,6 +819,7 @@ export function ExplorePage() {
       return
     }
 
+    setMapAreaSearchCenter(mapViewport.center)
     setMapViewportFilter(mapViewport.bounds)
     setHasPendingMapSearch(false)
     setVisibleListCount(PAGE_SIZE)
@@ -674,23 +847,27 @@ export function ExplorePage() {
     [searchParams, setSearchParams],
   )
 
-  const toggleActiveStatusFilter = useCallback(() => {
-    applyFilters({
-      ...selectedFilters,
-      categoryIds: [...selectedFilters.categoryIds],
-      status: selectedFilters.status === 'ACTIVE' ? undefined : 'ACTIVE',
-    })
-  }, [applyFilters, selectedFilters])
-
   const toggleMapQuickChip = useCallback(
     (chipId: string) => {
-      if (chipId !== 'active') {
+      if (chipId === 'hours') {
+        setFavoriteToast('영업 시간 필터는 준비 중이에요.')
         return
       }
 
-      toggleActiveStatusFilter()
+      if (chipId === 'favorite') {
+        if (authToken == null) {
+          setFavoriteToast('로그인하면 관심 매장을 모아볼 수 있어요.')
+          return
+        }
+
+        setFavoriteQuickChipActive((current) => !current)
+        setVisibleListCount(PAGE_SIZE)
+        return
+      }
+
+      return
     },
-    [toggleActiveStatusFilter],
+    [authToken],
   )
 
   const handleToggleFavoriteShop = () => {
@@ -698,7 +875,7 @@ export function ExplorePage() {
       return
     }
 
-    if (!getStoredAccessToken()) {
+    if (authToken == null) {
       setFavoriteToast('로그인하면 관심 매장을 저장할 수 있어요.')
       return
     }
@@ -706,7 +883,13 @@ export function ExplorePage() {
     favoriteShopMutation.mutate({ shopId: detailShop.id, nextFavorite: !isFavoriteDetailShop })
   }
 
-  const shopsError = shopsQuery.isError ? (shopsQuery.error as Error).message : null
+  const shopsError = favoriteQuickChipActive && favoriteShopsQuery.isError
+    ? (favoriteShopsQuery.error as Error).message
+    : isMapAreaNearbySearchActive && mapAreaNearbyQuery.isError
+      ? (mapAreaNearbyQuery.error as Error).message
+    : shopsQuery.isError
+      ? (shopsQuery.error as Error).message
+      : null
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
   const detailFloorLabel = formatFloorLabel(detailShop?.floor ?? null)
   const detailDescription = detailShop?.description ?? detailShop?.visitTip ?? null
@@ -970,10 +1153,10 @@ export function ExplorePage() {
                 filterTriggerRef={filterTriggerRef}
                 isFilterSheetOpen={isFilterSheetOpen}
                 appliedFilterCount={appliedFilterCount}
+                value={currentKeyword}
                 onSearchClick={() => navigate(searchHref)}
                 onFilterClick={() => setIsFilterSheetOpen(true)}
               />
-              {renderAppliedFilterChips()}
 
               {shopsError ? <p className="error-text map-inline-error map-inline-error-overlay">{shopsError}</p> : null}
             </div>
@@ -989,10 +1172,10 @@ export function ExplorePage() {
 
             <MapResultsSheet
               visible={isFullListView}
-              appliedFilters={null}
+              appliedFilters={renderAppliedFilterChips()}
               visibleShops={visibleShops}
               totalShops={totalShops}
-              isLoading={shopsQuery.isLoading}
+              isLoading={activeShopsQueryIsLoading}
               listRef={listScrollRef}
               onScroll={handleListScroll}
               onSelectShop={handleListSelectShop}
@@ -1062,6 +1245,7 @@ export function ExplorePage() {
                   filterTriggerRef={filterTriggerRef}
                   isFilterSheetOpen={isFilterSheetOpen}
                   appliedFilterCount={appliedFilterCount}
+                  value={currentKeyword}
                   onSearchClick={() => navigate(searchHref)}
                   onFilterClick={() => setIsFilterSheetOpen(true)}
                 />

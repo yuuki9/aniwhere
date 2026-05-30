@@ -1,5 +1,6 @@
 import { request, requestForm, toQueryString } from './client'
 import type {
+  NearbyShopParams,
   PageResponse,
   Shop,
   ShopFacetParams,
@@ -31,9 +32,19 @@ export function getShopFacets(params: ShopFacetParams = {}) {
     includeRegions: params.includeRegions,
     includeCategories: params.includeCategories,
     includeWorkTypes: params.includeWorkTypes,
+    includeSorts: params.includeSorts,
   })
 
   return request<ShopFacetResponse>(`/api/v1/shops/facets${query}`)
+}
+
+export function getNearbyShops(params: NearbyShopParams) {
+  const query = toQueryString({
+    lat: params.lat,
+    lng: params.lng,
+  })
+
+  return request<Shop[]>(`/api/v1/shops/nearby${query}`)
 }
 
 export function getShop(id: number) {

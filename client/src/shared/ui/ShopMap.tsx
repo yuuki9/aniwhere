@@ -50,10 +50,9 @@ const MAX_ZOOM = 19
 const INITIAL_ZOOM = 14
 const CLUSTER_BREAK_ZOOM = 16
 const VIEWPORT_COORDINATE_EPSILON = 0.00005
-const SHOP_MARKER_LABEL_MAX_LENGTH = 10
 const SHOP_MARKER_HEIGHT = 32
-const SHOP_MARKER_MIN_WIDTH = 72
-const SHOP_MARKER_MAX_WIDTH = 148
+const SHOP_MARKER_MIN_WIDTH = 64
+const SHOP_MARKER_MAX_WIDTH = 220
 
 function createMarkerIcon(className: string, label: string, size: number) {
   return {
@@ -61,6 +60,17 @@ function createMarkerIcon(className: string, label: string, size: number) {
     size: new naver.maps.Size(size, size),
     anchor: new naver.maps.Point(size / 2, size / 2),
   }
+}
+
+function canCreateNaverMarkers() {
+  return (
+    typeof naver !== 'undefined' &&
+    naver.maps.Marker != null &&
+    naver.maps.Event != null &&
+    naver.maps.Size != null &&
+    naver.maps.Point != null &&
+    naver.maps.LatLng != null
+  )
 }
 
 function escapeMarkerLabel(value: string) {
@@ -73,18 +83,11 @@ function escapeMarkerLabel(value: string) {
 }
 
 function getShopMarkerLabel(shop: Shop) {
-  const label = shop.name.trim() || '매장'
-  const characters = Array.from(label)
-
-  if (characters.length <= SHOP_MARKER_LABEL_MAX_LENGTH) {
-    return label
-  }
-
-  return `${characters.slice(0, SHOP_MARKER_LABEL_MAX_LENGTH - 1).join('')}...`
+  return shop.name.trim() || '매장'
 }
 
 function getChipMarkerWidth(label: string) {
-  const estimatedWidth = Array.from(label).length * 12 + 34
+  const estimatedWidth = Array.from(label).length * 12 + 26
 
   return Math.min(SHOP_MARKER_MAX_WIDTH, Math.max(SHOP_MARKER_MIN_WIDTH, estimatedWidth))
 }
@@ -94,7 +97,7 @@ function createShopMarkerIcon(shop: Shop, isActive: boolean) {
   const width = getChipMarkerWidth(label)
 
   return {
-    content: `<span class="map-naver-shop-chip${isActive ? ' map-naver-shop-chip-active' : ''}" aria-hidden="true"><span class="map-naver-shop-chip-dot"></span><span class="map-naver-shop-chip-label">${escapeMarkerLabel(label)}</span></span>`,
+    content: `<span class="map-naver-shop-marker" aria-hidden="true"><span class="map-naver-shop-chip${isActive ? ' map-naver-shop-chip-active' : ''}"><span class="map-naver-shop-chip-label">${escapeMarkerLabel(label)}</span></span></span>`,
     size: new naver.maps.Size(width, SHOP_MARKER_HEIGHT),
     anchor: new naver.maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
   }
@@ -417,7 +420,7 @@ export function ShopMap({
   useEffect(() => {
     const map = mapRef.current
 
-    if (!mapInitialized || !map) {
+    if (!mapInitialized || !map || !canCreateNaverMarkers()) {
       return
     }
 
@@ -468,7 +471,7 @@ export function ShopMap({
   useEffect(() => {
     const map = mapRef.current
 
-    if (!mapInitialized || !map) {
+    if (!mapInitialized || !map || !canCreateNaverMarkers()) {
       return
     }
 

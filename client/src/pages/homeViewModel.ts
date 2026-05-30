@@ -28,16 +28,16 @@ export function buildHomeCtaCards(): HomeCtaCard[] {
     },
     {
       id: 'favorites',
-      headlineLines: ['찜 많은 매장', '먼저 둘러보기'],
-      href: null,
-      enabled: false,
+      headlineLines: ['관심 많은 매장', '먼저 둘러보기'],
+      href: '/explore?view=map&sort=FAVORITE_COUNT_DESC',
+      enabled: true,
       imageAlt: '하트와 매장 카드를 보여주는 Aniwhere 안내 이미지',
     },
     {
       id: 'reviews',
-      headlineLines: ['후기 많은 매장', '믿고 찾아보기'],
-      href: null,
-      enabled: false,
+      headlineLines: ['리뷰 많은 매장', '믿고 찾아보기'],
+      href: '/explore?view=map&sort=REVIEW_COUNT_DESC',
+      enabled: true,
       imageAlt: '말풍선과 별점 리뷰 카드를 보여주는 Aniwhere 안내 이미지',
     },
   ]

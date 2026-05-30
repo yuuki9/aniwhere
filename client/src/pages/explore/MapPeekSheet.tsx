@@ -1,6 +1,5 @@
 import type { PointerEvent } from 'react'
 import type { Shop } from '../../shared/api/types'
-import { StatusPill } from '../../shared/ui/StatusPill'
 
 type MapPeekHeroImage = {
   src: string
@@ -38,6 +37,9 @@ export function MapPeekSheet({
   if (!shop) {
     return null
   }
+
+  const visibleCategories = shop.categories.slice(0, 3)
+  const hasScore = shop.averageRating != null || shop.reviewCount > 0
 
   return (
     <section
@@ -81,13 +83,31 @@ export function MapPeekSheet({
         <div className="map-sheet-peek-copy">
           <div className="map-sheet-peek-head">
             <strong>{shop.name}</strong>
-            <StatusPill status={shop.status} />
+            {hasScore ? (
+              <span className="map-sheet-peek-score">
+                {shop.averageRating != null ? (
+                  <>
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="m12 3 2.6 5.5 6 .9-4.3 4.2 1 6-5.3-2.9-5.3 2.9 1-6-4.3-4.2 6-.9L12 3Z" />
+                    </svg>
+                    <b>{shop.averageRating.toFixed(1)}</b>
+                  </>
+                ) : null}
+                {shop.reviewCount > 0 ? <small>리뷰 {shop.reviewCount}</small> : null}
+              </span>
+            ) : null}
           </div>
-          <p>
-            {shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}
+          <span className="map-sheet-peek-address">
+            {shop.address}
             {distanceLabel ? ` · ${distanceLabel}` : ''}
-          </p>
-          <p className="map-sheet-peek-meta">{shop.address}</p>
+          </span>
+          {visibleCategories.length > 0 ? (
+            <div className="map-sheet-peek-categories" aria-label="매장 카테고리">
+              {visibleCategories.map((category) => (
+                <span key={category.id}>{category.name}</span>
+              ))}
+            </div>
+          ) : null}
         </div>
         <button
           className="map-sheet-peek-route"
