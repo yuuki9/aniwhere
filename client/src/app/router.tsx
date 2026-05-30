@@ -13,7 +13,6 @@ import {
   IntroPage,
   PostDetailPage,
   SearchPage,
-  ShopPage,
   ShopRouteRedirect,
 } from './lazyRouteComponents'
 
@@ -66,7 +65,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/shop/detail/:shopId',
-    element: routeElement(<ShopPage />),
+    element: routeElement(<ShopRouteRedirect />),
   },
   {
     path: '/search',

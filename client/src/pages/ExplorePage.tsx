@@ -1,11 +1,12 @@
 import { type UIEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
 import { addFavoriteShop, getNearbyShops, getShop, getShopFacets, getShops, removeFavoriteShop } from '../shared/api/shops'
 import { listMyFavoriteShops } from '../shared/api/users'
-import type { AdminShopPhoto, Shop } from '../shared/api/types'
+import { createShopReview, deleteShopReview, listShopReviews, updateShopReview } from '../shared/api/shopReviews'
+import type { AdminShopPhoto, CreateShopReviewPayload, Shop, ShopReview, UpdateShopReviewPayload } from '../shared/api/types'
 import {
   calculateDistanceKm,
   formatDistanceLabel,
@@ -32,7 +33,7 @@ import {
   canBuildNaverWebDirectionUrl,
 } from '../shared/lib/naverDirections'
 import { isAppsInTossRuntime } from '../shared/lib/auth'
-import { getStoredAccessToken } from '../shared/lib/authSession'
+import { getStoredAccessToken, readAuthSession } from '../shared/lib/authSession'
 import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
@@ -47,6 +48,7 @@ import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
 import { MapPeekSheet } from './explore/MapPeekSheet'
 import { MapQuickChips, type MapQuickChipItem } from './explore/MapQuickChips'
+import { MapReviewStation } from './explore/MapReviewStation'
 import { MapResultsSheet } from './explore/MapResultsSheet'
 import { readNearbyExploreParams } from './searchNearby'
 
@@ -64,7 +66,7 @@ const ASSISTANT_RETRY_HINT = '현재 데이터 기준으로 바로 맞는 후보
 
 type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
 type ViewMode = 'map' | 'list'
-type SheetMode = 'peek' | 'expanded'
+type SheetMode = 'peek' | 'expanded' | 'review'
 type SelectionOrigin = 'map' | 'list' | null
 type ExploreLocationState = {
   returnTo?: string
@@ -182,9 +184,11 @@ export function ExplorePage() {
   const location = useLocation()
   const routeState = location.state as ExploreLocationState
   const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient = useQueryClient()
   const selectedFilters = useMemo(() => parseShopFilters(searchParams), [searchParams])
   const selectedSearchParams = useMemo(() => toShopSearchParams(selectedFilters), [selectedFilters])
   const authToken = useMemo(() => getStoredAccessToken(), [])
+  const currentUserId = useMemo(() => readAuthSession()?.user?.id ?? null, [])
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
@@ -195,7 +199,8 @@ export function ExplorePage() {
   const currentKeyword = searchParams.get('keyword')?.trim() ?? ''
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
-  const sheetMode: SheetMode = selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
+  const sheetMode: SheetMode =
+    selectedShopId && sheetParam === 'review' ? 'review' : selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
   const [selectionOrigin, setSelectionOrigin] = useState<SelectionOrigin>(selectedShopId ? 'map' : null)
   const [visibleListCount, setVisibleListCount] = useState(PAGE_SIZE)
   const [userLocation, setUserLocation] = useState<UserLocation | null>(nearbyRequest?.location ?? null)
@@ -210,6 +215,7 @@ export function ExplorePage() {
   const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
   const [detailTab, setDetailTab] = useState<MapDetailTab>('info')
+  const [editingReview, setEditingReview] = useState<ShopReview | null>(null)
   const [peekDragOffset, setPeekDragOffset] = useState(0)
   const [isPeekDragging, setIsPeekDragging] = useState(false)
   const [expandedDragOffset, setExpandedDragOffset] = useState(0)
@@ -503,6 +509,14 @@ export function ExplorePage() {
 
   const detailShop = activeShopDetailQuery.data ?? activeShop ?? null
   const isFavoriteDetailShop = detailShop != null && favoriteShopIds.has(detailShop.id)
+  const reviewListQuery = useQuery({
+    queryKey: ['shop-reviews', detailShop?.id],
+    queryFn: () => listShopReviews((detailShop as Shop).id, { page: 0, size: 20, sort: 'NEWEST' }, authToken),
+    enabled: detailShop != null && sheetMode === 'expanded' && detailTab === 'review',
+    staleTime: 1000 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
 
   useEffect(() => {
     if (
@@ -589,6 +603,95 @@ export function ExplorePage() {
     },
     onError: (error) => {
       setFavoriteToast(error instanceof Error ? error.message : '관심 매장을 저장하지 못했어요.')
+    },
+  })
+
+  const reviewCreateMutation = useMutation({
+    mutationFn: ({
+      shopId,
+      payload,
+    }: {
+      shopId: number
+      payload: CreateShopReviewPayload
+    }) => {
+      if (authToken == null) {
+        throw new Error('로그인 후 리뷰를 작성할 수 있어요.')
+      }
+
+      return createShopReview(shopId, payload, authToken)
+    },
+    onSuccess: async (_review, variables) => {
+      setFavoriteToast('리뷰를 등록했어요.')
+      setEditingReview(null)
+      setDetailTab('review')
+      const next = new URLSearchParams(searchParams)
+      next.set('shopId', String(variables.shopId))
+      next.set('sheet', 'expanded')
+      replaceSearchParams(next)
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['shops'] }),
+        queryClient.invalidateQueries({ queryKey: ['shops', 'explore-active-detail', variables.shopId] }),
+        queryClient.invalidateQueries({ queryKey: ['shop-reviews', variables.shopId] }),
+        queryClient.invalidateQueries({ queryKey: ['users', 'me', 'reviews'] }),
+      ])
+    },
+  })
+
+  const reviewUpdateMutation = useMutation({
+    mutationFn: ({
+      shopId,
+      reviewId,
+      payload,
+    }: {
+      shopId: number
+      reviewId: number
+      payload: UpdateShopReviewPayload
+    }) => {
+      if (authToken == null) {
+        throw new Error('로그인 후 리뷰를 수정할 수 있어요.')
+      }
+
+      return updateShopReview(shopId, reviewId, payload, authToken)
+    },
+    onSuccess: async (_review, variables) => {
+      setFavoriteToast('리뷰를 수정했어요.')
+      setEditingReview(null)
+      setDetailTab('review')
+      const next = new URLSearchParams(searchParams)
+      next.set('shopId', String(variables.shopId))
+      next.set('sheet', 'expanded')
+      replaceSearchParams(next)
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['shops'] }),
+        queryClient.invalidateQueries({ queryKey: ['shops', 'explore-active-detail', variables.shopId] }),
+        queryClient.invalidateQueries({ queryKey: ['shop-reviews', variables.shopId] }),
+        queryClient.invalidateQueries({ queryKey: ['users', 'me', 'reviews'] }),
+      ])
+    },
+  })
+
+  const reviewDeleteMutation = useMutation({
+    mutationFn: ({ shopId, reviewId }: { shopId: number; reviewId: number }) => {
+      if (authToken == null) {
+        throw new Error('로그인 후 리뷰를 삭제할 수 있어요.')
+      }
+
+      return deleteShopReview(shopId, reviewId, authToken)
+    },
+    onSuccess: async (_result, variables) => {
+      setFavoriteToast('리뷰를 삭제했어요.')
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['shops'] }),
+        queryClient.invalidateQueries({ queryKey: ['shops', 'explore-active-detail', variables.shopId] }),
+        queryClient.invalidateQueries({ queryKey: ['shop-reviews', variables.shopId] }),
+        queryClient.invalidateQueries({ queryKey: ['users', 'me', 'reviews'] }),
+      ])
+    },
+    onError: (error) => {
+      setFavoriteToast(error instanceof Error ? error.message : '리뷰를 삭제하지 못했어요.')
     },
   })
 
@@ -682,6 +785,36 @@ export function ExplorePage() {
     }
   }
 
+  const closeReviewStation = () => {
+    if (selectedShopId == null) {
+      return
+    }
+
+    const next = new URLSearchParams(searchParams)
+    next.set('shopId', String(selectedShopId))
+    next.set('sheet', 'expanded')
+    replaceSearchParams(next)
+    setDetailTab('review')
+    reviewCreateMutation.reset()
+    reviewUpdateMutation.reset()
+    setEditingReview(null)
+  }
+
+  const openReviewStation = (review?: ShopReview) => {
+    if (!detailShop) {
+      return
+    }
+
+    const next = new URLSearchParams(searchParams)
+    next.set('shopId', String(detailShop.id))
+    next.set('sheet', 'review')
+    setEditingReview(review ?? null)
+    reviewCreateMutation.reset()
+    reviewUpdateMutation.reset()
+    pushSearchParams(next)
+    setAssistantOpen(false)
+  }
+
   const restoreListView = () => {
     const next = new URLSearchParams(searchParams)
     next.delete('shopId')
@@ -721,6 +854,7 @@ export function ExplorePage() {
     if (nextView === 'map' && isListSheetOpen) {
       listScrollTopRef.current = listScrollRef.current?.scrollTop ?? 0
       listVisibleCountRef.current = visibleListCount
+      setFocusMode('idle')
     }
 
     if (nextView === 'list') {
@@ -740,7 +874,7 @@ export function ExplorePage() {
   }
 
   const shrinkExpandedSheet = () => {
-    if (selectedShopId != null && sheetParam === 'expanded') {
+    if (selectedShopId != null && (sheetParam === 'expanded' || sheetParam === 'review')) {
       const next = new URLSearchParams(searchParams)
       next.delete('sheet')
       replaceSearchParams(next)
@@ -754,6 +888,11 @@ export function ExplorePage() {
   }
 
   const handleExploreBack = () => {
+    if (sheetMode === 'review') {
+      closeReviewStation()
+      return
+    }
+
     if (sheetMode === 'expanded') {
       shrinkExpandedSheet()
       return
@@ -914,7 +1053,7 @@ export function ExplorePage() {
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
   const isFullListView = routeViewMode === 'list' && selectedShopId == null
   const isListSheetOpen = isFullListView
-  const isExploreTopHidden = sheetMode === 'expanded'
+  const isExploreTopHidden = sheetMode === 'expanded' || sheetMode === 'review'
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
   const showAssistantSuggestions = shouldShowAssistantSuggestions(assistantMessages)
   const showAssistantReturn =
@@ -1213,6 +1352,7 @@ export function ExplorePage() {
             detailShop ? 'map-surface-sheet-open' : '',
             sheetMode === 'peek' && detailShop ? 'map-surface-sheet-peek' : '',
             sheetMode === 'expanded' ? 'map-surface-sheet-expanded' : '',
+            sheetMode === 'review' ? 'map-surface-sheet-review' : '',
             isListSheetOpen ? 'map-surface-list-open' : '',
           ]
             .filter(Boolean)
@@ -1228,6 +1368,7 @@ export function ExplorePage() {
             onSelectShop={handleMapSelectShop}
             onClearSelection={handleClearSelection}
             onViewportChange={handleMapViewportChange}
+            restoreViewport={mapViewport}
             userLocation={effectiveUserLocation}
             focusMode={focusMode}
             focusRequestId={focusRequestId}
@@ -1287,8 +1428,8 @@ export function ExplorePage() {
           ) : null}
 
           <MapOverlayControls
-            visible={sheetMode !== 'expanded'}
-            showListToggle={sheetMode !== 'expanded'}
+            visible={sheetMode !== 'expanded' && sheetMode !== 'review'}
+            showListToggle={sheetMode !== 'expanded' && sheetMode !== 'review'}
             isListSheetOpen={isListSheetOpen}
             locationState={locationState}
             onListClick={handleListFabClick}
@@ -1296,7 +1437,7 @@ export function ExplorePage() {
           />
 
           <MapAssistantPanel
-            visible={isMapAssistantEnabled && !isListSheetOpen && sheetMode !== 'expanded'}
+            visible={isMapAssistantEnabled && !isListSheetOpen && sheetMode !== 'expanded' && sheetMode !== 'review'}
             open={assistantOpen}
             showReturn={showAssistantReturn}
             hasConversation={assistantHasConversation}
@@ -1393,10 +1534,55 @@ export function ExplorePage() {
                     shop={detailShop}
                     activeTab={activeDetailTab}
                     mediaItems={detailMediaItems}
+                    reviewPage={reviewListQuery.data ?? null}
+                    isReviewLoading={reviewListQuery.isLoading}
+                    reviewErrorMessage={reviewListQuery.error instanceof Error ? reviewListQuery.error.message : null}
+                    currentUserId={currentUserId}
+                    deletingReviewId={
+                      reviewDeleteMutation.variables != null && reviewDeleteMutation.isPending
+                        ? reviewDeleteMutation.variables.reviewId
+                        : null
+                    }
+                    onStartReview={openReviewStation}
+                    onEditReview={openReviewStation}
+                    onDeleteReview={(review) =>
+                      reviewDeleteMutation.mutate({ shopId: review.shopId, reviewId: review.id })
+                    }
                   />
                 </div>
               </div>
             </section>
+          ) : null}
+
+          {detailShop && sheetMode === 'review' ? (
+            <MapReviewStation
+              key={editingReview == null ? `create-${detailShop.id}` : `edit-${editingReview.id}`}
+              shop={detailShop}
+              review={editingReview}
+              errorMessage={
+                editingReview != null
+                  ? reviewUpdateMutation.error instanceof Error
+                    ? reviewUpdateMutation.error.message
+                    : null
+                  : reviewCreateMutation.error instanceof Error
+                    ? reviewCreateMutation.error.message
+                    : null
+              }
+              isSubmitting={reviewCreateMutation.isPending || reviewUpdateMutation.isPending}
+              onClose={closeReviewStation}
+              onSubmit={(payload) => {
+                if (editingReview != null) {
+                  reviewUpdateMutation.mutate({
+                    shopId: detailShop.id,
+                    reviewId: editingReview.id,
+                    payload,
+                  })
+                  return
+                }
+
+                reviewCreateMutation.mutate({ shopId: detailShop.id, payload: payload as CreateShopReviewPayload })
+              }}
+            />
           ) : null}
         </div>
       </section>

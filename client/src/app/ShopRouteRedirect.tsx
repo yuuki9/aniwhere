@@ -13,5 +13,5 @@ export function ShopRouteRedirect() {
     return <Navigate replace to="/explore" />
   }
 
-  return <Navigate replace to={`/explore?shopId=${parsedShopId}`} />
+  return <Navigate replace to={`/explore?shopId=${parsedShopId}&sheet=expanded`} />
 }

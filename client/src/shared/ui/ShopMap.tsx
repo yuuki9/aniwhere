@@ -19,6 +19,7 @@ type ShopMapProps = {
   activeShopId: number | null
   onSelectShop: (shopId: number) => void
   onClearSelection?: () => void
+  restoreViewport?: MapViewport | null
   userLocation?: UserLocation | null
   focusMode?: FocusMode
   focusRequestId?: number
@@ -273,6 +274,7 @@ export function ShopMap({
   activeShopId,
   onSelectShop,
   onClearSelection,
+  restoreViewport = null,
   userLocation = null,
   focusMode = 'shops',
   focusRequestId = 0,
@@ -336,7 +338,17 @@ export function ShopMap({
       longitude: total.longitude / validShops.length,
     }
   }, [userLocation, validShops])
-  const initialCenterRef = useRef(center)
+  const initialViewportRef = useRef<{ center: UserLocation; zoom: number }>(
+    restoreViewport
+      ? {
+          center: restoreViewport.center,
+          zoom: restoreViewport.zoom,
+        }
+      : {
+          center,
+          zoom: INITIAL_ZOOM,
+        },
+  )
 
   useEffect(() => {
     onClearSelectionRef.current = onClearSelection
@@ -347,7 +359,7 @@ export function ShopMap({
 
   useEffect(() => {
     let cancelled = false
-    const initialCenter = initialCenterRef.current
+    const initialViewport = initialViewportRef.current
 
     loadNaverMaps()
       .then((maps) => {
@@ -356,8 +368,8 @@ export function ShopMap({
         }
 
         const map = new maps.Map(containerRef.current, {
-          center: new maps.LatLng(initialCenter.latitude, initialCenter.longitude),
-          zoom: INITIAL_ZOOM,
+          center: new maps.LatLng(initialViewport.center.latitude, initialViewport.center.longitude),
+          zoom: initialViewport.zoom,
           minZoom: MIN_ZOOM,
           maxZoom: MAX_ZOOM,
           scrollWheel: true,

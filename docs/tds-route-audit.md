@@ -575,6 +575,28 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/admin/shops` work selector | Product-approved / TDS-informed | Admin create/edit keeps the existing SearchField + ListRow work picker, and adds app-owned work-type chips above the search box. The chips use the Swagger `workTypes` labels to narrow suggestion results while save payload remains `workIds`, matching the current `ShopRequest` contract. |
 | Runtime verification | Needs sandbox | Source tests/build can verify filter and admin source wiring. Authenticated admin editing in Apps in Toss runtime still needs sandbox verification. |
 
+### 2026-05-31 Explore Review Station Follow-up
+
+Official docs checked with official web fallback in the current session because `ax search tds-web --query Rating --limit 3` timed out:
+
+- Rating: https://tossmini-docs.toss.im/tds-mobile/components/rating/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+- Modal: https://tossmini-docs.toss.im/tds-mobile/components/modal/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore` map camera restore | Product-approved / Regression fix | Map/list toggles keep using `replace` navigation so browser/native history does not accumulate. The last Naver camera is stored as transient in-memory viewport state and passed back into `ShopMap` when returning from the full list, avoiding URL camera params while preserving the user's cluster-zoom context. |
+| `/explore` review station | TDS-required / Product-approved | The old `/shop/detail/:shopId` UI was removed. Review creation now opens inside `/explore?shopId=:id&sheet=review`, keeping the selected shop/map context and using official TDS `Top`, `IconButton`, `Rating`, `Modal`, and `Button` through the `@aniwhere/tds-mobile` facade. The review form follows the current Swagger contract: `rating` and `content` are query params, and optional `images` are multipart form data. |
+| Review station navigation guard | Product-approved / Regression fix | The custom `map-review-station-back` button was removed. The station now uses a TDS `IconButton` back action and protects unsaved rating/content/photo drafts with a TDS `Modal` confirmation when the user taps back or triggers browser/native route navigation. Browser `alert()`/`confirm()` is intentionally avoided. |
+| Review owner actions | API-required / TDS-informed | The selected-shop review tab now reads `GET /api/v1/shops/{shopId}/reviews` in expanded mode and shows edit/delete actions only when the stored Aniwhere session user id matches `ShopReview.authorUserId`. Editing reuses the same review station with prefilled rating/content and calls `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}`. Deleting uses a TDS `Modal` confirmation before `DELETE /api/v1/shops/{shopId}/reviews/{reviewId}`. Existing image removal is intentionally deferred because Swagger exposes image upload on update but no per-image delete contract. |
+| Review station map-layer isolation | Regression fixed | Review mode now hides map zoom/location/list/LLM controls and raises the review station above the Naver map layer, preventing `/explore?view=map` controls and map copyright from appearing inside the review CTA area. |
+| Legacy detail route | Product-approved / Compatibility | `/shop/detail/:shopId` remains only as a redirect into `/explore?shopId=:id&sheet=expanded` so stale links do not break while the duplicate detail UI/CSS surface is removed. |
+| Photo attachment | Product-approved | TDS does not provide a confirmed photo-picker primitive in the checked scope, so the station uses app-owned file input and preview chips with token styling. The control limits selection to image files and a maximum of five previews before calling the review API. |
+| Runtime verification | Needs sandbox | Source tests can verify route/API wiring and public fallback shape. Authenticated review submission, native file picker behavior, and official TDS Rating rendering need Apps in Toss real-device sandbox verification. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

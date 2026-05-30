@@ -34,11 +34,6 @@ body.intro-route-body #root {
   background: var(--ait-color-gray-0);
 }
 
-body.shop-detail-route-body,
-body.shop-detail-route-body #root {
-  background: var(--ait-color-gray-0);
-}
-
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -1010,6 +1005,41 @@ p {
 
 .ait-button[data-size='xlarge'] {
   min-height: var(--ait-component-intro-action-height);
+}
+
+.ait-icon-button {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ait-radius-full);
+  background: transparent;
+  color: var(--ait-color-text-primary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.ait-icon-button[data-variant='border'] {
+  border: 1px solid var(--ait-color-border);
+}
+
+.ait-icon-button[data-variant='fill'] {
+  background: var(--ait-color-gray-100);
+}
+
+.ait-icon-button-image,
+.ait-icon-button-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ait-icon-button-glyph {
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 0.72;
 }
 
 .ait-badge {

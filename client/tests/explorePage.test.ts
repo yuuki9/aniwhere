@@ -154,7 +154,7 @@ test('ExplorePage extracts the assistant panel into a focused component', () => 
 
   assert.match(source, /<MapAssistantPanel/)
   assert.match(source, /const isMapAssistantEnabled = false/)
-  assert.match(source, /visible=\{isMapAssistantEnabled && !isListSheetOpen && sheetMode !== 'expanded'\}/)
+  assert.match(source, /visible=\{isMapAssistantEnabled && !isListSheetOpen && sheetMode !== 'expanded' && sheetMode !== 'review'\}/)
   assert.match(source, /const showAssistantReturn =\s+isMapAssistantEnabled &&/)
   assert.match(assistantPanelSource, /className="map-llm-panel"/)
   assert.match(assistantPanelSource, /messages\.map/)
@@ -250,7 +250,7 @@ test('Explore detail summary toggles shop favorites through the Swagger favorite
   const styles = appCssSource()
 
   assert.match(source, /import \{ addFavoriteShop, getNearbyShops, getShop, getShopFacets, getShops, removeFavoriteShop \} from '\.\.\/shared\/api\/shops'/)
-  assert.match(source, /import \{ getStoredAccessToken \} from '\.\.\/shared\/lib\/authSession'/)
+  assert.match(source, /import \{ getStoredAccessToken, readAuthSession \} from '\.\.\/shared\/lib\/authSession'/)
   assert.match(source, /import \{ Toast \} from '@aniwhere\/tds-mobile'/)
   assert.match(source, /const \[favoriteShopIds, setFavoriteShopIds\] = useState<Set<number>>\(\(\) => new Set\(\)\)/)
   assert.match(source, /const \[favoriteToast, setFavoriteToast\] = useState<string \| null>\(null\)/)
@@ -419,6 +419,8 @@ test('Explore list-map view switches replace history so removed chips do not res
   assert.match(source, /const moveViewMode = \(nextViewMode: ViewMode\) => \{[\s\S]*?next\.set\('view', nextViewMode\)[\s\S]*?replaceSearchParams\(next\)[\s\S]*?\}/)
   assert.doesNotMatch(source, /next\.set\('view', nextViewMode\)\s*pushSearchParams\(next\)/)
   assert.match(source, /if \(isListSheetOpen\) \{\s*handleSwitchView\('map'\)/)
+  assert.match(source, /setFocusMode\('idle'\)/)
+  assert.match(source, /restoreViewport=\{mapViewport\}/)
 })
 
 test('Explore list toggle stays available over a selected shop peek and opens the full list route', () => {
@@ -427,7 +429,7 @@ test('Explore list toggle stays available over a selected shop peek and opens th
   const styles = exploreSearchCssSource()
   const peekListButtonRules = cssRuleBodies(styles, '.map-surface-sheet-peek .map-list-fab')
 
-  assert.match(source, /<MapOverlayControls[\s\S]*?showListToggle=\{sheetMode !== 'expanded'\}/)
+  assert.match(source, /<MapOverlayControls[\s\S]*?showListToggle=\{sheetMode !== 'expanded' && sheetMode !== 'review'\}/)
   assert.match(overlayControlsSource, /showListToggle: boolean/)
   assert.match(overlayControlsSource, /\{showListToggle \? \(/)
   assert.match(source, /if \(selectedShopId != null\) \{\s*restoreListView\(\)\s*return\s*\}/)
@@ -464,7 +466,7 @@ test('Explore list view is a full search and results surface instead of a map bo
 test('Explore detail shop changes replace history instead of stacking visited shops', () => {
   const source = explorePageSource()
 
-  assert.match(source, /const sheetMode: SheetMode = selectedShopId && sheetParam === 'expanded' \? 'expanded' : 'peek'/)
+  assert.match(source, /const sheetMode: SheetMode =\s+selectedShopId && sheetParam === 'review' \? 'review' : selectedShopId && sheetParam === 'expanded' \? 'expanded' : 'peek'/)
   assert.match(source, /selectedShopId == null[\s\S]*?pushSearchParams\(next\)[\s\S]*?replaceSearchParams\(next\)/)
   assert.doesNotMatch(source, /setSheetMode/)
 })
@@ -523,7 +525,7 @@ test('ExplorePage exposes map viewport search after the map moves', () => {
 test('ExplorePage sends selected filters to the shop API instead of local-only chips', () => {
   const source = explorePageSource()
 
-  assert.match(source, /import \{ keepPreviousData, useMutation, useQuery \} from '@tanstack\/react-query'/)
+  assert.match(source, /import \{ keepPreviousData, useMutation, useQuery, useQueryClient \} from '@tanstack\/react-query'/)
   assert.match(source, /parseShopFilters\(searchParams\)/)
   assert.match(source, /toShopSearchParams\(selectedFilters\)/)
   assert.match(source, /const currentSearchScope = searchParams\.get\('scope'\) === 'work' \? 'work' : 'shop'/)

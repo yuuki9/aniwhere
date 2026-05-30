@@ -46,7 +46,8 @@ When the backend contract changes:
 - `UserSummary` includes optional `emojiIconFilename`.
 - Legacy `/api/v1/posts` community endpoints are removed. Frontend review work must use shop-scoped review APIs.
 - `GET /api/v1/shops/{shopId}/reviews` returns `PageResponse<ShopReview>` and accepts `sort=NEWEST|OLDEST|RATING_HIGH|RATING_LOW`.
-- `POST /api/v1/shops/{shopId}/reviews` and `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}` use multipart form data with `rating`, `content`, and optional `images`.
+- `POST /api/v1/shops/{shopId}/reviews` and `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}` send `rating` and `content` as query params, with optional `images` in multipart form data.
+- `GET /api/v1/users/me/reviews` returns the authenticated user's `PageResponse<ShopReview>` for owner review-management surfaces.
 - `POST/DELETE /api/v1/shops/{shopId}/reviews/{reviewId}/likes` toggles review likes.
 - `UserSummary` includes `role`, and `PATCH /api/v1/admin/users/{userId}/role` accepts `{ "role": "ADMIN" | "USER" }`.
 

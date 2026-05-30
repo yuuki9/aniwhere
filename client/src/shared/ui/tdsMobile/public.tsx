@@ -18,6 +18,16 @@ type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'fill' | 'weak'
 }
 
+type PublicIconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> & {
+  'aria-label': string
+  bgColor?: string
+  color?: string
+  iconSize?: number
+  name?: string
+  src?: string
+  variant?: 'fill' | 'clear' | 'border'
+}
+
 type PublicBadgeProps = HTMLAttributes<HTMLSpanElement> & {
   color?: 'blue' | 'teal' | 'green' | 'red' | 'yellow' | 'elephant'
   size: 'xsmall' | 'small' | 'medium' | 'large'
@@ -128,6 +138,43 @@ export function Button({
       {...props}
     >
       {children}
+    </button>
+  )
+}
+
+export function IconButton({
+  children,
+  className,
+  color,
+  bgColor,
+  iconSize = 24,
+  name,
+  src,
+  style,
+  type = 'button',
+  variant = 'clear',
+  ...props
+}: PublicIconButtonProps) {
+  const iconStyle = { width: iconSize, height: iconSize } as CSSProperties
+
+  return (
+    <button
+      className={['ait-icon-button', className].filter(Boolean).join(' ')}
+      data-icon-name={name}
+      data-variant={variant}
+      style={{ color, backgroundColor: bgColor, ...style }}
+      type={type}
+      {...props}
+    >
+      {src != null ? (
+        <img alt="" aria-hidden="true" className="ait-icon-button-image" src={src} style={iconStyle} />
+      ) : (
+        children ?? (
+          <span aria-hidden="true" className="ait-icon-button-glyph" style={iconStyle}>
+            {name?.includes('arrow-left') ? '‹' : '•'}
+          </span>
+        )
+      )}
     </button>
   )
 }
@@ -286,6 +333,19 @@ type PublicListRowProps = LiHTMLAttributes<HTMLLIElement> & {
   horizontalPadding?: 'small' | 'medium'
 }
 
+type PublicRatingProps = HTMLAttributes<HTMLDivElement> & {
+  value: number
+  max?: number
+  readOnly: boolean
+  size?: 'tiny' | 'small' | 'medium' | 'large' | 'big'
+  variant?: 'full' | 'compact' | 'iconOnly'
+  activeColor?: string
+  disabled?: boolean
+  onValueChange?: (value: number) => void
+  'aria-label': string
+  'aria-valuetext': string
+}
+
 export function ListRow({
   border = 'indented',
   className,
@@ -325,6 +385,59 @@ export function ListRow({
   )
 }
 
+export function Rating({
+  className,
+  disabled = false,
+  max = 5,
+  onValueChange,
+  readOnly,
+  size,
+  style,
+  value,
+  variant,
+  activeColor,
+  'aria-label': ariaLabel,
+  'aria-valuetext': ariaValueText,
+  ...props
+}: PublicRatingProps) {
+  const roundedValue = Math.max(0, Math.min(max, Math.round(value)))
+
+  return (
+    <div
+      aria-label={ariaLabel}
+      aria-valuemax={max}
+      aria-valuemin={0}
+      aria-valuenow={roundedValue}
+      aria-valuetext={ariaValueText}
+      className={['ait-rating', className].filter(Boolean).join(' ')}
+      data-size={size}
+      data-variant={variant}
+      role={readOnly ? 'img' : 'slider'}
+      style={{ '--ait-rating-active-color': activeColor, ...style } as CSSProperties}
+      {...props}
+    >
+      {Array.from({ length: max }, (_, index) => {
+        const nextValue = index + 1
+        const active = nextValue <= roundedValue
+
+        return (
+          <button
+            aria-label={`${nextValue}점`}
+            className="ait-rating-star"
+            data-active={active ? 'true' : undefined}
+            disabled={disabled || readOnly}
+            key={nextValue}
+            type="button"
+            onClick={() => onValueChange?.(nextValue)}
+          >
+            ★
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 type PublicTopProps = {
   id?: string
   className?: string
@@ -336,6 +449,11 @@ type PublicTopProps = {
   upperGap?: number
   lower?: ReactNode
   right?: ReactNode
+}
+
+type PublicTopParagraphProps = HTMLAttributes<HTMLDivElement> & {
+  size?: number | string
+  typography?: string
 }
 
 function TopRoot({
@@ -366,7 +484,10 @@ function TopRoot({
   )
 }
 
-function TopTitleParagraph({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+function TopTitleParagraph({ children, className, size, typography, ...props }: PublicTopParagraphProps) {
+  void size
+  void typography
+
   return (
     <div className={['ait-top-title-paragraph', className].filter(Boolean).join(' ')} role="heading" aria-level={1} {...props}>
       {children}
@@ -374,7 +495,10 @@ function TopTitleParagraph({ children, className, ...props }: HTMLAttributes<HTM
   )
 }
 
-function TopSubtitleParagraph({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+function TopSubtitleParagraph({ children, className, size, typography, ...props }: PublicTopParagraphProps) {
+  void size
+  void typography
+
   return <div className={['ait-top-subtitle-paragraph', className].filter(Boolean).join(' ')} {...props}>{children}</div>
 }
 

@@ -21,5 +21,4 @@ export const HomePage = lazy(() => import('../pages/HomePage').then((module) => 
 export const IntroPage = lazy(() => import('../pages/IntroPage').then((module) => ({ default: module.IntroPage })))
 export const PostDetailPage = lazy(() => import('../pages/PostDetailPage').then((module) => ({ default: module.PostDetailPage })))
 export const SearchPage = lazy(() => import('../pages/SearchPage').then((module) => ({ default: module.SearchPage })))
-export const ShopPage = lazy(() => import('../pages/ShopPage').then((module) => ({ default: module.ShopPage })))
 export const ShopRouteRedirect = lazy(() => import('./ShopRouteRedirect').then((module) => ({ default: module.ShopRouteRedirect })))

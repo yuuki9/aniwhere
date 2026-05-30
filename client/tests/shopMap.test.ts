@@ -48,6 +48,18 @@ test('ShopMap publishes viewport changes only when the map moved meaningfully', 
   assert.doesNotMatch(source, /onViewportChangeRef\.current\?\.\(readMapViewport\(map\)\)/)
 })
 
+test('ShopMap can restore the last map camera when returning from the full list view', () => {
+  const source = shopMapSource()
+
+  assert.match(source, /restoreViewport\?: MapViewport \| null/)
+  assert.match(source, /restoreViewport = null/)
+  assert.match(source, /const initialViewportRef = useRef<\{ center: UserLocation; zoom: number \}>/)
+  assert.match(source, /restoreViewport\s*\?[\s\S]*center: restoreViewport\.center,[\s\S]*zoom: restoreViewport\.zoom/)
+  assert.match(source, /center: new maps\.LatLng\(initialViewport\.center\.latitude, initialViewport\.center\.longitude\)/)
+  assert.match(source, /zoom: initialViewport\.zoom/)
+  assert.doesNotMatch(source, /zoom: INITIAL_ZOOM,\s*minZoom/)
+})
+
 test('ShopMap renders shop names as chip markers and keeps clusters as count chips', () => {
   const source = shopMapSource()
   const styles = appCssSource()
