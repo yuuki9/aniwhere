@@ -82,7 +82,7 @@ export function SearchPage() {
       setRecentSearches(pushRecentSearch(trimmed))
     }
 
-    navigate(buildExploreSearchHref({ keyword: trimmed, scope: currentSearchScope, selectedFilters }))
+    navigate(buildExploreSearchHref({ keyword: trimmed, scope: currentSearchScope, selectedFilters }), { replace: true })
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -109,7 +109,7 @@ export function SearchPage() {
   }
 
   const applyFilters = (nextFilters: ShopFilters) => {
-    navigate(buildExploreSearchHref({ keyword, scope: currentSearchScope, selectedFilters: nextFilters }))
+    navigate(buildExploreSearchHref({ keyword, scope: currentSearchScope, selectedFilters: nextFilters }), { replace: true })
   }
 
   const removeRecentSearchItem = (item: string) => {
@@ -155,7 +155,6 @@ export function SearchPage() {
           <div className="map-list-view-top">
             <div className="map-search-row search-screen-toolrow">
               <MapSearchFieldForm
-                autoFocus
                 value={keyword}
                 onChange={setKeyword}
                 onClear={() => setKeyword('')}

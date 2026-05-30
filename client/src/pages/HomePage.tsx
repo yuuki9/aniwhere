@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
@@ -135,7 +135,6 @@ function HomePendingCard({ title, description }: { title: string; description: s
 function buildHomeWorkSearchHref(workName: string) {
   const params = new URLSearchParams()
   params.set('view', 'list')
-  params.set('scope', 'work')
   params.set('keyword', workName)
 
   return `/explore?${params.toString()}`
@@ -224,6 +223,14 @@ export function HomePage() {
     () => buildHomeWorkPreviewItems(worksQuery.data ?? []),
     [worksQuery.data],
   )
+
+  useEffect(() => {
+    if (welcomeProfile == null) {
+      return
+    }
+
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.pathname, location.search, navigate, welcomeProfile])
 
   return (
     <main className="app-shell discover-shell">

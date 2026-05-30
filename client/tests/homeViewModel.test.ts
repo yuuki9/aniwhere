@@ -78,12 +78,14 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.doesNotMatch(source, /role="status"/)
 })
 
-test('HomePage shows a top welcome toast from Toss nickname entry state', () => {
+test('HomePage shows a top welcome toast from Toss nickname entry state once', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
 
   assert.match(source, /import \{ Toast \} from '@aniwhere\/tds-mobile'/)
   assert.match(source, /useLocation\(\)/)
+  assert.match(source, /useNavigate\(\)/)
   assert.match(source, /readWelcomeProfile\(location\.state\)/)
+  assert.match(source, /navigate\(`\$\{location\.pathname\}\$\{location\.search\}`, \{ replace: true, state: null \}\)/)
   assert.match(source, /welcomeEmoji/)
   assert.match(source, /<Toast/)
   assert.match(source, /position="top"/)
@@ -92,13 +94,13 @@ test('HomePage shows a top welcome toast from Toss nickname entry state', () => 
   assert.match(source, /님 반가워요!/)
 })
 
-test('HomePage sends work poster searches directly to the explore list with work scope', () => {
+test('HomePage sends work poster searches directly to the explore list with the same query shape as manual search', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
 
   assert.match(source, /function buildHomeWorkSearchHref\(workName: string\)/)
   assert.match(source, /params\.set\('view', 'list'\)/)
-  assert.match(source, /params\.set\('scope', 'work'\)/)
   assert.match(source, /params\.set\('keyword', workName\)/)
+  assert.doesNotMatch(source, /params\.set\('scope', 'work'\)/)
   assert.doesNotMatch(source, /params\.set\('returnTo', '\/home'\)/)
   assert.match(source, /to=\{buildHomeWorkSearchHref\(work\.name\)\}/)
   assert.match(source, /return `\/explore\?\$\{params\.toString\(\)\}`/)

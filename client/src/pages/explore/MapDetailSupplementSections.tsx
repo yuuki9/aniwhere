@@ -39,7 +39,7 @@ export function MapDetailSupplementSections({
                 <Link
                   className="map-sheet-work-row"
                   key={work.id}
-                  to={`/explore?view=list&scope=work&keyword=${encodeURIComponent(work.name)}`}
+                  to={`/explore?view=list&keyword=${encodeURIComponent(work.name)}`}
                 >
                   {work.coverUrl ? (
                     <img
@@ -111,7 +111,7 @@ export function MapDetailSupplementSections({
           </p>
         </div>
         <Link className="map-place-review-button" to={`/shop/detail/${shop.id}`}>
-          리뷰 보기
+          리뷰작성하기
         </Link>
       </section>
     )
