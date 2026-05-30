@@ -135,6 +135,7 @@ function HomePendingCard({ title, description }: { title: string; description: s
 function buildHomeWorkSearchHref(workName: string) {
   const params = new URLSearchParams()
   params.set('view', 'list')
+  params.set('scope', 'work')
   params.set('keyword', workName)
 
   return `/explore?${params.toString()}`

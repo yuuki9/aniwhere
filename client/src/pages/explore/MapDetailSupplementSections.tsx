@@ -39,7 +39,7 @@ export function MapDetailSupplementSections({
                 <Link
                   className="map-sheet-work-row"
                   key={work.id}
-                  to={`/explore?view=list&keyword=${encodeURIComponent(work.name)}`}
+                  to={`/explore?view=list&scope=work&keyword=${encodeURIComponent(work.name)}`}
                 >
                   {work.coverUrl ? (
                     <img

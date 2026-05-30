@@ -99,8 +99,8 @@ test('HomePage sends work poster searches directly to the explore list with the 
 
   assert.match(source, /function buildHomeWorkSearchHref\(workName: string\)/)
   assert.match(source, /params\.set\('view', 'list'\)/)
+  assert.match(source, /params\.set\('scope', 'work'\)/)
   assert.match(source, /params\.set\('keyword', workName\)/)
-  assert.doesNotMatch(source, /params\.set\('scope', 'work'\)/)
   assert.doesNotMatch(source, /params\.set\('returnTo', '\/home'\)/)
   assert.match(source, /to=\{buildHomeWorkSearchHref\(work\.name\)\}/)
   assert.match(source, /return `\/explore\?\$\{params\.toString\(\)\}`/)
