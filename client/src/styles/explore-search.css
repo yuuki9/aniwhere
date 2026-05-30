@@ -2718,7 +2718,7 @@
   background: transparent;
   color: var(--ait-color-text-primary);
   font: inherit;
-  font-size: var(--ait-font-size-body-sm);
+  font-size: 16px;
 }
 
 .search-screen-form.map-search-field .search-screen-input::placeholder {
@@ -2737,23 +2737,6 @@
 .search-screen-form.map-search-field .search-screen-input::-webkit-search-decoration {
   display: none;
   appearance: none;
-}
-
-.search-screen-clear-button {
-  display: inline-flex;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: var(--ait-radius-full);
-  background: var(--ait-color-gray-150);
-  color: var(--ait-color-text-tertiary);
-  font: inherit;
-  font-size: var(--ait-font-size-body-lg);
-  line-height: 1;
-  cursor: pointer;
 }
 
 .search-screen-form > :is(.tds-mobile-search-field, .ait-search-field) {

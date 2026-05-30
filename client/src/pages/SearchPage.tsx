@@ -157,7 +157,6 @@ export function SearchPage() {
               <MapSearchFieldForm
                 value={keyword}
                 onChange={setKeyword}
-                onClear={() => setKeyword('')}
                 onKeyDown={handleSearchKeyDown}
                 onSubmit={handleSubmit}
               />

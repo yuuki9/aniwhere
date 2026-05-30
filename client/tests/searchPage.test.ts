@@ -55,9 +55,12 @@ test('SearchPage keeps the shared map search field shell without TDS SearchField
   assert.match(source, /import \{ MapSearchFieldForm \} from '\.\.\/shared\/ui\/MapSearchFieldShell'/)
   assert.match(source, /<MapSearchFieldForm/)
   assert.doesNotMatch(source, /<MapSearchFieldForm[\s\S]*autoFocus/)
+  assert.doesNotMatch(shellSource, /autoFocus/)
   assert.match(source, /value=\{keyword\}/)
   assert.match(source, /onChange=\{setKeyword\}/)
-  assert.match(source, /onClear=\{\(\) => setKeyword\(''\)\}/)
+  assert.doesNotMatch(source, /onClear=/)
+  assert.doesNotMatch(shellSource, /search-screen-clear-button|검색어 지우기/)
+  assert.doesNotMatch(styles, /\.search-screen-clear-button\b/)
   assert.match(shellSource, /<form className="search-screen-form search-screen-bar map-search-field" onSubmit=\{onSubmit\}>/)
   assert.match(shellSource, /<input/)
   assert.match(shellSource, /className="search-screen-input"/)
@@ -66,6 +69,11 @@ test('SearchPage keeps the shared map search field shell without TDS SearchField
   assert.match(source, /className="search-filter-button map-filter-button"/)
   assert.doesNotMatch(source, /import \{ SearchField \} from '@aniwhere\/tds-mobile'/)
   assert.doesNotMatch(source, /<SearchField/)
+  assert.ok(
+    cssRuleBodies(styles, '.search-screen-form.map-search-field .search-screen-input').some((rule) =>
+      /font-size:\s*16px;/.test(rule),
+    ),
+  )
   assert.ok(cssRuleBodies(styles, '.search-screen-form.map-search-field .search-screen-input::-webkit-search-cancel-button').some((rule) => /display:\s*none;/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.search-screen-form.map-search-field .search-screen-input::-webkit-search-decoration').some((rule) => /display:\s*none;/.test(rule)))
 })
