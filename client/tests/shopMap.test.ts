@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const shopMapSource = () => fs.readFileSync(new URL('../src/shared/ui/ShopMap.tsx', import.meta.url), 'utf8')
+const naverMapLoaderSource = () => fs.readFileSync(new URL('../src/shared/lib/naverMapLoader.ts', import.meta.url), 'utf8')
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
 test('ShopMap reports the visible map viewport for map-area search', () => {
@@ -90,7 +91,21 @@ test('ShopMap skips marker rendering when the Naver marker API is unavailable', 
   const source = shopMapSource()
 
   assert.match(source, /function canCreateNaverMarkers\(\)/)
-  assert.match(source, /naver\.maps\.Marker != null/)
-  assert.match(source, /naver\.maps\.Event != null/)
+  assert.match(source, /window\.naver\?\.maps/)
+  assert.match(source, /maps\.Marker != null/)
+  assert.match(source, /maps\.LatLng != null/)
   assert.match(source, /!mapInitialized \|\| !map \|\| !canCreateNaverMarkers\(\)/)
+})
+
+test('Naver map loader waits for the full maps namespace before resolving in WebView', () => {
+  const source = naverMapLoaderSource()
+
+  assert.match(source, /function isUsableNaverMaps/)
+  assert.match(source, /maps\.Map != null/)
+  assert.match(source, /maps\.LatLng != null/)
+  assert.match(source, /maps\.Event != null/)
+  assert.match(source, /maps\.Position != null/)
+  assert.match(source, /maps\.Size != null/)
+  assert.match(source, /maps\.Point != null/)
+  assert.match(source, /return isUsableNaverMaps\(maps\) \? maps : null/)
 })

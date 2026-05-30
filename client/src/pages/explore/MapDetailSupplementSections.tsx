@@ -111,7 +111,7 @@ export function MapDetailSupplementSections({
           </p>
         </div>
         <Link className="map-place-review-button" to={`/shop/detail/${shop.id}`}>
-          리뷰작성하기
+          리뷰 작성하기
         </Link>
       </section>
     )

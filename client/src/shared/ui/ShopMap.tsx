@@ -32,6 +32,8 @@ type MarkerWithListeners = {
   listeners: naver.maps.MapEventListener[]
 }
 
+type PartialNaverMapNamespace = Partial<typeof naver.maps>
+
 type ShopMarkerGroup =
   | {
       type: 'shop'
@@ -55,22 +57,41 @@ const SHOP_MARKER_MIN_WIDTH = 64
 const SHOP_MARKER_MAX_WIDTH = 220
 
 function createMarkerIcon(className: string, label: string, size: number) {
+  const maps = getRequiredNaverMaps()
+
   return {
     content: `<span class="${className}" style="width:${size}px;height:${size}px" aria-hidden="true">${label}</span>`,
-    size: new naver.maps.Size(size, size),
-    anchor: new naver.maps.Point(size / 2, size / 2),
+    size: new maps.Size(size, size),
+    anchor: new maps.Point(size / 2, size / 2),
   }
 }
 
 function canCreateNaverMarkers() {
+  return isUsableNaverMarkerMaps(window.naver?.maps)
+}
+
+function isUsableNaverMarkerMaps(maps: PartialNaverMapNamespace | null | undefined): maps is typeof naver.maps {
+  if (!maps) {
+    return false
+  }
+
   return (
-    typeof naver !== 'undefined' &&
-    naver.maps.Marker != null &&
-    naver.maps.Event != null &&
-    naver.maps.Size != null &&
-    naver.maps.Point != null &&
-    naver.maps.LatLng != null
+    maps.Marker != null &&
+    maps.Event != null &&
+    maps.Size != null &&
+    maps.Point != null &&
+    maps.LatLng != null
   )
+}
+
+function getRequiredNaverMaps() {
+  const maps = window.naver?.maps
+
+  if (!isUsableNaverMarkerMaps(maps)) {
+    throw new Error('네이버 지도 SDK를 초기화하지 못했습니다.')
+  }
+
+  return maps
 }
 
 function escapeMarkerLabel(value: string) {
@@ -93,29 +114,33 @@ function getChipMarkerWidth(label: string) {
 }
 
 function createShopMarkerIcon(shop: Shop, isActive: boolean) {
+  const maps = getRequiredNaverMaps()
   const label = getShopMarkerLabel(shop)
   const width = getChipMarkerWidth(label)
 
   return {
     content: `<span class="map-naver-shop-marker" aria-hidden="true"><span class="map-naver-shop-chip${isActive ? ' map-naver-shop-chip-active' : ''}"><span class="map-naver-shop-chip-label">${escapeMarkerLabel(label)}</span></span></span>`,
-    size: new naver.maps.Size(width, SHOP_MARKER_HEIGHT),
-    anchor: new naver.maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
+    size: new maps.Size(width, SHOP_MARKER_HEIGHT),
+    anchor: new maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
   }
 }
 
 function createClusterMarkerIcon(count: number) {
+  const maps = getRequiredNaverMaps()
   const label = `${count}곳`
   const width = getChipMarkerWidth(label)
 
   return {
     content: `<span class="map-naver-cluster-chip" aria-hidden="true"><span class="map-naver-cluster-chip-count">${escapeMarkerLabel(label)}</span></span>`,
-    size: new naver.maps.Size(width, SHOP_MARKER_HEIGHT),
-    anchor: new naver.maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
+    size: new maps.Size(width, SHOP_MARKER_HEIGHT),
+    anchor: new maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
   }
 }
 
 function toLatLng(latitude: number, longitude: number) {
-  return new naver.maps.LatLng(latitude, longitude)
+  const maps = getRequiredNaverMaps()
+
+  return new maps.LatLng(latitude, longitude)
 }
 
 function getClusterCellSize(zoom: number) {
@@ -424,10 +449,11 @@ export function ShopMap({
       return
     }
 
+    const maps = getRequiredNaverMaps()
     shopMarkersRef.current.forEach(removeMarker)
     shopMarkersRef.current = markerGroups.map((group) => {
       if (group.type === 'cluster') {
-        const marker = new naver.maps.Marker({
+        const marker = new maps.Marker({
           map,
           position: toLatLng(group.latitude, group.longitude),
           title: `${group.shops.length}개 매장`,
@@ -435,7 +461,7 @@ export function ShopMap({
           zIndex: 8,
           icon: createClusterMarkerIcon(group.shops.length),
         })
-        const listener = naver.maps.Event.addListener(marker, 'click', () => {
+        const listener = maps.Event.addListener(marker, 'click', () => {
           map.morph(
             toLatLng(group.latitude, group.longitude),
             Math.min(MAX_ZOOM, Math.max(CLUSTER_BREAK_ZOOM, map.getZoom() + 2)),
@@ -449,7 +475,7 @@ export function ShopMap({
       }
 
       const isActive = activeShopId === group.shop.id
-      const marker = new naver.maps.Marker({
+      const marker = new maps.Marker({
         map,
         position: toLatLng(group.shop.py, group.shop.px),
         title: group.shop.name,
@@ -457,7 +483,7 @@ export function ShopMap({
         zIndex: isActive ? 20 : 10,
         icon: createShopMarkerIcon(group.shop, isActive),
       })
-      const listener = naver.maps.Event.addListener(marker, 'click', () => {
+      const listener = maps.Event.addListener(marker, 'click', () => {
         onSelectShopRef.current(group.shop.id)
       })
 
@@ -484,7 +510,8 @@ export function ShopMap({
       return
     }
 
-    const marker = new naver.maps.Marker({
+    const maps = getRequiredNaverMaps()
+    const marker = new maps.Marker({
       map,
       position: toLatLng(userLocation.latitude, userLocation.longitude),
       title: '현재 위치',

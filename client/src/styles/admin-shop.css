@@ -1,11 +1,5 @@
 /* Admin and shop-detail route styles extracted from App.css. */
 
-.admin-shell {
-  gap: 20px;
-  padding-bottom: 48px;
-}
-
-.admin-unlock-card,
 .admin-panel,
 .admin-hub-card,
 .admin-summary-card {
@@ -14,23 +8,12 @@
   border-radius: var(--ait-radius-4xl);
 }
 
-.admin-unlock-card {
-  display: grid;
-  gap: 16px;
-  padding: 28px;
-}
-
-.admin-unlock-head,
 .admin-console-topbar,
 .shop-detail-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--ait-space-6);
-}
-
-.admin-unlock-head {
-  justify-content: flex-start;
 }
 
 .admin-console-topbar {
@@ -48,16 +31,29 @@
   font-size: 1.15rem;
 }
 
-.admin-unlock-form,
+.admin-home-head {
+  display: grid;
+  gap: var(--ait-space-3);
+}
+
+.admin-home-head h1 {
+  margin: 0;
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-display-sm);
+  line-height: var(--ait-line-height-title);
+}
+
+.admin-home-head p {
+  margin: 0;
+  color: var(--ait-color-text-tertiary);
+  font-size: var(--ait-font-size-body-md);
+}
+
 .admin-action-row,
 .shop-detail-summary-meta {
   display: flex;
   gap: var(--ait-space-6);
   flex-wrap: wrap;
-}
-
-.admin-preview-button {
-  justify-content: center;
 }
 
 .admin-summary-grid,
@@ -92,6 +88,26 @@
   color: var(--ait-color-text-tertiary);
   font-size: var(--ait-font-size-body-sm);
   line-height: var(--ait-line-height-body);
+}
+
+.admin-hub-card-status {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: var(--ait-radius-full);
+  background: rgba(29, 78, 216, 0.08);
+  color: var(--ait-color-brand-pressed);
+  font-size: var(--ait-font-size-caption);
+  font-weight: 800;
+}
+
+.admin-hub-card-disabled {
+  background: var(--ait-color-gray-50);
+  color: var(--ait-color-text-tertiary);
+}
+
+.admin-hub-card-disabled .admin-hub-card-status {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--ait-color-text-tertiary);
 }
 
 .admin-summary-card {
@@ -1654,23 +1670,16 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-shell {
-    gap: var(--ait-space-7);
-    padding-bottom: 28px;
-  }
-
   .admin-shop-crud-shell {
     gap: var(--ait-space-7);
     padding: 0 0 40px;
   }
 
-  .admin-unlock-card,
   .admin-panel,
   .admin-summary-card {
     border-radius: 22px;
   }
 
-  .admin-unlock-card,
   .admin-panel {
     padding: 16px;
     gap: var(--ait-space-7);

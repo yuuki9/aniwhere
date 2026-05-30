@@ -3,6 +3,9 @@ import { lazy } from 'react'
 export const AdminAccessGate = lazy(() =>
   import('../pages/admin/AdminAccessGate').then((module) => ({ default: module.AdminAccessGate }))
 )
+export const AdminHomePage = lazy(() =>
+  import('../pages/admin/AdminHomePage').then((module) => ({ default: module.AdminHomePage }))
+)
 export const AdminShopManagePage = lazy(() =>
   import('../pages/admin/AdminShopManagePage').then((module) => ({ default: module.AdminShopManagePage }))
 )

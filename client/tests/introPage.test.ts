@@ -253,6 +253,7 @@ test('IntroPage bridges Toss login through the Aniwhere server before entering h
   assert.match(source, /result\.mode === 'needsNickname'/)
   assert.match(source, /setPendingNicknameSession\(result\.session\)/)
   assert.match(source, /entryMode:\s*'toss'/)
+  assert.match(source, /welcomeEmoji:\s*getProfileEmojiSymbol\(result\.user\.emojiIconFilename\)/)
   assert.match(source, /welcomeNickname:\s*result\.user\.nickname/)
 })
 

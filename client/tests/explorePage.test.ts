@@ -486,7 +486,8 @@ test('ExplorePage extracts the expanded detail supplement sections into a focuse
 
   assert.match(source, /<MapDetailSupplementSections/)
   assert.match(supplementSource, /map-place-review-card/)
-  assert.match(supplementSource, /리뷰작성하기/)
+  assert.match(supplementSource, /리뷰 작성하기/)
+  assert.doesNotMatch(supplementSource, /리뷰작성하기/)
   assert.doesNotMatch(supplementSource, /리뷰 보기/)
   assert.match(supplementSource, /map-sheet-work-feed/)
   assert.match(supplementSource, /map-sheet-work-row/)

@@ -166,6 +166,10 @@ function getProfileEmojiOption(id: string) {
   )
 }
 
+function getProfileEmojiSymbol(emojiIconFilename: string | null | undefined) {
+  return profileEmojiOptions.find((option) => option.emojiIconFilename === emojiIconFilename)?.symbol
+}
+
 type NicknameOnboardingSheetProps = {
   error: string | null
   input: string
@@ -315,7 +319,11 @@ export function IntroPage() {
         return
       }
       navigate('/home', {
-        state: { entryMode: 'toss', welcomeNickname: result.user.nickname ?? undefined } satisfies EntryRouteState,
+        state: {
+          entryMode: 'toss',
+          welcomeEmoji: getProfileEmojiSymbol(result.user.emojiIconFilename),
+          welcomeNickname: result.user.nickname ?? undefined,
+        } satisfies EntryRouteState,
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : '로그인을 완료하지 못했어요. 다시 시도해 주세요.'

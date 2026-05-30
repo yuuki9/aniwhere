@@ -5,20 +5,38 @@ const NAVER_MAP_READY_RETRY_DELAY_MS = 50
 const NAVER_MAP_WATCHDOG_TIMEOUT_MS = 10000
 
 type NaverMapNamespace = typeof naver.maps
+type PartialNaverMapNamespace = Partial<NaverMapNamespace>
 
 declare global {
   interface Window {
     __aniwhereNaverMapReady?: () => void
     naver?: {
-      maps?: NaverMapNamespace
+      maps?: PartialNaverMapNamespace
     }
   }
 }
 
 let naverMapLoadPromise: Promise<NaverMapNamespace> | null = null
 
+function isUsableNaverMaps(maps: PartialNaverMapNamespace | null | undefined): maps is NaverMapNamespace {
+  if (!maps) {
+    return false
+  }
+
+  return (
+    maps.Map != null &&
+    maps.LatLng != null &&
+    maps.Event != null &&
+    maps.Position != null &&
+    maps.Size != null &&
+    maps.Point != null
+  )
+}
+
 function getLoadedNaverMaps() {
-  return window.naver?.maps?.Map ? window.naver.maps : null
+  const maps = window.naver?.maps
+
+  return isUsableNaverMaps(maps) ? maps : null
 }
 
 export function loadNaverMaps() {

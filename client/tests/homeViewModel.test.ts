@@ -148,6 +148,7 @@ test('HomePage shows the admin entry only for server admin roles', () => {
   assert.match(source, /function HomeAdminEntry\(\)/)
   assert.match(source, /className="home-admin-entry-card"/)
   assert.match(source, /to="\/admin"/)
+  assert.doesNotMatch(source, /to="\/admin\/shops"/)
   assert.match(source, /const canEnterAdmin = useMemo\(\(\) => isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
   assert.match(source, /\{canEnterAdmin \? <HomeAdminEntry \/> : null\}/)
   assert.ok(source.indexOf('{canEnterAdmin ? <HomeAdminEntry /> : null}') < source.indexOf('<HomeSearchEntry'))
