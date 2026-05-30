@@ -781,7 +781,7 @@ export function ExplorePage() {
       return
     }
 
-    navigate('/home')
+    navigate('/home', { replace: true })
   }
 
   const handleRequestLocation = async () => {
