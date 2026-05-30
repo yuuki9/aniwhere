@@ -183,7 +183,7 @@ Official docs checked with `ax search tds-web` CLI fallback on 2026-05-24 becaus
 | Route/page Ait markup boundary | TDS-required | `/intro` no longer renders page-level `ait-list-row*` classes. `/home`, `/search`, and `/explore` have no `shared/ui/ait` imports or `Ait*` route/page components. Shared public fallback may still render `ait-*` classes internally as the public-build compatibility layer. |
 | `/search` actual input | TDS-required | The editable search input imports `SearchField` through `@aniwhere/tds-mobile`, which resolves to official `@toss/tds-mobile` in Apps in Toss builds. |
 | `/home` search entry | Product-approved | Kept as an app-owned button-like route entry because it navigates to `/search` instead of acting as an inline editable text field. |
-| `/explore` top search entry | Product-approved | Kept as an app-owned map overlay route entry. Official `SearchField` remains the reference for editable search fields, not navigation-only affordances. |
+| `/explore` top search entry | Product-approved | Kept as an app-owned `map-search-row search-screen-toolrow` route entry because it navigates to `/search` instead of acting as an inline editable text field. Official `SearchField` remains the reference for the editable `/search` input; the map/home route-entry button keeps the shared `.map-search-field` icon and spacing contract. |
 | `/intro` feature chain | Product-approved | The feature chain keeps the approved app-owned connector treatment; official ListRow informed the left/content structure, but the connector itself is not a documented ListRow pattern. Page-level `ait-list-row*` classes were removed. |
 | Runtime verification | Needs sandbox | Local tests and builds do not prove Apps in Toss native navigation, safe area, runtime font, or Pixel 8a tap behavior. |
 
@@ -218,6 +218,36 @@ Official docs checked with `ax search tds-web` CLI fallback because the Apps in 
 - useBottomSheet: https://tossmini-docs.toss.im/tds-mobile/hooks/OverlayExtension/use-bottom-sheet/
 - BottomCTA overview: https://tossmini-docs.toss.im/tds-mobile/components/BottomCTA/check-first/
 - BottomCTA.Single: https://tossmini-docs.toss.im/tds-mobile/components/BottomCTA/Single/
+
+### 2026-05-30 Search/Explore Route Field Follow-up
+
+Official docs reused from the current Search/Explore audit because the touched primitives are the same:
+
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Shared search field shell | Product-approved | `/search` and `/explore` now share `MapSearchFieldShell` so the route-entry button and editable form keep the same `search-screen-bar map-search-field` structure. This preserves the approved Aniwhere map/list search rhythm while using official SearchField as the behavior reference. |
+| `/search` route shell | Regression fixed / Product-approved | `/search` no longer owns a separate `search-screen search-screen-v2` surface. It now uses the same `map-page-shell`, `map-page-list-mode`, `map-list-view-top`, and `map-results-list-panel` shell as `/explore?view=list`; only the inner input form and pre-search content differ by route purpose. The search-entry state intentionally omits `search-result-head` so the screen does not imply results before a query is submitted. |
+| Routed keyword display | Product-approved / Regression fixed | `/explore?view=list&keyword=:keyword` now displays the routed keyword in the top search field. Home work poster links and recent-history selections therefore arrive in the list route with visible context instead of falling back to placeholder copy. |
+| Recent search chips | Product-approved | Recent searches are app-owned removable chips with an adjacent `전체 삭제` action. TDS docs do not expose a dedicated chip primitive in this facade, so the UI uses TDS-compatible tokens and Button-like hit targets. |
+
+### 2026-05-30 Explore Peek/Nearby Follow-up
+
+Official docs checked with Apps in Toss MCP:
+
+- Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Peek sheet summary | Product-approved | The map peek sheet now prioritizes shop name, review signal, address, and category chips. The previous status pill was removed from the peek state because category and address are more useful before opening detail; status remains a detail-level field. |
+| Category chips | Product-approved | Official Badge informed the compact status-label shape, but the peek category chips are app-owned because they are filter-like metadata inside a map summary, not standalone TDS `Badge` statuses. |
+| Map area search | API-required | Swagger exposes `GET /api/v1/shops/nearby?lat=&lng=` for a server-defined 1km nearby result. `map-area-search-button` now calls this endpoint with the current map center and keeps existing URL/facet filtering on top. |
 - Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
 - Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
 - ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
@@ -323,7 +353,7 @@ Official docs checked with Apps in Toss MCP in the current session:
 
 | Area | Current classification | Notes |
 | --- | --- | --- |
-| `/home` vertical CTA carousel | Product-approved / Asset-informed | The three CTA cards now use the newly generated 1024x1536 vertical images from the local Downloads folder. The card frame stays white and app-owned, while the image fills a 2:3 card and the copy is reduced to two title lines: `가까운 매장부터 / 한눈에 보기`, `많이 찜한 매장 / 먼저 둘러보기`, and `후기 많은 매장 / 믿고 찾아보기`. This follows the approved Olive Young-like content-curation carousel direction; TDS `Asset` informed the stable media frame, but TDS Mobile still does not define this exact horizontal content rail. |
+| `/home` vertical CTA carousel | Product-approved / Asset-informed | The three CTA cards now use the generated visual assets and a compact two-line copy pattern. Favorite/review wording is standardized with the facet sort labels: `관심 많은 매장 / 먼저 둘러보기` maps to `관심 많은순`, and `리뷰 많은 매장 / 믿고 찾아보기` maps to `리뷰 많은순`. This follows the approved Olive Young-like content-curation carousel direction; TDS `Asset` informed the stable media frame, but TDS Mobile still does not define this exact horizontal content rail. |
 | `/explore` map-backed list results sheet | Superseded by 2026-05-27 split | This earlier map-backed sheet direction was replaced after the Olive Young reference review. `/explore?view=list` is now a full route-level list surface, while `/explore?view=map` owns the map surface. |
 | `/explore` list toggle over selected POI peek | Superseded by 2026-05-27 split | The list FAB still clears selected-shop query state, but its destination is now the full `/explore?view=list` list route instead of a map-backed `BottomSheet` results surface. |
 | Runtime verification | Superseded by 2026-05-27 checks | The vertical CTA and map-backed list-sheet checks from this entry were replaced by the 2026-05-27 horizontal CTA restoration and full list/map route split verification below. |
@@ -467,7 +497,7 @@ Official docs checked with official web fallback in the current session:
 | `/intro` nickname sheet | TDS-required / Product-approved | Missing-nickname users now complete Aniwhere profile setup in a TDS `BottomSheet` containing TDS `BottomSheet.Header`, `Asset.Image`, `TextField`, and bottom CTA `Button`. The copy was shortened to the game profile setup rhythm: `애니웨어에서 사용할 닉네임이 필요해요`, emoji profile selection, `닉네임`, input, and `확인`. Empty values surface `hasError` and `help` copy inside the field, and the real save flow still calls Swagger-backed nickname availability before updating `/api/v1/users/me/nickname`. |
 | `/intro` nickname mock entry | Product-approved / ADS adjustment aid | The secondary intro action is now `닉네임 설정하고 입장` and opens the same `NicknameOnboardingSheet` without starting `appLogin()`. Mock submission validates one or more characters and routes to `/home` with the same welcome-toast state, but intentionally skips the backend nickname availability/update calls so ADS/local layout tuning can reuse the exact real-login sheet surface without mutating user data. |
 | `/home` welcome toast | Product-approved / TDS-informed | Existing named users who complete Toss login and users who just saved a nickname enter `/home` with route state that renders a top TDS `Toast`: `{emoji} {nickname}님 반가워요!` when an emoji was selected, otherwise `{nickname}님 반가워요!`. This replaces the previous confetti welcome panel so login completion stays compact and matches the game profile setup reference. |
-| Nickname emoji | Follow-up API decision / Product-approved | The current Swagger/user profile contract stores only `nickname`; no emoji/avatar field is available for Aniwhere profile persistence yet. The frontend now lets users choose one curated Toss static emoji asset from a 9-item horizontal rail, with the selected item expanded and supported by an icon-specific color like the Apps in Toss game profile setup reference. The selected emoji is carried in route state for the welcome toast only. When the backend adds a stable profile emoji field, wire this selected `id` or server-agreed key into the nickname/profile save payload instead of embedding emoji into the nickname string. |
+| Nickname emoji | API-required / Product-approved | Swagger now exposes `emojiIconFilename` on both `UpdateNicknameRequest` and `UserSummary`. The frontend sends the selected Toss static emoji filename with the nickname save payload and keeps the selected symbol in route state only for the immediate welcome toast. |
 | `/home` admin entry | Product-approved / API-required | Home shows a small operation-management entry after the primary CTA stack only when the stored Toss login session role is admin-like (`ADMIN`, `ROLE_ADMIN`, or `*_ADMIN`). It links to `/admin` and preserves the existing `AdminAccessGate`; no admin bypass or auto-redirect is introduced. |
 | Runtime verification | Needs sandbox | Local source tests and builds can verify contract and bundle shape, but the Toss consent screen, official BottomSheet animation, TDS Lottie rendering, and authenticated admin role visibility require Apps in Toss sandbox verification. |
 
@@ -486,6 +516,64 @@ Official docs checked with official web fallback in the current session:
 | `/shop/detail/:shopId` review summary | Product-approved / API-required | Shop detail now reads `Shop.averageRating`, `Shop.reviewCount`, and the first page of `GET /api/v1/shops/{shopId}/reviews` to expose current backend review data without inventing a cross-shop feed. |
 | `/explore` review tab link | Regression fixed / API-required | The selected-shop review tab no longer links to `/community?shopId=...`; it links to the shop detail route where the new shop-scoped review data can be shown. |
 | Runtime verification | Needs sandbox | Source tests, lint, and build can verify removed post endpoints and new API types. Authenticated review create/update/like flows still need a product UI pass and Apps in Toss sandbox verification before launch. |
+
+### 2026-05-30 Explore Map Quick Chip Favorite And Sort Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+- SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- ListRow: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore` map quick chips | Product-approved / TDS-informed | The quick chips remain an app-owned compact map toolbar, implemented with native `button` semantics, `aria-pressed`, and explicit labels for icon-heavy actions. TDS `Button` and `IconButton` docs informed the action semantics, state clarity, and `aria-label` requirement for the time-only chip. |
+| Open-status chip replacement | Product-approved / Follow-up filter | The `영업중` quick chip is kept as a hidden placeholder in the configuration with a clock icon for the future hours/open-status filter, but it is not rendered in the current map chip rail so unfinished behavior is not exposed. |
+| Favorite quick chip | Product-approved / API-required | `관심매장` is the only visible map quick chip and now reads Swagger-backed `GET /api/v1/users/me/favorite-shops` when an Aniwhere auth token exists. The local `favoriteShopIds` set remains only for detail mutation state after `POST/DELETE /api/v1/shops/{id}/favorite`; it is no longer the source for the quick-chip result list. |
+| Sort facets and home CTA routing | Product-approved / API-required | `리뷰많은순` remains removed from the map quick-chip rail. `/home` now routes the favorite/review banners into `/explore?view=map&sort=FAVORITE_COUNT_DESC` and `/explore?view=map&sort=REVIEW_COUNT_DESC`. The filter sheet requests `includeSorts=true`, renders only user-selectable non-default Swagger sort facets, and keeps `NEWEST` as the implicit default instead of a visible chip. Sort labels are normalized client-side to `관심 많은순` and `리뷰 많은순` so `/home` CTA wording and facet chips stay matched even if the backend label text differs. |
+| Sorted map POIs | Product-approved / API-required | `/explore` preserves API order for `REVIEW_COUNT_DESC` and `FAVORITE_COUNT_DESC` in list surfaces, but the map keeps the existing neutral shop-name POI chip with no rank badge. Ranking is treated as result ordering/filter context rather than a map-marker decoration, matching the direction observed in map-first references where POIs show membership/location and lists explain priority. The neutral shop chip no longer includes the earlier coral dot because it did not communicate status, category, or rank; the chip prioritizes the full shop name and only falls back to CSS clipping for very long labels. |
+| `/explore` list cards | Product-approved / API-required | The list surface now uses only fields already present in the Swagger `Shop` response: name, categories, address, distance label, `averageRating`, `reviewCount`, and shop `images`. It intentionally does not fill the review preview area with `visitTip` or `description`; that space should be populated only after the backend adds shop-list review/photo summary fields, avoiding misleading fallback content and N+1 review API calls. The visible `검색 결과` title was removed because applied chips and cards already establish context, and the scroll container reserves right-side gutter so the scrollbar does not cover right-aligned review counts. |
+| `/search` and `/explore?view=list` result heading | Product-approved / Regression fix | Both routes now share the `search-result-head` pattern with `매장목록` and the API-backed count. `/explore?view=list` keeps search as a route transition into `/search` with the encoded current list route as `returnTo`, so keyword entry and result counting use the same mental model as work/shop search. The top route-entry control was restored to `map-search-row search-screen-toolrow` because converting it to a read-only `SearchField` broke the shared home search affordance and blurred the editable-vs-navigation boundary. `/search?returnTo=/explore?view=map` now also uses the same `map-search-row search-screen-toolrow`, `search-screen-bar map-search-field`, and `map-filter-button` rhythm; the inner search control is an app-owned native `input` so it no longer renders `tds-mobile-search-field` chrome inside the shared map row. |
+| Shared search placeholder | Product-approved / Regression fix | Official SearchField doc checked again with Apps in Toss MCP on 2026-05-30: `SearchField` (https://tossmini-docs.toss.im/tds-mobile/components/search-field/). The app-owned shared map search row now uses one copy source, `SHOP_SEARCH_PLACEHOLDER`, so `/home`, `/explore`, and `/search?returnTo=/explore?view=map` all show `작품, 매장명, 지역으로 검색` instead of route-specific placeholder variants. |
+| Search-to-list routing cleanup | Product-approved / Regression fix | Official SearchField, Button, Icon Button, Text Button, and ListRow docs were checked with Apps in Toss MCP on 2026-05-30. `/search` is now the keyword/filter entry route only; submitting a keyword or recent search navigates to `/explore?view=list` and result rendering is owned by `MapResultsSheet`. `/explore` search entry encodes a list-mode `returnTo`, home work posters and detail work links open `/explore?view=list&scope=work&keyword=...`, and applied filter chips in list mode render below `search-result-head` rather than in a separate top strip. This is product-approved because it reduces duplicated result UI while preserving the app-owned search row that matches the approved mobile baseline. |
+| Map/list toggle | Product-approved / TDS-informed | The map/list toggle is a consistent bottom-center floating pill with icon and text (`목록보기`/`지도보기`) across map and list states. TDS Button `variant="weak"` + `color="dark"` was tested but was too low-contrast on Naver map tiles, so the toggle now uses the checked TDS Button `color="dark"` fill token (`--tDarkFillButtonBackground`) with inverse text. This keeps it distinct from the selected blue map POI chip while preserving enough map-surface visibility. |
+| Runtime verification | Passed local / Needs sandbox | Source tests, lint, and build verify API contract, filter counting, sheet sort facets, home CTA routes, favorite-list query wiring, and neutral map marker source/CSS. An authenticated Apps in Toss sandbox check is still required for final PR confidence because local browser auth cannot prove real Toss login/favorite state. |
+
+### 2026-05-31 Category Catalog Sync Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- Checkbox: https://tossmini-docs.toss.im/tds-mobile/components/checkbox/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+- Deployed categories API: https://api.aniwhere.link/api/v1/categories
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/admin/shops` category selector | API-required / Product-approved | The admin shop form continues to use Swagger-backed `GET /api/v1/categories` rather than a local category list. The deployed category masters now include `가챠`, `굿즈`, `제일복권`, and `피규어`; the query refetches on mount so newly added backend categories are not hidden by an older client-side cache when an operator returns to the form. |
+| Search/explore facet category selector | API-required / Product-approved | The filter sheet continues to render every category returned by `GET /api/v1/shops/facets?includeCategories=true`. Facet query keys now include `includeSorts` and refetch on mount, preventing mixed/stale facet payloads when category and sort options change on the backend. |
+| Admin save invalidation | API-required | Saving a shop invalidates `shops`, `categories`, and `shops/facets` query scopes so category counts and filter option caches refresh after create/update flows. |
+| Runtime verification | Needs sandbox | Local tests/build can prove source wiring and API contract alignment, but actual Apps in Toss admin access and production category data should still be checked in sandbox or an authenticated admin session. |
+
+### 2026-05-31 Work Type Facet Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- Segmented Control: https://tossmini-docs.toss.im/tds-mobile/components/segmented-control/
+- Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+- Deployed facets API: https://api.aniwhere.link/api/v1/shops/facets
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Search/explore work type facet | API-required / Product-approved | `GET /api/v1/shops/facets?includeWorkTypes=true` now drives the `작품 유형` filter chips. Selecting `애니메이션` or `게임` writes `workType=ANIMATION|GAME` to the URL and sends the same Swagger-backed `workType` param to `GET /api/v1/shops`. |
+| Applied filter chips | Product-approved / API-required | Applied chips now include work type labels from the facet payload and can remove only the selected work type without clearing region/category/sort filters. |
+| `/admin/shops` work selector | Product-approved / TDS-informed | Admin create/edit keeps the existing SearchField + ListRow work picker, and adds app-owned work-type chips above the search box. The chips use the Swagger `workTypes` labels to narrow suggestion results while save payload remains `workIds`, matching the current `ShopRequest` contract. |
+| Runtime verification | Needs sandbox | Source tests/build can verify filter and admin source wiring. Authenticated admin editing in Apps in Toss runtime still needs sandbox verification. |
 
 ## PR Evidence Format
 

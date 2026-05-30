@@ -1104,6 +1104,30 @@
   width: 100%;
 }
 
+.admin-shop-work-type-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ait-space-2);
+}
+
+.admin-shop-work-type-chip {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--admin-shop-border-muted);
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-gray-0);
+  color: var(--ait-color-text-secondary);
+  font: inherit;
+  font-size: var(--ait-font-size-body-sm);
+  font-weight: 800;
+}
+
+.admin-shop-work-type-chip[data-selected='true'] {
+  border-color: var(--admin-shop-brand-border-strong);
+  background: var(--admin-shop-brand-bg);
+  color: var(--ait-color-brand);
+}
+
 .admin-shop-work-search-combobox {
   display: grid;
   gap: 0;

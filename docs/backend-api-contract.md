@@ -29,14 +29,21 @@ When the backend contract changes:
 
 - `GET /api/v1/regions` returns `RegionListItem[]` with `id`, `name`, `city`, and `count`.
 - `GET /api/v1/categories` returns `CategoryListItem[]` with `id`, `name`, and `count`.
+- Current deployed category masters checked from `GET /api/v1/categories`: `가챠`, `굿즈`, `제일복권`, `피규어`.
 - `GET /api/v1/works` accepts optional `type=ANIMATION|GAME`.
-- `GET /api/v1/shops/facets` provides search facet payload (`regions`, `categories`, `workTypes`) for filter UI.
-- `GET /api/v1/shops/facets` accepts optional `includeRegions`, `includeCategories`, and `includeWorkTypes` boolean query params.
+- `GET /api/v1/shops/facets` provides search facet payload (`regions`, `categories`, `workTypes`, `sorts`) for filter UI.
+- `GET /api/v1/shops/facets` accepts optional `includeRegions`, `includeCategories`, `includeWorkTypes`, and `includeSorts` boolean query params.
+- Current deployed work type facets checked from `GET /api/v1/shops/facets`: `ANIMATION` (`애니메이션`), `GAME` (`게임`).
 - The deployed Swagger contract for `GET /api/v1/shops/facets` does not expose `keyword`, selected filter IDs, `status`, `type`, or map bounds. Use `GET /api/v1/shops` for result filtering.
+- `GET /api/v1/shops` accepts `sort=NEWEST|REVIEW_COUNT_DESC|FAVORITE_COUNT_DESC`.
+- `GET /api/v1/shops/nearby` accepts required `lat` and `lng` query params and returns `Shop[]` for the server-defined 1km nearby search.
 - `GET /api/v1/shops` keeps compatibility for both `category` (name filter) and `categoryIds[]` (ID filter); when both are present, both filters are applied.
 - `ShopRequest` sends `categoryIds` and `workIds` arrays for create/update.
 - `Shop.categories` is `CategorySummary[]` (`id`, `name`), not `string[]`.
-- `Shop` responses now include `averageRating` and `reviewCount` for shop-review summaries.
+- `Shop` responses now include `averageRating`, `reviewCount`, and `favoriteCount` for shop-review and favorite summaries.
+- `GET /api/v1/users/me/favorite-shops` returns the authenticated user's favorite `Shop[]`.
+- `PATCH /api/v1/users/me/nickname` accepts optional `emojiIconFilename` alongside `nickname`.
+- `UserSummary` includes optional `emojiIconFilename`.
 - Legacy `/api/v1/posts` community endpoints are removed. Frontend review work must use shop-scoped review APIs.
 - `GET /api/v1/shops/{shopId}/reviews` returns `PageResponse<ShopReview>` and accepts `sort=NEWEST|OLDEST|RATING_HIGH|RATING_LOW`.
 - `POST /api/v1/shops/{shopId}/reviews` and `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}` use multipart form data with `rating`, `content`, and optional `images`.

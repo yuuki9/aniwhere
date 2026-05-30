@@ -8,10 +8,20 @@ import {
   createShop,
   createShopWithImages,
   getShop,
+  getShopFacets,
   updateShop,
   updateShopWithImages,
 } from '../../shared/api/shops'
-import type { CategoryListItem, Shop, ShopImage, ShopRequest, ShopStatus, WorkCatalogItem } from '../../shared/api/types'
+import type {
+  CategoryListItem,
+  FacetWorkTypeItem,
+  Shop,
+  ShopImage,
+  ShopRequest,
+  ShopStatus,
+  WorkCatalogItem,
+  WorkType,
+} from '../../shared/api/types'
 import { getWorks } from '../../shared/api/works'
 import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 import {
@@ -337,7 +347,12 @@ function getHighlightedWorkNameParts(name: string, query: string) {
   return [{ text: name, highlighted: false }]
 }
 
-function getMatchingWorkOptions(options: WorkCatalogItem[], query: string, selectedIds: number[]) {
+function getMatchingWorkOptions(
+  options: WorkCatalogItem[],
+  query: string,
+  selectedIds: number[],
+  workTypeFilter?: WorkType,
+) {
   const normalizedQuery = normalizeSearchText(query)
   const compactQuery = compactSearchText(normalizedQuery)
 
@@ -346,6 +361,7 @@ function getMatchingWorkOptions(options: WorkCatalogItem[], query: string, selec
   }
 
   return options
+    .filter((work) => workTypeFilter == null || work.type === workTypeFilter)
     .filter((work) => {
       const searchableFields = getWorkSearchFields(work)
         .map(normalizeSearchText)
@@ -417,7 +433,10 @@ function WorkCatalogSearchSelectionSection({
   query,
   selectedIds,
   title,
+  workTypeFilter,
+  workTypes,
   onQueryChange,
+  onWorkTypeFilterChange,
 }: {
   emptyLabel: string
   isError: boolean
@@ -427,9 +446,12 @@ function WorkCatalogSearchSelectionSection({
   query: string
   selectedIds: number[]
   title: string
+  workTypeFilter?: WorkType
+  workTypes: FacetWorkTypeItem[]
   onQueryChange: (query: string) => void
+  onWorkTypeFilterChange: (workType?: WorkType) => void
 }) {
-  const matchingOptions = getMatchingWorkOptions(options, query, selectedIds)
+  const matchingOptions = getMatchingWorkOptions(options, query, selectedIds, workTypeFilter)
   const selectedOptions = options.filter((option) => selectedIds.includes(option.id))
   const normalizedQuery = normalizeSearchText(query)
   const hasSearchableQuery = hasKoreanText(normalizedQuery)
@@ -440,6 +462,27 @@ function WorkCatalogSearchSelectionSection({
         <strong>{title}</strong>
         <small>{selectedIds.length}개 선택</small>
       </div>
+
+      {workTypes.length > 0 ? (
+        <div className="admin-shop-work-type-filter" aria-label="작품 유형 필터">
+          {workTypes.map((workType) => {
+            const selected = workTypeFilter === workType.value
+
+            return (
+              <button
+                className="admin-shop-work-type-chip"
+                data-selected={selected}
+                key={workType.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onWorkTypeFilterChange(selected ? undefined : workType.value)}
+              >
+                {workType.label}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
 
       {selectedOptions.length > 0 ? (
         <div className="admin-shop-selected-work-list" aria-label="선택된 작품">
@@ -606,6 +649,7 @@ export function AdminShopsPage() {
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set())
   const [fieldErrors, setFieldErrors] = useState<ShopFieldErrors>({})
   const [workSearchQuery, setWorkSearchQuery] = useState('')
+  const [workTypeFilter, setWorkTypeFilter] = useState<WorkType | undefined>(undefined)
   const [notice, setNotice] = useState<string | null>(() => {
     if (!isEditMode && readPendingAdminShopFileCount() > 0 && pendingFiles.length === 0) {
       return '사진 선택이 초기화됐어요. 다시 선택해주세요.'
@@ -623,6 +667,12 @@ export function AdminShopsPage() {
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'admin-shop-form'],
     queryFn: getCategories,
+    refetchOnMount: 'always',
+  })
+  const shopFacetQuery = useQuery({
+    queryKey: ['shops', 'facets', 'admin-shop-work-types'],
+    queryFn: () => getShopFacets({ includeWorkTypes: true }),
+    refetchOnMount: 'always',
   })
   const worksQuery = useQuery({
     queryKey: ['works', 'admin-shop-form'],
@@ -789,6 +839,8 @@ export function AdminShopsPage() {
     },
     onSuccess: async (savedShop) => {
       await queryClient.invalidateQueries({ queryKey: ['shops'] })
+      await queryClient.invalidateQueries({ queryKey: ['categories'] })
+      await queryClient.invalidateQueries({ queryKey: ['shops', 'facets'] })
       if (!isEditMode) {
         resetForm()
       }
@@ -1044,8 +1096,11 @@ export function AdminShopsPage() {
               query={workSearchQuery}
               selectedIds={shopForm.workIds}
               title="취급 작품"
+              workTypeFilter={workTypeFilter}
+              workTypes={shopFacetQuery.data?.workTypes ?? []}
               onQueryChange={setWorkSearchQuery}
               onToggle={toggleWork}
+              onWorkTypeFilterChange={setWorkTypeFilter}
             />
           </section>
 
