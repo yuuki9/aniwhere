@@ -6,6 +6,7 @@ import type { CreateShopReviewPayload, Shop, ShopReview, UpdateShopReviewPayload
 const MAX_REVIEW_IMAGES = 5
 const MAX_REVIEW_IMAGE_SIZE = 10 * 1024 * 1024
 const MIN_REVIEW_CONTENT_LENGTH = 10
+const MAX_REVIEW_CONTENT_LENGTH = 800
 
 type ReviewImageSelection = {
   id: string
@@ -176,12 +177,11 @@ export function MapReviewStation({
       aria-label={`${shop.name} ${isEditing ? '리뷰 수정' : '리뷰 작성'}`}
     >
       <div className="map-review-station-body">
-        <header className="map-review-shop-summary">
-          <strong>{shop.name}</strong>
-        </header>
-
         <div className="map-review-station-field map-review-rating-field">
-          <span className="map-review-rating-question">방문이 어떠셨나요?</span>
+          <span className="map-review-rating-question">
+            <strong>{shop.name}</strong>
+            <span>의 방문은 어떠셨나요?</span>
+          </span>
           <Rating
             aria-label="별점 평가"
             aria-valuetext={`5점 만점 중 ${rating}점`}
@@ -190,27 +190,29 @@ export function MapReviewStation({
             readOnly={false}
             size="big"
             value={rating}
+            variant="full"
             onValueChange={handleRatingChange}
           />
         </div>
 
         <label className="map-review-station-field map-review-content-field" htmlFor="map-review-content">
-          <textarea
-            className="map-review-textarea"
-            id="map-review-content"
-            maxLength={800}
-            placeholder="리뷰를 10자 이상 작성해 주세요."
-            rows={7}
-            value={content}
-            onChange={(event) => handleContentChange(event.target.value)}
-          />
+          <div className="map-review-content-box">
+            <textarea
+              className="map-review-textarea"
+              id="map-review-content"
+              maxLength={MAX_REVIEW_CONTENT_LENGTH}
+              placeholder="리뷰를 10자 이상 작성해 주세요."
+              rows={7}
+              value={content}
+              onChange={(event) => handleContentChange(event.target.value)}
+            />
+            <span className="map-review-content-counter">
+              {content.length}/{MAX_REVIEW_CONTENT_LENGTH}
+            </span>
+          </div>
         </label>
 
         <div className="map-review-station-field">
-          <div className="map-review-photo-head">
-            <span className="map-review-station-label">사진</span>
-            <span>{images.length}/{MAX_REVIEW_IMAGES}</span>
-          </div>
           {isEditing && existingReviewImages.length > 0 ? (
             <div className="map-review-existing-photos" aria-label="기존 리뷰 사진">
               {existingReviewImages.map((image) => (
@@ -240,6 +242,9 @@ export function MapReviewStation({
                 <path d="M5 12h14" />
               </svg>
               사진 추가
+              <span className="map-review-photo-count">
+                {images.length}/{MAX_REVIEW_IMAGES}
+              </span>
             </button>
             {images.map((preview) => (
               <span className="map-review-photo-preview" key={preview.id}>

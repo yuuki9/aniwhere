@@ -208,7 +208,8 @@ test('Home content sections keep a compact curation rhythm', () => {
     (match) => match[1],
   )
 
-  assert.ok(sectionRules.some((rule) => /padding-top:\s*var\(--ait-space-3\);/.test(rule)))
+  assert.ok(sectionRules.some((rule) => /padding-top:\s*var\(--ait-space-1\);/.test(rule)))
+  assert.equal(sectionRules.some((rule) => /padding-top:\s*var\(--ait-space-3\);/.test(rule)), false)
   assert.ok(issueRules.some((rule) => /gap:\s*var\(--ait-space-4\);/.test(rule)))
   assert.ok(reviewRules.some((rule) => /gap:\s*var\(--ait-space-5\);/.test(rule)))
   assert.match(styles, /\.home-work-poster-card\s*\{[\s\S]*flex: 0 0 120px;/)

@@ -1705,7 +1705,7 @@ p {
 .home-review-preview-section {
   display: flex;
   flex-direction: column;
-  padding-top: var(--ait-space-3);
+  padding-top: var(--ait-space-1);
 }
 
 .home-issue-section {

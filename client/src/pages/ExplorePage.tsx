@@ -1,12 +1,18 @@
 import { type UIEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { getShopPhotos } from '../shared/api/admin'
 import { askMapAssistant } from '../shared/api/llm'
 import { addFavoriteShop, getNearbyShops, getShop, getShopFacets, getShops, removeFavoriteShop } from '../shared/api/shops'
 import { listMyFavoriteShops } from '../shared/api/users'
-import { createShopReview, deleteShopReview, listShopReviews, updateShopReview } from '../shared/api/shopReviews'
-import type { AdminShopPhoto, CreateShopReviewPayload, Shop, ShopReview, UpdateShopReviewPayload } from '../shared/api/types'
+import {
+  createShopReview,
+  deleteShopReview,
+  likeShopReview,
+  listShopReviews,
+  unlikeShopReview,
+  updateShopReview,
+} from '../shared/api/shopReviews'
+import type { CreateShopReviewPayload, Shop, ShopReview, UpdateShopReviewPayload } from '../shared/api/types'
 import {
   calculateDistanceKm,
   formatDistanceLabel,
@@ -41,21 +47,29 @@ import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { Toast } from '@aniwhere/tds-mobile'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
-import { MapDetailMediaSection } from './explore/MapDetailMediaSection'
-import { MapDetailSummaryCard, type MapDetailTab } from './explore/MapDetailSummaryCard'
-import { MapDetailSupplementSections } from './explore/MapDetailSupplementSections'
+import { MapDetailMediaSection, type MapDetailMediaItem } from './explore/MapDetailMediaSection'
+import {
+  MapDetailSummaryCard,
+  MapDetailTabs,
+  type MapDetailTab,
+} from './explore/MapDetailSummaryCard'
+import {
+  MapDetailSupplementSections,
+  MapPhotoViewer,
+  type MapPhotoViewerState,
+  type PhotoViewerItem,
+} from './explore/MapDetailSupplementSections'
 import { ExploreTopSearch } from './explore/ExploreTopSearch'
 import { MapOverlayControls } from './explore/MapOverlayControls'
 import { MapPeekSheet } from './explore/MapPeekSheet'
 import { MapQuickChips, type MapQuickChipItem } from './explore/MapQuickChips'
 import { MapReviewStation } from './explore/MapReviewStation'
-import { MapResultsSheet } from './explore/MapResultsSheet'
+import { MapResultsSheet, type MapResultReviewPhoto } from './explore/MapResultsSheet'
 import { readNearbyExploreParams } from './searchNearby'
 
 const PAGE_SIZE = 10
 const MAP_FETCH_SIZE = 200
 const EMPTY_SHOPS: Shop[] = []
-const DETAIL_MEDIA_TONES = ['blue', 'orange', 'mint', 'violet'] as const
 const MAP_QUICK_CHIPS: MapQuickChipItem[] = [
   { id: 'hours', label: '영업중', icon: 'time', ariaLabel: '영업중 필터', hidden: true },
   { id: 'favorite', label: '관심매장', icon: 'star' },
@@ -71,11 +85,16 @@ type SelectionOrigin = 'map' | 'list' | null
 type ExploreLocationState = {
   returnTo?: string
 } | null
-type DetailMediaTone = (typeof DETAIL_MEDIA_TONES)[number]
 type DetailMediaItem = {
   id: string
   src: string
   alt: string
+  kind: 'shop' | 'review'
+  registeredAt: number
+  sortOrder: number
+  review?: ShopReview
+  reviewImages?: PhotoViewerItem[]
+  reviewPhotoIndex?: number
 }
 
 function getLocationErrorMessage(error: unknown) {
@@ -111,10 +130,6 @@ function shouldShowAssistantSuggestions(messages: MapAssistantMessage[]) {
   return lastAssistantMessage.content.includes('조금 더 구체적으로') || lastAssistantMessage.content.includes('찾지 못했어요')
 }
 
-function getDetailMediaTone(shopId: number): DetailMediaTone {
-  return DETAIL_MEDIA_TONES[(Math.max(shopId, 1) - 1) % DETAIL_MEDIA_TONES.length]
-}
-
 function formatFloorLabel(floor: string | null) {
   if (!floor) {
     return null
@@ -124,8 +139,10 @@ function formatFloorLabel(floor: string | null) {
   return normalized.endsWith('층') ? normalized : `${normalized}층`
 }
 
-function buildDetailMediaItems(shop: Shop, uploadedPhotos: AdminShopPhoto[] = []): DetailMediaItem[] {
-  const apiImages = [...(shop.images ?? [])]
+function buildDetailMediaItems(shop: Shop): DetailMediaItem[] {
+  const registeredAt = Date.parse(shop.updatedAt || shop.createdAt) || 0
+
+  return [...(shop.images ?? [])]
     .sort((a, b) => {
       if (a.role !== b.role) {
         return a.role === 'PRIMARY' ? -1 : 1
@@ -137,15 +154,10 @@ function buildDetailMediaItems(shop: Shop, uploadedPhotos: AdminShopPhoto[] = []
       id: `shop-image-${image.id ?? index}`,
       src: image.url,
       alt: `${shop.name} 매장 이미지 ${index + 1}`,
+      kind: 'shop',
+      registeredAt,
+      sortOrder: image.sortOrder,
     }))
-
-  const localImages = uploadedPhotos.map((photo, index) => ({
-    id: photo.id,
-    src: photo.dataUrl,
-    alt: `${shop.name} 업로드 이미지 ${index + 1}`,
-  }))
-
-  return [...apiImages, ...localImages]
 }
 
 function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
@@ -188,7 +200,8 @@ export function ExplorePage() {
   const selectedFilters = useMemo(() => parseShopFilters(searchParams), [searchParams])
   const selectedSearchParams = useMemo(() => toShopSearchParams(selectedFilters), [selectedFilters])
   const authToken = useMemo(() => getStoredAccessToken(), [])
-  const currentUserId = useMemo(() => readAuthSession()?.user?.id ?? null, [])
+  const currentUser = useMemo(() => readAuthSession()?.user ?? null, [])
+  const currentUserId = currentUser?.id ?? null
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
@@ -215,6 +228,7 @@ export function ExplorePage() {
   const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
   const [detailTab, setDetailTab] = useState<MapDetailTab>('info')
+  const [detailPhotoViewerState, setDetailPhotoViewerState] = useState<MapPhotoViewerState | null>(null)
   const [editingReview, setEditingReview] = useState<ShopReview | null>(null)
   const [peekDragOffset, setPeekDragOffset] = useState(0)
   const [isPeekDragging, setIsPeekDragging] = useState(false)
@@ -263,10 +277,10 @@ export function ExplorePage() {
 
     next.delete('shopId')
     next.delete('sheet')
-    next.set('view', 'list')
+    next.set('view', routeViewMode)
 
     return `${location.pathname}?${next.toString()}`
-  }, [location.pathname, searchParams])
+  }, [location.pathname, routeViewMode, searchParams])
   const searchHref = useMemo(() => {
     const next = writeShopFilters(new URLSearchParams(), selectedFilters)
 
@@ -344,13 +358,6 @@ export function ExplorePage() {
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-  })
-
-  const detailPhotosQuery = useQuery({
-    queryKey: ['admin-shop-photos', selectedShopId],
-    queryFn: () => getShopPhotos(selectedShopId as number),
-    enabled: selectedShopId != null,
-    staleTime: Infinity,
   })
 
   const allShops = useMemo(
@@ -512,7 +519,10 @@ export function ExplorePage() {
   const reviewListQuery = useQuery({
     queryKey: ['shop-reviews', detailShop?.id],
     queryFn: () => listShopReviews((detailShop as Shop).id, { page: 0, size: 20, sort: 'NEWEST' }, authToken),
-    enabled: detailShop != null && sheetMode === 'expanded' && detailTab === 'review',
+    enabled:
+      detailShop != null &&
+      sheetMode === 'expanded' &&
+      (detailTab === 'review' || detailTab === 'photos' || detailShop.reviewCount > 0),
     staleTime: 1000 * 30,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -588,7 +598,7 @@ export function ExplorePage() {
 
   const favoriteShopMutation = useMutation({
     mutationFn: ({ shopId, nextFavorite }: { shopId: number; nextFavorite: boolean }) =>
-      nextFavorite ? addFavoriteShop(shopId) : removeFavoriteShop(shopId),
+      nextFavorite ? addFavoriteShop(shopId, authToken) : removeFavoriteShop(shopId, authToken),
     onSuccess: (_result, variables) => {
       setFavoriteShopIds((current) => {
         const next = new Set(current)
@@ -692,6 +702,24 @@ export function ExplorePage() {
     },
     onError: (error) => {
       setFavoriteToast(error instanceof Error ? error.message : '리뷰를 삭제하지 못했어요.')
+    },
+  })
+
+  const reviewLikeMutation = useMutation({
+    mutationFn: ({ shopId, reviewId, nextLiked }: { shopId: number; reviewId: number; nextLiked: boolean }) => {
+      if (authToken == null) {
+        throw new Error('로그인 후 유용한 리뷰를 표시할 수 있어요.')
+      }
+
+      return nextLiked ? likeShopReview(shopId, reviewId, authToken) : unlikeShopReview(shopId, reviewId, authToken)
+    },
+    onSuccess: async (_result, variables) => {
+      setFavoriteToast(variables.nextLiked ? '유용한 리뷰로 표시했어요.' : '유용해요를 취소했어요.')
+
+      await queryClient.invalidateQueries({ queryKey: ['shop-reviews', variables.shopId] })
+    },
+    onError: (error) => {
+      setFavoriteToast(error instanceof Error ? error.message : '리뷰 유용해요를 처리하지 못했어요.')
     },
   })
 
@@ -816,6 +844,9 @@ export function ExplorePage() {
   }
   const openCreateReviewStation = () => openReviewStation(null)
   const openEditReviewStation = (review: ShopReview) => openReviewStation(review)
+  const openReportReviewNotice = () => {
+    setFavoriteToast('리뷰 신고 기능은 준비 중이에요.')
+  }
 
   const restoreListView = () => {
     const next = new URLSearchParams(searchParams)
@@ -1034,11 +1065,41 @@ export function ExplorePage() {
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
   const detailFloorLabel = formatFloorLabel(detailShop?.floor ?? null)
   const detailDescription = detailShop?.description ?? detailShop?.visitTip ?? null
-  const detailMediaTone = detailShop ? getDetailMediaTone(detailShop.id) : 'blue'
-  const detailMediaItems = detailShop ? buildDetailMediaItems(detailShop, detailPhotosQuery.data ?? []) : []
-  const detailPreviewMediaItems = detailMediaItems.slice(0, 5)
-  const detailHeroImage = detailMediaItems[0] ?? null
-  const activeDetailTab = detailTab === 'photos' && detailMediaItems.length <= 5 ? 'info' : detailTab
+  const detailShopMediaItems = useMemo(() => (detailShop ? buildDetailMediaItems(detailShop) : []), [detailShop])
+  const detailReviewMediaItems = useMemo(() => {
+    return (reviewListQuery.data?.content ?? []).flatMap((review) => {
+      const registeredAt = Date.parse(review.updatedAt ?? review.createdAt) || 0
+      const reviewImages = review.images.map<PhotoViewerItem>((image, index) => ({
+        id: `review-${review.id}-${image.id ?? image.sortOrder}-${index}`,
+        src: image.url,
+        alt: `${review.authorNickname} 리뷰 사진 ${index + 1}`,
+      }))
+
+      return reviewImages.map<DetailMediaItem>((image, index) => ({
+        ...image,
+        kind: 'review',
+        registeredAt,
+        sortOrder: index,
+        review,
+        reviewImages,
+        reviewPhotoIndex: index,
+      }))
+    })
+  }, [reviewListQuery.data])
+  const detailMediaItems = useMemo(() => [...detailShopMediaItems, ...detailReviewMediaItems].sort((a, b) => {
+    if (a.registeredAt !== b.registeredAt) {
+      return b.registeredAt - a.registeredAt
+    }
+
+    if (a.kind !== b.kind) {
+      return a.kind === 'shop' ? -1 : 1
+    }
+
+    return a.sortOrder - b.sortOrder
+  }), [detailReviewMediaItems, detailShopMediaItems])
+  const detailPreviewMediaItems = detailMediaItems.slice(0, 4)
+  const detailPhotoCount = detailMediaItems.length
+  const activeDetailTab = detailTab === 'photos' && detailPhotoCount <= 0 ? 'info' : detailTab
   const naverDirectionTarget = detailShop
     ? {
         latitude: detailShop.py,
@@ -1054,6 +1115,46 @@ export function ExplorePage() {
     : null
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
   const isFullListView = routeViewMode === 'list' && selectedShopId == null
+  const listReviewQueries = useQueries({
+    queries: visibleShops.map((shop) => ({
+      queryKey: ['shop-reviews', 'list-card', shop.id, authToken != null],
+      queryFn: () => listShopReviews(shop.id, { page: 0, size: 20, sort: 'NEWEST' }, authToken),
+      enabled: isFullListView && shop.reviewCount > 0,
+      staleTime: 1000 * 30,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    })),
+  })
+  const listReviewPhotosByShopId = useMemo(() => {
+    const nextPhotosByShopId: Record<number, MapResultReviewPhoto[]> = {}
+
+    visibleShops.forEach((shop, shopIndex) => {
+      const reviewPage = listReviewQueries[shopIndex]?.data
+
+      if (!reviewPage) {
+        return
+      }
+
+      const reviewPhotos = reviewPage.content.flatMap((review) => {
+        const registeredAt = Date.parse(review.updatedAt ?? review.createdAt) || 0
+
+        return review.images.map<MapResultReviewPhoto>((image, imageIndex) => ({
+          id: `review-${review.id}-${image.id ?? image.sortOrder}-${imageIndex}`,
+          url: image.url,
+          alt: `${review.authorNickname} 리뷰 사진 ${imageIndex + 1}`,
+          kind: 'review',
+          registeredAt,
+          sortOrder: image.sortOrder,
+        }))
+      })
+
+      if (reviewPhotos.length > 0) {
+        nextPhotosByShopId[shop.id] = reviewPhotos
+      }
+    })
+
+    return nextPhotosByShopId
+  }, [listReviewQueries, visibleShops])
   const isListSheetOpen = isFullListView
   const isExploreTopHidden = sheetMode === 'expanded' || sheetMode === 'review'
   const assistantHasConversation = assistantMessages.some((message) => message.role === 'user')
@@ -1094,6 +1195,37 @@ export function ExplorePage() {
   const handleDetailBodyScroll = (event: UIEvent<HTMLDivElement>) => {
     const nextCollapsed = event.currentTarget.scrollTop > 196
     setIsDetailHeaderCollapsed((current) => (current === nextCollapsed ? current : nextCollapsed))
+  }
+
+  const openDetailMediaItem = (item: MapDetailMediaItem) => {
+    const detailItem = item as DetailMediaItem
+
+    if (detailItem.kind === 'review' && detailItem.review && detailItem.reviewImages && detailItem.reviewPhotoIndex != null) {
+      setDetailPhotoViewerState({
+        items: detailItem.reviewImages,
+        activeIndex: detailItem.reviewPhotoIndex,
+        review: detailItem.review,
+      })
+      return
+    }
+
+    const shopViewerItems = detailShopMediaItems.map<PhotoViewerItem>((mediaItem) => ({
+      id: mediaItem.id,
+      src: mediaItem.src,
+      alt: mediaItem.alt,
+    }))
+    const activeIndex = Math.max(0, detailShopMediaItems.findIndex((mediaItem) => mediaItem.id === detailItem.id))
+
+    if (shopViewerItems.length > 0) {
+      setDetailPhotoViewerState({
+        items: shopViewerItems,
+        activeIndex,
+      })
+    }
+  }
+
+  const handleDetailPhotoViewerIndexChange = (activeIndex: number) => {
+    setDetailPhotoViewerState((current) => (current == null ? current : { ...current, activeIndex }))
   }
 
   const expandPeekSheet = () => {
@@ -1272,6 +1404,24 @@ export function ExplorePage() {
     }
   }
 
+  const shareShopDetail = async (shop: Shop) => {
+    const shareUrl = new URL('/explore', window.location.origin)
+    shareUrl.searchParams.set('shopId', String(shop.id))
+    shareUrl.searchParams.set('sheet', 'expanded')
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: shop.name, url: shareUrl.toString() })
+        return
+      }
+
+      await navigator.clipboard?.writeText(shareUrl.toString())
+      setFavoriteToast('매장 링크를 복사했어요.')
+    } catch {
+      setFavoriteToast('공유를 완료하지 못했어요.')
+    }
+  }
+
   if (isFullListView) {
     return (
       <main className="map-page-shell">
@@ -1315,6 +1465,7 @@ export function ExplorePage() {
               visible={isFullListView}
               appliedFilters={renderAppliedFilterChips()}
               visibleShops={visibleShops}
+              reviewPhotosByShopId={listReviewPhotosByShopId}
               totalShops={totalShops}
               isLoading={activeShopsQueryIsLoading}
               listRef={listScrollRef}
@@ -1461,12 +1612,10 @@ export function ExplorePage() {
           <MapPeekSheet
             shop={sheetMode === 'peek' ? detailShop : null}
             distanceLabel={activeShop?.distanceLabel ?? null}
-            heroImage={detailHeroImage}
             isDragging={isPeekDragging}
             dragOffset={peekDragOffset}
             selectionOrigin={selectionOrigin}
             onClick={handlePeekClick}
-            onOpenDirections={openNaverDirections}
             onPointerCancel={handlePeekPointerCancel}
             onPointerDown={handlePeekPointerDown}
             onPointerMove={handlePeekPointerMove}
@@ -1498,28 +1647,54 @@ export function ExplorePage() {
                   <strong>{detailShop.name}</strong>
                 </div>
 
-                <MapDetailMediaSection
-                  shop={detailShop}
-                  tone={detailMediaTone}
-                  detailMediaItems={detailPreviewMediaItems}
-                  totalMediaCount={detailMediaItems.length}
-                  onDragHandlePointerCancel={handleExpandedDragPointerCancel}
-                  onDragHandlePointerDown={handleExpandedDragPointerDown}
-                  onDragHandlePointerMove={handleExpandedDragPointerMove}
-                  onDragHandlePointerUp={handleExpandedDragPointerEnd}
-                />
-
                 <div className="map-sheet-shell map-sheet-shell-detail">
+                  <div
+                    className="map-sheet-expanded-drag-handle"
+                    aria-hidden="true"
+                    onPointerCancel={handleExpandedDragPointerCancel}
+                    onPointerDown={handleExpandedDragPointerDown}
+                    onPointerMove={handleExpandedDragPointerMove}
+                    onPointerUp={handleExpandedDragPointerEnd}
+                  >
+                    <span />
+                  </div>
+
                   {detailError ? <p className="section error-text">{detailError}</p> : null}
 
                   <MapDetailSummaryCard
                     shop={detailShop}
-                    activeTab={activeDetailTab}
                     isFavorite={isFavoriteDetailShop}
                     isFavoritePending={favoriteShopMutation.isPending}
-                    photoCount={detailMediaItems.length}
-                    onTabChange={setDetailTab}
                     onToggleFavorite={handleToggleFavoriteShop}
+                    onShare={() => {
+                      void shareShopDetail(detailShop)
+                    }}
+                  />
+
+                  <MapDetailMediaSection
+                    detailMediaItems={detailPreviewMediaItems}
+                    totalMediaCount={detailMediaItems.length}
+                    onOpenMediaItem={openDetailMediaItem}
+                    onOpenMoreMedia={() => setDetailTab('photos')}
+                  />
+
+                  {detailPhotoViewerState != null ? (
+                    <MapPhotoViewer
+                      state={detailPhotoViewerState}
+                      onActiveIndexChange={handleDetailPhotoViewerIndexChange}
+                      onClose={() => setDetailPhotoViewerState(null)}
+                      currentUserId={currentUserId}
+                      onEditReview={openEditReviewStation}
+                      onReportReview={openReportReviewNotice}
+                      onShowReview={() => setDetailTab('review')}
+                    />
+                  ) : null}
+
+                  <MapDetailTabs
+                    activeTab={activeDetailTab}
+                    photoCount={detailPhotoCount}
+                    reviewCount={detailShop.reviewCount}
+                    onTabChange={setDetailTab}
                   />
 
                   {activeDetailTab === 'info' ? (
@@ -1535,14 +1710,21 @@ export function ExplorePage() {
                   <MapDetailSupplementSections
                     shop={detailShop}
                     activeTab={activeDetailTab}
-                    mediaItems={detailMediaItems}
+                    mediaItems={detailShopMediaItems}
                     reviewPage={reviewListQuery.data ?? null}
                     isReviewLoading={reviewListQuery.isLoading}
                     reviewErrorMessage={reviewListQuery.error instanceof Error ? reviewListQuery.error.message : null}
                     currentUserId={currentUserId}
+                    currentUserEmojiIconFilename={currentUser?.emojiIconFilename ?? null}
+                    currentUserNickname={currentUser?.nickname ?? null}
                     deletingReviewId={
                       reviewDeleteMutation.variables != null && reviewDeleteMutation.isPending
                         ? reviewDeleteMutation.variables.reviewId
+                        : null
+                    }
+                    likingReviewId={
+                      reviewLikeMutation.variables != null && reviewLikeMutation.isPending
+                        ? reviewLikeMutation.variables.reviewId
                         : null
                     }
                     onStartReview={openCreateReviewStation}
@@ -1550,6 +1732,11 @@ export function ExplorePage() {
                     onDeleteReview={(review) =>
                       reviewDeleteMutation.mutate({ shopId: review.shopId, reviewId: review.id })
                     }
+                    onReportReview={openReportReviewNotice}
+                    onToggleReviewLike={(review, nextLiked) =>
+                      reviewLikeMutation.mutate({ shopId: review.shopId, reviewId: review.id, nextLiked })
+                    }
+                    onShowReviewFromPhoto={() => setDetailTab('review')}
                   />
                 </div>
               </div>

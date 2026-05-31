@@ -1,84 +1,69 @@
-import type { PointerEvent } from 'react'
 import noImageStore from '../../assets/images/explore-no-image-store.png'
-import type { Shop } from '../../shared/api/types'
 
-type MapDetailMediaItem = {
+export type MapDetailMediaItem = {
   id: string
   src: string
   alt: string
+  kind?: 'shop' | 'review'
 }
 
 type MapDetailMediaSectionProps = {
-  shop: Shop
-  tone: string
   detailMediaItems: MapDetailMediaItem[]
   totalMediaCount: number
-  onDragHandlePointerCancel: () => void
-  onDragHandlePointerDown: (event: PointerEvent<HTMLDivElement>) => void
-  onDragHandlePointerMove: (event: PointerEvent<HTMLDivElement>) => void
-  onDragHandlePointerUp: (event: PointerEvent<HTMLDivElement>) => void
+  onOpenMediaItem?: (item: MapDetailMediaItem, index: number) => void
+  onOpenMoreMedia?: () => void
+}
+
+function PhotoMoreOverlay({ count }: { count: number }) {
+  return (
+    <span className="map-photo-more-overlay" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="M4.75 7.75A2.75 2.75 0 0 1 7.5 5h9A2.75 2.75 0 0 1 19.25 7.75v8.5A2.75 2.75 0 0 1 16.5 19h-9a2.75 2.75 0 0 1-2.75-2.75v-8.5Z" />
+        <path d="m7.5 15 2.25-2.4 1.85 1.9 2.65-3.1L16.5 15H7.5Z" />
+        <circle cx="8.4" cy="8.6" r="1.1" />
+      </svg>
+      <strong>더보기 {count}개</strong>
+    </span>
+  )
 }
 
 export function MapDetailMediaSection({
-  shop,
-  tone,
   detailMediaItems,
   totalMediaCount,
-  onDragHandlePointerCancel,
-  onDragHandlePointerDown,
-  onDragHandlePointerMove,
-  onDragHandlePointerUp,
+  onOpenMediaItem,
+  onOpenMoreMedia,
 }: MapDetailMediaSectionProps) {
   const hasMedia = detailMediaItems.length > 0
-  const isSingleMedia = detailMediaItems.length === 1
-  const secondaryMediaItems = detailMediaItems.slice(1)
+  const visibleMediaItems = totalMediaCount >= 5 ? detailMediaItems.slice(0, 4) : detailMediaItems
+  const hiddenMediaCount = totalMediaCount >= 5 ? totalMediaCount - (visibleMediaItems.length - 1) : 0
 
   return (
-    <section
-      className={[
-        'map-sheet-media',
-        `map-sheet-media-${tone}`,
-        !hasMedia ? 'map-sheet-media-empty' : '',
-        isSingleMedia ? 'map-sheet-media-single' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <div
-        className="map-sheet-expanded-drag-handle"
-        aria-hidden="true"
-        onPointerCancel={onDragHandlePointerCancel}
-        onPointerDown={onDragHandlePointerDown}
-        onPointerMove={onDragHandlePointerMove}
-        onPointerUp={onDragHandlePointerUp}
-      >
-        <span />
-      </div>
-
+    <section className={['map-sheet-media', !hasMedia ? 'map-sheet-media-empty' : ''].filter(Boolean).join(' ')}>
       {hasMedia ? (
-        <div className="map-sheet-media-grid">
-          <article className="map-sheet-media-main">
-            <img className="map-sheet-media-image" src={detailMediaItems[0].src} alt={detailMediaItems[0].alt} />
-            <div className="map-sheet-media-image-overlay">
-              <span className="map-sheet-media-badge">{shop.regionName ?? 'ANIWHERE'}</span>
-              <strong>{shop.categories[0]?.name ?? '매장 이미지'}</strong>
-            </div>
-          </article>
+        <div className="map-sheet-media-grid" aria-label="매장 사진">
+          {visibleMediaItems.map((item, index) => {
+            const isMoreTile = totalMediaCount >= 5 && index === visibleMediaItems.length - 1
 
-          {secondaryMediaItems.length > 0 ? (
-            <div className="map-sheet-media-stack">
-              {secondaryMediaItems.map((item, index) => (
-                <article className="map-sheet-media-tile" key={item.id}>
-                  <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
-                  {index === secondaryMediaItems.length - 1 ? (
-                    <div className="map-sheet-media-count">
-                      <strong>{totalMediaCount > detailMediaItems.length ? `${totalMediaCount}장` : `${detailMediaItems.length}장`}</strong>
-                    </div>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-          ) : null}
+            return (
+              <button
+                className="map-sheet-media-tile"
+                key={item.id}
+                type="button"
+                aria-label={`${item.alt} 보기`}
+                onClick={() => {
+                  if (isMoreTile) {
+                    onOpenMoreMedia?.()
+                    return
+                  }
+
+                  onOpenMediaItem?.(item, index)
+                }}
+              >
+                <img className="map-sheet-media-image" src={item.src} alt={item.alt} />
+                {isMoreTile ? <PhotoMoreOverlay count={hiddenMediaCount} /> : null}
+              </button>
+            )
+          })}
         </div>
       ) : (
         <div className="map-sheet-media-fallback" aria-label="매장 이미지 준비 중">

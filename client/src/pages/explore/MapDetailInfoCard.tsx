@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from 'react'
-import { Button, ListRow } from '@aniwhere/tds-mobile'
 import type { Shop } from '../../shared/api/types'
 import { formatRelativeUpdated, statusToLabel } from '../../shared/lib/format'
 import { MapDetailIcon, type MapDetailIconName } from '../../shared/ui/mapDetailIcons'
@@ -17,44 +16,26 @@ function MapDetailRow({
   icon,
   label,
   description,
-  descriptionAction,
-  right,
 }: {
   className?: string
   icon: MapDetailIconName
   label: string
   description: ReactNode
-  descriptionAction?: ReactNode
-  right?: ReactNode
 }) {
   return (
-    <ListRow
-      border="none"
-      className={[
-        'map-sheet-detail-row-v3',
-        'map-sheet-detail-row-v3--has-icon',
-        descriptionAction ? 'map-sheet-detail-row-v3--has-directions' : null,
-        className,
-      ].filter(Boolean).join(' ')}
-      left={<span className="map-sheet-detail-icon">
+    <li
+      className={['map-sheet-detail-row-v3', 'map-sheet-detail-row-v3--has-icon', className]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <span className="map-sheet-detail-icon">
         <MapDetailIcon name={icon} />
-      </span>}
-      contents={
-        <div className="map-sheet-detail-copy">
-          <span>{label}</span>
-          {descriptionAction ? (
-            <div className="map-sheet-detail-value-row">
-              <strong>{description}</strong>
-              {descriptionAction}
-            </div>
-          ) : (
-            <strong>{description}</strong>
-          )}
-        </div>
-      }
-      right={right}
-      verticalPadding="small"
-    />
+      </span>
+      <div className="map-sheet-detail-copy">
+        <span>{label}</span>
+        <strong>{description}</strong>
+      </div>
+    </li>
   )
 }
 
@@ -62,7 +43,6 @@ export function MapDetailInfoCard({
   shop,
   description,
   floorLabel,
-  distanceLabel,
   onOpenDirections,
 }: MapDetailInfoCardProps) {
   const [isAiSummaryExpanded, setIsAiSummaryExpanded] = useState(false)
@@ -76,6 +56,7 @@ export function MapDetailInfoCard({
     aiSummary && shouldCollapseAiSummary && !isAiSummaryExpanded
       ? `${aiSummary.slice(0, aiSummaryPreviewLimit).trimEnd()}…`
       : aiSummary
+  const addressFloorLabel = floorLabel
 
   return (
     <section className="section map-sheet-info-card" id="map-place-info">
@@ -85,7 +66,9 @@ export function MapDetailInfoCard({
             'map-sheet-ai-summary',
             'map-sheet-ai-summary-priority',
             isAiSummaryExpanded ? 'map-sheet-ai-summary-expanded' : null,
-          ].filter(Boolean).join(' ')}
+          ]
+            .filter(Boolean)
+            .join(' ')}
         >
           <div className="map-sheet-ai-summary-head">
             <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -114,24 +97,19 @@ export function MapDetailInfoCard({
           className="map-sheet-detail-row-address"
           icon="pin"
           label="주소"
-          description={shop.address}
-          descriptionAction={
-            <Button
-              className="map-place-directions-button"
-              color="primary"
-              size="small"
-              variant="weak"
-              onClick={onOpenDirections}
-            >
-              길찾기
-            </Button>
+          description={
+            <span className="map-sheet-address-inline">
+              <button
+                className="map-sheet-address-link"
+                type="button"
+                aria-label={`${shop.address} 길찾기`}
+                onClick={onOpenDirections}
+              >
+                {shop.address}
+              </button>
+              {addressFloorLabel ? <span className="map-sheet-address-meta">{addressFloorLabel}</span> : null}
+            </span>
           }
-        />
-
-        <MapDetailRow
-          icon="building"
-          label="위치"
-          description={[shop.regionName, floorLabel ?? '층 정보 확인 필요', distanceLabel].filter(Boolean).join(' · ')}
         />
 
         <MapDetailRow icon="clock" label="영업 상태" description={statusToLabel(shop.status)} />
@@ -146,9 +124,7 @@ export function MapDetailInfoCard({
           }
         />
 
-        {shouldShowVisitTip ? (
-          <MapDetailRow icon="sparkle" label="방문 팁" description={shop.visitTip} />
-        ) : null}
+        {shouldShowVisitTip ? <MapDetailRow icon="sparkle" label="방문 팁" description={shop.visitTip} /> : null}
 
         <MapDetailRow icon="calendar" label="최근 업데이트" description={updatedLabel} />
       </ul>
