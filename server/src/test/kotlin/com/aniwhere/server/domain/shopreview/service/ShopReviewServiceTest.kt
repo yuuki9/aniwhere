@@ -8,6 +8,7 @@ import com.aniwhere.server.domain.shop.service.ShopServiceTest
 import com.aniwhere.server.domain.shopreview.port.out.ReviewImageStoragePort
 import com.aniwhere.server.domain.shopreview.model.ShopRatingAggregate
 import com.aniwhere.server.domain.shopreview.model.ShopReview
+import com.aniwhere.server.domain.shopreview.model.ShopReviewImage
 import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
@@ -112,15 +113,14 @@ class ShopReviewServiceTest {
     }
 
     @Test
-    fun `updateReview - 이미지 교체 시 기존 S3 키를 삭제하고 새 이미지를 저장한다`() {
+    fun `updateReview - replaceImages로 images만 보내면 기존 이미지를 전부 교체한다`() {
         every { port.findByIdAndShopId(5L, 1L) } returnsMany listOf(
             sampleReview,
             sampleReview.copy(rating = 5, content = "수정"),
         )
-        every { port.findReviewImageS3Keys(5L) } returns listOf("img/review/5/gallery-1.jpg")
         every { imageStorage.putObject(any(), any(), any()) } returns Unit
         every { port.update(5L, any()) } returns sampleReview.copy(rating = 5, content = "수정")
-        every { port.replaceReviewImages(5L, any()) } returns Unit
+        every { port.swapReviewImages(5L, any(), emptyList()) } returns listOf("img/review/5/gallery-1.jpg")
         every { port.recomputeShopRating(1L) } returns ShopRatingAggregate(BigDecimal("4.50"), 1)
         val imagePart = ImageUploadPart(ShopServiceTest.tinyValidJpeg, "image/jpeg")
 
@@ -130,11 +130,83 @@ class ShopReviewServiceTest {
             reviewId = 5L,
             rating = 5,
             content = "수정",
+            replaceImages = true,
             imageParts = listOf(imagePart),
+            existingImageIds = emptyList(),
         )
 
         verify { imageStorage.deleteObject("img/review/5/gallery-1.jpg") }
-        verify { port.replaceReviewImages(5L, any()) }
+        verify { port.swapReviewImages(5L, any(), emptyList()) }
+    }
+
+    @Test
+    fun `updateReview - replaceImages로 existingImageIds만 보내면 재정렬 또는 일부 삭제한다`() {
+        val reviewWithImages = sampleReview.copy(
+            images = listOf(
+                ShopReviewImage(id = 1L, url = "/img/1.jpg", sortOrder = 0),
+                ShopReviewImage(id = 2L, url = "/img/2.jpg", sortOrder = 1),
+                ShopReviewImage(id = 3L, url = "/img/3.jpg", sortOrder = 2),
+            ),
+        )
+        every { port.findByIdAndShopId(5L, 1L) } returnsMany listOf(reviewWithImages, reviewWithImages)
+        every { port.update(5L, any()) } returns reviewWithImages
+        every { port.swapReviewImages(5L, emptyList(), listOf(1L, 3L)) } returns listOf("img/review/5/gallery-2.jpg")
+        every { port.recomputeShopRating(1L) } returns ShopRatingAggregate(BigDecimal("4.50"), 1)
+
+        service.updateReview(
+            actorUserId = 10L,
+            shopId = 1L,
+            reviewId = 5L,
+            rating = null,
+            content = null,
+            replaceImages = true,
+            imageParts = emptyList(),
+            existingImageIds = listOf(1L, 3L),
+        )
+
+        verify { port.swapReviewImages(5L, emptyList(), listOf(1L, 3L)) }
+        verify { imageStorage.deleteObject("img/review/5/gallery-2.jpg") }
+    }
+
+    @Test
+    fun `updateReview - replaceImages false 인데 images가 있으면 거절`() {
+        every { port.findByIdAndShopId(5L, 1L) } returns sampleReview
+        val imagePart = ImageUploadPart(ShopServiceTest.tinyValidJpeg, "image/jpeg")
+
+        assertThrows<BadRequestException> {
+            service.updateReview(
+                actorUserId = 10L,
+                shopId = 1L,
+                reviewId = 5L,
+                rating = 5,
+                content = "수정",
+                replaceImages = false,
+                imageParts = listOf(imagePart),
+                existingImageIds = emptyList(),
+            )
+        }
+    }
+
+    @Test
+    fun `updateReview - 잘못된 existingImageIds면 거절`() {
+        every { port.findByIdAndShopId(5L, 1L) } returns sampleReview.copy(
+            images = listOf(
+                ShopReviewImage(id = 1L, url = "/img/1.jpg", sortOrder = 0),
+            ),
+        )
+
+        assertThrows<BadRequestException> {
+            service.updateReview(
+                actorUserId = 10L,
+                shopId = 1L,
+                reviewId = 5L,
+                rating = null,
+                content = null,
+                replaceImages = true,
+                imageParts = emptyList(),
+                existingImageIds = listOf(99L),
+            )
+        }
     }
 
     @Test

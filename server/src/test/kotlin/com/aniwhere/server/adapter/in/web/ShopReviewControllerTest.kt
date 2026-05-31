@@ -179,10 +179,10 @@ class ShopReviewControllerTest {
     }
 
     @Test
-    fun `PATCH shop review - rating content images를 useCase로 전달`() {
+    fun `PATCH shop review - replaceImages true일 때 rating content images existingImageIds를 useCase로 전달`() {
         mockAuthenticatedUser(10L)
         every {
-            useCase.updateReview(10L, 1L, 5L, 5, "수정본문", any())
+            useCase.updateReview(10L, 1L, 5L, 5, "수정본문", true, any(), listOf(1L, 3L))
         } returns sampleReview.copy(rating = 5, content = "수정본문")
         val image = MockMultipartFile("images", "a.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
 
@@ -191,6 +191,9 @@ class ShopReviewControllerTest {
                 .file(image)
                 .param("rating", "5")
                 .param("content", "  수정본문  ")
+                .param("replaceImages", "true")
+                .param("existingImageIds", "1")
+                .param("existingImageIds", "3")
                 .with { request ->
                     request.method = "PATCH"
                     request
@@ -207,13 +210,33 @@ class ShopReviewControllerTest {
                 5L,
                 5,
                 "수정본문",
+                true,
                 match { parts ->
                     parts.size == 1 &&
                         parts[0].contentType == "image/jpeg" &&
                         parts[0].bytes.contentEquals(byteArrayOf(1, 2, 3))
                 },
+                listOf(1L, 3L),
             )
         }
+    }
+
+    @Test
+    fun `PATCH shop review - replaceImages 없이 images를 보내면 400`() {
+        mockAuthenticatedUser(10L)
+        val image = MockMultipartFile("images", "a.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
+
+        mvc.perform(
+            multipart("/api/v1/shops/1/reviews/5")
+                .file(image)
+                .param("rating", "5")
+                .with { request ->
+                    request.method = "PATCH"
+                    request
+                },
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
     }
 
     private fun mockAuthenticatedUser(userId: Long) {

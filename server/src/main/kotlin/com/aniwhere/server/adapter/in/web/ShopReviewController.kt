@@ -5,6 +5,7 @@ import com.aniwhere.server.common.exception.BadRequestException
 import com.aniwhere.server.common.exception.UnauthorizedException
 import com.aniwhere.server.config.security.SecurityPrincipal
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
+import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import io.swagger.v3.oas.annotations.Operation
@@ -58,24 +59,43 @@ class ShopReviewController(private val useCase: ShopReviewUseCase) {
         ),
     )
 
-    @Operation(summary = "샵 리뷰 수정")
+    @Operation(
+        summary = "샵 리뷰 수정",
+        description = "multipart: rating/content는 선택. replaceImages=true일 때 existingImageIds(반복)로 유지·순서 지정, images(반복)로 신규 file[] 추가. replaceImages=true이고 둘 다 비우면 이미지 전부 삭제.",
+    )
     @PatchMapping(value = ["/{reviewId}"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun updateReview(
         @PathVariable shopId: Long,
         @PathVariable reviewId: Long,
         @RequestParam(required = false) rating: Int?,
         @RequestParam(required = false) content: String?,
+        @RequestParam(required = false, defaultValue = "false") replaceImages: Boolean,
+        @RequestParam(required = false) existingImageIds: List<Long>?,
         @RequestPart(required = false) images: List<MultipartFile>?,
-    ) = ApiResponse.ok(
-        useCase.updateReview(
-            currentUserId(),
-            shopId,
-            reviewId,
-            rating,
-            content?.trim(),
-            images?.let { parts -> parts.filter { !it.isEmpty }.map { it.requireImagePart() } },
-        ),
-    )
+    ): ApiResponse<ShopReview> {
+        val imageFiles = images.orEmpty().filter { !it.isEmpty }
+        val retainedImageIds = existingImageIds.orEmpty()
+        if (!replaceImages && (imageFiles.isNotEmpty() || retainedImageIds.isNotEmpty())) {
+            throw BadRequestException("이미지 변경은 replaceImages=true 일 때만 images 또는 existingImageIds를 전송할 수 있습니다.")
+        }
+        val imageUploads = if (replaceImages) {
+            imageFiles.map { it.requireImagePart() }
+        } else {
+            emptyList()
+        }
+        return ApiResponse.ok(
+            useCase.updateReview(
+                currentUserId(),
+                shopId,
+                reviewId,
+                rating,
+                content?.trim(),
+                replaceImages,
+                imageUploads,
+                retainedImageIds,
+            ),
+        )
+    }
 
     @Operation(summary = "샵 리뷰 삭제")
     @DeleteMapping("/{reviewId}")
