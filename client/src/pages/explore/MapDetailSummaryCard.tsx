@@ -71,7 +71,7 @@ export function MapDetailSummaryCard({
   const keywordListRef = useRef<HTMLDivElement>(null)
   const keywords = [
     ...shop.categories.map((category) => category.name).filter(Boolean),
-    ...workTypeLabels.map((label) => `작품유형: ${label}`),
+    ...workTypeLabels,
   ]
   const keywordSignature = keywords.join('\u0001')
   const isKeywordExpanded = keywordExpansion.signature === keywordSignature && keywordExpansion.isExpanded

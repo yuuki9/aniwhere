@@ -71,7 +71,7 @@ function getResultCardPhotos(shop: MapResultShop, reviewPhotos: MapResultReviewP
 function getShopCategoryLabels(shop: Shop, workTypeLabels: string[] = []) {
   const labels = [
     ...shop.categories.map((category) => category.name),
-    ...workTypeLabels.map((workTypeLabel) => `작품유형: ${workTypeLabel}`),
+    ...workTypeLabels,
   ]
 
   if (labels.length > 0) {
