@@ -434,9 +434,7 @@ function WorkCatalogSearchSelectionSection({
   selectedIds,
   title,
   workTypeFilter,
-  workTypes,
   onQueryChange,
-  onWorkTypeFilterChange,
 }: {
   emptyLabel: string
   isError: boolean
@@ -447,9 +445,7 @@ function WorkCatalogSearchSelectionSection({
   selectedIds: number[]
   title: string
   workTypeFilter?: WorkType
-  workTypes: FacetWorkTypeItem[]
   onQueryChange: (query: string) => void
-  onWorkTypeFilterChange: (workType?: WorkType) => void
 }) {
   const matchingOptions = getMatchingWorkOptions(options, query, selectedIds, workTypeFilter)
   const selectedOptions = options.filter((option) => selectedIds.includes(option.id))
@@ -462,27 +458,6 @@ function WorkCatalogSearchSelectionSection({
         <strong>{title}</strong>
         <small>{selectedIds.length}개 선택</small>
       </div>
-
-      {workTypes.length > 0 ? (
-        <div className="admin-shop-work-type-filter" aria-label="작품 유형 필터">
-          {workTypes.map((workType) => {
-            const selected = workTypeFilter === workType.value
-
-            return (
-              <button
-                className="admin-shop-work-type-chip"
-                data-selected={selected}
-                key={workType.value}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => onWorkTypeFilterChange(selected ? undefined : workType.value)}
-              >
-                {workType.label}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
 
       {selectedOptions.length > 0 ? (
         <div className="admin-shop-selected-work-list" aria-label="선택된 작품">
@@ -560,6 +535,47 @@ function WorkCatalogSearchSelectionSection({
       {isLoading ? <small className="meta-text">{title} 목록을 불러오고 있습니다.</small> : null}
       {isError ? <small className="error-text">{title} 목록을 불러오지 못했습니다.</small> : null}
       {!isLoading && !isError && options.length === 0 ? <small className="meta-text">{emptyLabel}</small> : null}
+    </section>
+  )
+}
+
+function WorkTypeFilterSection({
+  selectedWorkType,
+  workTypes,
+  onChange,
+}: {
+  selectedWorkType?: WorkType
+  workTypes: FacetWorkTypeItem[]
+  onChange: (workType?: WorkType) => void
+}) {
+  if (workTypes.length === 0) {
+    return null
+  }
+
+  return (
+    <section className="admin-shop-catalog-group admin-shop-work-type-section" aria-label="작품 유형 필터">
+      <div className="admin-shop-catalog-head">
+        <strong>작품 유형 필터</strong>
+        <small>{selectedWorkType == null ? '전체' : workTypes.find((workType) => workType.value === selectedWorkType)?.label}</small>
+      </div>
+      <div className="admin-shop-work-type-filter">
+        {workTypes.map((workType) => {
+          const selected = selectedWorkType === workType.value
+
+          return (
+            <button
+              className="admin-shop-work-type-chip"
+              data-selected={selected}
+              key={workType.value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(selected ? undefined : workType.value)}
+            >
+              {workType.label}
+            </button>
+          )
+        })}
+      </div>
     </section>
   )
 }
@@ -681,7 +697,9 @@ export function AdminShopsPage() {
   const openLocationSearch = () => {
     setFieldErrors((current) => ({ ...current, location: undefined }))
     writeAdminShopDraft(shopForm)
-    navigate('/admin/shops/location', { state: { fromAdminShopCreate: true } })
+    navigate('/admin/shops/location', {
+      state: { returnTo: isEditMode && editingShopId != null ? `/admin/shops/${editingShopId}/edit` : '/admin/shops/new' },
+    })
   }
 
   useEffect(() => {
@@ -857,7 +875,13 @@ export function AdminShopsPage() {
 
   return (
     <main className="app-shell admin-shell admin-shop-crud-shell">
-      <AppTopNavigation className="route-navigation" showBack title={isEditMode ? '매장 수정' : '매장 등록'} showLogo={false} />
+      <AppTopNavigation
+        className="route-navigation"
+        showBack
+        title={isEditMode ? '매장 수정' : '매장 등록'}
+        showLogo={false}
+        onBack={() => navigate('/admin/shops', { replace: true })}
+      />
 
       <section className="admin-shop-crud-layout">
         {editShopQuery.isLoading ? <p className="admin-shop-manage-state">매장 정보를 불러오고 있어요.</p> : null}
@@ -1088,6 +1112,11 @@ export function AdminShopsPage() {
               title="카테고리"
               onToggle={toggleCategory}
             />
+            <WorkTypeFilterSection
+              selectedWorkType={workTypeFilter}
+              workTypes={shopFacetQuery.data?.workTypes ?? []}
+              onChange={setWorkTypeFilter}
+            />
             <WorkCatalogSearchSelectionSection
               emptyLabel="등록된 작품이 없습니다."
               isError={worksQuery.isError}
@@ -1097,10 +1126,8 @@ export function AdminShopsPage() {
               selectedIds={shopForm.workIds}
               title="취급 작품"
               workTypeFilter={workTypeFilter}
-              workTypes={shopFacetQuery.data?.workTypes ?? []}
               onQueryChange={setWorkSearchQuery}
               onToggle={toggleWork}
-              onWorkTypeFilterChange={setWorkTypeFilter}
             />
           </section>
 

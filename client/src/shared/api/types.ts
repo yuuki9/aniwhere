@@ -158,14 +158,6 @@ export type ShopRequest = {
   visitTip?: string | null
 }
 
-export type AdminShopPhoto = {
-  id: string
-  shopId: number
-  name: string
-  dataUrl: string
-  createdAt: string
-}
-
 export type PointGrantStatus = 'QUEUED' | 'SENT' | 'FAILED'
 
 export type PointGrantRequest = {
@@ -214,6 +206,7 @@ export type ShopReview = {
   shopId: number
   authorUserId: number
   authorNickname: string
+  authorEmojiIconFilename?: string | null
   rating: number
   content: string
   status: ShopReviewStatus

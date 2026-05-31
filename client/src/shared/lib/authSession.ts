@@ -11,10 +11,26 @@ export type AuthSession = {
   user: UserSummary | null
 }
 
+function normalizeToken(value: string | null | undefined) {
+  const trimmed = value?.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const withoutBearer = trimmed.replace(/^Bearer\s+/i, '')
+  const withoutWrappingQuotes = withoutBearer.replace(/^["']|["']$/g, '')
+  const headerSafeToken = withoutWrappingQuotes.replace(/[\r\n\t]/g, '').trim()
+
+  return headerSafeToken || null
+}
+
 export function createAuthSession(login: LoginResult, user: UserSummary | null): AuthSession {
+  const accessToken = normalizeToken(login.accessToken) ?? login.accessToken
+  const refreshToken = normalizeToken(login.refreshToken) ?? login.refreshToken
+
   return {
-    accessToken: login.accessToken,
-    refreshToken: login.refreshToken,
+    accessToken,
+    refreshToken,
     accessTokenExpiresAt: login.expiresIn,
     role: user?.role ?? login.role,
     user,
@@ -37,9 +53,16 @@ export function readAuthSession(): AuthSession | null {
       return null
     }
 
+    const accessToken = normalizeToken(parsed.accessToken)
+    const refreshToken = normalizeToken(parsed.refreshToken)
+
+    if (accessToken == null || refreshToken == null) {
+      return null
+    }
+
     return {
-      accessToken: parsed.accessToken,
-      refreshToken: parsed.refreshToken,
+      accessToken,
+      refreshToken,
       accessTokenExpiresAt: typeof parsed.accessTokenExpiresAt === 'number' ? parsed.accessTokenExpiresAt : 0,
       role: typeof parsed.role === 'string' ? parsed.role : 'ROLE_USER',
       user: parsed.user ?? null,
@@ -55,7 +78,14 @@ export function saveAuthSession(session: AuthSession) {
   }
 
   try {
-    window.localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(session))
+    window.localStorage.setItem(
+      AUTH_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        ...session,
+        accessToken: normalizeToken(session.accessToken) ?? session.accessToken,
+        refreshToken: normalizeToken(session.refreshToken) ?? session.refreshToken,
+      }),
+    )
   } catch (error) {
     console.error('[aniwhere:auth-session] save failed', toSafeErrorSummary(error))
   }
@@ -76,7 +106,7 @@ export function isAdminRole(role: string | null | undefined) {
 }
 
 export function getStoredAccessToken() {
-  return readAuthSession()?.accessToken ?? null
+  return normalizeToken(readAuthSession()?.accessToken) ?? null
 }
 
 export function clearAuthSession() {

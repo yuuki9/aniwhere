@@ -13,6 +13,7 @@ const adminShopDraftStoreSource = () => source('../src/pages/admin/AdminShopDraf
 const adminCssSource = () => source('../src/styles/admin-shop.css')
 const appTopNavigationSource = () => source('../src/shared/ui/AppTopNavigation.tsx')
 const shopsApiSource = () => source('../src/shared/api/shops.ts')
+const adminApiSource = () => source('../src/shared/api/admin.ts')
 const apiClientSource = () => source('../src/shared/api/client.ts')
 const naverMapLoaderSource = () => source('../src/shared/lib/naverMapLoader.ts')
 const tdsLayerGuideSource = () => source('../../docs/tds-compatible-ui-layer.md')
@@ -304,7 +305,7 @@ test('admin shops route is a standalone TDS-style CRUD screen after role verific
   assert.match(shops, /주소 검색으로 위치를 선택해주세요/)
   assert.match(shops, /aria-invalid=\{!!fieldErrors\.name\}/)
   assert.match(shops, /aria-invalid=\{!!fieldErrors\.location\}/)
-  assert.match(shops, /navigate\('\/admin\/shops\/location', \{ state: \{ fromAdminShopCreate: true \} \}\)/)
+  assert.match(shops, /navigate\('\/admin\/shops\/location', \{[\s\S]*state: \{ returnTo: isEditMode && editingShopId != null \? `\/admin\/shops\/\$\{editingShopId\}\/edit` : '\/admin\/shops\/new' \},[\s\S]*\}\)/)
   assert.match(shops, /위치 추가/)
   assert.match(shops, /admin-shop-location-card-row/)
   assert.match(shops, /admin-shop-location-value/)
@@ -323,10 +324,10 @@ test('admin shops route is a standalone TDS-style CRUD screen after role verific
   assert.match(location, /writeAdminShopSelectedLocation/)
   assert.match(location, /useLocation/)
   assert.doesNotMatch(location, /useMemo/)
-  assert.match(location, /canReturnToShopForm/)
+  assert.match(location, /const returnTo = locationState\?\.returnTo \?\? '\/admin\/shops\/new'/)
   assert.match(location, /returnToShopForm/)
-  assert.match(location, /navigate\(-1\)/)
-  assert.match(location, /navigate\('\/admin\/shops\/new', \{ replace: true \}\)/)
+  assert.match(location, /navigate\(returnTo, \{ replace: true \}\)/)
+  assert.doesNotMatch(location, /navigate\(-1\)/)
   assert.match(draftStore, /sessionStorage/)
   assert.match(draftStore, /pendingShopFiles/)
   assert.match(draftStore, /pendingShopFileCount/)
@@ -342,6 +343,19 @@ test('legacy admin rewards route is removed from the active router', () => {
 
   assert.doesNotMatch(router, /AdminRewardsPage/)
   assert.doesNotMatch(router, /path:\s*'rewards'/)
+})
+
+test('admin API no longer keeps local shop photo storage fallback', () => {
+  const adminApi = adminApiSource()
+  const shopsApi = shopsApiSource()
+
+  assert.doesNotMatch(adminApi, /SHOP_PHOTOS_STORAGE_KEY/)
+  assert.doesNotMatch(adminApi, /getShopPhotos/)
+  assert.doesNotMatch(adminApi, /uploadShopPhotos/)
+  assert.doesNotMatch(adminApi, /removeShopPhoto/)
+  assert.doesNotMatch(adminApi, /AdminShopPhoto/)
+  assert.match(shopsApi, /formData\.set\('coverImage'/)
+  assert.match(shopsApi, /formData\.append\('galleryImages'/)
 })
 
 test('admin shop primary buttons keep rounded block TDS button shape', () => {
@@ -360,6 +374,8 @@ test('admin shop create and edit use a SearchField plus ListRow work selector', 
 
   assert.match(shops, /import \{ Badge, Button, ListRow, SearchField, Toast \} from '@aniwhere\/tds-mobile'/)
   assert.match(shops, /WorkCatalogSearchSelectionSection/)
+  assert.match(shops, /WorkTypeFilterSection/)
+  assert.match(shops, /<WorkTypeFilterSection[\s\S]*selectedWorkType=\{workTypeFilter\}[\s\S]*workTypes=\{shopFacetQuery\.data\?\.workTypes \?\? \[\]\}[\s\S]*onChange=\{setWorkTypeFilter\}/)
   assert.match(shops, /workSearchQuery/)
   assert.match(shops, /getMatchingWorkOptions/)
   assert.match(shops, /compactSearchText/)
@@ -376,7 +392,7 @@ test('admin shop create and edit use a SearchField plus ListRow work selector', 
   assert.match(shops, /right=\{[\s\S]*<Badge className="admin-shop-work-suggestion-selected-badge" color="blue" size="small" variant="weak">[\s\S]*선택됨/)
   assert.match(shops, /data-selected=\{selected \? 'true' : undefined\}/)
   assert.match(shops, /<mark className="admin-shop-work-suggestion-highlight"/)
-  assert.doesNotMatch(shops, /admin-shop-work-suggestion-button[\s\S]*<small>/)
+  assert.doesNotMatch(shops, /className="admin-shop-work-suggestion-button"[\s\S]{0,240}<small>/)
   assert.doesNotMatch(shops, /getWorkSearchSubtitle/)
   assert.doesNotMatch(shops, /aria-selected=\{selected\}/)
   assert.doesNotMatch(shops, /isLatinSearchQuery/)

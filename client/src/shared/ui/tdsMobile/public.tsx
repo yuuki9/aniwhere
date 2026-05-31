@@ -8,7 +8,7 @@ import type {
   ReactNode,
   Ref,
 } from 'react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   display?: 'inline' | 'block' | 'full'
@@ -47,6 +47,12 @@ type PublicAssetImageProps = HTMLAttributes<HTMLSpanElement> & {
   frameShape?: { width?: number; height?: number; radius?: number | string }
 }
 
+type PublicAssetIconProps = HTMLAttributes<HTMLSpanElement> & {
+  name: string
+  color?: string
+  frameShape?: { width?: number; height?: number }
+}
+
 function AssetImage({
   alt,
   className,
@@ -71,6 +77,25 @@ function AssetImage({
   )
 }
 
+function AssetIcon({ className, color, frameShape, name, style, ...props }: PublicAssetIconProps) {
+  return (
+    <span
+      aria-hidden="true"
+      className={['ait-asset-icon', className].filter(Boolean).join(' ')}
+      data-icon-name={name}
+      style={{
+        width: frameShape?.width,
+        height: frameShape?.height,
+        color,
+        ...style,
+      }}
+      {...props}
+    >
+      ₩
+    </span>
+  )
+}
+
 function AssetLottie({
   className,
   frameShape,
@@ -89,7 +114,7 @@ function AssetLottie({
       }}
       {...props}
     >
-      {'\u{1F389}'}
+      {'₩'}
     </span>
   )
 }
@@ -98,6 +123,7 @@ export const Asset = {
   frameShape: {
     CleanW60: { width: 60, height: 60 },
   },
+  Icon: AssetIcon,
   Image: AssetImage,
   Lottie: AssetLottie,
 }
@@ -141,6 +167,33 @@ export function Button({
     </button>
   )
 }
+
+type PublicResultProps = HTMLAttributes<HTMLDivElement> & {
+  figure?: ReactNode
+  title?: ReactNode
+  description?: ReactNode
+  button?: ReactNode
+}
+
+function ResultRoot({ button, children, className, description, figure, title, ...props }: PublicResultProps) {
+  return (
+    <div className={['ait-result', className].filter(Boolean).join(' ')} {...props}>
+      {figure != null ? <div className="ait-result-figure">{figure}</div> : null}
+      {title != null ? <h2 className="ait-result-title">{title}</h2> : null}
+      {description != null ? <p className="ait-result-description">{description}</p> : null}
+      {children}
+      {button != null ? <div className="ait-result-action">{button}</div> : null}
+    </div>
+  )
+}
+
+function ResultButton({ className, display = 'block', ...props }: PublicButtonProps) {
+  return <Button className={['ait-result-button', className].filter(Boolean).join(' ')} display={display} {...props} />
+}
+
+export const Result = Object.assign(ResultRoot, {
+  Button: ResultButton,
+})
 
 export function IconButton({
   children,
@@ -323,6 +376,140 @@ export const Modal = Object.assign(ModalRoot, {
   Overlay: ModalOverlay,
   Content: ModalContent,
 })
+
+type PublicMenuDropdownProps = HTMLAttributes<HTMLDivElement> & {
+  header?: ReactNode
+}
+
+type PublicMenuItemProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  left?: ReactNode
+  right?: ReactNode
+}
+
+type PublicMenuCheckItemProps = PublicMenuItemProps & {
+  checked?: boolean
+  onCheckedChange?: (checked: boolean) => void
+}
+
+type PublicMenuTriggerProps = HTMLAttributes<HTMLSpanElement> & {
+  open?: boolean
+  defaultOpen?: boolean
+  onOpen?: () => void
+  onClose?: () => void
+  dropdown?: ReactNode
+  placement?: string
+}
+
+function MenuDropdown({ children, className, header, ...props }: PublicMenuDropdownProps) {
+  return (
+    <div className={['ait-menu-dropdown', className].filter(Boolean).join(' ')} role="menu" {...props}>
+      {header}
+      {children}
+    </div>
+  )
+}
+
+function MenuHeader({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['ait-menu-header', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function MenuDropdownItem({ children, className, left, right, type = 'button', ...props }: PublicMenuItemProps) {
+  return (
+    <button className={['ait-menu-item', className].filter(Boolean).join(' ')} role="menuitem" type={type} {...props}>
+      {left != null ? <span className="ait-menu-item-left">{left}</span> : null}
+      <span className="ait-menu-item-copy">{children}</span>
+      {right != null ? <span className="ait-menu-item-right">{right}</span> : null}
+    </button>
+  )
+}
+
+function MenuDropdownCheckItem({
+  checked = false,
+  onCheckedChange,
+  onClick,
+  ...props
+}: PublicMenuCheckItemProps) {
+  return (
+    <MenuDropdownItem
+      aria-checked={checked}
+      role="menuitemcheckbox"
+      onClick={(event) => {
+        onCheckedChange?.(!checked)
+        onClick?.(event)
+      }}
+      {...props}
+    />
+  )
+}
+
+function MenuDropdownIcon({ children, className, ...props }: HTMLAttributes<HTMLSpanElement>) {
+  return (
+    <span className={['ait-menu-icon', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </span>
+  )
+}
+
+function MenuTrigger({
+  children,
+  className,
+  defaultOpen = false,
+  dropdown,
+  onClose,
+  onOpen,
+  open,
+  placement = 'bottom-start',
+  ...props
+}: PublicMenuTriggerProps) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen)
+  const isOpen = open ?? internalOpen
+
+  const setOpen = (nextOpen: boolean) => {
+    if (open == null) {
+      setInternalOpen(nextOpen)
+    }
+
+    if (nextOpen) {
+      onOpen?.()
+    } else {
+      onClose?.()
+    }
+  }
+
+  return (
+    <span
+      className={['ait-menu-trigger', className].filter(Boolean).join(' ')}
+      data-placement={placement}
+      {...props}
+    >
+      <span onClick={() => setOpen(!isOpen)}>{children}</span>
+      {isOpen ? (
+        <>
+          <button
+            aria-label="메뉴 닫기"
+            className="ait-menu-backdrop"
+            type="button"
+            onClick={() => setOpen(false)}
+          />
+          {dropdown}
+        </>
+      ) : null}
+    </span>
+  )
+}
+
+export const Menu = {
+  Dropdown: MenuDropdown,
+  DropdownCheckItem: MenuDropdownCheckItem,
+  DropdownIcon: MenuDropdownIcon,
+  DropdownItem: MenuDropdownItem,
+  Header: MenuHeader,
+  Trigger: MenuTrigger,
+}
 
 type PublicListRowProps = LiHTMLAttributes<HTMLLIElement> & {
   border?: 'none' | 'indented'

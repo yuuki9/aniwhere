@@ -59,14 +59,13 @@ function matchRegionIdForLocation({
 export function AdminShopLocationPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const locationState = location.state as { returnTo?: string } | null
   const draft = readAdminShopDraft()
   const [query, setQuery] = useState(draft?.addressQuery || draft?.address || '')
   const [candidates, setCandidates] = useState<ShopLocationCandidate[]>([])
   const [notice, setNotice] = useState<string | null>(null)
   const [isSearching, setIsSearching] = useState(false)
-  const canReturnToShopForm = Boolean(
-    (location.state as { fromAdminShopCreate?: boolean } | null)?.fromAdminShopCreate,
-  )
+  const returnTo = locationState?.returnTo ?? '/admin/shops/new'
   const regionsQuery = useQuery({
     queryKey: ['regions', 'admin-shop-location'],
     queryFn: getRegions,
@@ -74,12 +73,7 @@ export function AdminShopLocationPage() {
   })
 
   const returnToShopForm = () => {
-    if (canReturnToShopForm) {
-      navigate(-1)
-      return
-    }
-
-    navigate('/admin/shops/new', { replace: true })
+    navigate(returnTo, { replace: true })
   }
 
   const searchLocation = async () => {

@@ -10,6 +10,18 @@ type ApiRequestInit = RequestInit & {
   authToken?: string | null
 }
 
+function toAuthorizationHeaderValue(authToken: string | null | undefined) {
+  const trimmed = authToken?.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const withoutBearer = trimmed.replace(/^Bearer\s+/i, '')
+  const headerSafeToken = withoutBearer.replace(/^["']|["']$/g, '').replace(/[\r\n\t]/g, '').trim()
+
+  return headerSafeToken ? `Bearer ${headerSafeToken}` : null
+}
+
 export function toQueryString(params: QueryParams) {
   const search = new URLSearchParams()
 
@@ -43,8 +55,9 @@ export async function request<T>(path: string, init?: ApiRequestInit): Promise<T
   if (init?.body != null && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
-  if (resolvedAuthToken && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${resolvedAuthToken}`)
+  const authorization = toAuthorizationHeaderValue(resolvedAuthToken)
+  if (authorization && !headers.has('Authorization')) {
+    headers.set('Authorization', authorization)
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -68,8 +81,9 @@ export async function requestForm<T>(path: string, body: FormData, init?: ApiReq
   const headers = new Headers(init?.headers)
   const resolvedAuthToken = authToken === undefined ? getStoredAccessToken() : authToken
 
-  if (resolvedAuthToken && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${resolvedAuthToken}`)
+  const authorization = toAuthorizationHeaderValue(resolvedAuthToken)
+  if (authorization && !headers.has('Authorization')) {
+    headers.set('Authorization', authorization)
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {

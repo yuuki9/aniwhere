@@ -148,7 +148,13 @@ export function AdminShopManagePage() {
 
   return (
     <main className="app-shell admin-shell admin-shop-crud-shell admin-shop-manage-shell">
-      <AppTopNavigation className="route-navigation" showBack title="매장 관리" showLogo={false} />
+      <AppTopNavigation
+        className="route-navigation"
+        showBack
+        title="매장 관리"
+        showLogo={false}
+        onBack={() => navigate('/admin', { replace: true })}
+      />
 
       <section className="admin-shop-crud-layout">
         <section className="admin-shop-manage-summary" aria-label="매장 관리 요약">

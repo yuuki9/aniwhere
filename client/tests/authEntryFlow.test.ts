@@ -184,4 +184,8 @@ test('auth session storage failures are contained', () => {
   assert.match(authSession, /try\s*\{\s*window\.localStorage\.setItem/s)
   assert.match(authSession, /try\s*\{\s*window\.localStorage\.removeItem/s)
   assert.match(authSession, /toSafeErrorSummary\(error\)/)
+  assert.match(authSession, /function normalizeToken/)
+  assert.match(authSession, /withoutBearer = trimmed\.replace\(\/\^Bearer\\s\+\/i, ''\)/)
+  assert.match(authSession, /withoutWrappingQuotes\.replace\(\/\[\\r\\n\\t\]\/g, ''\)\.trim\(\)/)
+  assert.match(authSession, /return normalizeToken\(readAuthSession\(\)\?\.accessToken\) \?\? null/)
 })
