@@ -69,6 +69,8 @@ test('explore review station creates Swagger shop reviews from the selected shop
   assert.match(styles, /\.map-review-station\b/)
   assert.match(styles, /\.map-surface-sheet-review \.map-zoom-control/)
   assert.match(styles, /\.map-review-station \{[\s\S]*?z-index:\s*1300;/)
+  assert.match(styles, /\.map-review-station-header \{[\s\S]*?grid-template-columns:\s*36px minmax\(0, 1fr\);/)
+  assert.match(styles, /\.map-review-station-top \.ait-top-copy \{[\s\S]*?gap:\s*var\(--ait-space-2\);/)
   assert.match(styles, /\.map-review-leave-modal\b/)
   assert.match(styles, /\.map-place-review-actions\b/)
   assert.match(styles, /\.map-review-existing-photos\b/)

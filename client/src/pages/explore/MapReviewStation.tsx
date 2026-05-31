@@ -195,7 +195,6 @@ export function MapReviewStation({
           />
           <Top
             className="map-review-station-top"
-            lowerGap={0}
             subtitleBottom={<Top.SubtitleParagraph>{shop.name}</Top.SubtitleParagraph>}
             title={<Top.TitleParagraph size={24}>{isEditing ? '리뷰 수정하기' : '리뷰 작성하기'}</Top.TitleParagraph>}
             upperGap={0}

@@ -2687,15 +2687,20 @@
 
 .map-review-station-header {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 36px minmax(0, 1fr);
   align-items: start;
-  gap: var(--ait-space-3);
+  gap: var(--ait-space-4);
 }
 
 .map-review-station-back-icon {
-  width: 44px;
-  height: 44px;
-  background: var(--ait-color-gray-50);
+  width: 36px;
+  height: 36px;
+  margin-top: 2px;
+  background: transparent;
+}
+
+.map-review-station-back-icon svg {
+  display: block;
 }
 
 .map-review-station-top {
@@ -2704,11 +2709,11 @@
 }
 
 .map-review-station-top.ait-top {
-  gap: var(--ait-space-1);
+  gap: var(--ait-space-2);
 }
 
 .map-review-station-top .ait-top-copy {
-  gap: var(--ait-space-1);
+  gap: var(--ait-space-2);
 }
 
 .map-review-station-top .ait-top-copy h1 {
