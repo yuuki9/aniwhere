@@ -206,6 +206,7 @@ export type ShopReview = {
   shopId: number
   authorUserId: number
   authorNickname: string
+  authorEmojiIconFilename: string | null
   rating: number
   content: string
   status: ShopReviewStatus
