@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } f
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { askMapAssistant } from '../shared/api/llm'
 import { addFavoriteShop, getNearbyShops, getShop, getShopFacets, getShops, removeFavoriteShop } from '../shared/api/shops'
+import { getWorks } from '../shared/api/works'
 import { listMyFavoriteShops } from '../shared/api/users'
 import {
   createShopReview,
@@ -13,7 +14,7 @@ import {
   unlikeShopReview,
   updateShopReview,
 } from '../shared/api/shopReviews'
-import type { CreateShopReviewPayload, Shop, ShopReview, UpdateShopReviewPayload } from '../shared/api/types'
+import type { CreateShopReviewPayload, Shop, ShopReview, UpdateShopReviewPayload, WorkCatalogItem, WorkType } from '../shared/api/types'
 import {
   calculateDistanceKm,
   formatDistanceLabel,
@@ -80,6 +81,10 @@ const MAP_QUICK_CHIPS: MapQuickChipItem[] = [
 const isMapAssistantEnabled = false
 const ASSISTANT_SUGGESTIONS = ['홍대에서 피규어 많은 곳', '피규어 종류가 많은 매장', '초행자에게 추천할 만한 곳']
 const ASSISTANT_RETRY_HINT = '현재 데이터 기준으로 바로 맞는 후보를 찾지 못했어요. 작품명, 지역명, 매장명을 조금 더 구체적으로 입력해보세요.'
+const WORK_TYPE_LABELS: Record<WorkType, string> = {
+  ANIMATION: '애니메이션',
+  GAME: '게임',
+}
 
 type FocusMode = 'shops' | 'shop' | 'user' | 'idle'
 type ViewMode = 'map' | 'list'
@@ -192,6 +197,24 @@ function buildDetailMediaItems(shop: Shop): DetailMediaItem[] {
       registeredAt,
       sortOrder: image.sortOrder,
     }))
+}
+
+function getWorkTypeLabel(type: WorkType | null | undefined) {
+  return type == null ? null : WORK_TYPE_LABELS[type] ?? type
+}
+
+function getShopWorkTypeLabels(shop: Shop, workCatalogById: Map<number, WorkCatalogItem>) {
+  const labels = new Set<string>()
+
+  shop.works.forEach((work) => {
+    const label = getWorkTypeLabel(work.type ?? workCatalogById.get(work.id)?.type)
+
+    if (label != null) {
+      labels.add(label)
+    }
+  })
+
+  return [...labels]
 }
 
 function isShopInsideMapBounds(shop: Shop, bounds: MapBounds) {
@@ -427,6 +450,33 @@ export function ExplorePage() {
       shopsQuery.data?.content,
     ],
   )
+
+  const worksCatalogQuery = useQuery({
+    queryKey: ['works', 'explore-work-type-labels'],
+    queryFn: () => getWorks(),
+    enabled: allShops.some((shop) => shop.works.length > 0),
+    staleTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+
+  const workCatalogById = useMemo(() => {
+    return new Map((worksCatalogQuery.data ?? []).map((work) => [work.id, work]))
+  }, [worksCatalogQuery.data])
+
+  const workTypeLabelsByShopId = useMemo(() => {
+    const nextLabelsByShopId: Record<number, string[]> = {}
+
+    allShops.forEach((shop) => {
+      const labels = getShopWorkTypeLabels(shop, workCatalogById)
+
+      if (labels.length > 0) {
+        nextLabelsByShopId[shop.id] = labels
+      }
+    })
+
+    return nextLabelsByShopId
+  }, [allShops, workCatalogById])
 
   const filteredShops = useMemo(() => {
     return allShops.filter((shop) => {
@@ -1099,6 +1149,7 @@ export function ExplorePage() {
   const detailError = activeShopDetailQuery.isError ? (activeShopDetailQuery.error as Error).message : null
   const detailFloorLabel = formatFloorLabel(detailShop?.floor ?? null)
   const detailDescription = detailShop?.description ?? detailShop?.visitTip ?? null
+  const detailWorkTypeLabels = detailShop ? workTypeLabelsByShopId[detailShop.id] ?? [] : []
   const detailShopMediaItems = useMemo(() => (detailShop ? buildDetailMediaItems(detailShop) : []), [detailShop])
   const detailReviewMediaItems = useMemo(() => {
     return (reviewListQuery.data?.content ?? []).flatMap((review) => {
@@ -1500,6 +1551,7 @@ export function ExplorePage() {
               appliedFilters={renderAppliedFilterChips()}
               visibleShops={visibleShops}
               reviewPhotosByShopId={listReviewPhotosByShopId}
+              workTypeLabelsByShopId={workTypeLabelsByShopId}
               totalShops={totalShops}
               isLoading={activeShopsQueryIsLoading}
               listRef={listScrollRef}
@@ -1697,6 +1749,7 @@ export function ExplorePage() {
 
                   <MapDetailSummaryCard
                     shop={detailShop}
+                    workTypeLabels={detailWorkTypeLabels}
                     isFavorite={isFavoriteDetailShop}
                     isFavoritePending={favoriteShopMutation.isPending}
                     onToggleFavorite={handleToggleFavoriteShop}
@@ -1736,6 +1789,7 @@ export function ExplorePage() {
                       shop={detailShop}
                       description={detailDescription}
                       floorLabel={detailFloorLabel}
+                      workTypeLabels={detailWorkTypeLabels}
                       distanceLabel={activeShop?.distanceLabel ?? null}
                       onOpenDirections={openNaverDirections}
                     />

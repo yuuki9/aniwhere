@@ -12,6 +12,7 @@ type MapDetailTopActionsProps = {
 
 type MapDetailSummaryCardProps = {
   shop: Shop
+  workTypeLabels: string[]
   isFavorite: boolean
   isFavoritePending: boolean
   onToggleFavorite: () => void
@@ -59,6 +60,7 @@ export function MapDetailTopActions({
 
 export function MapDetailSummaryCard({
   shop,
+  workTypeLabels,
   isFavorite,
   isFavoritePending,
   onToggleFavorite,
@@ -67,7 +69,10 @@ export function MapDetailSummaryCard({
   const [keywordExpansion, setKeywordExpansion] = useState({ isExpanded: false, signature: '' })
   const [shouldShowKeywordMore, setShouldShowKeywordMore] = useState(false)
   const keywordListRef = useRef<HTMLDivElement>(null)
-  const keywords = shop.categories.map((category) => category.name).filter(Boolean)
+  const keywords = [
+    ...shop.categories.map((category) => category.name).filter(Boolean),
+    ...workTypeLabels.map((label) => `작품유형: ${label}`),
+  ]
   const keywordSignature = keywords.join('\u0001')
   const isKeywordExpanded = keywordExpansion.signature === keywordSignature && keywordExpansion.isExpanded
   const averageRating = shop.averageRating ?? 0
@@ -121,7 +126,7 @@ export function MapDetailSummaryCard({
             className={['map-sheet-keyword-row', isKeywordExpanded ? 'map-sheet-keyword-row-expanded' : '']
               .filter(Boolean)
               .join(' ')}
-            aria-label="매장 카테고리"
+            aria-label="매장 카테고리와 작품유형"
           >
             <div className="map-sheet-keyword-list" ref={keywordListRef}>
               {keywords.map((keyword) => (

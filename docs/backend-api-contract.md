@@ -48,7 +48,7 @@ When the backend contract changes:
 - `GET /api/v1/shops/{shopId}/reviews` returns `PageResponse<ShopReview>` and accepts `sort=NEWEST|OLDEST|RATING_HIGH|RATING_LOW`.
 - `POST /api/v1/shops/{shopId}/reviews` and `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}` send `rating` and `content` as query params, with optional `images` in multipart form data.
 - `GET /api/v1/users/me/reviews` returns the authenticated user's `PageResponse<ShopReview>` for owner review-management surfaces.
-- `ShopReview` includes `likeCount` and `likedByMe`, and `POST/DELETE /api/v1/shops/{shopId}/reviews/{reviewId}/likes` toggles review likes.
+- `ShopReview` includes `authorEmojiIconFilename`, `likeCount`, and `likedByMe`, and `POST/DELETE /api/v1/shops/{shopId}/reviews/{reviewId}/likes` toggles review likes.
 - Deployed Swagger does not expose a review report endpoint yet. Client UI may show a report entry point, but it must not call an invented API path.
 - `UserSummary` includes `role`, and `PATCH /api/v1/admin/users/{userId}/role` accepts `{ "role": "ADMIN" | "USER" }`.
 

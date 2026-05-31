@@ -7,6 +7,7 @@ type MapDetailInfoCardProps = {
   shop: Shop
   description?: string | null
   floorLabel: string | null
+  workTypeLabels: string[]
   distanceLabel?: string | null
   onOpenDirections: (event?: { stopPropagation: () => void }) => void
 }
@@ -43,6 +44,7 @@ export function MapDetailInfoCard({
   shop,
   description,
   floorLabel,
+  workTypeLabels,
   onOpenDirections,
 }: MapDetailInfoCardProps) {
   const [isAiSummaryExpanded, setIsAiSummaryExpanded] = useState(false)
@@ -115,12 +117,22 @@ export function MapDetailInfoCard({
         <MapDetailRow icon="clock" label="영업 상태" description={statusToLabel(shop.status)} />
 
         <MapDetailRow
-          icon="collection"
-          label="취급 정보"
+          icon="tag"
+          label="카테고리"
           description={
             shop.categories.length > 0
               ? shop.categories.slice(0, 6).map((category) => category.name).join(' · ')
-              : '등록된 분류 정보가 없어요.'
+              : '등록된 카테고리가 없어요'
+          }
+        />
+
+        <MapDetailRow
+          icon="collection"
+          label="작품유형"
+          description={
+            workTypeLabels.length > 0
+              ? workTypeLabels.join(' · ')
+              : '연결된 작품유형 정보가 없어요'
           }
         />
 

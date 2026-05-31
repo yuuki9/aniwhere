@@ -553,25 +553,26 @@ function WorkTypeFilterSection({
   }
 
   return (
-    <section className="admin-shop-catalog-group admin-shop-work-type-section" aria-label="작품 유형 필터">
+    <section className="admin-shop-catalog-group admin-shop-work-type-section" aria-label="작품유형">
       <div className="admin-shop-catalog-head">
-        <strong>작품 유형 필터</strong>
+        <strong>작품유형</strong>
         <small>{selectedWorkType == null ? '전체' : workTypes.find((workType) => workType.value === selectedWorkType)?.label}</small>
       </div>
-      <div className="admin-shop-work-type-filter">
+      <div className="admin-shop-catalog-options admin-shop-work-type-options">
         {workTypes.map((workType) => {
           const selected = selectedWorkType === workType.value
 
           return (
             <button
-              className="admin-shop-work-type-chip"
+              className="admin-shop-catalog-option admin-shop-work-type-option"
               data-selected={selected}
               key={workType.value}
               type="button"
               aria-pressed={selected}
               onClick={() => onChange(selected ? undefined : workType.value)}
             >
-              {workType.label}
+              <span className="admin-shop-catalog-check" aria-hidden="true" />
+              <span>{workType.label}</span>
             </button>
           )
         })}

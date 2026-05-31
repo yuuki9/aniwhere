@@ -624,7 +624,7 @@ Official docs checked with Apps in Toss MCP in the current session:
 | Favorite auth header on device | Regression fix / Needs sandbox | 실기기 favorite 토글에서 WebKit `the string did not match the expected pattern` 오류가 보고되어, 저장 세션 토큰과 API client Authorization 헤더 생성 모두에서 `Bearer` 중복, wrapping quote, CR/LF/tab 문자를 제거하도록 방어했다. 로컬 source test/build는 가능하지만 실제 Apps in Toss 저장 토큰 형태는 실기기 sandbox에서 재확인이 필요하다. |
 
 | `/explore` expanded detail header structure | Product-approved / TDS-informed | Expanded shop detail은 당근/토스플레이스식 구조를 더 직접적으로 따른다: drag handle, 매장명과 같은 row에 배치된 관심/공유 액션, 한 줄 별점/리뷰 row, 카테고리 chip, 세로 포스터형 사진 레일, `정보 / 리뷰 n / 사진 / 취급작품` 탭, 정보 row 순서로 정리했다. 주소 row 자체가 밑줄 링크형 길찾기 trigger가 되므로 기존 별도 길찾기 버튼은 제거했다. TDS ListRow 내부 padding이 expanded detail content grid를 깨는 구간은 app-owned row로 전환하고 동일한 16px content inset을 적용했다. |
-| `/explore` review item feed | Product-approved / API-required | TossPlace review reference를 기준으로 review item은 작성자 avatar/emoji, 별점, 닉네임, 작성일을 한 메타 row에 묶고, 사진은 2열 square grid로 본문보다 먼저 노출한다. Swagger `ShopReview`에는 아직 `authorEmojiIconFilename`이 없지만 `UserSummary`에는 존재하므로 optional field를 열어두고, 내 리뷰에는 저장 세션의 emoji를 fallback으로 표시한다. 다른 사용자의 emoji 표시는 백엔드가 review 응답에 emoji filename을 추가해야 완성된다. |
+| `/explore` review item feed | Product-approved / API-required | TossPlace review reference를 기준으로 review item은 작성자 avatar/emoji, 별점, 닉네임, 작성일을 한 메타 row에 묶고, 사진은 2열 square grid로 본문보다 먼저 노출한다. `origin/main`의 review 응답 동기화 이후 Swagger `ShopReview.authorEmojiIconFilename`을 우선 사용하며, 내 리뷰에서만 저장 세션의 emoji를 보조 fallback으로 유지한다. |
 
 | `/explore` expanded detail tabs | Regression fix | The four-tab rail no longer uses negative inline margins inside the `overflow-x: hidden` detail body. It keeps the sticky rail in the sheet bounds, applies the detail inline padding to the tab content, and gives tab labels `min-width: 0` plus `white-space: nowrap` so the first and last labels do not look clipped on mobile widths. |
 | `/explore` photo tab and viewer | Product-approved / TDS-informed | Official TDS docs checked for this pass: Asset (`/tds-mobile/components/Asset/check-first/`), Modal (`/tds-mobile/components/modal/`), BottomSheet (`/tds-mobile/components/bottom-sheet/`). TDS does not expose a confirmed full-screen photo review carousel primitive, so the photo feed and viewer are app-owned. The photo tab now combines shop-uploaded images and review images; feed images keep their natural aspect ratio instead of square-cropping. Tapping a review image opens a full-screen, horizontal scroll-snap viewer with the related review content, rating, author, and a `리뷰 보기` action. Tapping a shop-uploaded image opens the same viewer as image-only content. |
@@ -691,3 +691,23 @@ Every route-level TDS PR must include:
 - Screenshot viewport used, normally 375px wide.
 - Commands run.
 - `Needs sandbox` items that cannot be proven locally.
+
+### 2026-05-31 Explore/Admin Taxonomy And Review Emoji Follow-up
+
+Official docs checked in the current session:
+
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Checkbox: https://tossmini-docs.toss.im/tds-mobile/components/checkbox/
+- TDS TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Main sync for review emoji | API-required / Regression fix | `origin/main` was merged into the feature branch and brought the server-side `ShopReview.authorEmojiIconFilename` response field. The client type now treats the field as `string | null` instead of an optional-only frontend guess, so other users' review emoji can render from the review response without relying on the current user's session fallback. |
+| Review edited date label | Product-approved / Regression fix | Review cards keep the original created-date label, but the edited marker now mirrors the relative-date rule: updates from today or the last six days show `오늘 수정됨` or `n일 전 수정됨`; older edits show `yy.MM.dd에 수정됨`. |
+| `/admin/shops` taxonomy selector rhythm | Product-approved / TDS-informed | The work-type selector keeps narrowing the work search results rather than becoming a persisted `ShopRequest` field, because the current write contract still sends `workIds` and `categoryIds`. Its visible title is now `작품유형` instead of `작품유형 필터`, and it reuses the same rounded selection-chip pattern as category selection. |
+| `/explore` taxonomy display | Product-approved / API-required | `Shop.works` still lacks `type` in the deployed Swagger, so Explore enriches shop summaries from the `GET /api/v1/works` catalog by work id and also accepts a future optional `Shop.works[].type`. List cards and the detail title chips show compact `작품유형: 애니메이션/게임` chips after category chips; the information tab renames `취급 정보` to `카테고리` and adds a separate `작품유형` row. |
+| Runtime verification | Needs sandbox | Source tests prove the API/type wiring and source-level UI contracts. Real Apps in Toss WebView should still confirm chip wrapping and list-card density at 375px after server deployment. |

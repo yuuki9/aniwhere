@@ -61,6 +61,7 @@ export type WorkSummary = {
   id: number
   name: string
   coverUrl: string | null
+  type?: WorkType | null
 }
 
 export type WorkCatalogItem = WorkSummary & {
@@ -206,7 +207,7 @@ export type ShopReview = {
   shopId: number
   authorUserId: number
   authorNickname: string
-  authorEmojiIconFilename?: string | null
+  authorEmojiIconFilename: string | null
   rating: number
   content: string
   status: ShopReviewStatus

@@ -28,6 +28,7 @@ type MapResultsSheetProps = {
   appliedFilters: ReactNode
   visibleShops: MapResultShop[]
   reviewPhotosByShopId?: Record<number, MapResultReviewPhoto[]>
+  workTypeLabelsByShopId?: Record<number, string[]>
   totalShops: number
   isLoading: boolean
   listRef: RefObject<HTMLDivElement | null>
@@ -67,9 +68,14 @@ function getResultCardPhotos(shop: MapResultShop, reviewPhotos: MapResultReviewP
   })
 }
 
-function getShopCategoryLabels(shop: Shop) {
-  if (shop.categories.length > 0) {
-    return shop.categories.map((category) => category.name)
+function getShopCategoryLabels(shop: Shop, workTypeLabels: string[] = []) {
+  const labels = [
+    ...shop.categories.map((category) => category.name),
+    ...workTypeLabels.map((workTypeLabel) => `작품유형: ${workTypeLabel}`),
+  ]
+
+  if (labels.length > 0) {
+    return labels
   }
 
   return [shop.regionName ?? '카테고리 준비 중']
@@ -125,6 +131,7 @@ export function MapResultsSheet({
   appliedFilters,
   visibleShops,
   reviewPhotosByShopId,
+  workTypeLabelsByShopId,
   totalShops,
   isLoading,
   listRef,
@@ -153,7 +160,7 @@ export function MapResultsSheet({
 
       <div className="map-results-sheet-list" onScroll={onScroll} ref={listRef}>
         {visibleShops.map((shop) => {
-          const categoryLabels = getShopCategoryLabels(shop)
+          const categoryLabels = getShopCategoryLabels(shop, workTypeLabelsByShopId?.[shop.id])
           const addressLabel = getShopAddressLabel(shop)
           const photos = getResultCardPhotos(shop, reviewPhotosByShopId?.[shop.id])
           const averageRating = shop.averageRating ?? 0

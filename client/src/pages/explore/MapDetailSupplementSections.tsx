@@ -57,6 +57,14 @@ function formatReviewEditedDate(value: string) {
     .replace(/\.$/, '')
 }
 
+function formatReviewEditedLabel(value: string) {
+  const relativeLabel = formatReviewDate(value)
+
+  return relativeLabel === '오늘' || relativeLabel.endsWith('일 전')
+    ? `${relativeLabel} 수정됨`
+    : `${formatReviewEditedDate(value)}에 수정됨`
+}
+
 function isReviewEdited(review: ShopReview) {
   if (!review.updatedAt) {
     return false
@@ -623,7 +631,7 @@ export function MapDetailSupplementSections({
               const isMyReview = currentUserId != null && review.authorUserId === currentUserId
               const reviewDate = review.createdAt
               const reviewEditedLabel = isReviewEdited(review)
-                ? `(${formatReviewEditedDate(review.updatedAt ?? review.createdAt)}에 수정됨)`
+                ? `(${formatReviewEditedLabel(review.updatedAt ?? review.createdAt)})`
                 : null
               const ratingValue = normalizeRating(review.rating)
               const authorEmojiUrl = emojiImageUrl(

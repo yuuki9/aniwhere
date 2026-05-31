@@ -48,6 +48,7 @@ class ShopReviewControllerTest {
         shopId = 1L,
         authorUserId = 10L,
         authorNickname = "테스트유저",
+        authorEmojiIconFilename = "mashiro.png",
         rating = 4,
         content = "좋은 샵이에요",
         status = ShopReviewStatus.VISIBLE,
@@ -68,6 +69,7 @@ class ShopReviewControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.content[0].rating").value(4))
             .andExpect(jsonPath("$.data.content[0].authorNickname").value("테스트유저"))
+            .andExpect(jsonPath("$.data.content[0].authorEmojiIconFilename").value("mashiro.png"))
     }
 
     @Test

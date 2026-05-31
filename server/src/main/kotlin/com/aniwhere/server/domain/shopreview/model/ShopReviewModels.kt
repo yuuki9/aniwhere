@@ -44,6 +44,7 @@ data class ShopReview(
     val shopId: Long,
     val authorUserId: Long,
     val authorNickname: String,
+    val authorEmojiIconFilename: String? = null,
     val rating: Int,
     val content: String,
     val status: ShopReviewStatus = ShopReviewStatus.VISIBLE,
