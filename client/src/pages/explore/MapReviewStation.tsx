@@ -185,15 +185,20 @@ function MapReviewStationForm({
       return
     }
 
-    setLocalError(null)
-    allowNavigationRef.current = true
     const selectedImages = images.map((image) => image.file)
     const shouldReplaceReviewImages = isEditing && (images.length > 0 || hiddenExistingImageIds.size > 0)
+    const existingImageIds = visibleExistingReviewImages.map((image) => image.id)
+
+    if (shouldReplaceReviewImages && existingImageIds.some((id) => id == null)) {
+      setLocalError('기존 리뷰 사진 정보를 다시 불러온 뒤 수정해 주세요.')
+      return
+    }
+
+    setLocalError(null)
+    allowNavigationRef.current = true
     const imagePayload = shouldReplaceReviewImages
       ? {
-          existingImageIds: visibleExistingReviewImages.flatMap((image) =>
-            typeof image.id === 'number' ? [image.id] : [],
-          ),
+          existingImageIds: existingImageIds.filter((id): id is number => typeof id === 'number'),
           ...(selectedImages.length > 0 ? { images: selectedImages } : {}),
         }
       : selectedImages.length > 0
