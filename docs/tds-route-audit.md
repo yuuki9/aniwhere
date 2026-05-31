@@ -681,6 +681,39 @@ Official docs checked in the current session:
 | Favorite auth header | Regression fix / Needs sandbox | Auth token normalization now removes duplicate `Bearer`, wrapping quotes, WebView control characters, line/paragraph separators, NBSP, and whitespace before creating the `Authorization` header. Source tests and lint/build pass; the previously reported WebKit pattern error still needs real-device confirmation. |
 | Photo more overlay icon | Product-approved / Regression fix | The more tile keeps `더보기 n개` and now uses a camera/photo glyph instead of a square image frame glyph in both detail and list carousels. |
 
+### 2026-06-01 Explore Detail Empty Taxonomy And Back Routing Follow-up
+
+Official docs checked in the current session:
+
+- TDS Result: https://tossmini-docs.toss.im/tds-mobile/components/result/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore` detail taxonomy rows | Product-approved / Regression fix | If a shop has no registered category or work-type labels, the detail information tab now omits those rows entirely instead of showing fallback absence copy. The top summary chip row already hides itself when there are no category/work-type chips, so the detail screen no longer repeats empty taxonomy states. |
+| `/explore` empty review tab | Product-approved / TDS-informed | The review write prompt continues to use TDS `Result`, but when the loaded review list is empty the review tab centers that prompt in the panel and removes the separate `아직 등록된 리뷰가 없어요.` footnote. This keeps the empty state focused on the review action rather than a status message. |
+| `/explore?view=list` detail back routing | Regression fix / Needs sandbox | Selecting a shop from list view still pushes a detail history entry, so browser/native back can return to the previous list entry. The route transition now restores the saved list scroll position and visible count, and the local back handler uses `navigate(-1)` for list-origin expanded detail instead of replacing the URL with another list entry. Real Apps in Toss native back behavior should still be confirmed on device. |
+
+### 2026-06-01 Favorite Marker And Admin Home Follow-up
+
+Official docs checked in the current session:
+
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore` favorite POI/list state | Product-approved / API-required | Authenticated explore now loads `GET /api/v1/users/me/favorite-shops` whenever an auth token is present, not only when the favorite quick chip is active. The resulting favorite id set is passed to the list sheet and map marker layer. List cards render a compact red heart icon beside the saved shop name, while map POIs render a red heart before the shop label only; facet/category/work-type chip text is not changed, so the favorite signal stays separate from filtering taxonomy. |
+| `/admin` home layout | Product-approved / TDS-informed | The admin hub keeps the existing app-owned route shell and `AppTopNavigation`, but the first viewport now uses a 375px-friendly single-column card stack with stable side padding, compact icon/title/status/copy grouping, and a two-column enhancement only above 720px. The change fixes the previously cramped `/admin` entry without adding new `Ait*` imports or expanding admin scope. |
+| Runtime verification | Needs sandbox | Source tests and local browser inspection can verify layout structure, but Apps in Toss native safe area and device font behavior should still be checked on real devices. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

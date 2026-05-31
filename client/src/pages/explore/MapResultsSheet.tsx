@@ -27,6 +27,7 @@ type MapResultsSheetProps = {
   visible: boolean
   appliedFilters: ReactNode
   visibleShops: MapResultShop[]
+  favoriteShopIds?: Set<number>
   reviewPhotosByShopId?: Record<number, MapResultReviewPhoto[]>
   workTypeLabelsByShopId?: Record<number, string[]>
   totalShops: number
@@ -130,6 +131,7 @@ export function MapResultsSheet({
   visible,
   appliedFilters,
   visibleShops,
+  favoriteShopIds,
   reviewPhotosByShopId,
   workTypeLabelsByShopId,
   totalShops,
@@ -164,11 +166,19 @@ export function MapResultsSheet({
           const addressLabel = getShopAddressLabel(shop)
           const photos = getResultCardPhotos(shop, reviewPhotosByShopId?.[shop.id])
           const averageRating = shop.averageRating ?? 0
+          const isFavoriteShop = favoriteShopIds?.has(shop.id) === true
 
           return (
             <button className="map-results-card" key={shop.id} type="button" onClick={() => onSelectShop(shop.id)}>
               <div className="map-results-card-head">
-                <strong>{shop.name}</strong>
+                <span className="map-results-card-title">
+                  {isFavoriteShop ? (
+                    <svg className="map-results-card-favorite" aria-label="관심 매장" viewBox="0 0 24 24">
+                      <path d="M12 20.3 10.9 19.3C5.4 14.3 2 11.2 2 7.4 2 4.3 4.4 2 7.5 2c1.7 0 3.4.8 4.5 2.1C13.1 2.8 14.8 2 16.5 2 19.6 2 22 4.3 22 7.4c0 3.8-3.4 6.9-8.9 11.9L12 20.3Z" />
+                    </svg>
+                  ) : null}
+                  <strong>{shop.name}</strong>
+                </span>
                 <span className="map-results-card-score">
                   <span className="map-results-card-rating" aria-label={`평점 ${averageRating.toFixed(1)}`}>
                     <svg aria-hidden="true" viewBox="0 0 24 24">

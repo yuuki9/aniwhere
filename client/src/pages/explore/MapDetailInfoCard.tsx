@@ -116,25 +116,17 @@ export function MapDetailInfoCard({
 
         <MapDetailRow icon="clock" label="영업 상태" description={statusToLabel(shop.status)} />
 
-        <MapDetailRow
-          icon="tag"
-          label="카테고리"
-          description={
-            shop.categories.length > 0
-              ? shop.categories.slice(0, 6).map((category) => category.name).join(' · ')
-              : '등록된 카테고리가 없어요'
-          }
-        />
+        {shop.categories.length > 0 ? (
+          <MapDetailRow
+            icon="tag"
+            label="카테고리"
+            description={shop.categories.slice(0, 6).map((category) => category.name).join(' · ')}
+          />
+        ) : null}
 
-        <MapDetailRow
-          icon="collection"
-          label="작품유형"
-          description={
-            workTypeLabels.length > 0
-              ? workTypeLabels.join(' · ')
-              : '연결된 작품유형 정보가 없어요'
-          }
-        />
+        {workTypeLabels.length > 0 ? (
+          <MapDetailRow icon="collection" label="작품유형" description={workTypeLabels.join(' · ')} />
+        ) : null}
 
         {shouldShowVisitTip ? <MapDetailRow icon="sparkle" label="방문 팁" description={shop.visitTip} /> : null}
 

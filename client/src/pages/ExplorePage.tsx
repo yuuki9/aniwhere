@@ -291,7 +291,7 @@ export function ExplorePage() {
   const [isPeekDragging, setIsPeekDragging] = useState(false)
   const [expandedDragOffset, setExpandedDragOffset] = useState(0)
   const [isExpandedDragging, setIsExpandedDragging] = useState(false)
-  const [favoriteShopIds, setFavoriteShopIds] = useState<Set<number>>(() => new Set())
+  const [favoriteShopIdOverrides, setFavoriteShopIdOverrides] = useState<Map<number, boolean>>(() => new Map())
   const [favoriteQuickChipActive, setFavoriteQuickChipActive] = useState(false)
   const [favoriteToast, setFavoriteToast] = useState<string | null>(null)
   const [assistantOpen, setAssistantOpen] = useState(false)
@@ -312,6 +312,7 @@ export function ExplorePage() {
   const listScrollTopRef = useRef(0)
   const listVisibleCountRef = useRef(PAGE_SIZE)
   const pendingListRestoreRef = useRef(false)
+  const previousSelectedShopIdRef = useRef<number | null>(selectedShopId)
   const peekPointerIdRef = useRef<number | null>(null)
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
@@ -377,7 +378,7 @@ export function ExplorePage() {
   const favoriteShopsQuery = useQuery({
     queryKey: ['users', 'me', 'favorite-shops'],
     queryFn: () => listMyFavoriteShops(authToken),
-    enabled: favoriteQuickChipActive && authToken != null,
+    enabled: authToken != null,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -463,6 +464,21 @@ export function ExplorePage() {
   const workCatalogById = useMemo(() => {
     return new Map((worksCatalogQuery.data ?? []).map((work) => [work.id, work]))
   }, [worksCatalogQuery.data])
+
+  const favoriteShopIds = useMemo(() => {
+    const nextFavoriteShopIds = new Set(favoriteShopsQuery.data?.map((shop) => shop.id) ?? [])
+
+    favoriteShopIdOverrides.forEach((isFavorite, shopId) => {
+      if (isFavorite) {
+        nextFavoriteShopIds.add(shopId)
+        return
+      }
+
+      nextFavoriteShopIds.delete(shopId)
+    })
+
+    return nextFavoriteShopIds
+  }, [favoriteShopIdOverrides, favoriteShopsQuery.data])
 
   const workTypeLabelsByShopId = useMemo(() => {
     const nextLabelsByShopId: Record<number, string[]> = {}
@@ -684,13 +700,9 @@ export function ExplorePage() {
     mutationFn: ({ shopId, nextFavorite }: { shopId: number; nextFavorite: boolean }) =>
       nextFavorite ? addFavoriteShop(shopId, authToken) : removeFavoriteShop(shopId, authToken),
     onSuccess: (_result, variables) => {
-      setFavoriteShopIds((current) => {
-        const next = new Set(current)
-        if (variables.nextFavorite) {
-          next.add(variables.shopId)
-        } else {
-          next.delete(variables.shopId)
-        }
+      setFavoriteShopIdOverrides((current) => {
+        const next = new Map(current)
+        next.set(variables.shopId, variables.nextFavorite)
         return next
       })
       setFavoriteToast(variables.nextFavorite ? '관심 매장에 저장했어요.' : '관심 매장에서 해제했어요.')
@@ -1007,6 +1019,12 @@ export function ExplorePage() {
   const handleExploreBack = () => {
     if (sheetMode === 'review') {
       closeReviewStation()
+      return
+    }
+
+    if (sheetMode === 'expanded' && selectionOrigin === 'list') {
+      pendingListRestoreRef.current = true
+      navigate(-1)
       return
     }
 
@@ -1440,6 +1458,20 @@ export function ExplorePage() {
   }
 
   useLayoutEffect(() => {
+    const previousSelectedShopId = previousSelectedShopIdRef.current
+    previousSelectedShopIdRef.current = selectedShopId
+
+    if (previousSelectedShopId != null && selectedShopId == null && isFullListView && selectionOrigin === 'list') {
+      pendingListRestoreRef.current = true
+      setVisibleListCount(Math.max(PAGE_SIZE, listVisibleCountRef.current))
+      setAssistantOpen(false)
+      setDetailTab('info')
+      requestMapFocus('shops')
+      setSelectionOrigin(null)
+    }
+  }, [isFullListView, requestMapFocus, selectedShopId, selectionOrigin])
+
+  useLayoutEffect(() => {
     if (!isListSheetOpen || !pendingListRestoreRef.current || !listScrollRef.current) {
       return
     }
@@ -1550,6 +1582,7 @@ export function ExplorePage() {
               visible={isFullListView}
               appliedFilters={renderAppliedFilterChips()}
               visibleShops={visibleShops}
+              favoriteShopIds={favoriteShopIds}
               reviewPhotosByShopId={listReviewPhotosByShopId}
               workTypeLabelsByShopId={workTypeLabelsByShopId}
               totalShops={totalShops}
@@ -1604,6 +1637,7 @@ export function ExplorePage() {
           <ShopMap
             shops={mappableShops}
             activeShopId={detailShop?.id ?? null}
+            favoriteShopIds={favoriteShopIds}
             onSelectShop={handleMapSelectShop}
             onClearSelection={handleClearSelection}
             onViewportChange={handleMapViewportChange}

@@ -17,6 +17,7 @@ export type MapViewport = {
 type ShopMapProps = {
   shops: Shop[]
   activeShopId: number | null
+  favoriteShopIds?: Set<number>
   onSelectShop: (shopId: number) => void
   onClearSelection?: () => void
   restoreViewport?: MapViewport | null
@@ -114,13 +115,14 @@ function getChipMarkerWidth(label: string) {
   return Math.min(SHOP_MARKER_MAX_WIDTH, Math.max(SHOP_MARKER_MIN_WIDTH, estimatedWidth))
 }
 
-function createShopMarkerIcon(shop: Shop, isActive: boolean) {
+function createShopMarkerIcon(shop: Shop, isActive: boolean, isFavorite: boolean) {
   const maps = getRequiredNaverMaps()
   const label = getShopMarkerLabel(shop)
-  const width = getChipMarkerWidth(label)
+  const width = getChipMarkerWidth(isFavorite ? `♥ ${label}` : label)
+  const favoriteIcon = isFavorite ? '<span class="map-naver-shop-chip-favorite" aria-hidden="true">♥</span>' : ''
 
   return {
-    content: `<span class="map-naver-shop-marker" aria-hidden="true"><span class="map-naver-shop-chip${isActive ? ' map-naver-shop-chip-active' : ''}"><span class="map-naver-shop-chip-label">${escapeMarkerLabel(label)}</span></span></span>`,
+    content: `<span class="map-naver-shop-marker" aria-hidden="true"><span class="map-naver-shop-chip${isActive ? ' map-naver-shop-chip-active' : ''}">${favoriteIcon}<span class="map-naver-shop-chip-label">${escapeMarkerLabel(label)}</span></span></span>`,
     size: new maps.Size(width, SHOP_MARKER_HEIGHT),
     anchor: new maps.Point(width / 2, SHOP_MARKER_HEIGHT + 8),
   }
@@ -272,6 +274,7 @@ function shouldPublishViewportChange(previous: MapViewport | null, next: MapView
 export function ShopMap({
   shops,
   activeShopId,
+  favoriteShopIds = new Set(),
   onSelectShop,
   onClearSelection,
   restoreViewport = null,
@@ -487,13 +490,14 @@ export function ShopMap({
       }
 
       const isActive = activeShopId === group.shop.id
+      const isFavorite = favoriteShopIds.has(group.shop.id)
       const marker = new maps.Marker({
         map,
         position: toLatLng(group.shop.py, group.shop.px),
         title: group.shop.name,
         clickable: true,
         zIndex: isActive ? 20 : 10,
-        icon: createShopMarkerIcon(group.shop, isActive),
+        icon: createShopMarkerIcon(group.shop, isActive, isFavorite),
       })
       const listener = maps.Event.addListener(marker, 'click', () => {
         onSelectShopRef.current(group.shop.id)
@@ -504,7 +508,7 @@ export function ShopMap({
         listeners: [listener],
       }
     })
-  }, [activeShopId, mapInitialized, markerGroups])
+  }, [activeShopId, favoriteShopIds, mapInitialized, markerGroups])
 
   useEffect(() => {
     const map = mapRef.current

@@ -432,6 +432,7 @@ export function MapDetailSupplementSections({
   const visibleWorks = isWorkFeedExpanded ? shop.works : shop.works.slice(0, WORK_FEED_PREVIEW_LIMIT)
   const hiddenWorkCount = Math.max(0, shop.works.length - WORK_FEED_PREVIEW_LIMIT)
   const reviews = reviewPage?.content ?? EMPTY_REVIEWS
+  const isReviewEmpty = !isReviewLoading && reviewErrorMessage == null && reviews.length === 0
   const reviewPromptName = currentUserNickname?.trim() || '방문자'
   const shopPhotoItems = useMemo<PhotoViewerItem[]>(
     () =>
@@ -595,7 +596,15 @@ export function MapDetailSupplementSections({
 
   if (activeTab === 'review') {
     return (
-      <section className="section map-sheet-info-card map-sheet-tab-panel map-place-review-card" id="map-place-review">
+      <section
+        className={[
+          'section map-sheet-info-card map-sheet-tab-panel map-place-review-card',
+          isReviewEmpty ? 'map-place-review-card-empty' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        id="map-place-review"
+      >
         <div className="map-place-review-head">
           <Result
             className="map-place-review-result"
@@ -621,9 +630,6 @@ export function MapDetailSupplementSections({
 
         {isReviewLoading ? <p className="map-sheet-footnote">리뷰를 불러오고 있어요.</p> : null}
         {reviewErrorMessage != null ? <p className="map-sheet-footnote map-place-review-error">{reviewErrorMessage}</p> : null}
-        {!isReviewLoading && reviewErrorMessage == null && reviews.length === 0 ? (
-          <p className="map-sheet-footnote">아직 등록된 리뷰가 없어요.</p>
-        ) : null}
 
         {reviews.length > 0 ? (
           <div className="map-place-review-list">

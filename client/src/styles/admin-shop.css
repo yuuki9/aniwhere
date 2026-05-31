@@ -32,7 +32,13 @@
 
 .admin-home-head {
   display: grid;
-  gap: var(--ait-space-3);
+  gap: var(--ait-space-2);
+  padding: var(--ait-space-7) 0 var(--ait-space-3);
+}
+
+.admin-home-shell.admin-shop-crud-shell {
+  width: min(560px, 100%);
+  padding: 0 var(--ait-space-5) var(--ait-space-8);
 }
 
 .admin-home-head h1 {
@@ -64,16 +70,37 @@
 
 .admin-hub-grid {
   gap: var(--ait-space-7);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .admin-hub-card {
   display: grid;
-  gap: var(--ait-space-5);
-  min-height: 180px;
-  padding: var(--ait-space-8);
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ait-space-4);
+  min-height: 0;
+  padding: var(--ait-space-5);
   color: inherit;
   text-decoration: none;
+}
+
+.admin-hub-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ait-radius-2xl);
+  background: var(--admin-shop-brand-bg);
+  color: var(--ait-color-brand-pressed);
+  font-size: var(--ait-font-size-title-md);
+  font-weight: 900;
+}
+
+.admin-hub-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ait-space-2);
 }
 
 .admin-hub-card strong {
@@ -86,6 +113,7 @@
   color: var(--ait-color-text-tertiary);
   font-size: var(--ait-font-size-body-sm);
   line-height: var(--ait-line-height-body);
+  overflow-wrap: anywhere;
 }
 
 .admin-hub-card-status {
@@ -1534,6 +1562,12 @@
   .admin-points-grid,
   .admin-workspace {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 720px) {
+  .admin-hub-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

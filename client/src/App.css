@@ -2350,6 +2350,14 @@ p {
   white-space: nowrap;
 }
 
+.map-naver-shop-chip-favorite {
+  position: relative;
+  z-index: 1;
+  margin-right: var(--ait-space-1);
+  color: var(--ait-color-red-700);
+  line-height: 1;
+}
+
 .map-naver-shop-chip::after,
 .map-naver-cluster-chip::after {
   position: absolute;

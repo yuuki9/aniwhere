@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, ListRow, SearchField, Toast } from '@aniwhere/tds-mobile'
 import { API_BASE_URL } from '../../shared/api/client'
 import { getCategories } from '../../shared/api/categories'
@@ -32,6 +32,7 @@ import {
   readAdminShopSelectedLocation,
   readPendingAdminShopFileCount,
   readPendingAdminShopFiles,
+  writeAdminShopManageNotice,
   writeAdminShopDraft,
   writePendingAdminShopFiles,
 } from './AdminShopDraftStore'
@@ -69,6 +70,10 @@ type ShopFieldErrors = {
   name?: string
   location?: string
 }
+
+type AdminShopFormLocationState = {
+  returnTo?: string
+} | null
 
 type SelectableImageFileResult = {
   files: File[]
@@ -639,11 +644,15 @@ async function buildUpdateImagePayload(originalShop: Shop, imageItems: EditableI
 
 export function AdminShopsPage() {
   const queryClient = useQueryClient()
+  const location = useLocation()
   const navigate = useNavigate()
   const { shopId } = useParams()
   const parsedShopId = shopId ? Number(shopId) : null
   const editingShopId = parsedShopId != null && Number.isFinite(parsedShopId) ? parsedShopId : null
   const isEditMode = editingShopId != null
+  const locationState = location.state as AdminShopFormLocationState
+  const returnTo = locationState?.returnTo
+  const shouldReturnToShopManage = returnTo === '/admin/shops'
   const selectedLocationOnOpen = useMemo(() => readAdminShopSelectedLocation(), [])
   const [shopForm, setShopForm] = useState<ShopFormState>(() => {
     const draft = readAdminShopDraft() ?? EMPTY_SHOP_FORM
@@ -676,6 +685,14 @@ export function AdminShopsPage() {
   })
   const pendingPreviewItems = useMemo(() => getPendingPreviewUrls(pendingFiles), [pendingFiles])
   const closeNotice = useCallback(() => setNotice(null), [])
+  const handleBackToShopManage = () => {
+    if (shouldReturnToShopManage) {
+      navigate(-1)
+      return
+    }
+
+    navigate('/admin/shops', { replace: true })
+  }
   const editShopQuery = useQuery({
     queryKey: ['shops', 'admin-shop-edit', editingShopId],
     queryFn: () => getShop(editingShopId as number),
@@ -699,7 +716,10 @@ export function AdminShopsPage() {
     setFieldErrors((current) => ({ ...current, location: undefined }))
     writeAdminShopDraft(shopForm)
     navigate('/admin/shops/location', {
-      state: { returnTo: isEditMode && editingShopId != null ? `/admin/shops/${editingShopId}/edit` : '/admin/shops/new' },
+      state: {
+        returnTo: isEditMode && editingShopId != null ? `/admin/shops/${editingShopId}/edit` : '/admin/shops/new',
+        shopManageReturnTo: shouldReturnToShopManage ? returnTo : undefined,
+      },
     })
   }
 
@@ -864,9 +884,16 @@ export function AdminShopsPage() {
         resetForm()
       }
       clearAdminShopSelectedLocation()
+      const savedNotice = buildShopSavedNotice(savedShop.name, isEditMode)
+      if (shouldReturnToShopManage) {
+        writeAdminShopManageNotice(savedNotice)
+        navigate(-1)
+        return
+      }
+
       navigate('/admin/shops', {
         replace: true,
-        state: { notice: buildShopSavedNotice(savedShop.name, isEditMode) },
+        state: { notice: savedNotice },
       })
     },
     onError: (error) => {
@@ -881,7 +908,7 @@ export function AdminShopsPage() {
         showBack
         title={isEditMode ? '매장 수정' : '매장 등록'}
         showLogo={false}
-        onBack={() => navigate('/admin/shops', { replace: true })}
+        onBack={handleBackToShopManage}
       />
 
       <section className="admin-shop-crud-layout">
