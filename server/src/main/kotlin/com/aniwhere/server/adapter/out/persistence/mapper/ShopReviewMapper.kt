@@ -15,11 +15,13 @@ class ShopReviewMapper(
 ) {
     fun toDomain(entity: ShopReviewEntity): ShopReview {
         val authorNickname = entity.author.nickname?.trim()?.takeIf { it.isNotEmpty() } ?: "익명"
+        val authorEmojiIconFilename = entity.author.emojiIconFilename?.trim()?.takeIf { it.isNotEmpty() }
         return ShopReview(
             id = entity.id,
             shopId = entity.shopId,
             authorUserId = entity.author.id!!,
             authorNickname = authorNickname,
+            authorEmojiIconFilename = authorEmojiIconFilename,
             rating = entity.rating,
             content = entity.content,
             status = ShopReviewStatus.valueOf(entity.status.name),
