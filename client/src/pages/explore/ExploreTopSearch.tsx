@@ -1,10 +1,12 @@
 import type { RefObject } from 'react'
+import { MapSearchFieldButton } from '../../shared/ui/MapSearchFieldShell'
 
 type ExploreTopSearchProps = {
   attachTriggerRef: boolean
   filterTriggerRef: RefObject<HTMLButtonElement | null>
   isFilterSheetOpen: boolean
   appliedFilterCount: number
+  value?: string | null
   onSearchClick: () => void
   onFilterClick: () => void
 }
@@ -14,18 +16,13 @@ export function ExploreTopSearch({
   filterTriggerRef,
   isFilterSheetOpen,
   appliedFilterCount,
+  value,
   onSearchClick,
   onFilterClick,
 }: ExploreTopSearchProps) {
   return (
     <div className="map-search-row search-screen-toolrow">
-      <button className="search-screen-bar map-search-field" type="button" onClick={onSearchClick}>
-        <span className="map-search-field-copy">매장, 작품, 지역 검색</span>
-        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="6" />
-          <path d="m16 16 4 4" />
-        </svg>
-      </button>
+      <MapSearchFieldButton value={value} onClick={onSearchClick} />
       <button
         className="search-filter-button map-filter-button"
         type="button"

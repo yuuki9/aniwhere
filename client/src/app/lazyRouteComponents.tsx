@@ -3,6 +3,9 @@ import { lazy } from 'react'
 export const AdminAccessGate = lazy(() =>
   import('../pages/admin/AdminAccessGate').then((module) => ({ default: module.AdminAccessGate }))
 )
+export const AdminHomePage = lazy(() =>
+  import('../pages/admin/AdminHomePage').then((module) => ({ default: module.AdminHomePage }))
+)
 export const AdminShopManagePage = lazy(() =>
   import('../pages/admin/AdminShopManagePage').then((module) => ({ default: module.AdminShopManagePage }))
 )
@@ -18,5 +21,4 @@ export const HomePage = lazy(() => import('../pages/HomePage').then((module) => 
 export const IntroPage = lazy(() => import('../pages/IntroPage').then((module) => ({ default: module.IntroPage })))
 export const PostDetailPage = lazy(() => import('../pages/PostDetailPage').then((module) => ({ default: module.PostDetailPage })))
 export const SearchPage = lazy(() => import('../pages/SearchPage').then((module) => ({ default: module.SearchPage })))
-export const ShopPage = lazy(() => import('../pages/ShopPage').then((module) => ({ default: module.ShopPage })))
 export const ShopRouteRedirect = lazy(() => import('./ShopRouteRedirect').then((module) => ({ default: module.ShopRouteRedirect })))

@@ -7,6 +7,10 @@ import type { Shop, ShopStatus } from '../../shared/api/types'
 import { formatRelativeUpdated } from '../../shared/lib/format'
 import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 import { StatusPill } from '../../shared/ui/StatusPill'
+import {
+  clearAdminShopManageNotice,
+  readAdminShopManageNotice,
+} from './AdminShopDraftStore'
 
 type AdminShopManageLocationState = {
   notice?: string
@@ -44,7 +48,7 @@ export function AdminShopManagePage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [statusFilter, setStatusFilter] = useState<ShopStatusFilter>('ALL')
   const [notice, setNotice] = useState<string | null>(
-    () => (location.state as AdminShopManageLocationState | null)?.notice ?? null,
+    () => (location.state as AdminShopManageLocationState | null)?.notice ?? readAdminShopManageNotice(),
   )
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
 
@@ -92,7 +96,8 @@ export function AdminShopManagePage() {
   const resultLabel = appliedKeyword || statusFilter !== 'ALL' ? '검색 결과' : '전체 목록'
 
   useEffect(() => {
-    if ((location.state as AdminShopManageLocationState | null)?.notice) {
+    if ((location.state as AdminShopManageLocationState | null)?.notice || readAdminShopManageNotice()) {
+      clearAdminShopManageNotice()
       navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
     }
   }, [location.pathname, location.search, location.state, navigate])
@@ -148,7 +153,13 @@ export function AdminShopManagePage() {
 
   return (
     <main className="app-shell admin-shell admin-shop-crud-shell admin-shop-manage-shell">
-      <AppTopNavigation className="route-navigation" showBack title="매장 관리" showLogo={false} />
+      <AppTopNavigation
+        className="route-navigation"
+        showBack
+        title="매장 관리"
+        showLogo={false}
+        onBack={() => navigate('/admin', { replace: true })}
+      />
 
       <section className="admin-shop-crud-layout">
         <section className="admin-shop-manage-summary" aria-label="매장 관리 요약">
@@ -175,7 +186,7 @@ export function AdminShopManagePage() {
             className="admin-shop-create-button"
             display="block"
             type="button"
-            onClick={() => navigate('/admin/shops/new')}
+            onClick={() => navigate('/admin/shops/new', { state: { returnTo: '/admin/shops' } })}
           >
             매장 등록
           </Button>
@@ -271,7 +282,11 @@ export function AdminShopManagePage() {
                   </div>
                 ) : (
                   <div className="admin-shop-manage-row-actions">
-                    <Link className="admin-shop-manage-action" to={`/admin/shops/${shop.id}/edit`}>
+                    <Link
+                      className="admin-shop-manage-action"
+                      to={`/admin/shops/${shop.id}/edit`}
+                      state={{ returnTo: '/admin/shops' }}
+                    >
                       수정
                     </Link>
                     <button

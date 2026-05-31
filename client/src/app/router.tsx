@@ -3,6 +3,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { MainLayout } from '../shared/ui/MainLayout'
 import {
   AdminAccessGate,
+  AdminHomePage,
   AdminShopLocationPage,
   AdminShopManagePage,
   AdminShopsPage,
@@ -12,7 +13,6 @@ import {
   IntroPage,
   PostDetailPage,
   SearchPage,
-  ShopPage,
   ShopRouteRedirect,
 } from './lazyRouteComponents'
 
@@ -65,7 +65,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/shop/detail/:shopId',
-    element: routeElement(<ShopPage />),
+    element: routeElement(<ShopRouteRedirect />),
   },
   {
     path: '/search',
@@ -81,7 +81,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate replace to="/admin/shops" />,
+        element: routeElement(<AdminHomePage />),
       },
       {
         path: 'shops',

@@ -31,7 +31,10 @@ const loadAuthEntryFlow = async () => {
       accessToken: string,
       deps: {
         checkNicknameAvailability: (nickname: string, accessToken: string) => Promise<NicknameAvailabilityResult>
-        updateMyNickname: (payload: { nickname: string }, accessToken: string) => Promise<UserSummary>
+        updateMyNickname: (
+          payload: { nickname: string; emojiIconFilename?: string | null },
+          accessToken: string,
+        ) => Promise<UserSummary>
         updateSessionUser: (user: UserSummary) => void
       },
     ) => Promise<UserSummary>
@@ -56,6 +59,7 @@ const userWithNickname: UserSummary = {
   id: 1,
   userKey: 443731104,
   nickname: '굿즈탐험가',
+  emojiIconFilename: 'u1F47D.png',
   status: 'ACTIVE',
   role: 'ROLE_USER',
   lastLoginAt: null,
@@ -108,7 +112,7 @@ test('saveAniwhereNickname trims, checks availability, updates the profile, and 
   const { saveAniwhereNickname } = await loadAuthEntryFlow()
   const calls: unknown[] = []
 
-  const user = await saveAniwhereNickname('  굿즈탐험가  ', 'access-token', {
+  const user = await saveAniwhereNickname('  굿즈탐험가  ', 'access-token', 'u1F680.png', {
     checkNicknameAvailability: async (nickname, accessToken) => {
       calls.push({ check: nickname, accessToken })
       return { nickname, available: true }
@@ -124,7 +128,10 @@ test('saveAniwhereNickname trims, checks availability, updates the profile, and 
 
   assert.equal(user.nickname, '굿즈탐험가')
   assert.deepEqual(calls[0], { check: '굿즈탐험가', accessToken: 'access-token' })
-  assert.deepEqual(calls[1], { update: { nickname: '굿즈탐험가' }, accessToken: 'access-token' })
+  assert.deepEqual(calls[1], {
+    update: { nickname: '굿즈탐험가', emojiIconFilename: 'u1F680.png' },
+    accessToken: 'access-token',
+  })
   assert.deepEqual(calls[2], { user: '굿즈탐험가' })
 })
 
@@ -133,7 +140,7 @@ test('saveAniwhereNickname rejects unavailable nicknames before updating the pro
   let updateCalled = false
 
   await assert.rejects(
-    saveAniwhereNickname('이미있는닉네임', 'access-token', {
+    saveAniwhereNickname('이미있는닉네임', 'access-token', undefined, {
       checkNicknameAvailability: async (nickname) => ({ nickname, available: false }),
       updateMyNickname: async () => {
         updateCalled = true
@@ -177,4 +184,23 @@ test('auth session storage failures are contained', () => {
   assert.match(authSession, /try\s*\{\s*window\.localStorage\.setItem/s)
   assert.match(authSession, /try\s*\{\s*window\.localStorage\.removeItem/s)
   assert.match(authSession, /toSafeErrorSummary\(error\)/)
+  assert.match(authSession, /function normalizeToken/)
+  assert.match(authSession, /function removeHeaderUnsafeCharacters\(value: string\)/)
+  assert.match(authSession, /code > 31 && \(code < 127 \|\| code > 159\) && code !== 0x2028 && code !== 0x2029/)
+  assert.match(authSession, /withoutBearer = trimmed\.replace\(\/\^Bearer\[\\s\\u00A0\]\+\/i, ''\)/)
+  assert.match(authSession, /removeHeaderUnsafeCharacters\(withoutWrappingQuotes\)/)
+  assert.match(authSession, /replace\(\/\[\\s\\u00A0\]\+\/g, ''\)/)
+  assert.match(authSession, /return normalizeToken\(readAuthSession\(\)\?\.accessToken\) \?\? null/)
+})
+
+test('api authorization headers strip hidden WebView control characters before fetch', () => {
+  const apiClient = source('../src/shared/api/client.ts')
+
+  assert.match(apiClient, /function toAuthorizationHeaderValue/)
+  assert.match(apiClient, /function removeHeaderUnsafeCharacters\(value: string\)/)
+  assert.match(apiClient, /code > 31 && \(code < 127 \|\| code > 159\) && code !== 0x2028 && code !== 0x2029/)
+  assert.match(apiClient, /withoutBearer = trimmed\.replace\(\/\^Bearer\[\\s\\u00A0\]\+\/i, ''\)/)
+  assert.match(apiClient, /removeHeaderUnsafeCharacters\(headerSafeToken\)/)
+  assert.match(apiClient, /replace\(\/\[\\s\\u00A0\]\+\/g, ''\)/)
+  assert.match(apiClient, /headers\.set\('Authorization', authorization\)/)
 })

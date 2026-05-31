@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, ListRow, SearchField, Toast } from '@aniwhere/tds-mobile'
 import { API_BASE_URL } from '../../shared/api/client'
 import { getCategories } from '../../shared/api/categories'
@@ -8,10 +8,20 @@ import {
   createShop,
   createShopWithImages,
   getShop,
+  getShopFacets,
   updateShop,
   updateShopWithImages,
 } from '../../shared/api/shops'
-import type { CategoryListItem, Shop, ShopImage, ShopRequest, ShopStatus, WorkCatalogItem } from '../../shared/api/types'
+import type {
+  CategoryListItem,
+  FacetWorkTypeItem,
+  Shop,
+  ShopImage,
+  ShopRequest,
+  ShopStatus,
+  WorkCatalogItem,
+  WorkType,
+} from '../../shared/api/types'
 import { getWorks } from '../../shared/api/works'
 import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 import {
@@ -22,6 +32,7 @@ import {
   readAdminShopSelectedLocation,
   readPendingAdminShopFileCount,
   readPendingAdminShopFiles,
+  writeAdminShopManageNotice,
   writeAdminShopDraft,
   writePendingAdminShopFiles,
 } from './AdminShopDraftStore'
@@ -59,6 +70,10 @@ type ShopFieldErrors = {
   name?: string
   location?: string
 }
+
+type AdminShopFormLocationState = {
+  returnTo?: string
+} | null
 
 type SelectableImageFileResult = {
   files: File[]
@@ -337,7 +352,12 @@ function getHighlightedWorkNameParts(name: string, query: string) {
   return [{ text: name, highlighted: false }]
 }
 
-function getMatchingWorkOptions(options: WorkCatalogItem[], query: string, selectedIds: number[]) {
+function getMatchingWorkOptions(
+  options: WorkCatalogItem[],
+  query: string,
+  selectedIds: number[],
+  workTypeFilter?: WorkType,
+) {
   const normalizedQuery = normalizeSearchText(query)
   const compactQuery = compactSearchText(normalizedQuery)
 
@@ -346,6 +366,7 @@ function getMatchingWorkOptions(options: WorkCatalogItem[], query: string, selec
   }
 
   return options
+    .filter((work) => workTypeFilter == null || work.type === workTypeFilter)
     .filter((work) => {
       const searchableFields = getWorkSearchFields(work)
         .map(normalizeSearchText)
@@ -417,6 +438,7 @@ function WorkCatalogSearchSelectionSection({
   query,
   selectedIds,
   title,
+  workTypeFilter,
   onQueryChange,
 }: {
   emptyLabel: string
@@ -427,9 +449,10 @@ function WorkCatalogSearchSelectionSection({
   query: string
   selectedIds: number[]
   title: string
+  workTypeFilter?: WorkType
   onQueryChange: (query: string) => void
 }) {
-  const matchingOptions = getMatchingWorkOptions(options, query, selectedIds)
+  const matchingOptions = getMatchingWorkOptions(options, query, selectedIds, workTypeFilter)
   const selectedOptions = options.filter((option) => selectedIds.includes(option.id))
   const normalizedQuery = normalizeSearchText(query)
   const hasSearchableQuery = hasKoreanText(normalizedQuery)
@@ -521,6 +544,48 @@ function WorkCatalogSearchSelectionSection({
   )
 }
 
+function WorkTypeFilterSection({
+  selectedWorkType,
+  workTypes,
+  onChange,
+}: {
+  selectedWorkType?: WorkType
+  workTypes: FacetWorkTypeItem[]
+  onChange: (workType?: WorkType) => void
+}) {
+  if (workTypes.length === 0) {
+    return null
+  }
+
+  return (
+    <section className="admin-shop-catalog-group admin-shop-work-type-section" aria-label="작품유형">
+      <div className="admin-shop-catalog-head">
+        <strong>작품유형</strong>
+        <small>{selectedWorkType == null ? '전체' : workTypes.find((workType) => workType.value === selectedWorkType)?.label}</small>
+      </div>
+      <div className="admin-shop-catalog-options admin-shop-work-type-options">
+        {workTypes.map((workType) => {
+          const selected = selectedWorkType === workType.value
+
+          return (
+            <button
+              className="admin-shop-catalog-option admin-shop-work-type-option"
+              data-selected={selected}
+              key={workType.value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(selected ? undefined : workType.value)}
+            >
+              <span className="admin-shop-catalog-check" aria-hidden="true" />
+              <span>{workType.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 async function editableImageItemToFile(item: EditableImageItem, fallbackName: string) {
   if (item.file) {
     return item.file
@@ -579,11 +644,15 @@ async function buildUpdateImagePayload(originalShop: Shop, imageItems: EditableI
 
 export function AdminShopsPage() {
   const queryClient = useQueryClient()
+  const location = useLocation()
   const navigate = useNavigate()
   const { shopId } = useParams()
   const parsedShopId = shopId ? Number(shopId) : null
   const editingShopId = parsedShopId != null && Number.isFinite(parsedShopId) ? parsedShopId : null
   const isEditMode = editingShopId != null
+  const locationState = location.state as AdminShopFormLocationState
+  const returnTo = locationState?.returnTo
+  const shouldReturnToShopManage = returnTo === '/admin/shops'
   const selectedLocationOnOpen = useMemo(() => readAdminShopSelectedLocation(), [])
   const [shopForm, setShopForm] = useState<ShopFormState>(() => {
     const draft = readAdminShopDraft() ?? EMPTY_SHOP_FORM
@@ -606,6 +675,7 @@ export function AdminShopsPage() {
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set())
   const [fieldErrors, setFieldErrors] = useState<ShopFieldErrors>({})
   const [workSearchQuery, setWorkSearchQuery] = useState('')
+  const [workTypeFilter, setWorkTypeFilter] = useState<WorkType | undefined>(undefined)
   const [notice, setNotice] = useState<string | null>(() => {
     if (!isEditMode && readPendingAdminShopFileCount() > 0 && pendingFiles.length === 0) {
       return '사진 선택이 초기화됐어요. 다시 선택해주세요.'
@@ -615,6 +685,14 @@ export function AdminShopsPage() {
   })
   const pendingPreviewItems = useMemo(() => getPendingPreviewUrls(pendingFiles), [pendingFiles])
   const closeNotice = useCallback(() => setNotice(null), [])
+  const handleBackToShopManage = () => {
+    if (shouldReturnToShopManage) {
+      navigate(-1)
+      return
+    }
+
+    navigate('/admin/shops', { replace: true })
+  }
   const editShopQuery = useQuery({
     queryKey: ['shops', 'admin-shop-edit', editingShopId],
     queryFn: () => getShop(editingShopId as number),
@@ -623,6 +701,12 @@ export function AdminShopsPage() {
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'admin-shop-form'],
     queryFn: getCategories,
+    refetchOnMount: 'always',
+  })
+  const shopFacetQuery = useQuery({
+    queryKey: ['shops', 'facets', 'admin-shop-work-types'],
+    queryFn: () => getShopFacets({ includeWorkTypes: true }),
+    refetchOnMount: 'always',
   })
   const worksQuery = useQuery({
     queryKey: ['works', 'admin-shop-form'],
@@ -631,7 +715,12 @@ export function AdminShopsPage() {
   const openLocationSearch = () => {
     setFieldErrors((current) => ({ ...current, location: undefined }))
     writeAdminShopDraft(shopForm)
-    navigate('/admin/shops/location', { state: { fromAdminShopCreate: true } })
+    navigate('/admin/shops/location', {
+      state: {
+        returnTo: isEditMode && editingShopId != null ? `/admin/shops/${editingShopId}/edit` : '/admin/shops/new',
+        shopManageReturnTo: shouldReturnToShopManage ? returnTo : undefined,
+      },
+    })
   }
 
   useEffect(() => {
@@ -789,13 +878,24 @@ export function AdminShopsPage() {
     },
     onSuccess: async (savedShop) => {
       await queryClient.invalidateQueries({ queryKey: ['shops'] })
+      await queryClient.invalidateQueries({ queryKey: ['categories'] })
+      await queryClient.invalidateQueries({ queryKey: ['shops', 'facets'] })
       if (!isEditMode) {
         resetForm()
+      } else {
+        clearAdminShopDraft()
       }
       clearAdminShopSelectedLocation()
+      const savedNotice = buildShopSavedNotice(savedShop.name, isEditMode)
+      if (shouldReturnToShopManage) {
+        writeAdminShopManageNotice(savedNotice)
+        navigate(-1)
+        return
+      }
+
       navigate('/admin/shops', {
         replace: true,
-        state: { notice: buildShopSavedNotice(savedShop.name, isEditMode) },
+        state: { notice: savedNotice },
       })
     },
     onError: (error) => {
@@ -805,7 +905,13 @@ export function AdminShopsPage() {
 
   return (
     <main className="app-shell admin-shell admin-shop-crud-shell">
-      <AppTopNavigation className="route-navigation" showBack title={isEditMode ? '매장 수정' : '매장 등록'} showLogo={false} />
+      <AppTopNavigation
+        className="route-navigation"
+        showBack
+        title={isEditMode ? '매장 수정' : '매장 등록'}
+        showLogo={false}
+        onBack={handleBackToShopManage}
+      />
 
       <section className="admin-shop-crud-layout">
         {editShopQuery.isLoading ? <p className="admin-shop-manage-state">매장 정보를 불러오고 있어요.</p> : null}
@@ -1036,6 +1142,11 @@ export function AdminShopsPage() {
               title="카테고리"
               onToggle={toggleCategory}
             />
+            <WorkTypeFilterSection
+              selectedWorkType={workTypeFilter}
+              workTypes={shopFacetQuery.data?.workTypes ?? []}
+              onChange={setWorkTypeFilter}
+            />
             <WorkCatalogSearchSelectionSection
               emptyLabel="등록된 작품이 없습니다."
               isError={worksQuery.isError}
@@ -1044,6 +1155,7 @@ export function AdminShopsPage() {
               query={workSearchQuery}
               selectedIds={shopForm.workIds}
               title="취급 작품"
+              workTypeFilter={workTypeFilter}
               onQueryChange={setWorkSearchQuery}
               onToggle={toggleWork}
             />

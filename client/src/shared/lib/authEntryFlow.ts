@@ -1,6 +1,6 @@
 import { tossLogin } from '../api/auth'
 import { checkNicknameAvailability, getMyProfile, updateMyNickname } from '../api/users'
-import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../api/types'
+import type { LoginResult, NicknameAvailabilityResult, UpdateNicknamePayload, UserSummary } from '../api/types'
 import type { EntryFlowResult } from './auth'
 import { createAuthSession, saveAuthSession, updateAuthSessionUser, type AuthSession } from './authSession'
 import { toSafeErrorSummary } from './safeError'
@@ -74,7 +74,7 @@ export async function completeServiceEntry(
 
 type SaveNicknameDeps = {
   checkNicknameAvailability: (nickname: string, accessToken: string) => Promise<NicknameAvailabilityResult>
-  updateMyNickname: (payload: { nickname: string }, accessToken: string) => Promise<UserSummary>
+  updateMyNickname: (payload: UpdateNicknamePayload, accessToken: string) => Promise<UserSummary>
   updateSessionUser: (user: UserSummary) => void
 }
 
@@ -102,6 +102,7 @@ export function validateAniwhereNickname(raw: string) {
 export async function saveAniwhereNickname(
   rawNickname: string,
   accessToken: string,
+  emojiIconFilename?: string | null,
   deps: SaveNicknameDeps = defaultSaveNicknameDeps,
 ) {
   const nickname = validateAniwhereNickname(rawNickname)
@@ -110,7 +111,7 @@ export async function saveAniwhereNickname(
     throw new Error('이미 사용 중인 닉네임이에요.')
   }
 
-  const user = await deps.updateMyNickname({ nickname }, accessToken)
+  const user = await deps.updateMyNickname({ nickname, emojiIconFilename }, accessToken)
   deps.updateSessionUser(user)
   return user
 }

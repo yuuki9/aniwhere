@@ -1,20 +1,13 @@
 import type { PointerEvent } from 'react'
 import type { Shop } from '../../shared/api/types'
-import { StatusPill } from '../../shared/ui/StatusPill'
-
-type MapPeekHeroImage = {
-  src: string
-}
 
 type MapPeekSheetProps = {
   shop: Shop | null
   distanceLabel?: string | null
-  heroImage: MapPeekHeroImage | null
   isDragging: boolean
   dragOffset: number
   selectionOrigin: 'map' | 'list' | null
   onClick: () => void
-  onOpenDirections: (event?: { stopPropagation: () => void }) => void
   onPointerCancel: () => void
   onPointerDown: (event: PointerEvent<HTMLElement>) => void
   onPointerMove: (event: PointerEvent<HTMLElement>) => void
@@ -24,12 +17,10 @@ type MapPeekSheetProps = {
 export function MapPeekSheet({
   shop,
   distanceLabel,
-  heroImage,
   isDragging,
   dragOffset,
   selectionOrigin,
   onClick,
-  onOpenDirections,
   onPointerCancel,
   onPointerDown,
   onPointerMove,
@@ -38,6 +29,9 @@ export function MapPeekSheet({
   if (!shop) {
     return null
   }
+
+  const visibleCategories = shop.categories.slice(0, 3)
+  const averageRating = shop.averageRating ?? 0
 
   return (
     <section
@@ -81,36 +75,28 @@ export function MapPeekSheet({
         <div className="map-sheet-peek-copy">
           <div className="map-sheet-peek-head">
             <strong>{shop.name}</strong>
-            <StatusPill status={shop.status} />
           </div>
-          <p>
-            {shop.regionName ?? `지역 ${shop.regionId ?? '-'}`}
+          <span className="map-sheet-peek-address">
+            {shop.address}
             {distanceLabel ? ` · ${distanceLabel}` : ''}
-          </p>
-          <p className="map-sheet-peek-meta">{shop.address}</p>
+          </span>
+          {visibleCategories.length > 0 ? (
+            <div className="map-sheet-peek-categories" aria-label="매장 카테고리">
+              {visibleCategories.map((category) => (
+                <span key={category.id}>{category.name}</span>
+              ))}
+            </div>
+          ) : null}
         </div>
-        <button
-          className="map-sheet-peek-route"
-          type="button"
-          onPointerDown={(event) => {
-            event.stopPropagation()
-          }}
-          onPointerUp={(event) => {
-            event.stopPropagation()
-          }}
-          onClick={(event) => {
-            event.stopPropagation()
-            onOpenDirections(event)
-          }}
-          aria-label={`${shop.name} 네이버 지도 웹 길찾기 열기`}
-        >
-          {heroImage ? (
-            <img src={heroImage.src} alt="" aria-hidden="true" />
-          ) : (
-            <span aria-hidden="true">{shop.name.slice(0, 1)}</span>
-          )}
-          <strong aria-hidden="true">↱</strong>
-        </button>
+        <span className="map-sheet-peek-score">
+          <span className="map-sheet-peek-rating">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="m12 3 2.6 5.5 6 .9-4.3 4.2 1 6-5.3-2.9-5.3 2.9 1-6-4.3-4.2 6-.9L12 3Z" />
+            </svg>
+            <b>{averageRating.toFixed(1)}</b>
+          </span>
+          <small>리뷰 {shop.reviewCount}개</small>
+        </span>
       </div>
     </section>
   )

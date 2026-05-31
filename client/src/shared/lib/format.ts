@@ -2,6 +2,7 @@ import type { ShopStatus } from '../api/types'
 
 const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'medium',
+  timeZone: 'Asia/Seoul',
   timeStyle: 'short',
 })
 

@@ -85,6 +85,7 @@ const profileEmojiOptions = [
   {
     id: 'fire',
     label: '파란 불꽃',
+    emojiIconFilename: 'u1F525.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F525.png',
     symbol: '🔥',
     tone: '#ffe3e3',
@@ -92,6 +93,7 @@ const profileEmojiOptions = [
   {
     id: 'skull',
     label: '해골',
+    emojiIconFilename: 'u1F480.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F480.png',
     symbol: '💀',
     tone: '#e9eef5',
@@ -99,6 +101,7 @@ const profileEmojiOptions = [
   {
     id: 'alien',
     label: '초록 외계인',
+    emojiIconFilename: 'u1F47D.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F47D.png',
     symbol: '👽',
     tone: '#d9f7be',
@@ -106,6 +109,7 @@ const profileEmojiOptions = [
   {
     id: 'bomb',
     label: '폭탄',
+    emojiIconFilename: 'u1F4A3.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F4A3.png',
     symbol: '💣',
     tone: '#e8eaef',
@@ -113,6 +117,7 @@ const profileEmojiOptions = [
   {
     id: 'seedling',
     label: '새싹',
+    emojiIconFilename: 'u1F331.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F331.png',
     symbol: '🌱',
     tone: '#dff8e8',
@@ -120,6 +125,7 @@ const profileEmojiOptions = [
   {
     id: 'sunglasses',
     label: '선글라스 얼굴',
+    emojiIconFilename: 'u1F60E.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F60E.png',
     symbol: '😎',
     tone: '#fff0b8',
@@ -127,6 +133,7 @@ const profileEmojiOptions = [
   {
     id: 'sparkles',
     label: '반짝이',
+    emojiIconFilename: 'u2728.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u2728.png',
     symbol: '✨',
     tone: '#fff4bf',
@@ -134,6 +141,7 @@ const profileEmojiOptions = [
   {
     id: 'rocket',
     label: '로켓',
+    emojiIconFilename: 'u1F680.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F680.png',
     symbol: '🚀',
     tone: '#e6f0ff',
@@ -141,6 +149,7 @@ const profileEmojiOptions = [
   {
     id: 'game',
     label: '게임 패드',
+    emojiIconFilename: 'u1F3AE.png',
     src: 'https://static.toss.im/2d-emojis/png/4x/u1F3AE.png',
     symbol: '🎮',
     tone: '#eadfff',
@@ -155,6 +164,10 @@ function getProfileEmojiOption(id: string) {
     profileEmojiOptions.find((option) => option.id === DEFAULT_PROFILE_EMOJI_ID) ??
     profileEmojiOptions[0]
   )
+}
+
+function getProfileEmojiSymbol(emojiIconFilename: string | null | undefined) {
+  return profileEmojiOptions.find((option) => option.emojiIconFilename === emojiIconFilename)?.symbol
 }
 
 type NicknameOnboardingSheetProps = {
@@ -306,7 +319,11 @@ export function IntroPage() {
         return
       }
       navigate('/home', {
-        state: { entryMode: 'toss', welcomeNickname: result.user.nickname ?? undefined } satisfies EntryRouteState,
+        state: {
+          entryMode: 'toss',
+          welcomeEmoji: getProfileEmojiSymbol(result.user.emojiIconFilename),
+          welcomeNickname: result.user.nickname ?? undefined,
+        } satisfies EntryRouteState,
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : '로그인을 완료하지 못했어요. 다시 시도해 주세요.'
@@ -373,7 +390,7 @@ export function IntroPage() {
     setEntryError(null)
 
     try {
-      const user = await saveAniwhereNickname(nickname, pendingNicknameSession.accessToken)
+      const user = await saveAniwhereNickname(nickname, pendingNicknameSession.accessToken, selectedProfileEmoji.emojiIconFilename)
       navigate('/home', {
         state: {
           entryMode: 'toss',

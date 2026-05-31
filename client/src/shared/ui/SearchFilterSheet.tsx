@@ -7,7 +7,7 @@ import {
   SHOP_FACET_STALE_TIME_MS,
   shopFacetQueryKey,
 } from '../lib/shopFacetQuery'
-import type { ShopFilters } from '../lib/shopFilters'
+import { getShopSortLabel, type ShopFilters } from '../lib/shopFilters'
 
 type SearchFilterSheetProps = {
   open: boolean
@@ -38,7 +38,9 @@ export function SearchFilterSheet({ open, ...props }: SearchFilterSheetProps) {
   const draftKey = [
     props.selectedFilters.regionIds.join(','),
     props.selectedFilters.categoryIds.join(','),
+    props.selectedFilters.workType ?? '',
     props.selectedFilters.status ?? '',
+    props.selectedFilters.sort ?? '',
   ].join('|')
 
   return <SearchFilterSheetDialog key={draftKey} {...props} />
@@ -61,16 +63,20 @@ function SearchFilterSheetDialog({
   void keyword
   void viewportBounds
 
-  const facetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: false }
+  const facetParams = { includeRegions: true, includeCategories: true, includeWorkTypes: true, includeSorts: true }
   const facetQuery = useQuery({
     queryKey: shopFacetQueryKey(facetParams),
     queryFn: () => getShopFacets(facetParams),
     staleTime: SHOP_FACET_STALE_TIME_MS,
     gcTime: SHOP_FACET_GC_TIME_MS,
+    refetchOnMount: 'always',
   })
+  const visibleSorts = facetQuery.data?.sorts.filter((sort) => sort.value !== 'NEWEST') ?? []
   const hasDraftChanges =
     draftFilters.regionIds.join(',') !== selectedFilters.regionIds.join(',') ||
-    draftFilters.categoryIds.join(',') !== selectedFilters.categoryIds.join(',')
+    draftFilters.categoryIds.join(',') !== selectedFilters.categoryIds.join(',') ||
+    draftFilters.workType !== selectedFilters.workType ||
+    (draftFilters.sort ?? 'NEWEST') !== (selectedFilters.sort ?? 'NEWEST')
 
   const closeFilterSheet = useCallback(() => {
     onClose()
@@ -87,6 +93,8 @@ function SearchFilterSheetDialog({
       regionIds: [],
       categoryIds: [],
       workId: undefined,
+      workType: undefined,
+      sort: undefined,
     }))
   }
 
@@ -171,6 +179,38 @@ function SearchFilterSheetDialog({
           {facetQuery.isLoading ? <small className="meta-text">필터를 불러오는 중입니다.</small> : null}
           {facetQuery.isError ? <small className="error-text">{(facetQuery.error as Error).message}</small> : null}
 
+          {visibleSorts.length > 0 ? (
+            <section className="search-filter-section" aria-labelledby="search-filter-sort">
+              <h3 id="search-filter-sort">정렬</h3>
+              <ul className="search-filter-chip-list">
+                {visibleSorts.map((sort) => {
+                  const draftSortValue = draftFilters.sort ?? 'NEWEST'
+
+                  return (
+                    <li className="search-filter-chip-item" key={sort.value}>
+                      <button
+                        className={`search-filter-chip-button ${
+                          draftSortValue === sort.value ? 'search-filter-chip-selected' : ''
+                        }`}
+                        type="button"
+                        aria-label={getShopSortLabel(sort.value)}
+                        aria-pressed={draftSortValue === sort.value}
+                        onClick={() =>
+                          setDraftFilters((current) => ({
+                            ...current,
+                            sort: current.sort === sort.value ? undefined : sort.value,
+                          }))
+                        }
+                      >
+                        {getShopSortLabel(sort.value)}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          ) : null}
+
           {(facetQuery.data?.regions.length ?? 0) > 0 ? (
             <section className="search-filter-section" aria-labelledby="search-filter-region">
               <h3 id="search-filter-region">지역</h3>
@@ -194,6 +234,35 @@ function SearchFilterSheetDialog({
                       }
                     >
                       {region.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {(facetQuery.data?.workTypes.length ?? 0) > 0 ? (
+            <section className="search-filter-section" aria-labelledby="search-filter-work-type">
+              <h3 id="search-filter-work-type">작품 유형</h3>
+              <ul className="search-filter-chip-list">
+                {facetQuery.data?.workTypes.map((workType) => (
+                  <li className="search-filter-chip-item" key={workType.value}>
+                    <button
+                      className={`search-filter-chip-button ${
+                        draftFilters.workType === workType.value ? 'search-filter-chip-selected' : ''
+                      }`}
+                      type="button"
+                      aria-label={workType.label}
+                      aria-pressed={draftFilters.workType === workType.value}
+                      onClick={() =>
+                        setDraftFilters((current) => ({
+                          ...current,
+                          workType: current.workType === workType.value ? undefined : workType.value,
+                          workId: undefined,
+                        }))
+                      }
+                    >
+                      {workType.label}
                     </button>
                   </li>
                 ))}

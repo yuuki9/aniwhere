@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const shopMapSource = () => fs.readFileSync(new URL('../src/shared/ui/ShopMap.tsx', import.meta.url), 'utf8')
+const naverMapLoaderSource = () => fs.readFileSync(new URL('../src/shared/lib/naverMapLoader.ts', import.meta.url), 'utf8')
 const appCssSource = () => fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
 test('ShopMap reports the visible map viewport for map-area search', () => {
@@ -47,24 +48,78 @@ test('ShopMap publishes viewport changes only when the map moved meaningfully', 
   assert.doesNotMatch(source, /onViewportChangeRef\.current\?\.\(readMapViewport\(map\)\)/)
 })
 
+test('ShopMap can restore the last map camera when returning from the full list view', () => {
+  const source = shopMapSource()
+
+  assert.match(source, /restoreViewport\?: MapViewport \| null/)
+  assert.match(source, /restoreViewport = null/)
+  assert.match(source, /const initialViewportRef = useRef<\{ center: UserLocation; zoom: number \}>/)
+  assert.match(source, /restoreViewport\s*\?[\s\S]*center: restoreViewport\.center,[\s\S]*zoom: restoreViewport\.zoom/)
+  assert.match(source, /center: new maps\.LatLng\(initialViewport\.center\.latitude, initialViewport\.center\.longitude\)/)
+  assert.match(source, /zoom: initialViewport\.zoom/)
+  assert.doesNotMatch(source, /zoom: INITIAL_ZOOM,\s*minZoom/)
+})
+
 test('ShopMap renders shop names as chip markers and keeps clusters as count chips', () => {
   const source = shopMapSource()
   const styles = appCssSource()
 
-  assert.match(source, /const SHOP_MARKER_LABEL_MAX_LENGTH = /)
   assert.match(source, /function escapeMarkerLabel/)
   assert.match(source, /function getShopMarkerLabel\(shop: Shop\)/)
-  assert.match(source, /function createShopMarkerIcon\(shop: Shop, isActive: boolean\)/)
+  assert.match(source, /const EMPTY_FAVORITE_SHOP_IDS = new Set<number>\(\)/)
+  assert.match(source, /function createShopMarkerIcon\(shop: Shop, isActive: boolean, isFavorite: boolean\)/)
   assert.match(source, /function createClusterMarkerIcon\(count: number\)/)
+  assert.match(source, /class="map-naver-shop-marker/)
   assert.match(source, /class="map-naver-shop-chip/)
+  assert.doesNotMatch(source, /SHOP_MARKER_LABEL_MAX_LENGTH/)
+  assert.doesNotMatch(source, /map-naver-shop-chip-dot/)
   assert.match(source, /class="map-naver-cluster-chip/)
-  assert.match(source, /icon: createShopMarkerIcon\(group\.shop, isActive\)/)
+  assert.match(source, /icon: createShopMarkerIcon\(group\.shop, isActive, isFavorite\)/)
+  assert.doesNotMatch(source, /favoriteShopIds = new Set\(\)/)
   assert.match(source, /icon: createClusterMarkerIcon\(group\.shops\.length\)/)
+  assert.doesNotMatch(source, /showRankMarkers/)
+  assert.doesNotMatch(source, /createShopRankBadge/)
+  assert.doesNotMatch(source, /rankByShopId/)
   assert.doesNotMatch(source, /createMarkerIcon\(\s*`map-naver-marker/)
   assert.doesNotMatch(source, /createMarkerIcon\('map-naver-cluster-marker'/)
 
   assert.match(styles, /\.map-naver-shop-chip/)
+  assert.match(styles, /\.map-naver-shop-marker/)
+  assert.doesNotMatch(styles, /\.map-naver-shop-chip-dot/)
+  assert.ok(/\.map-naver-shop-marker\s*\{[\s\S]*display:\s*inline-flex;/.test(styles))
+  assert.ok(/\.map-naver-shop-marker\s*\{[\s\S]*align-items:\s*center;/.test(styles))
+  assert.ok(/\.map-naver-shop-marker\s*\{[\s\S]*max-width:\s*220px;/.test(styles))
+  assert.ok(/\.map-naver-shop-chip,\s*[\s\S]*?\.map-naver-cluster-chip\s*\{[\s\S]*max-width:\s*220px;/.test(styles))
   assert.match(styles, /\.map-naver-shop-chip-active/)
+  assert.doesNotMatch(styles, /\.map-naver-shop-marker-ranked/)
+  assert.doesNotMatch(styles, /\.map-naver-shop-rank-badge/)
+  assert.doesNotMatch(styles, /:has\(/)
+  assert.doesNotMatch(styles, /\.map-naver-shop-marker-rank-/)
+  assert.doesNotMatch(styles, /border:\s*2px solid #f97316/)
+  assert.doesNotMatch(styles, /\.map-naver-shop-chip-rank/)
   assert.match(styles, /\.map-naver-cluster-chip/)
   assert.doesNotMatch(styles, /\.map-naver-cluster-marker\s*\{/)
+})
+
+test('ShopMap skips marker rendering when the Naver marker API is unavailable', () => {
+  const source = shopMapSource()
+
+  assert.match(source, /function canCreateNaverMarkers\(\)/)
+  assert.match(source, /window\.naver\?\.maps/)
+  assert.match(source, /maps\.Marker != null/)
+  assert.match(source, /maps\.LatLng != null/)
+  assert.match(source, /!mapInitialized \|\| !map \|\| !canCreateNaverMarkers\(\)/)
+})
+
+test('Naver map loader waits for the full maps namespace before resolving in WebView', () => {
+  const source = naverMapLoaderSource()
+
+  assert.match(source, /function isUsableNaverMaps/)
+  assert.match(source, /maps\.Map != null/)
+  assert.match(source, /maps\.LatLng != null/)
+  assert.match(source, /maps\.Event != null/)
+  assert.match(source, /maps\.Position != null/)
+  assert.match(source, /maps\.Size != null/)
+  assert.match(source, /maps\.Point != null/)
+  assert.match(source, /return isUsableNaverMaps\(maps\) \? maps : null/)
 })

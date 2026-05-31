@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
@@ -6,6 +6,7 @@ import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.pn
 import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
 import { getWorks } from '../shared/api/works'
 import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
+import { SHOP_SEARCH_PLACEHOLDER } from '../shared/lib/searchCopy'
 import { Toast } from '@aniwhere/tds-mobile'
 import {
   buildHomeCtaCards,
@@ -55,7 +56,7 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
   return (
     <section className="section discover-search-entry-section" aria-label="매장 검색">
       <button className="map-search-field home-search-entry" type="button" onClick={onSearch}>
-        <span className="map-search-field-copy">작품, 매장명, 지역으로 검색</span>
+        <span className="map-search-field-copy">{SHOP_SEARCH_PLACEHOLDER}</span>
         <SearchIcon />
       </button>
     </section>
@@ -133,11 +134,11 @@ function HomePendingCard({ title, description }: { title: string; description: s
 
 function buildHomeWorkSearchHref(workName: string) {
   const params = new URLSearchParams()
+  params.set('view', 'list')
   params.set('scope', 'work')
   params.set('keyword', workName)
-  params.set('returnTo', '/home')
 
-  return `/search?${params.toString()}`
+  return `/explore?${params.toString()}`
 }
 
 function HomeWorkPosterCard({ work }: { work: HomeWorkPreviewItem }) {
@@ -224,6 +225,14 @@ export function HomePage() {
     [worksQuery.data],
   )
 
+  useEffect(() => {
+    if (welcomeProfile == null) {
+      return
+    }
+
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.pathname, location.search, navigate, welcomeProfile])
+
   return (
     <main className="app-shell discover-shell">
       <Toast
@@ -236,9 +245,9 @@ export function HomePage() {
         position="top"
         onClose={() => setWelcomeProfile(null)}
       />
+      {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />
-      {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />
       <HomeReviewPreviewSection />
     </main>

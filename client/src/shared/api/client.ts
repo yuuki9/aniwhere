@@ -10,6 +10,32 @@ type ApiRequestInit = RequestInit & {
   authToken?: string | null
 }
 
+function removeHeaderUnsafeCharacters(value: string) {
+  return Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0)
+      return code > 31 && (code < 127 || code > 159) && code !== 0x2028 && code !== 0x2029
+    })
+    .join('')
+}
+
+function toAuthorizationHeaderValue(authToken: string | null | undefined) {
+  const trimmed = authToken?.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const withoutBearer = trimmed.replace(/^Bearer[\s\u00A0]+/i, '')
+  const headerSafeToken = withoutBearer
+    .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
+    .replace(/[\s\u00A0]+/g, '')
+  const normalizedToken = removeHeaderUnsafeCharacters(headerSafeToken)
+    .replace(/[\s\u00A0]+/g, '')
+    .trim()
+
+  return normalizedToken ? `Bearer ${normalizedToken}` : null
+}
+
 export function toQueryString(params: QueryParams) {
   const search = new URLSearchParams()
 
@@ -43,8 +69,9 @@ export async function request<T>(path: string, init?: ApiRequestInit): Promise<T
   if (init?.body != null && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
-  if (resolvedAuthToken && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${resolvedAuthToken}`)
+  const authorization = toAuthorizationHeaderValue(resolvedAuthToken)
+  if (authorization && !headers.has('Authorization')) {
+    headers.set('Authorization', authorization)
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -68,8 +95,9 @@ export async function requestForm<T>(path: string, body: FormData, init?: ApiReq
   const headers = new Headers(init?.headers)
   const resolvedAuthToken = authToken === undefined ? getStoredAccessToken() : authToken
 
-  if (resolvedAuthToken && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${resolvedAuthToken}`)
+  const authorization = toAuthorizationHeaderValue(resolvedAuthToken)
+  if (authorization && !headers.has('Authorization')) {
+    headers.set('Authorization', authorization)
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {

@@ -1,16 +1,7 @@
-import type {
-  AdminShopPhoto,
-  CreatePointGrantRequest,
-  PointGrantRequest,
-  PointGrantStatus,
-} from './types'
+import type { CreatePointGrantRequest, PointGrantRequest, PointGrantStatus } from './types'
 
-const SHOP_PHOTOS_STORAGE_KEY = 'aniwhere.admin.shop-photos.v1'
 const POINT_GRANTS_STORAGE_KEY = 'aniwhere.admin.point-grants.v1'
-const ADMIN_UPLOAD_ENDPOINT = import.meta.env.VITE_ADMIN_UPLOAD_ENDPOINT
 const ADMIN_POINT_ENDPOINT = import.meta.env.VITE_ADMIN_POINT_ENDPOINT
-
-type ShopPhotoMap = Record<string, AdminShopPhoto[]>
 
 function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') {
@@ -30,7 +21,11 @@ function writeStorage<T>(key: string, value: T) {
     return
   }
 
-  window.localStorage.setItem(key, JSON.stringify(value))
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Local admin queue writes are best-effort because WebView storage can be unavailable.
+  }
 }
 
 function createId(prefix: string) {
@@ -39,24 +34,6 @@ function createId(prefix: string) {
   }
 
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result)
-        return
-      }
-
-      reject(new Error('이미지 미리보기를 만들지 못했습니다.'))
-    }
-
-    reader.onerror = () => reject(new Error('이미지를 읽지 못했습니다.'))
-    reader.readAsDataURL(file)
-  })
 }
 
 function normalizePointGrant(payload: Partial<PointGrantRequest>, fallback: PointGrantRequest): PointGrantRequest {
@@ -69,62 +46,12 @@ function normalizePointGrant(payload: Partial<PointGrantRequest>, fallback: Poin
   }
 }
 
-export async function getShopPhotos(shopId: number) {
-  const photoMap = readStorage<ShopPhotoMap>(SHOP_PHOTOS_STORAGE_KEY, {})
-  return photoMap[String(shopId)] ?? []
-}
-
-export async function uploadShopPhotos(shopId: number, files: File[]) {
-  if (files.length === 0) {
-    return getShopPhotos(shopId)
+async function readResponseJson(response: Response) {
+  try {
+    return (await response.json()) as Partial<PointGrantRequest>
+  } catch {
+    return null
   }
-
-  if (ADMIN_UPLOAD_ENDPOINT) {
-    const formData = new FormData()
-    formData.set('shopId', String(shopId))
-    files.forEach((file) => {
-      formData.append('files', file)
-    })
-
-    const response = await fetch(ADMIN_UPLOAD_ENDPOINT, {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (response.ok) {
-      const payload = (await response.json()) as { photos?: AdminShopPhoto[] }
-      if (payload.photos) {
-        const currentMap = readStorage<ShopPhotoMap>(SHOP_PHOTOS_STORAGE_KEY, {})
-        currentMap[String(shopId)] = payload.photos
-        writeStorage(SHOP_PHOTOS_STORAGE_KEY, currentMap)
-        return payload.photos
-      }
-    }
-  }
-
-  const nextPhotos = await Promise.all(
-    files.map(async (file) => ({
-      id: createId('photo'),
-      shopId,
-      name: file.name,
-      dataUrl: await fileToDataUrl(file),
-      createdAt: new Date().toISOString(),
-    })),
-  )
-
-  const photoMap = readStorage<ShopPhotoMap>(SHOP_PHOTOS_STORAGE_KEY, {})
-  const merged = [...nextPhotos, ...(photoMap[String(shopId)] ?? [])].slice(0, 12)
-  photoMap[String(shopId)] = merged
-  writeStorage(SHOP_PHOTOS_STORAGE_KEY, photoMap)
-  return merged
-}
-
-export async function removeShopPhoto(shopId: number, photoId: string) {
-  const photoMap = readStorage<ShopPhotoMap>(SHOP_PHOTOS_STORAGE_KEY, {})
-  const next = (photoMap[String(shopId)] ?? []).filter((photo) => photo.id !== photoId)
-  photoMap[String(shopId)] = next
-  writeStorage(SHOP_PHOTOS_STORAGE_KEY, photoMap)
-  return next
 }
 
 export async function listPointGrantRequests() {
@@ -156,7 +83,7 @@ export async function queuePointGrantRequest(payload: CreatePointGrantRequest) {
         body: JSON.stringify(payload),
       })
 
-      const result = response.ok ? await response.json() : null
+      const result = response.ok ? await readResponseJson(response) : null
       const normalized = normalizePointGrant(result, {
         ...fallback,
         status: response.ok ? 'SENT' : 'FAILED',

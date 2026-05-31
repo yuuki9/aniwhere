@@ -1,11 +1,5 @@
-/* Admin and shop-detail route styles extracted from App.css. */
+/* Admin route styles extracted from App.css. */
 
-.admin-shell {
-  gap: 20px;
-  padding-bottom: 48px;
-}
-
-.admin-unlock-card,
 .admin-panel,
 .admin-hub-card,
 .admin-summary-card {
@@ -14,23 +8,11 @@
   border-radius: var(--ait-radius-4xl);
 }
 
-.admin-unlock-card {
-  display: grid;
-  gap: 16px;
-  padding: 28px;
-}
-
-.admin-unlock-head,
-.admin-console-topbar,
-.shop-detail-topbar {
+.admin-console-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--ait-space-6);
-}
-
-.admin-unlock-head {
-  justify-content: flex-start;
 }
 
 .admin-console-topbar {
@@ -48,16 +30,34 @@
   font-size: 1.15rem;
 }
 
-.admin-unlock-form,
-.admin-action-row,
-.shop-detail-summary-meta {
+.admin-home-head {
+  display: grid;
+  gap: var(--ait-space-2);
+  padding: var(--ait-space-7) 0 var(--ait-space-3);
+}
+
+.admin-home-shell.admin-shop-crud-shell {
+  width: min(560px, 100%);
+  padding: 0 var(--ait-space-5) var(--ait-space-8);
+}
+
+.admin-home-head h1 {
+  margin: 0;
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-display-sm);
+  line-height: var(--ait-line-height-title);
+}
+
+.admin-home-head p {
+  margin: 0;
+  color: var(--ait-color-text-tertiary);
+  font-size: var(--ait-font-size-body-md);
+}
+
+.admin-action-row {
   display: flex;
   gap: var(--ait-space-6);
   flex-wrap: wrap;
-}
-
-.admin-preview-button {
-  justify-content: center;
 }
 
 .admin-summary-grid,
@@ -70,16 +70,37 @@
 
 .admin-hub-grid {
   gap: var(--ait-space-7);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .admin-hub-card {
   display: grid;
-  gap: var(--ait-space-5);
-  min-height: 180px;
-  padding: var(--ait-space-8);
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ait-space-4);
+  min-height: 0;
+  padding: var(--ait-space-5);
   color: inherit;
   text-decoration: none;
+}
+
+.admin-hub-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ait-radius-2xl);
+  background: var(--admin-shop-brand-bg);
+  color: var(--ait-color-brand-pressed);
+  font-size: var(--ait-font-size-title-md);
+  font-weight: 900;
+}
+
+.admin-hub-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ait-space-2);
 }
 
 .admin-hub-card strong {
@@ -92,6 +113,27 @@
   color: var(--ait-color-text-tertiary);
   font-size: var(--ait-font-size-body-sm);
   line-height: var(--ait-line-height-body);
+  overflow-wrap: anywhere;
+}
+
+.admin-hub-card-status {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: var(--ait-radius-full);
+  background: rgba(29, 78, 216, 0.08);
+  color: var(--ait-color-brand-pressed);
+  font-size: var(--ait-font-size-caption);
+  font-weight: 800;
+}
+
+.admin-hub-card-disabled {
+  background: var(--ait-color-gray-50);
+  color: var(--ait-color-text-tertiary);
+}
+
+.admin-hub-card-disabled .admin-hub-card-status {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--ait-color-text-tertiary);
 }
 
 .admin-summary-card {
@@ -1104,6 +1146,16 @@
   width: 100%;
 }
 
+.admin-shop-work-type-options {
+  max-height: none;
+  overflow: visible;
+}
+
+.admin-shop-work-type-option {
+  width: 100%;
+  font: inherit;
+}
+
 .admin-shop-work-search-combobox {
   display: grid;
   gap: 0;
@@ -1504,117 +1556,6 @@
   font-weight: 700;
 }
 
-.shop-detail-media-section,
-.shop-detail-summary-card,
-.shop-detail-info-card,
-.shop-detail-works-card,
-.shop-detail-links-card {
-  background: var(--ait-color-gray-0);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: var(--ait-radius-4xl);
-}
-
-.shop-detail-shell {
-  width: min(var(--ait-size-content-compact), 100%);
-  min-height: 100dvh;
-  background: var(--ait-color-gray-0);
-}
-
-.shop-detail-media-grid {
-  display: grid;
-  gap: var(--ait-space-5);
-  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-}
-
-.shop-detail-media-main img,
-.shop-detail-media-tile img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 22px;
-}
-
-.shop-detail-media-main {
-  min-height: 320px;
-}
-
-.shop-detail-media-stack {
-  display: grid;
-  gap: var(--ait-space-5);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.shop-detail-media-tile {
-  min-height: 154px;
-}
-
-.shop-detail-summary-card,
-.shop-detail-info-card,
-.shop-detail-works-card,
-.shop-detail-links-card {
-  display: grid;
-  gap: 16px;
-  padding: 24px;
-}
-
-.shop-detail-summary-head {
-  align-items: flex-start;
-}
-
-.shop-detail-summary-head h1 {
-  margin-top: 8px;
-  color: var(--ait-color-gray-900);
-  font-size: clamp(1.8rem, 2vw, 2.4rem);
-}
-
-.shop-detail-summary-head p,
-.shop-detail-summary-meta span,
-.shop-detail-summary-ai p {
-  color: var(--ait-color-text-tertiary);
-}
-
-.shop-detail-summary-meta {
-  gap: var(--ait-space-5);
-}
-
-.shop-detail-summary-meta span {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: var(--ait-radius-full);
-  background: var(--ait-color-gray-50);
-  font-size: 0.88rem;
-}
-
-.shop-detail-summary-ai {
-  display: grid;
-  gap: var(--ait-space-4);
-  padding: 18px;
-  background: var(--ait-color-blue-50);
-  border: 1px solid rgba(59, 130, 246, 0.16);
-  border-radius: var(--ait-radius-2xl);
-}
-
-.shop-detail-info-list {
-  display: grid;
-  gap: 16px;
-}
-
-.shop-detail-info-list div {
-  display: grid;
-  gap: var(--ait-space-3);
-}
-
-.shop-detail-info-list span {
-  color: var(--ait-color-text-tertiary);
-  font-size: 0.88rem;
-}
-
-.shop-detail-info-list strong {
-  color: var(--ait-color-gray-900);
-  font-size: 1rem;
-}
-
 @media (max-width: 1024px) {
   .admin-summary-grid,
   .admin-hub-grid,
@@ -1624,15 +1565,16 @@
   }
 }
 
+@media (min-width: 720px) {
+  .admin-hub-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
 
   .admin-form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .admin-shell {
-    gap: var(--ait-space-7);
-    padding-bottom: 28px;
   }
 
   .admin-shop-crud-shell {
@@ -1640,13 +1582,11 @@
     padding: 0 0 40px;
   }
 
-  .admin-unlock-card,
   .admin-panel,
   .admin-summary-card {
     border-radius: 22px;
   }
 
-  .admin-unlock-card,
   .admin-panel {
     padding: 16px;
     gap: var(--ait-space-7);
@@ -1723,15 +1663,4 @@
     flex-direction: column-reverse;
   }
 
-  .shop-detail-media-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .shop-detail-media-main {
-    min-height: 240px;
-  }
-
-  .shop-detail-media-tile {
-    min-height: 124px;
-  }
 }

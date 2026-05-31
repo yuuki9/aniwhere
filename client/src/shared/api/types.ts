@@ -37,6 +37,7 @@ export type PageResponse<T> = {
 }
 
 export type ShopStatus = 'ACTIVE' | 'CLOSED' | 'UNVERIFIED'
+export type ShopSort = 'NEWEST' | 'REVIEW_COUNT_DESC' | 'FAVORITE_COUNT_DESC'
 export type ShopLinkType = 'BLOG' | 'INSTA' | 'X' | 'PLACE' | 'HOMEPAGE'
 
 export type ShopLink = {
@@ -60,6 +61,7 @@ export type WorkSummary = {
   id: number
   name: string
   coverUrl: string | null
+  type?: WorkType | null
 }
 
 export type WorkCatalogItem = WorkSummary & {
@@ -113,6 +115,7 @@ export type Shop = {
   description: string | null
   averageRating: number | null
   reviewCount: number
+  favoriteCount: number
   createdAt: string
   updatedAt: string
 }
@@ -131,10 +134,16 @@ export type FacetWorkTypeItem = {
   label: string
 }
 
+export type FacetSortItem = {
+  value: ShopSort
+  label: string
+}
+
 export type ShopFacetResponse = {
   regions: FacetRegionItem[]
   categories: FacetCategoryItem[]
   workTypes: FacetWorkTypeItem[]
+  sorts: FacetSortItem[]
 }
 
 export type ShopRequest = {
@@ -148,14 +157,6 @@ export type ShopRequest = {
   workIds: number[]
   status: ShopStatus
   visitTip?: string | null
-}
-
-export type AdminShopPhoto = {
-  id: string
-  shopId: number
-  name: string
-  dataUrl: string
-  createdAt: string
 }
 
 export type PointGrantStatus = 'QUEUED' | 'SENT' | 'FAILED'
@@ -220,7 +221,7 @@ export type ShopReview = {
 export type ShopSearchParams = {
   page?: number
   size?: number
-  sort?: string[]
+  sort?: ShopSort
   regionIds?: number[]
   categoryIds?: number[]
   keyword?: string
@@ -230,10 +231,16 @@ export type ShopSearchParams = {
   status?: ShopStatus
 }
 
+export type NearbyShopParams = {
+  lat: number
+  lng: number
+}
+
 export type ShopFacetParams = {
   includeRegions?: boolean
   includeCategories?: boolean
   includeWorkTypes?: boolean
+  includeSorts?: boolean
 }
 
 export type PagingParams = {
@@ -294,6 +301,7 @@ export type UserSummary = {
   id: number
   userKey: number
   nickname: string | null
+  emojiIconFilename: string | null
   status: string
   role: string
   lastLoginAt: string | null
@@ -307,6 +315,7 @@ export type NicknameAvailabilityResult = {
 
 export type UpdateNicknamePayload = {
   nickname: string
+  emojiIconFilename?: string | null
 }
 
 export type Unit = Record<string, never>

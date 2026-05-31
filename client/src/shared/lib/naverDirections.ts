@@ -10,6 +10,8 @@ export type NaverDirectionOrigin = {
   name?: string
 }
 
+const NAVER_MAP_APP_NAME = 'aniwhere'
+
 export function canBuildNaverWebDirectionUrl(target: NaverDirectionTarget | null | undefined) {
   return Boolean(
     target &&
@@ -38,6 +40,32 @@ export function buildNaverWebDirectionUrl(target: NaverDirectionTarget, origin?:
   return `https://m.map.naver.com/route.nhn?${params.toString()}`
 }
 
+export function buildNaverAppDirectionUrl(target: NaverDirectionTarget, origin?: NaverDirectionOrigin | null) {
+  const params = new URLSearchParams({
+    dlat: String(target.latitude),
+    dlng: String(target.longitude),
+    dname: target.name.trim(),
+    appname: NAVER_MAP_APP_NAME,
+  })
+
+  if (origin && Number.isFinite(origin.latitude) && Number.isFinite(origin.longitude)) {
+    params.set('slat', String(origin.latitude))
+    params.set('slng', String(origin.longitude))
+    params.set('sname', origin.name?.trim() || '현재 위치')
+  }
+
+  return `nmap://route/public?${params.toString()}`
+}
+
 export function buildNaverMapSearchUrl(query: string) {
   return `https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(query)}`
+}
+
+export function buildNaverAppSearchUrl(query: string) {
+  const params = new URLSearchParams({
+    query,
+    appname: NAVER_MAP_APP_NAME,
+  })
+
+  return `nmap://search?${params.toString()}`
 }
