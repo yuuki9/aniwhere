@@ -43,6 +43,7 @@ export function MapReviewStation({
   const isEditing = review != null
   const initialRating = review?.rating ?? 0
   const initialContent = review?.content ?? ''
+  const existingReviewImages = review?.images ?? []
   const [rating, setRating] = useState(initialRating)
   const [content, setContent] = useState(initialContent)
   const [images, setImages] = useState<ReviewImageSelection[]>([])
@@ -233,9 +234,9 @@ export function MapReviewStation({
             <span className="map-review-station-label">사진</span>
             <span>{images.length}/{MAX_REVIEW_IMAGES}</span>
           </div>
-          {isEditing && review.images.length > 0 ? (
+          {isEditing && existingReviewImages.length > 0 ? (
             <div className="map-review-existing-photos" aria-label="기존 리뷰 사진">
-              {review.images.map((image) => (
+              {existingReviewImages.map((image) => (
                 <span className="map-review-existing-photo" key={`${image.id ?? image.url}-${image.sortOrder}`}>
                   <img alt="기존 리뷰 사진" src={image.url} />
                 </span>

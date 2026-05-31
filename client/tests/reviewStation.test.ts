@@ -48,6 +48,8 @@ test('explore review station creates Swagger shop reviews from the selected shop
   assert.match(station, /import \{ useBlocker \} from 'react-router-dom'/)
   assert.match(station, /import \{ Button, IconButton, Modal, Rating, Top \} from '@aniwhere\/tds-mobile'/)
   assert.match(station, /review\?: ShopReview \| null/)
+  assert.match(station, /const existingReviewImages = review\?\.images \?\? \[\]/)
+  assert.match(station, /existingReviewImages\.length > 0/)
   assert.match(station, /isEditing \? '리뷰 수정하기' : '리뷰 작성하기'/)
   assert.match(station, /accept="image\/\*"/)
   assert.match(station, /MAX_REVIEW_IMAGES = 5/)
