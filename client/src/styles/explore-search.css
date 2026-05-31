@@ -2658,14 +2658,6 @@
   opacity: 0.56;
 }
 
-.map-review-photo-help {
-  margin: 0;
-  color: var(--ait-color-text-tertiary);
-  font-size: var(--ait-font-size-label);
-  font-weight: 700;
-  line-height: var(--ait-line-height-body);
-}
-
 .map-review-station {
   z-index: 1300;
   display: flex;
@@ -2682,59 +2674,39 @@
   flex-direction: column;
   gap: var(--ait-space-7);
   overflow-y: auto;
-  padding: max(16px, env(safe-area-inset-top)) 20px 112px;
+  padding: max(22px, env(safe-area-inset-top)) 20px 112px;
 }
 
-.map-review-station-header {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  align-items: start;
-  gap: var(--ait-space-4);
+.map-review-shop-summary {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.map-review-station-back-icon {
-  width: 36px;
-  height: 36px;
-  margin-top: 2px;
-  background: transparent;
-}
-
-.map-review-station-back-icon svg {
-  display: block;
-}
-
-.map-review-station-top {
-  min-width: 0;
-  padding: 0;
-}
-
-.map-review-station-top.ait-top {
-  gap: var(--ait-space-2);
-}
-
-.map-review-station-top .ait-top-copy {
-  gap: var(--ait-space-2);
-}
-
-.map-review-station-top .ait-top-copy h1 {
-  margin: 0;
-}
-
-.map-review-station-top .ait-top-title-paragraph {
+.map-review-shop-summary strong {
+  overflow: hidden;
   color: var(--ait-color-gray-900);
   font-size: var(--ait-font-size-title-md);
   font-weight: 900;
   line-height: var(--ait-line-height-title-sm);
-}
-
-.map-review-station-top .ait-top-subtitle-bottom,
-.map-review-station-top .ait-top-subtitle-paragraph {
-  overflow: hidden;
-  color: var(--ait-color-text-tertiary);
-  font-size: var(--ait-font-size-label);
-  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.map-review-rating-field {
+  justify-items: center;
+  gap: var(--ait-space-5);
+  padding: var(--ait-space-2) 0 var(--ait-space-1);
+  text-align: center;
+}
+
+.map-review-rating-question {
+  color: var(--ait-color-gray-900);
+  font-size: var(--ait-font-size-title-sm);
+  font-weight: 900;
+  line-height: var(--ait-line-height-title-sm);
 }
 
 .map-review-station-field {
@@ -2776,7 +2748,7 @@
 
 .map-review-textarea {
   width: 100%;
-  min-height: 172px;
+  min-height: 180px;
   padding: 16px;
   border: 1px solid var(--ait-color-border);
   border-radius: var(--ait-radius-2xl);

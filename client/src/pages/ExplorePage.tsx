@@ -800,7 +800,7 @@ export function ExplorePage() {
     setEditingReview(null)
   }
 
-  const openReviewStation = (review?: ShopReview) => {
+  const openReviewStation = (review: ShopReview | null = null) => {
     if (!detailShop) {
       return
     }
@@ -814,6 +814,8 @@ export function ExplorePage() {
     pushSearchParams(next)
     setAssistantOpen(false)
   }
+  const openCreateReviewStation = () => openReviewStation(null)
+  const openEditReviewStation = (review: ShopReview) => openReviewStation(review)
 
   const restoreListView = () => {
     const next = new URLSearchParams(searchParams)
@@ -1543,8 +1545,8 @@ export function ExplorePage() {
                         ? reviewDeleteMutation.variables.reviewId
                         : null
                     }
-                    onStartReview={openReviewStation}
-                    onEditReview={openReviewStation}
+                    onStartReview={openCreateReviewStation}
+                    onEditReview={openEditReviewStation}
                     onDeleteReview={(review) =>
                       reviewDeleteMutation.mutate({ shopId: review.shopId, reviewId: review.id })
                     }
@@ -1569,7 +1571,6 @@ export function ExplorePage() {
                     : null
               }
               isSubmitting={reviewCreateMutation.isPending || reviewUpdateMutation.isPending}
-              onClose={closeReviewStation}
               onSubmit={(payload) => {
                 if (editingReview != null) {
                   reviewUpdateMutation.mutate({

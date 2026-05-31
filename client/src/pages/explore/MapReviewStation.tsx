@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useBlocker } from 'react-router-dom'
-import { Button, IconButton, Modal, Rating, Top } from '@aniwhere/tds-mobile'
+import { Button, Modal, Rating } from '@aniwhere/tds-mobile'
 import type { CreateShopReviewPayload, Shop, ShopReview, UpdateShopReviewPayload } from '../../shared/api/types'
 
 const MAX_REVIEW_IMAGES = 5
 const MAX_REVIEW_IMAGE_SIZE = 10 * 1024 * 1024
+const MIN_REVIEW_CONTENT_LENGTH = 10
 
 type ReviewImageSelection = {
   id: string
@@ -18,7 +19,6 @@ type MapReviewStationProps = {
   review?: ShopReview | null
   errorMessage?: string | null
   isSubmitting: boolean
-  onClose: () => void
   onSubmit: (payload: CreateShopReviewPayload | UpdateShopReviewPayload) => void
 }
 
@@ -35,7 +35,6 @@ export function MapReviewStation({
   review = null,
   errorMessage,
   isSubmitting,
-  onClose,
   onSubmit,
 }: MapReviewStationProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -48,15 +47,15 @@ export function MapReviewStation({
   const [content, setContent] = useState(initialContent)
   const [images, setImages] = useState<ReviewImageSelection[]>([])
   const [localError, setLocalError] = useState<string | null>(null)
-  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
-  const [pendingStationClose, setPendingStationClose] = useState(false)
   const allowNavigationRef = useRef(false)
   const normalizedContent = content.trim()
+  const submitLabel = isEditing ? '수정 완료' : '작성 완료'
   const hasChanges =
     isEditing &&
     (rating !== initialRating || normalizedContent !== initialContent.trim() || images.length > 0)
   const hasDraft = isEditing ? hasChanges : rating > 0 || normalizedContent.length > 0 || images.length > 0
-  const canSubmit = rating > 0 && normalizedContent.length > 0 && !isSubmitting && (!isEditing || hasChanges)
+  const canSubmit =
+    rating > 0 && normalizedContent.length > 0 && !isSubmitting && (!isEditing || hasChanges)
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
     if (allowNavigationRef.current || isSubmitting || !hasDraft) {
       return false
@@ -64,7 +63,7 @@ export function MapReviewStation({
 
     return currentLocation.pathname !== nextLocation.pathname || currentLocation.search !== nextLocation.search
   })
-  const isLeaveConfirmOpen = leaveConfirmOpen || blocker.state === 'blocked'
+  const isLeaveConfirmOpen = blocker.state === 'blocked'
 
   useEffect(() => {
     imagesRef.current = images
@@ -122,6 +121,16 @@ export function MapReviewStation({
     })
   }
 
+  const handleRatingChange = (nextRating: number) => {
+    setRating(nextRating)
+    setLocalError(null)
+  }
+
+  const handleContentChange = (nextContent: string) => {
+    setContent(nextContent)
+    setLocalError(null)
+  }
+
   const handleSubmit = () => {
     if (rating <= 0) {
       setLocalError('별점을 선택해 주세요.')
@@ -130,6 +139,11 @@ export function MapReviewStation({
 
     if (!normalizedContent) {
       setLocalError('리뷰 내용을 입력해 주세요.')
+      return
+    }
+
+    if (normalizedContent.length < MIN_REVIEW_CONTENT_LENGTH) {
+      setLocalError(`리뷰를 ${MIN_REVIEW_CONTENT_LENGTH}자 이상 작성해 주세요.`)
       return
     }
 
@@ -142,20 +156,7 @@ export function MapReviewStation({
     })
   }
 
-  const requestClose = () => {
-    if (hasDraft && !isSubmitting) {
-      setPendingStationClose(true)
-      setLeaveConfirmOpen(true)
-      return
-    }
-
-    onClose()
-  }
-
   const cancelLeave = () => {
-    setPendingStationClose(false)
-    setLeaveConfirmOpen(false)
-
     if (blocker.state === 'blocked') {
       blocker.reset()
     }
@@ -163,16 +164,9 @@ export function MapReviewStation({
 
   const confirmLeave = () => {
     allowNavigationRef.current = true
-    setPendingStationClose(false)
-    setLeaveConfirmOpen(false)
 
     if (blocker.state === 'blocked') {
       blocker.proceed()
-      return
-    }
-
-    if (pendingStationClose) {
-      onClose()
     }
   }
 
@@ -182,27 +176,12 @@ export function MapReviewStation({
       aria-label={`${shop.name} ${isEditing ? '리뷰 수정' : '리뷰 작성'}`}
     >
       <div className="map-review-station-body">
-        <header className="map-review-station-header">
-          <IconButton
-            aria-label="리뷰 작성 닫기"
-            className="map-review-station-back-icon"
-            color="var(--ait-color-gray-900)"
-            iconSize={24}
-            name="icon-arrow-left-mono"
-            type="button"
-            variant="clear"
-            onClick={requestClose}
-          />
-          <Top
-            className="map-review-station-top"
-            subtitleBottom={<Top.SubtitleParagraph>{shop.name}</Top.SubtitleParagraph>}
-            title={<Top.TitleParagraph size={24}>{isEditing ? '리뷰 수정하기' : '리뷰 작성하기'}</Top.TitleParagraph>}
-            upperGap={0}
-          />
+        <header className="map-review-shop-summary">
+          <strong>{shop.name}</strong>
         </header>
 
-        <div className="map-review-station-field">
-          <span className="map-review-station-label">별점</span>
+        <div className="map-review-station-field map-review-rating-field">
+          <span className="map-review-rating-question">방문이 어떠셨나요?</span>
           <Rating
             aria-label="별점 평가"
             aria-valuetext={`5점 만점 중 ${rating}점`}
@@ -211,20 +190,19 @@ export function MapReviewStation({
             readOnly={false}
             size="big"
             value={rating}
-            onValueChange={setRating}
+            onValueChange={handleRatingChange}
           />
         </div>
 
-        <label className="map-review-station-field" htmlFor="map-review-content">
-          <span className="map-review-station-label">리뷰</span>
+        <label className="map-review-station-field map-review-content-field" htmlFor="map-review-content">
           <textarea
             className="map-review-textarea"
             id="map-review-content"
             maxLength={800}
-            placeholder="방문한 매장의 분위기, 굿즈 구성, 찾기 쉬웠던 점을 알려주세요."
+            placeholder="리뷰를 10자 이상 작성해 주세요."
             rows={7}
             value={content}
-            onChange={(event) => setContent(event.target.value)}
+            onChange={(event) => handleContentChange(event.target.value)}
           />
         </label>
 
@@ -241,9 +219,6 @@ export function MapReviewStation({
                 </span>
               ))}
             </div>
-          ) : null}
-          {isEditing ? (
-            <p className="map-review-photo-help">기존 사진은 유지돼요. 새 사진을 선택하면 함께 첨부돼요.</p>
           ) : null}
           <input
             ref={fileInputRef}
@@ -286,23 +261,23 @@ export function MapReviewStation({
 
       <div className="map-review-station-cta">
         <Button color="primary" display="block" loading={isSubmitting} disabled={!canSubmit} onClick={handleSubmit}>
-          {isEditing ? '리뷰 수정하기' : '리뷰 등록하기'}
+          {submitLabel}
         </Button>
       </div>
 
-      <Modal open={isLeaveConfirmOpen} onOpenChange={(open) => (!open ? cancelLeave() : setLeaveConfirmOpen(open))}>
+      <Modal open={isLeaveConfirmOpen} onOpenChange={(open) => (!open ? cancelLeave() : undefined)}>
         <Modal.Overlay onClick={cancelLeave} />
         <Modal.Content className="map-review-leave-modal" aria-labelledby="map-review-leave-title" aria-modal="true">
           <div className="map-review-leave-copy">
-            <strong id="map-review-leave-title">작성 중인 리뷰를 나갈까요?</strong>
-            <p>입력한 별점, 내용, 사진은 저장되지 않아요.</p>
+            <strong id="map-review-leave-title">리뷰 작성을 그만할까요?</strong>
+            <p>지금까지 입력한 내용은 저장되지 않아요.</p>
           </div>
           <div className="map-review-leave-actions">
             <Button color="dark" display="block" variant="weak" onClick={cancelLeave}>
               계속 작성
             </Button>
             <Button color="danger" display="block" onClick={confirmLeave}>
-              나가기
+              그만하기
             </Button>
           </div>
         </Modal.Content>
