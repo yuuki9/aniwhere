@@ -32,7 +32,9 @@ interface ShopReviewUseCase {
         reviewId: Long,
         rating: Int? = null,
         content: String? = null,
-        imageParts: List<ImageUploadPart>? = null,
+        replaceImages: Boolean = false,
+        imageParts: List<ImageUploadPart> = emptyList(),
+        existingImageIds: List<Long> = emptyList(),
     ): ShopReview
     fun deleteReview(actorUserId: Long, shopId: Long, reviewId: Long)
     fun updateReviewStatus(

@@ -24,6 +24,11 @@ interface ShopReviewPersistencePort {
     fun saveReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>)
     fun findReviewImageS3Keys(reviewId: Long): List<String>
     fun replaceReviewImages(reviewId: Long, rows: List<ShopReviewImagePersistenceRow>)
+    fun swapReviewImages(
+        reviewId: Long,
+        newImageRows: List<ShopReviewImagePersistenceRow>,
+        existingImageIds: List<Long>,
+    ): List<String>
     fun deleteById(reviewId: Long)
     fun recomputeShopRating(shopId: Long): ShopRatingAggregate
     fun existsReviewLike(reviewId: Long, userId: Long): Boolean

@@ -125,6 +125,47 @@ class ShopReviewPersistenceAdapter(
     }
 
     @Transactional(readOnly = false)
+    override fun swapReviewImages(
+        reviewId: Long,
+        newImageRows: List<ShopReviewImagePersistenceRow>,
+        existingImageIds: List<Long>,
+    ): List<String> {
+        val entity = reviewRepo.findByIdOrNull(reviewId)
+            ?: throw EntityNotFoundException("Review not found: $reviewId")
+        val oldImages = entity.images.toList()
+        val oldById = oldImages.associateBy { it.id }
+        val existingImageIdSet = existingImageIds.toSet()
+        val existingRows = existingImageIds.mapNotNull { oldById[it] }
+        val removedKeys = mutableListOf<String>()
+        oldImages.forEach { image ->
+            if (image.id !in existingImageIdSet) {
+                removedKeys.add(image.s3Key)
+            }
+            entity.images.remove(image)
+        }
+        existingRows.forEachIndexed { index, image ->
+            entity.images.add(
+                ShopReviewImageEntity(
+                    review = entity,
+                    s3Key = image.s3Key,
+                    sortOrder = index,
+                ),
+            )
+        }
+        newImageRows.forEach { row ->
+            entity.images.add(
+                ShopReviewImageEntity(
+                    review = entity,
+                    s3Key = row.s3Key,
+                    sortOrder = row.sortOrder,
+                ),
+            )
+        }
+        reviewRepo.save(entity)
+        return removedKeys
+    }
+
+    @Transactional(readOnly = false)
     override fun deleteById(reviewId: Long) {
         reviewRepo.deleteById(reviewId)
     }
