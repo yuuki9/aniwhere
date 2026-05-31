@@ -82,10 +82,9 @@ function getShopAddressLabel(shop: MapResultShop) {
 function PhotoMoreOverlay({ count }: { count: number }) {
   return (
     <span className="map-photo-more-overlay" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M4.75 7.75A2.75 2.75 0 0 1 7.5 5h9A2.75 2.75 0 0 1 19.25 7.75v8.5A2.75 2.75 0 0 1 16.5 19h-9a2.75 2.75 0 0 1-2.75-2.75v-8.5Z" />
-        <path d="m7.5 15 2.25-2.4 1.85 1.9 2.65-3.1L16.5 15H7.5Z" />
-        <circle cx="8.4" cy="8.6" r="1.1" />
+      <svg className="map-photo-more-icon" viewBox="0 0 24 24">
+        <path d="M4.5 8.25A2.25 2.25 0 0 1 6.75 6h2.1l1.15-1.55h4L15.15 6h2.1a2.25 2.25 0 0 1 2.25 2.25v7.5A2.25 2.25 0 0 1 17.25 18h-10.5A2.25 2.25 0 0 1 4.5 15.75v-7.5Z" />
+        <circle cx="12" cy="12.5" r="3" />
       </svg>
       <strong>더보기 {count}개</strong>
     </span>

@@ -1,4 +1,5 @@
 import { type UIEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { openURL } from '@apps-in-toss/web-framework'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { askMapAssistant } from '../shared/api/llm'
@@ -34,6 +35,8 @@ import {
   shopFacetQueryKey,
 } from '../shared/lib/shopFacetQuery'
 import {
+  buildNaverAppDirectionUrl,
+  buildNaverAppSearchUrl,
   buildNaverMapSearchUrl,
   buildNaverWebDirectionUrl,
   canBuildNaverWebDirectionUrl,
@@ -110,6 +113,37 @@ function getLocationErrorMessage(error: unknown) {
 
 function isSafeExploreReturnTo(returnTo: string | undefined) {
   return returnTo != null && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : null
+}
+
+async function openExternalMapUrl(primaryUrl: string | null, fallbackUrl?: string | null) {
+  if (!primaryUrl && !fallbackUrl) {
+    return
+  }
+
+  if (isAppsInTossRuntime()) {
+    try {
+      if (primaryUrl) {
+        await openURL(primaryUrl)
+        return
+      }
+    } catch {
+      // Fall through to the web fallback when the native map scheme is unavailable.
+    }
+
+    if (fallbackUrl != null) {
+      await openURL(fallbackUrl)
+    }
+    return
+  }
+
+  if (fallbackUrl != null) {
+    window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+
+  if (primaryUrl != null) {
+    window.open(primaryUrl, '_blank', 'noopener,noreferrer')
+  }
 }
 
 type MapBounds = MapViewport['bounds']
@@ -1113,7 +1147,14 @@ export function ExplorePage() {
         effectiveUserLocation ? { ...effectiveUserLocation, name: '현재 위치' } : null,
       )
     : null
+  const naverAppDirectionUrl = naverDirectionTarget && canBuildNaverWebDirectionUrl(naverDirectionTarget)
+    ? buildNaverAppDirectionUrl(
+        naverDirectionTarget,
+        effectiveUserLocation ? { ...effectiveUserLocation, name: '현재 위치' } : null,
+      )
+    : null
   const naverSearchUrl = detailShop ? buildNaverMapSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
+  const naverAppSearchUrl = detailShop ? buildNaverAppSearchUrl(`${detailShop.name} ${detailShop.address}`) : null
   const isFullListView = routeViewMode === 'list' && selectedShopId == null
   const listReviewQueries = useQueries({
     queries: visibleShops.map((shop) => ({
@@ -1394,14 +1435,7 @@ export function ExplorePage() {
   const openNaverDirections = (event?: { stopPropagation: () => void }) => {
     event?.stopPropagation()
 
-    if (naverDirectionUrl) {
-      window.open(naverDirectionUrl, '_blank', 'noopener,noreferrer')
-      return
-    }
-
-    if (naverSearchUrl) {
-      window.open(naverSearchUrl, '_blank', 'noopener,noreferrer')
-    }
+    void openExternalMapUrl(naverAppDirectionUrl ?? naverAppSearchUrl, naverDirectionUrl ?? naverSearchUrl)
   }
 
   const shareShopDetail = async (shop: Shop) => {

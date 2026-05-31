@@ -288,6 +288,26 @@ test('Explore detail summary toggles shop favorites through the Swagger favorite
   assert.ok(cssRuleBodies(styles, '.map-place-favorite-icon').some((rule) => /stroke:\s*currentcolor;/.test(rule)))
 })
 
+test('Explore directions prefer the Naver Maps app scheme in Apps in Toss with web fallback', () => {
+  const source = explorePageSource()
+  const directions = fs.readFileSync(new URL('../src/shared/lib/naverDirections.ts', import.meta.url), 'utf8')
+
+  assert.match(source, /import \{ openURL \} from '@apps-in-toss\/web-framework'/)
+  assert.match(source, /buildNaverAppDirectionUrl/)
+  assert.match(source, /buildNaverAppSearchUrl/)
+  assert.match(source, /const naverAppDirectionUrl =/)
+  assert.match(source, /const naverAppSearchUrl =/)
+  assert.match(source, /async function openExternalMapUrl/)
+  assert.match(source, /isAppsInTossRuntime\(\)/)
+  assert.match(source, /await openURL\(primaryUrl\)/)
+  assert.match(source, /fallbackUrl != null/)
+  assert.match(source, /window\.open\(fallbackUrl/)
+  assert.match(directions, /const NAVER_MAP_APP_NAME = 'aniwhere'/)
+  assert.match(directions, /nmap:\/\/route\/public/)
+  assert.match(directions, /nmap:\/\/search/)
+  assert.match(directions, /appname/)
+})
+
 test('ExplorePage extracts the expanded detail info rows into a focused component', () => {
   const source = explorePageSource()
   const infoSource = mapDetailInfoCardSource()
@@ -408,6 +428,8 @@ test('ExplorePage extracts the expanded detail media section into a focused comp
   assert.match(mediaSource, /<PhotoMoreOverlay count=\{hiddenMediaCount\} \/>/)
   assert.match(mediaSource, /더보기 \{count\}개/)
   assert.match(mediaSource, /map-photo-more-overlay/)
+  assert.match(mediaSource, /className="map-photo-more-icon"/)
+  assert.match(mediaSource, /<circle cx="12" cy="12\.5" r="3"/)
   assert.doesNotMatch(mediaSource, /map-sheet-expanded-drag-handle/)
   assert.doesNotMatch(mediaSource, /shop\.links\.length/)
   assert.doesNotMatch(mediaSource, /shop\.works\.length,\s*4/)
@@ -538,6 +560,7 @@ test('ExplorePage extracts the expanded detail supplement sections into a focuse
   assert.match(supplementSource, /이 작품으로 매장 더 보기/)
   assert.doesNotMatch(supplementSource, /map-sheet-token-cloud/)
   assert.match(supplementSource, /map-sheet-photo-feed/)
+  assert.match(supplementSource, /<img src=\{item\.src\} alt=\{item\.alt\} loading="eager" decoding="async" \/>/)
   assert.doesNotMatch(supplementSource, /map-place-review-photo-strip/)
   assert.match(supplementSource, /MapPhotoViewer/)
   assert.match(supplementSource, /map-photo-viewer-track/)
@@ -550,6 +573,7 @@ test('ExplorePage extracts the expanded detail supplement sections into a focuse
   assert.ok(cssRuleBodies(appCssSource(), '.map-sheet-work-feed').some((rule) => /display:\s*flex;/.test(rule)))
   assert.ok(cssRuleBodies(appCssSource(), '.map-sheet-work-row').some((rule) => /grid-template-columns:\s*44px minmax\(0, 1fr\) auto;/.test(rule)))
   assert.ok(cssRuleBodies(appCssSource(), '.map-sheet-work-cover').some((rule) => /width:\s*44px;/.test(rule)))
+  assert.ok(cssRuleBodies(appCssSource(), '.map-sheet-photo-item').some((rule) => /transform:\s*translateZ\(0\);/.test(rule)))
 })
 test('ExplorePage exposes map viewport search after the map moves', () => {
   const source = explorePageSource()
@@ -776,6 +800,8 @@ test('Explore list cards use available shop summary fields in a carrot-style den
   assert.match(resultsSheet, /shop\.images/)
   assert.match(resultsSheet, /const photos = getResultCardPhotos\(shop, reviewPhotosByShopId\?\.\[shop\.id\]\)/)
   assert.match(resultsSheet, /<ShopPhotoStrip photos=\{photos\} shopName=\{shop\.name\} \/>/)
+  assert.match(resultsSheet, /className="map-photo-more-icon"/)
+  assert.match(resultsSheet, /<circle cx="12" cy="12\.5" r="3"/)
   assert.match(resultsSheet, /더보기 \{count\}개/)
   assert.match(resultsSheet, /className="map-results-card-media"/)
   assert.doesNotMatch(resultsSheet, /getShopSummaryNote/)
@@ -801,6 +827,7 @@ test('Explore list cards use available shop summary fields in a carrot-style den
   assert.ok(cssRuleBodies(styles, '.map-results-card-photo-frame').some((rule) => /3\.5/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.map-results-card-photo-frame').some((rule) => /aspect-ratio:\s*1 \/ 1;/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.map-photo-more-overlay').some((rule) => /backdrop-filter:\s*blur\(3px\);/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-photo-more-icon').some((rule) => /stroke:\s*currentcolor;/.test(rule)))
   assert.equal(cssRuleBodies(styles, '.map-results-card-note').length, 0)
 })
 

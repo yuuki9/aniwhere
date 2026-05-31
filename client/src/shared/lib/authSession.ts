@@ -3,6 +3,15 @@ import { toSafeErrorSummary } from './safeError'
 
 const AUTH_SESSION_STORAGE_KEY = 'aniwhere.auth.session.v1'
 
+function removeHeaderUnsafeCharacters(value: string) {
+  return Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0)
+      return code > 31 && (code < 127 || code > 159) && code !== 0x2028 && code !== 0x2029
+    })
+    .join('')
+}
+
 export type AuthSession = {
   accessToken: string
   refreshToken: string
@@ -17,9 +26,11 @@ function normalizeToken(value: string | null | undefined) {
     return null
   }
 
-  const withoutBearer = trimmed.replace(/^Bearer\s+/i, '')
-  const withoutWrappingQuotes = withoutBearer.replace(/^["']|["']$/g, '')
-  const headerSafeToken = withoutWrappingQuotes.replace(/[\r\n\t]/g, '').trim()
+  const withoutBearer = trimmed.replace(/^Bearer[\s\u00A0]+/i, '')
+  const withoutWrappingQuotes = withoutBearer.replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
+  const headerSafeToken = removeHeaderUnsafeCharacters(withoutWrappingQuotes)
+    .replace(/[\s\u00A0]+/g, '')
+    .trim()
 
   return headerSafeToken || null
 }

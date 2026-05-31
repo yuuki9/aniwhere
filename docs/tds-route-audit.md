@@ -656,6 +656,31 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/explore?sheet=review` textarea and photo rhythm | Product-approved / TDS-informed | The review form keeps the app-owned textarea/photo picker because no confirmed TDS photo attachment primitive is available in the checked scope. The character counter now sits inside the textarea frame at the bottom-right, matching the reference review-writing rhythm without adding a separate row. The textarea uses a fixed 196px frame, the photo section gets the larger post-textarea breathing room from the reference, and the `+ 사진 추가` tile uses the same inline 88px action-card treatment with the reference orange solid border. Selected previews remain adjacent to the add tile, with a smaller top-right remove button so the strip reads as one continuous row. |
 | Runtime verification | Needs sandbox | Source tests verify the API source boundary and viewer grouping. Apps in Toss WebView photo scrolling, safe-area behavior, and image loading should still be checked on device. |
 
+### 2026-05-31 Explore Review Device Polish Follow-up
+
+Official docs checked in the current session:
+
+- TDS Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Menu: https://tossmini-docs.toss.im/tds-mobile/components/menu/
+- TDS Rating: https://tossmini-docs.toss.im/tds-mobile/components/rating/
+- TDS TextArea: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-area/
+- TDS Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/frame/
+- Apps in Toss openURL: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/%ED%99%94%EB%A9%B4
+- Apps in Toss external link guideline: https://developers-apps-in-toss.toss.im/checklist/miniapp-external-link.md
+- Naver Maps URL Scheme: https://guide-gov.ncloud-docs.com/docs/naveropenapiv3-maps-url-scheme-url-scheme
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Review ownership and modified date | Product-approved / API-required | Review cards now mark the current user's own review with `내가 쓴 리뷰예요!` and show an additional `(yy.MM.dd에 수정됨)` label only when `updatedAt` is later than `createdAt`. The badge is app-owned but follows checked Menu/Rating review-card rhythm. |
+| Review station existing photos | Product-approved / API-required | Existing review images render in the same horizontal attachment rail as newly selected images, count toward the 5-image limit, and expose a compact remove button. Swagger still exposes no existing review image ID retention/deletion field on update, so persistent deletion of already-uploaded review images remains a backend contract gap. |
+| Review station vertical rhythm | Product-approved / Regression fix | The review form reduces body gap, textarea-to-photo spacing, and bottom reserve so the photo rail and completion CTA are less likely to split across two mobile viewports. |
+| Photo tab image stability | Product-approved / Regression fix | The masonry photo feed keeps the two-column CSS column layout, but feed images now load eagerly with async decoding and each item gets a compositor hint to avoid WebView scroll-time visual deactivation. |
+| Naver directions | Product-approved / Needs sandbox | Apps in Toss runtime now tries the Naver Maps `nmap://route/public` or `nmap://search` app scheme through `openURL`, then falls back to the existing Naver mobile web URL when the scheme cannot open. The copy remains a directions action, not an app install prompt, to stay within the external-link guideline. Real-device sandbox should confirm iOS/Android scheme handling. |
+| Favorite auth header | Regression fix / Needs sandbox | Auth token normalization now removes duplicate `Bearer`, wrapping quotes, WebView control characters, line/paragraph separators, NBSP, and whitespace before creating the `Authorization` header. Source tests and lint/build pass; the previously reported WebKit pattern error still needs real-device confirmation. |
+| Photo more overlay icon | Product-approved / Regression fix | The more tile keeps `더보기 n개` and now uses a camera/photo glyph instead of a square image frame glyph in both detail and list carousels. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

@@ -45,6 +45,26 @@ function formatReviewDate(value: string) {
     .replace(/\.\s?$/, '')
 }
 
+function formatReviewEditedDate(value: string) {
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: '2-digit',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Seoul',
+  })
+    .format(new Date(value))
+    .replace(/\.\s?/g, '.')
+    .replace(/\.$/, '')
+}
+
+function isReviewEdited(review: ShopReview) {
+  if (!review.updatedAt) {
+    return false
+  }
+
+  return new Date(review.updatedAt).getTime() > new Date(review.createdAt).getTime()
+}
+
 type DetailMediaItem = {
   id: string
   src: string
@@ -543,7 +563,7 @@ export function MapDetailSupplementSections({
                   openReviewPhotoViewer(item)
                 }}
               >
-                <img src={item.src} alt={item.alt} loading="lazy" />
+                <img src={item.src} alt={item.alt} loading="eager" decoding="async" />
                 {item.kind === 'review' ? <span>리뷰</span> : null}
               </button>
             ))}
@@ -601,7 +621,10 @@ export function MapDetailSupplementSections({
           <div className="map-place-review-list">
             {reviews.map((review) => {
               const isMyReview = currentUserId != null && review.authorUserId === currentUserId
-              const reviewDate = review.updatedAt ?? review.createdAt
+              const reviewDate = review.createdAt
+              const reviewEditedLabel = isReviewEdited(review)
+                ? `(${formatReviewEditedDate(review.updatedAt ?? review.createdAt)}에 수정됨)`
+                : null
               const ratingValue = normalizeRating(review.rating)
               const authorEmojiUrl = emojiImageUrl(
                 review.authorEmojiIconFilename ?? (isMyReview ? currentUserEmojiIconFilename : null),
@@ -619,6 +642,7 @@ export function MapDetailSupplementSections({
                     )}
                     <div className="map-place-review-author">
                       <strong>{review.authorNickname}</strong>
+                      {isMyReview ? <span className="map-place-review-owner-badge">내가 쓴 리뷰예요!</span> : null}
                     </div>
                     <ReviewActionMenu
                       isMyReview={isMyReview}
@@ -639,6 +663,9 @@ export function MapDetailSupplementSections({
                       variant="full"
                     />
                     <span>{formatReviewDate(reviewDate)}</span>
+                    {reviewEditedLabel ? (
+                      <span className="map-place-review-edited">{reviewEditedLabel}</span>
+                    ) : null}
                   </div>
                   <ReviewImageCarousel
                     review={review}

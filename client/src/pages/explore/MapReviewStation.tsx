@@ -27,6 +27,10 @@ function getFileId(file: File) {
   return `${file.name}-${file.lastModified}-${file.size}`
 }
 
+function getExistingReviewImageId(image: ShopReview['images'][number], index: number) {
+  return String(image.id ?? `${image.url}-${image.sortOrder}-${index}`)
+}
+
 function filterImageFiles(files: File[]) {
   return files.filter((file) => file.type.startsWith('image/') && file.size <= MAX_REVIEW_IMAGE_SIZE)
 }
@@ -47,14 +51,23 @@ export function MapReviewStation({
   const [rating, setRating] = useState(initialRating)
   const [content, setContent] = useState(initialContent)
   const [images, setImages] = useState<ReviewImageSelection[]>([])
+  const [hiddenExistingImageIds, setHiddenExistingImageIds] = useState<Set<string>>(() => new Set())
   const [localError, setLocalError] = useState<string | null>(null)
   const allowNavigationRef = useRef(false)
   const normalizedContent = content.trim()
+  const visibleExistingReviewImages = existingReviewImages.filter(
+    (image, index) => !hiddenExistingImageIds.has(getExistingReviewImageId(image, index)),
+  )
+  const attachedImageCount = visibleExistingReviewImages.length + images.length
+  const remainingImageSlots = Math.max(0, MAX_REVIEW_IMAGES - attachedImageCount)
   const submitLabel = isEditing ? '수정 완료' : '작성 완료'
   const hasChanges =
     isEditing &&
-    (rating !== initialRating || normalizedContent !== initialContent.trim() || images.length > 0)
-  const hasDraft = isEditing ? hasChanges : rating > 0 || normalizedContent.length > 0 || images.length > 0
+    (rating !== initialRating ||
+      normalizedContent !== initialContent.trim() ||
+      images.length > 0 ||
+      hiddenExistingImageIds.size > 0)
+  const hasDraft = isEditing ? hasChanges : rating > 0 || normalizedContent.length > 0 || attachedImageCount > 0
   const canSubmit =
     rating > 0 && normalizedContent.length > 0 && !isSubmitting && (!isEditing || hasChanges)
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
@@ -93,15 +106,16 @@ export function MapReviewStation({
       name: file.name,
       url: URL.createObjectURL(file),
     }))
-    const nextImages = [...images, ...selectableImages].slice(0, MAX_REVIEW_IMAGES)
-    const overflowImages = selectableImages.slice(Math.max(0, MAX_REVIEW_IMAGES - images.length))
+    const acceptedImages = selectableImages.slice(0, remainingImageSlots)
+    const nextImages = [...images, ...acceptedImages]
+    const overflowImages = selectableImages.slice(remainingImageSlots)
 
     setImages(nextImages)
     overflowImages.forEach((image) => URL.revokeObjectURL(image.url))
     setLocalError(
       selectableImages.length === 0 && files.length > 0
         ? '10MB 이하의 이미지 파일만 첨부할 수 있어요.'
-        : nextImages.length < images.length + selectableImages.length
+        : overflowImages.length > 0
           ? `사진은 최대 ${MAX_REVIEW_IMAGES}장까지 첨부할 수 있어요.`
           : null,
     )
@@ -120,6 +134,15 @@ export function MapReviewStation({
 
       return current.filter((image) => image.id !== targetId)
     })
+  }
+
+  const handleRemoveExistingImage = (targetId: string) => {
+    setHiddenExistingImageIds((current) => {
+      const next = new Set(current)
+      next.add(targetId)
+      return next
+    })
+    setLocalError(null)
   }
 
   const handleRatingChange = (nextRating: number) => {
@@ -213,15 +236,6 @@ export function MapReviewStation({
         </label>
 
         <div className="map-review-station-field">
-          {isEditing && existingReviewImages.length > 0 ? (
-            <div className="map-review-existing-photos" aria-label="기존 리뷰 사진">
-              {existingReviewImages.map((image) => (
-                <span className="map-review-existing-photo" key={`${image.id ?? image.url}-${image.sortOrder}`}>
-                  <img alt="기존 리뷰 사진" src={image.url} />
-                </span>
-              ))}
-            </div>
-          ) : null}
           <input
             ref={fileInputRef}
             accept="image/*"
@@ -233,7 +247,7 @@ export function MapReviewStation({
           <div className="map-review-photo-strip">
             <button
               className="map-review-photo-add"
-              disabled={images.length >= MAX_REVIEW_IMAGES}
+              disabled={attachedImageCount >= MAX_REVIEW_IMAGES}
               type="button"
               onClick={() => fileInputRef.current?.click()}
             >
@@ -243,9 +257,25 @@ export function MapReviewStation({
               </svg>
               사진 추가
               <span className="map-review-photo-count">
-                {images.length}/{MAX_REVIEW_IMAGES}
+                {attachedImageCount}/{MAX_REVIEW_IMAGES}
               </span>
             </button>
+            {visibleExistingReviewImages.map((image, index) => {
+              const imageId = getExistingReviewImageId(image, index)
+
+              return (
+                <span className="map-review-photo-preview map-review-photo-preview-existing" key={imageId}>
+                  <img alt="기존 리뷰 사진" src={image.url} />
+                  <button
+                    type="button"
+                    aria-label={`기존 리뷰 사진 삭제`}
+                    onClick={() => handleRemoveExistingImage(imageId)}
+                  >
+                    ×
+                  </button>
+                </span>
+              )
+            })}
             {images.map((preview) => (
               <span className="map-review-photo-preview" key={preview.id}>
                 <img alt={preview.name} src={preview.url} />

@@ -10,16 +10,30 @@ type ApiRequestInit = RequestInit & {
   authToken?: string | null
 }
 
+function removeHeaderUnsafeCharacters(value: string) {
+  return Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0)
+      return code > 31 && (code < 127 || code > 159) && code !== 0x2028 && code !== 0x2029
+    })
+    .join('')
+}
+
 function toAuthorizationHeaderValue(authToken: string | null | undefined) {
   const trimmed = authToken?.trim()
   if (!trimmed) {
     return null
   }
 
-  const withoutBearer = trimmed.replace(/^Bearer\s+/i, '')
-  const headerSafeToken = withoutBearer.replace(/^["']|["']$/g, '').replace(/[\r\n\t]/g, '').trim()
+  const withoutBearer = trimmed.replace(/^Bearer[\s\u00A0]+/i, '')
+  const headerSafeToken = withoutBearer
+    .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
+    .replace(/[\s\u00A0]+/g, '')
+  const normalizedToken = removeHeaderUnsafeCharacters(headerSafeToken)
+    .replace(/[\s\u00A0]+/g, '')
+    .trim()
 
-  return headerSafeToken ? `Bearer ${headerSafeToken}` : null
+  return normalizedToken ? `Bearer ${normalizedToken}` : null
 }
 
 export function toQueryString(params: QueryParams) {
