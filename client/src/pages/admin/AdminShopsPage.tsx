@@ -882,6 +882,8 @@ export function AdminShopsPage() {
       await queryClient.invalidateQueries({ queryKey: ['shops', 'facets'] })
       if (!isEditMode) {
         resetForm()
+      } else {
+        clearAdminShopDraft()
       }
       clearAdminShopSelectedLocation()
       const savedNotice = buildShopSavedNotice(savedShop.name, isEditMode)

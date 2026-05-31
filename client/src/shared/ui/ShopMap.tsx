@@ -57,6 +57,7 @@ const VIEWPORT_COORDINATE_EPSILON = 0.00005
 const SHOP_MARKER_HEIGHT = 32
 const SHOP_MARKER_MIN_WIDTH = 64
 const SHOP_MARKER_MAX_WIDTH = 220
+const EMPTY_FAVORITE_SHOP_IDS = new Set<number>()
 
 function createMarkerIcon(className: string, label: string, size: number) {
   const maps = getRequiredNaverMaps()
@@ -274,7 +275,7 @@ function shouldPublishViewportChange(previous: MapViewport | null, next: MapView
 export function ShopMap({
   shops,
   activeShopId,
-  favoriteShopIds = new Set(),
+  favoriteShopIds = EMPTY_FAVORITE_SHOP_IDS,
   onSelectShop,
   onClearSelection,
   restoreViewport = null,

@@ -107,11 +107,14 @@ test('SearchPage preserves filter editing but leaves selected filter chips to ex
   assert.match(source, /countShopFilters\(selectedFilters\)/)
   assert.match(source, /navigate\(buildExploreSearchHref\(\{ keyword, scope: currentSearchScope, selectedFilters: nextFilters \}\), \{ replace: true \}\)/)
   assert.match(source, /<SearchFilterSheet/)
+  assert.match(source, /keyword=\{keyword\}/)
+  assert.doesNotMatch(source, /keyword=\{currentKeyword\}/)
   assert.match(source, /selectedFilters=\{selectedFilters\}/)
   assert.match(source, /onApplyFilters=\{applyFilters\}/)
   assert.doesNotMatch(source, /setSearchParams\(writeShopFilters\(searchParams, nextFilters\)/)
   assert.doesNotMatch(source, /AppliedFilterChips/)
   assert.match(filterSheet, /const facetParams = \{ includeRegions: true, includeCategories: true, includeWorkTypes: true, includeSorts: true \}/)
+  assert.match(filterSheet, /sort: current\.sort === sort\.value \? undefined : sort\.value/)
 })
 
 test('SearchPage back action returns to the safe caller route before falling back to history', () => {

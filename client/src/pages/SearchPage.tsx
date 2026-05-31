@@ -186,7 +186,7 @@ export function SearchPage() {
           <SearchFilterSheet
             open={isFilterSheetOpen}
             triggerRef={filterTriggerRef}
-            keyword={currentKeyword}
+            keyword={keyword}
             selectedFilters={selectedFilters}
             onApplyFilters={applyFilters}
             onClose={closeFilterSheet}

@@ -21,7 +21,11 @@ function writeStorage<T>(key: string, value: T) {
     return
   }
 
-  window.localStorage.setItem(key, JSON.stringify(value))
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Local admin queue writes are best-effort because WebView storage can be unavailable.
+  }
 }
 
 function createId(prefix: string) {
@@ -39,6 +43,14 @@ function normalizePointGrant(payload: Partial<PointGrantRequest>, fallback: Poin
     status: (payload.status as PointGrantStatus | undefined) ?? fallback.status,
     channel: payload.channel ?? fallback.channel,
     resultMessage: payload.resultMessage ?? fallback.resultMessage,
+  }
+}
+
+async function readResponseJson(response: Response) {
+  try {
+    return (await response.json()) as Partial<PointGrantRequest>
+  } catch {
+    return null
   }
 }
 
@@ -71,7 +83,7 @@ export async function queuePointGrantRequest(payload: CreatePointGrantRequest) {
         body: JSON.stringify(payload),
       })
 
-      const result = response.ok ? await response.json() : null
+      const result = response.ok ? await readResponseJson(response) : null
       const normalized = normalizePointGrant(result, {
         ...fallback,
         status: response.ok ? 'SENT' : 'FAILED',

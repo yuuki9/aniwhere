@@ -106,6 +106,10 @@ function parseSort(value: string | null) {
   return sort === 'NEWEST' ? undefined : sort
 }
 
+function normalizeSort(sort: ShopSort | undefined) {
+  return sort === 'NEWEST' ? undefined : sort
+}
+
 function parseWorkType(value: string | null) {
   return WORK_TYPES.find((workType) => workType === value)
 }
@@ -153,8 +157,10 @@ export function writeShopFilters(searchParams: URLSearchParams, filters: ShopFil
     next.set('status', filters.status)
   }
 
-  if (filters.sort != null) {
-    next.set('sort', filters.sort)
+  const sort = normalizeSort(filters.sort)
+
+  if (sort != null) {
+    next.set('sort', sort)
   }
 
   return next
@@ -172,8 +178,10 @@ export function toShopSearchParams(filters: ShopFilters): ShopFilterSearchParams
     status: filters.status,
   }
 
-  if (filters.sort != null) {
-    params.sort = filters.sort
+  const sort = normalizeSort(filters.sort)
+
+  if (sort != null) {
+    params.sort = sort
   }
 
   return params
@@ -186,7 +194,7 @@ export function countShopFilters(filters: ShopFilters) {
     (filters.workId != null ? 1 : 0) +
     (filters.workType != null ? 1 : 0) +
     (filters.status != null ? 1 : 0) +
-    (filters.sort != null ? 1 : 0)
+    (normalizeSort(filters.sort) != null ? 1 : 0)
   )
 }
 
@@ -235,13 +243,15 @@ export function buildAppliedShopFilterChips(
     })
   }
 
-  if (filters.sort != null) {
-    const label = getShopSortLabel(filters.sort)
+  const sort = normalizeSort(filters.sort)
+
+  if (sort != null) {
+    const label = getShopSortLabel(sort)
 
     chips.push({
-      key: `sort:${filters.sort}`,
+      key: `sort:${sort}`,
       facet: 'sort',
-      value: filters.sort,
+      value: sort,
       label,
       removeLabel: `Remove ${label} filter`,
     })

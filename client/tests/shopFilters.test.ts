@@ -184,6 +184,28 @@ test('shop sort labels match home CTA naming', () => {
   assert.deepEqual(chips.map((chip) => chip.label), ['관심 많은순'])
 })
 
+test('default newest sort remains implicit across URL params, API params, count, and chips', () => {
+  const filters = {
+    regionIds: [],
+    categoryIds: [],
+    workId: undefined,
+    workType: undefined,
+    status: undefined,
+    sort: 'NEWEST' as const,
+  }
+
+  assert.equal(writeShopFilters(new URLSearchParams('keyword=test'), filters).toString(), 'keyword=test')
+  assert.deepEqual(toShopSearchParams(filters), {
+    regionIds: undefined,
+    categoryIds: undefined,
+    workIds: undefined,
+    workType: undefined,
+    status: undefined,
+  })
+  assert.equal(countShopFilters(filters), 0)
+  assert.deepEqual(buildAppliedShopFilterChips(filters).map((chip) => chip.key), [])
+})
+
 test('applied shop filter chips do not duplicate quick chip status filters', () => {
   const chips = buildAppliedShopFilterChips({
     regionIds: [],

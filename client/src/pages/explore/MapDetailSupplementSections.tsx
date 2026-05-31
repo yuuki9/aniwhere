@@ -7,6 +7,12 @@ import type { MapDetailTab } from './MapDetailSummaryCard'
 const WORK_FEED_PREVIEW_LIMIT = 5
 const TOSS_EMOJI_BASE_URL = 'https://static.toss.im/2d-emojis/png/4x/'
 const EMPTY_REVIEWS: ShopReview[] = []
+const KOREAN_DATE_PARTS = new Intl.DateTimeFormat('ko-KR', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'Asia/Seoul',
+})
 
 function normalizeRating(value: number) {
   return Math.max(0, Math.min(5, Number.isFinite(value) ? value : 0))
@@ -21,11 +27,24 @@ function emojiImageUrl(filename: string | null | undefined) {
   return `${TOSS_EMOJI_BASE_URL}${encodeURIComponent(normalized)}`
 }
 
+function getKoreanDateParts(value: Date) {
+  const parts = KOREAN_DATE_PARTS.formatToParts(value)
+  const partValue = (type: 'year' | 'month' | 'day') => Number(parts.find((part) => part.type === type)?.value ?? 0)
+
+  return {
+    year: partValue('year'),
+    month: partValue('month'),
+    day: partValue('day'),
+  }
+}
+
 function formatReviewDate(value: string) {
   const target = new Date(value)
   const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const startOfTarget = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime()
+  const todayParts = getKoreanDateParts(now)
+  const targetParts = getKoreanDateParts(target)
+  const startOfToday = Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day)
+  const startOfTarget = Date.UTC(targetParts.year, targetParts.month - 1, targetParts.day)
   const dayDiff = Math.max(0, Math.floor((startOfToday - startOfTarget) / (1000 * 60 * 60 * 24)))
 
   if (dayDiff === 0) {
@@ -586,6 +605,9 @@ export function MapDetailSupplementSections({
             state={photoViewerState}
             onActiveIndexChange={handlePhotoViewerIndexChange}
             onClose={() => setPhotoViewerState(null)}
+            currentUserId={currentUserId}
+            onDeleteReview={setDeleteConfirmReview}
+            onEditReview={onEditReview}
             onReportReview={onReportReview}
             onShowReview={onShowReviewFromPhoto}
           />

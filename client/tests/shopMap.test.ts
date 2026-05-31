@@ -66,6 +66,7 @@ test('ShopMap renders shop names as chip markers and keeps clusters as count chi
 
   assert.match(source, /function escapeMarkerLabel/)
   assert.match(source, /function getShopMarkerLabel\(shop: Shop\)/)
+  assert.match(source, /const EMPTY_FAVORITE_SHOP_IDS = new Set<number>\(\)/)
   assert.match(source, /function createShopMarkerIcon\(shop: Shop, isActive: boolean, isFavorite: boolean\)/)
   assert.match(source, /function createClusterMarkerIcon\(count: number\)/)
   assert.match(source, /class="map-naver-shop-marker/)
@@ -74,6 +75,7 @@ test('ShopMap renders shop names as chip markers and keeps clusters as count chi
   assert.doesNotMatch(source, /map-naver-shop-chip-dot/)
   assert.match(source, /class="map-naver-cluster-chip/)
   assert.match(source, /icon: createShopMarkerIcon\(group\.shop, isActive, isFavorite\)/)
+  assert.doesNotMatch(source, /favoriteShopIds = new Set\(\)/)
   assert.match(source, /icon: createClusterMarkerIcon\(group\.shops\.length\)/)
   assert.doesNotMatch(source, /showRankMarkers/)
   assert.doesNotMatch(source, /createShopRankBadge/)

@@ -39,7 +39,7 @@ export function MapDetailMediaSection({
   return (
     <section className={['map-sheet-media', !hasMedia ? 'map-sheet-media-empty' : ''].filter(Boolean).join(' ')}>
       {hasMedia ? (
-        <div className="map-sheet-media-grid" aria-label="매장 사진">
+        <div className="map-sheet-media-grid" aria-label="사진">
           {visibleMediaItems.map((item, index) => {
             const isMoreTile = totalMediaCount >= 5 && index === visibleMediaItems.length - 1
 

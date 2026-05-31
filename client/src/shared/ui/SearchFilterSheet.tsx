@@ -198,7 +198,7 @@ function SearchFilterSheetDialog({
                         onClick={() =>
                           setDraftFilters((current) => ({
                             ...current,
-                            sort: sort.value === 'NEWEST' ? undefined : sort.value,
+                            sort: current.sort === sort.value ? undefined : sort.value,
                           }))
                         }
                       >

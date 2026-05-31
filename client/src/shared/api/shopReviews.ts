@@ -18,16 +18,12 @@ function shopReviewDetailPath(shopId: number, reviewId: number) {
 }
 
 function appendReviewImageFields(formData: FormData, payload: CreateShopReviewPayload | UpdateShopReviewPayload) {
+  formData.append('rating', String(payload.rating))
+  formData.append('content', payload.content)
+
   for (const image of payload.images ?? []) {
     formData.append('images', image)
   }
-}
-
-function reviewMutationQuery(payload: CreateShopReviewPayload | UpdateShopReviewPayload) {
-  return toQueryString({
-    rating: payload.rating,
-    content: payload.content,
-  })
 }
 
 export function listShopReviews(shopId: number, params: ShopReviewListParams = {}, authToken?: string | null) {
@@ -44,7 +40,7 @@ export function createShopReview(shopId: number, payload: CreateShopReviewPayloa
   const formData = new FormData()
   appendReviewImageFields(formData, payload)
 
-  return requestForm<ShopReview>(`${shopReviewPath(shopId)}${reviewMutationQuery(payload)}`, formData, { authToken })
+  return requestForm<ShopReview>(shopReviewPath(shopId), formData, { authToken })
 }
 
 export function updateShopReview(
@@ -56,7 +52,7 @@ export function updateShopReview(
   const formData = new FormData()
   appendReviewImageFields(formData, payload)
 
-  return requestForm<ShopReview>(`${shopReviewDetailPath(shopId, reviewId)}${reviewMutationQuery(payload)}`, formData, {
+  return requestForm<ShopReview>(shopReviewDetailPath(shopId, reviewId), formData, {
     method: 'PATCH',
     authToken,
   })

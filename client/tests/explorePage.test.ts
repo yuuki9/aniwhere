@@ -272,6 +272,8 @@ test('Explore detail summary toggles shop favorites through the Swagger favorite
   assert.match(source, /const favoriteShopMutation = useMutation\(/)
   assert.match(source, /nextFavorite \? addFavoriteShop\(shopId, authToken\) : removeFavoriteShop\(shopId, authToken\)/)
   assert.match(source, /setFavoriteShopIdOverrides\(\(current\) =>/)
+  assert.match(source, /onSuccess: async \(_result, variables\) =>/)
+  assert.match(source, /await queryClient\.invalidateQueries\(\{ queryKey: \['users', 'me', 'favorite-shops'\] \}\)/)
   assert.match(source, /if \(authToken == null\)/)
   assert.match(source, /favoriteShopMutation\.mutate\(\{ shopId: detailShop\.id, nextFavorite: !isFavoriteDetailShop \}\)/)
   assert.match(source, /<Toast[\s\S]*?open=\{favoriteToast != null\}/)
@@ -331,6 +333,14 @@ test('Explore directions prefer the Naver Maps app scheme in Apps in Toss with w
   assert.match(directions, /nmap:\/\/route\/public/)
   assert.match(directions, /nmap:\/\/search/)
   assert.match(directions, /appname/)
+})
+
+test('Explore share fallback reports failure when Clipboard API is unavailable', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /if \(!navigator\.clipboard\) \{[\s\S]*throw new Error\('Clipboard API unavailable'\)/)
+  assert.match(source, /await navigator\.clipboard\.writeText\(shareUrl\.toString\(\)\)/)
+  assert.doesNotMatch(source, /navigator\.clipboard\?\.writeText/)
 })
 
 test('ExplorePage extracts the expanded detail info rows into a focused component', () => {
@@ -435,6 +445,8 @@ test('Explore detail media uses uploaded shop photos only instead of fabricated 
   assert.doesNotMatch(source, /uploadedPhotos/)
   assert.doesNotMatch(source, /localImages/)
   assert.doesNotMatch(source, /getShopPhotos/)
+  assert.match(mediaSource, /aria-label="사진"/)
+  assert.doesNotMatch(mediaSource, /aria-label="매장 사진"/)
 })
 
 test('ExplorePage extracts the expanded detail media section into a focused component', () => {

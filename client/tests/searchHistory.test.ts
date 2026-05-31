@@ -74,3 +74,35 @@ test('search history removes one term and clears all terms', () => {
     })
   }
 })
+
+test('search history preserves current list when storage writes fail', () => {
+  const store = new Map<string, string>()
+  const previousWindow = globalThis.window
+
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: () => {
+          throw new Error('storage unavailable')
+        },
+        removeItem: () => {
+          throw new Error('storage unavailable')
+        },
+      },
+    },
+  })
+
+  try {
+    store.set('aniwhere-recent-searches', JSON.stringify(['카페', '굿즈', '피규어']))
+
+    assert.deepEqual(removeRecentSearch('굿즈'), ['카페', '굿즈', '피규어'])
+    assert.deepEqual(clearRecentSearches(), ['카페', '굿즈', '피규어'])
+  } finally {
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: previousWindow,
+    })
+  }
+})

@@ -5,6 +5,7 @@ import type {
   HTMLAttributes,
   InputHTMLAttributes,
   LiHTMLAttributes,
+  MouseEvent,
   ReactNode,
   Ref,
 } from 'react'
@@ -480,6 +481,13 @@ function MenuTrigger({
     }
   }
 
+  const handleDropdownClickCapture = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    if (target?.closest('[role="menuitem"], [role="menuitemcheckbox"]')) {
+      setOpen(false)
+    }
+  }
+
   return (
     <span
       className={['ait-menu-trigger', className].filter(Boolean).join(' ')}
@@ -495,7 +503,7 @@ function MenuTrigger({
             type="button"
             onClick={() => setOpen(false)}
           />
-          {dropdown}
+          <div onClickCapture={handleDropdownClickCapture}>{dropdown}</div>
         </>
       ) : null}
     </span>
@@ -591,15 +599,11 @@ export function Rating({
 
   return (
     <div
-      aria-label={ariaLabel}
-      aria-valuemax={max}
-      aria-valuemin={0}
-      aria-valuenow={roundedValue}
-      aria-valuetext={ariaValueText}
+      aria-label={readOnly ? `${ariaLabel} ${ariaValueText}` : ariaLabel}
       className={['ait-rating', className].filter(Boolean).join(' ')}
       data-size={size}
       data-variant={variant}
-      role={readOnly ? 'img' : 'slider'}
+      role={readOnly ? 'img' : 'radiogroup'}
       style={{ '--ait-rating-active-color': activeColor, ...style } as CSSProperties}
       {...props}
     >
@@ -610,12 +614,21 @@ export function Rating({
         return (
           <button
             aria-label={`${nextValue}점`}
+            aria-checked={active}
             className="ait-rating-star"
             data-active={active ? 'true' : undefined}
             disabled={disabled || readOnly}
             key={nextValue}
+            role={readOnly ? undefined : 'radio'}
+            tabIndex={!readOnly && nextValue === Math.max(1, roundedValue) ? 0 : -1}
             type="button"
             onClick={() => onValueChange?.(nextValue)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onValueChange?.(nextValue)
+              }
+            }}
           >
             ★
           </button>

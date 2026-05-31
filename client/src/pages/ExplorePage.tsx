@@ -699,12 +699,13 @@ export function ExplorePage() {
   const favoriteShopMutation = useMutation({
     mutationFn: ({ shopId, nextFavorite }: { shopId: number; nextFavorite: boolean }) =>
       nextFavorite ? addFavoriteShop(shopId, authToken) : removeFavoriteShop(shopId, authToken),
-    onSuccess: (_result, variables) => {
+    onSuccess: async (_result, variables) => {
       setFavoriteShopIdOverrides((current) => {
         const next = new Map(current)
         next.set(variables.shopId, variables.nextFavorite)
         return next
       })
+      await queryClient.invalidateQueries({ queryKey: ['users', 'me', 'favorite-shops'] })
       setFavoriteToast(variables.nextFavorite ? '관심 매장에 저장했어요.' : '관심 매장에서 해제했어요.')
     },
     onError: (error) => {
@@ -1532,7 +1533,11 @@ export function ExplorePage() {
         return
       }
 
-      await navigator.clipboard?.writeText(shareUrl.toString())
+      if (!navigator.clipboard) {
+        throw new Error('Clipboard API unavailable')
+      }
+
+      await navigator.clipboard.writeText(shareUrl.toString())
       setFavoriteToast('매장 링크를 복사했어요.')
     } catch {
       setFavoriteToast('공유를 완료하지 못했어요.')
