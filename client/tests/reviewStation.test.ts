@@ -20,6 +20,15 @@ test('legacy shop detail routes redirect into the explore detail sheet instead o
   assert.match(redirect, /`\/explore\?shopId=\$\{parsedShopId\}&sheet=expanded`/)
 })
 
+test('review station resets local draft state when the selected review changes', () => {
+  const station = reviewStationSource()
+
+  assert.match(station, /function getReviewStationDraftKey/)
+  assert.match(station, /return review == null[\s\S]*\? `create-\$\{shopId\}`[\s\S]*: `edit-\$\{shopId\}-\$\{review\.id\}-/)
+  assert.match(station, /<MapReviewStationForm key=\{draftKey\}/)
+  assert.match(station, /function MapReviewStationForm/)
+})
+
 test('explore review station creates Swagger shop reviews from the selected shop sheet', () => {
   const explore = exploreSource()
   const supplement = supplementSource()
@@ -119,6 +128,11 @@ test('explore review station creates Swagger shop reviews from the selected shop
   assert.match(station, /const attachedImageCount = visibleExistingReviewImages\.length \+ images\.length/)
   assert.match(station, /const remainingImageSlots = Math\.max\(0, MAX_REVIEW_IMAGES - attachedImageCount\)/)
   assert.match(station, /const handleRemoveExistingImage = \(targetId: string\) =>/)
+  assert.match(station, /const selectedImages = images\.map\(\(image\) => image\.file\)/)
+  assert.match(station, /const shouldReplaceReviewImages = isEditing && \(images\.length > 0 \|\| hiddenExistingImageIds\.size > 0\)/)
+  assert.match(station, /const imagePayload = shouldReplaceReviewImages/)
+  assert.match(station, /existingImageIds: visibleExistingReviewImages/)
+  assert.match(station, /typeof image\.id === 'number'/)
   assert.doesNotMatch(station, /<header className="map-review-shop-summary">/)
   assert.match(station, /<span className="map-review-rating-question">[\s\S]*?<strong>\{shop\.name\}<\/strong>\s*<span>의 방문은 어떠셨나요\?<\/span>[\s\S]*?<\/span>/)
   assert.doesNotMatch(station, /shopCategoryLabel/)
@@ -156,7 +170,7 @@ test('explore review station creates Swagger shop reviews from the selected shop
   assert.match(station, /const isLeaveConfirmOpen = blocker\.state === 'blocked'/)
   assert.match(station, /<Modal open=\{isLeaveConfirmOpen\}/)
   assert.match(station, /allowNavigationRef\.current = true/)
-  assert.match(station, /onSubmit\(\{[\s\S]*rating,[\s\S]*content: normalizedContent,[\s\S]*images\.length > 0 \? \{ images: images\.map\(\(image\) => image\.file\) \} : \{\}/)
+  assert.match(station, /onSubmit\(\{[\s\S]*rating,[\s\S]*content: normalizedContent,[\s\S]*\.\.\.imagePayload/)
   assert.doesNotMatch(station, /map-review-station-back"/)
   assert.doesNotMatch(station, /map-review-station-title/)
   assert.match(tdsFacade, /Modal/)

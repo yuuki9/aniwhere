@@ -18,12 +18,21 @@ function shopReviewDetailPath(shopId: number, reviewId: number) {
 }
 
 function appendReviewImageFields(formData: FormData, payload: CreateShopReviewPayload | UpdateShopReviewPayload) {
-  formData.append('rating', String(payload.rating))
-  formData.append('content', payload.content)
-
   for (const image of payload.images ?? []) {
     formData.append('images', image)
   }
+}
+
+function reviewMutationQuery(
+  payload: CreateShopReviewPayload | UpdateShopReviewPayload,
+  options?: { replaceImages?: boolean; existingImageIds?: number[] },
+) {
+  return toQueryString({
+    rating: payload.rating,
+    content: payload.content,
+    replaceImages: options?.replaceImages,
+    existingImageIds: options?.existingImageIds,
+  })
 }
 
 export function listShopReviews(shopId: number, params: ShopReviewListParams = {}, authToken?: string | null) {
@@ -39,8 +48,9 @@ export function listShopReviews(shopId: number, params: ShopReviewListParams = {
 export function createShopReview(shopId: number, payload: CreateShopReviewPayload, authToken?: string | null) {
   const formData = new FormData()
   appendReviewImageFields(formData, payload)
+  const query = reviewMutationQuery(payload)
 
-  return requestForm<ShopReview>(shopReviewPath(shopId), formData, { authToken })
+  return requestForm<ShopReview>(`${shopReviewPath(shopId)}${query}`, formData, { authToken })
 }
 
 export function updateShopReview(
@@ -51,8 +61,13 @@ export function updateShopReview(
 ) {
   const formData = new FormData()
   appendReviewImageFields(formData, payload)
+  const shouldReplaceImages = payload.existingImageIds !== undefined || (payload.images?.length ?? 0) > 0
+  const query = reviewMutationQuery(payload, {
+    replaceImages: shouldReplaceImages ? true : undefined,
+    existingImageIds: shouldReplaceImages ? payload.existingImageIds ?? [] : undefined,
+  })
 
-  return requestForm<ShopReview>(shopReviewDetailPath(shopId, reviewId), formData, {
+  return requestForm<ShopReview>(`${shopReviewDetailPath(shopId, reviewId)}${query}`, formData, {
     method: 'PATCH',
     authToken,
   })

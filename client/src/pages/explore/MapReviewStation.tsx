@@ -35,7 +35,21 @@ function filterImageFiles(files: File[]) {
   return files.filter((file) => file.type.startsWith('image/') && file.size <= MAX_REVIEW_IMAGE_SIZE)
 }
 
-export function MapReviewStation({
+function getReviewStationDraftKey(shopId: number, review: ShopReview | null) {
+  return review == null
+    ? `create-${shopId}`
+    : `edit-${shopId}-${review.id}-${review.rating}-${review.content}-${review.updatedAt ?? review.createdAt}-${
+        review.images.map((image, index) => getExistingReviewImageId(image, index)).join(',')
+      }`
+}
+
+export function MapReviewStation(props: MapReviewStationProps) {
+  const draftKey = getReviewStationDraftKey(props.shop.id, props.review ?? null)
+
+  return <MapReviewStationForm key={draftKey} {...props} />
+}
+
+function MapReviewStationForm({
   shop,
   review = null,
   errorMessage,
@@ -173,10 +187,23 @@ export function MapReviewStation({
 
     setLocalError(null)
     allowNavigationRef.current = true
+    const selectedImages = images.map((image) => image.file)
+    const shouldReplaceReviewImages = isEditing && (images.length > 0 || hiddenExistingImageIds.size > 0)
+    const imagePayload = shouldReplaceReviewImages
+      ? {
+          existingImageIds: visibleExistingReviewImages.flatMap((image) =>
+            typeof image.id === 'number' ? [image.id] : [],
+          ),
+          ...(selectedImages.length > 0 ? { images: selectedImages } : {}),
+        }
+      : selectedImages.length > 0
+        ? { images: selectedImages }
+        : {}
+
     onSubmit({
       rating,
       content: normalizedContent,
-      ...(images.length > 0 ? { images: images.map((image) => image.file) } : {}),
+      ...imagePayload,
     })
   }
 

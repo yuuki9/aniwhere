@@ -263,6 +263,7 @@ export type UpdateShopReviewPayload = {
   rating?: number
   content?: string
   images?: File[]
+  existingImageIds?: number[]
 }
 
 export type UpdateUserRolePayload = {
