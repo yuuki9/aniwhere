@@ -47,6 +47,7 @@ When the backend contract changes:
 - Legacy `/api/v1/posts` community endpoints are removed. Frontend review work must use shop-scoped review APIs.
 - `GET /api/v1/shops/{shopId}/reviews` returns `PageResponse<ShopReview>` and accepts `sort=NEWEST|OLDEST|RATING_HIGH|RATING_LOW`.
 - `POST /api/v1/shops/{shopId}/reviews` and `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}` send `rating` and `content` as query params, with optional `images` in multipart form data.
+- `PATCH /api/v1/shops/{shopId}/reviews/{reviewId}` accepts optional `replaceImages` and repeated `existingImageIds` query params. When `replaceImages=true`, `existingImageIds` defines retained existing review image IDs/order and `images` adds new image files; sending neither retained IDs nor files deletes all review images.
 - `GET /api/v1/users/me/reviews` returns the authenticated user's `PageResponse<ShopReview>` for owner review-management surfaces.
 - `ShopReview` includes `authorEmojiIconFilename`, `likeCount`, and `likedByMe`, and `POST/DELETE /api/v1/shops/{shopId}/reviews/{reviewId}/likes` toggles review likes.
 - Deployed Swagger does not expose a review report endpoint yet. Client UI may show a report entry point, but it must not call an invented API path.
