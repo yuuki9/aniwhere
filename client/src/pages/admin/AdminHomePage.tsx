@@ -3,19 +3,19 @@ import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 
 const adminMenuCards = [
   {
-    description: '등록된 매장을 확인하고 새 매장을 등록해요.',
+    description: '등록/수정할 매장 정보를 관리해요.',
     href: '/admin/shops',
     title: '매장 관리',
   },
   {
-    description: '사용자 목록을 보고 운영 권한을 변경해요.',
+    description: '사용자 목록과 운영 권한을 관리해요.',
     href: '/admin/users',
-    title: '사용자 권한 변경',
+    title: '사용자 관리',
   },
   {
-    description: '신고된 리뷰를 확인하고 노출 상태를 관리해요.',
+    description: '신고/검수 리뷰의 노출 상태를 관리해요.',
     href: '/admin/reviews',
-    title: '신고된 리뷰 관리',
+    title: '리뷰 관리',
   },
 ] as const
 
