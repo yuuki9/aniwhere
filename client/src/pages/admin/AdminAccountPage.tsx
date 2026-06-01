@@ -71,7 +71,14 @@ export function AdminAccountPage() {
             <span>{myReviewsQuery.data?.totalElements ?? 0}건</span>
           </div>
           <div className="admin-branch-list">
-            {reviews.map((review) => (
+            {myReviewsQuery.isError ? (
+              <p className="admin-shop-manage-state error-text">
+                {myReviewsQuery.error instanceof Error
+                  ? myReviewsQuery.error.message
+                  : '리뷰를 불러오는 중 오류가 발생했습니다.'}
+              </p>
+            ) : null}
+            {!myReviewsQuery.isError && reviews.map((review) => (
               <article className="admin-branch-row" key={review.id}>
                 <div className="admin-branch-row-copy">
                   <div className="admin-branch-row-head">
@@ -83,7 +90,7 @@ export function AdminAccountPage() {
                 </div>
               </article>
             ))}
-            {!myReviewsQuery.isLoading && reviews.length === 0 ? (
+            {!myReviewsQuery.isError && !myReviewsQuery.isLoading && reviews.length === 0 ? (
               <p className="admin-shop-manage-state">작성한 리뷰가 없어요.</p>
             ) : null}
           </div>

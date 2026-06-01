@@ -20,7 +20,8 @@ class UserService(
     private val persistence: UserPersistencePort,
     private val authPersistence: AuthPersistencePort,
 ) : UserUseCase {
-    override fun listUsers(pageable: Pageable): Page<UserSummary> = persistence.listUsers(pageable)
+    override fun listUsers(keyword: String?, role: UserAppRole?, pageable: Pageable): Page<UserSummary> =
+        persistence.listUsers(keyword?.trim()?.takeIf { it.isNotEmpty() }, role, pageable)
 
     override fun getMyProfile(userId: Long): UserSummary = getExistingUser(userId)
 

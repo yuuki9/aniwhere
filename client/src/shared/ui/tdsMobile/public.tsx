@@ -10,7 +10,7 @@ import type {
   ReactNode,
   Ref,
 } from 'react'
-import { Children, cloneElement, isValidElement, useEffect, useState } from 'react'
+import { Children, cloneElement, isValidElement, useEffect, useId, useState } from 'react'
 
 type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   display?: 'inline' | 'block' | 'full'
@@ -194,6 +194,8 @@ function SegmentedControlRoot({
 }: PublicSegmentedControlProps) {
   const [internalValue, setInternalValue] = useState(defaultValue)
   const selectedValue = value ?? internalValue
+  const fallbackGroupName = useId()
+  const groupName = props.id ?? fallbackGroupName
 
   return (
     <div
@@ -209,7 +211,7 @@ function SegmentedControlRoot({
 
         return cloneElement(child, {
           checked: child.props.value === selectedValue,
-          name: child.props.name ?? props.id,
+          name: child.props.name ?? groupName,
           onChange: (event: ChangeEvent<HTMLInputElement>) => {
             if (value == null) {
               setInternalValue(child.props.value)

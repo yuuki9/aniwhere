@@ -106,7 +106,7 @@ type DetailMediaItem = {
 }
 
 function parseDetailTab(value: string | null): MapDetailTab | null {
-  if (value === 'info' || value === 'review' || value === 'photos') {
+  if (value === 'info' || value === 'review' || value === 'photos' || value === 'works') {
     return value
   }
 
@@ -281,6 +281,7 @@ export function ExplorePage() {
   const currentKeyword = searchParams.get('keyword')?.trim() ?? ''
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
+  const hasPerformedRouteReviewFocusRef = useRef(false)
   const sheetMode: SheetMode =
     selectedShopId && sheetParam === 'review' ? 'review' : selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
   const [selectionOrigin, setSelectionOrigin] = useState<SelectionOrigin>(selectedShopId ? 'map' : null)
@@ -1229,11 +1230,16 @@ export function ExplorePage() {
   const activeDetailTab = detailTab === 'photos' && detailPhotoCount <= 0 ? 'info' : detailTab
 
   useEffect(() => {
+    hasPerformedRouteReviewFocusRef.current = false
+  }, [selectedShopId])
+
+  useEffect(() => {
     if (
       selectedShopId == null ||
       sheetMode !== 'expanded' ||
       activeDetailTab !== 'review' ||
-      !shouldFocusRouteReview
+      !shouldFocusRouteReview ||
+      hasPerformedRouteReviewFocusRef.current
     ) {
       return
     }
@@ -1255,6 +1261,7 @@ export function ExplorePage() {
 
         target.scrollIntoView({ block: 'start', behavior: 'smooth' })
         target.focus({ preventScroll: true })
+        hasPerformedRouteReviewFocusRef.current = true
       },
       reviewListQuery.isFetching ? 80 : 0,
     )
@@ -1263,7 +1270,6 @@ export function ExplorePage() {
   }, [
     activeDetailTab,
     detailReviewFocusId,
-    reviewListQuery.data,
     reviewListQuery.isFetching,
     selectedShopId,
     sheetMode,

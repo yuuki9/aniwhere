@@ -4,6 +4,7 @@ import com.aniwhere.server.adapter.out.persistence.entity.UserEntity
 import com.aniwhere.server.adapter.out.persistence.repository.AdminRepository
 import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
+import com.aniwhere.server.domain.user.model.UserAppRole
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.out.UserPersistencePort
 import org.springframework.data.domain.Page
@@ -17,7 +18,14 @@ class UserPersistenceAdapter(
     private val userRepo: UserRepository,
     private val adminRepo: AdminRepository,
 ) : UserPersistencePort {
-    override fun listUsers(pageable: Pageable): Page<UserSummary> = userRepo.findAll(pageable).map { it.toSummary() }
+    override fun listUsers(keyword: String?, role: UserAppRole?, pageable: Pageable): Page<UserSummary> {
+        val keywordRole = when (keyword?.uppercase()) {
+            "ADMIN", "ROLE_ADMIN" -> UserAppRole.ADMIN.name
+            "USER", "ROLE_USER" -> UserAppRole.USER.name
+            else -> null
+        }
+        return userRepo.searchUsers(keyword, keywordRole, role?.name, pageable).map { it.toSummary() }
+    }
 
     override fun findUser(userId: Long): UserSummary? = userRepo.findByIdOrNull(userId)?.toSummary()
 

@@ -367,6 +367,15 @@ export function MyPage() {
   const [profileEditError, setProfileEditError] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (toastMessage == null) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => setToastMessage(null), 3000)
+    return () => window.clearTimeout(timeoutId)
+  }, [toastMessage])
+
   const profileQuery = useQuery({
     queryKey: ['users', 'me', 'my-page'],
     queryFn: () => getMyProfile(),

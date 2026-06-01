@@ -42,7 +42,7 @@ export function AdminPointsPage() {
 
   const submitGrant = () => {
     if (!form.recipientLabel.trim() || !form.recipientUserKey.trim() || !form.reason.trim() || !form.promotionCode.trim()) {
-      setNotice('지급 대상, 사유, 프로모션 코드를 입력해주세요.')
+      setNotice('지급 대상, 사용자 키, 사유, 프로모션 코드를 입력해주세요.')
       return
     }
     grantMutation.mutate({

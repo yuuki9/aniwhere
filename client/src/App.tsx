@@ -16,14 +16,26 @@ const MY_PROFILE_ACCESSORY_BUTTON = {
     name: 'icon-profile-magnifier-mono',
   },
 }
+let isProfileAccessoryAdded = false
 
 function syncProfileAccessoryButton(pathname: string) {
   if (PROFILE_ACCESSORY_BLOCKED_PATHS.has(pathname)) {
-    void partner.removeAccessoryButton()
+    if (isProfileAccessoryAdded) {
+      isProfileAccessoryAdded = false
+      void partner.removeAccessoryButton().catch((error) => {
+        console.error('[aniwhere:navigation-accessory] remove failed', error)
+      })
+    }
     return
   }
 
-  void partner.addAccessoryButton(MY_PROFILE_ACCESSORY_BUTTON)
+  if (!isProfileAccessoryAdded) {
+    isProfileAccessoryAdded = true
+    void partner.addAccessoryButton(MY_PROFILE_ACCESSORY_BUTTON).catch((error) => {
+      isProfileAccessoryAdded = false
+      console.error('[aniwhere:navigation-accessory] add failed', error)
+    })
+  }
 }
 
 function App() {
@@ -56,7 +68,12 @@ function App() {
     return () => {
       unsubscribeRouter()
       unsubscribeAccessoryEvent()
-      void partner.removeAccessoryButton()
+      if (isProfileAccessoryAdded) {
+        isProfileAccessoryAdded = false
+        void partner.removeAccessoryButton().catch((error) => {
+          console.error('[aniwhere:navigation-accessory] cleanup failed', error)
+        })
+      }
     }
   }, [])
 

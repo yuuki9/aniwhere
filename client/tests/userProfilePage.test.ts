@@ -28,7 +28,7 @@ test('general users can open their profile from home without admin role', () => 
   assert.match(styles, /\.ait-navigation-profile-button/)
   assert.match(styles, /\.ait-navigation-profile-icon/)
   assert.doesNotMatch(styles, /\.home-profile-floating-action/)
-  assert.doesNotMatch(styles, /\.home-profile-entry-card/)
+  assert.match(styles, /\.home-profile-entry-card/)
 })
 
 test('my page uses only exposed swagger profile fields and API-backed edit/activity sections', () => {

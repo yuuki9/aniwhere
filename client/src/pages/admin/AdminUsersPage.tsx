@@ -72,8 +72,15 @@ export function AdminUsersPage() {
   const [notice, setNotice] = useState<string | null>(null)
 
   const usersQuery = useQuery({
-    queryKey: ['users', 'admin-users', currentPage],
-    queryFn: () => listUsers({ page: currentPage, size: USER_PAGE_SIZE, sort: ['createdAt,desc'] }),
+    queryKey: ['users', 'admin-users', currentPage, appliedKeyword, roleFilter],
+    queryFn: () =>
+      listUsers({
+        page: currentPage,
+        size: USER_PAGE_SIZE,
+        sort: ['createdAt,desc'],
+        keyword: appliedKeyword,
+        role: roleFilter === 'ALL' ? undefined : roleFilter,
+      }),
   })
   const users = useMemo(() => usersQuery.data?.content ?? [], [usersQuery.data?.content])
 

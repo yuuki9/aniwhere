@@ -9,6 +9,7 @@ import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.model.ShopReviewStatus
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
 import com.aniwhere.server.domain.user.model.NicknameAvailabilityResult
+import com.aniwhere.server.domain.user.model.UserAppRole
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -59,11 +60,23 @@ class UserControllerTest {
     @Test
     fun `GET users - 회원 목록 조회`() {
         mockAuthenticatedUser(10L, "ROLE_ADMIN")
-        every { userUseCase.listUsers(any()) } returns PageImpl(listOf(sampleUser(10L, "닉네임")))
+        every { userUseCase.listUsers(any(), any(), any()) } returns PageImpl(listOf(sampleUser(10L, "닉네임")))
 
         mvc.perform(get("/api/v1/users"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content[0].nickname").value("닉네임"))
+    }
+
+    @Test
+    fun `GET users - 검색어와 권한 필터 전달`() {
+        mockAuthenticatedUser(10L, "ROLE_ADMIN")
+        every { userUseCase.listUsers(any(), any(), any()) } returns PageImpl(listOf(sampleUser(11L, "관리자")))
+
+        mvc.perform(get("/api/v1/users").param("keyword", "관리").param("role", "ADMIN"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.content[0].nickname").value("관리자"))
+
+        verify { userUseCase.listUsers("관리", UserAppRole.ADMIN, any()) }
     }
 
     @Test
