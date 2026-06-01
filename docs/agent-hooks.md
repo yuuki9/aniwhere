@@ -30,6 +30,7 @@ This document is the natural-language trigger layer for Aniwhere Codex sessions.
 | Swagger, API 명세, server contract, CORS, request/response shape, removed field | Treat as API contract work. Compare frontend calls against Swagger/OpenAPI before editing. | `backend-api-contract-audit`, `docs/backend-api-contract.md`, Swagger/OpenAPI |
 | 버그, 흰화면, failed to fetch, console, sandbox failure, test/build fail, regression | Reproduce and diagnose before changing code. | `aniwhere-debug-loop`, relevant domain skill |
 | 작업 분리, 브랜치, PR 범위, 후속 작업, "무엇부터" | Plan branch/PR scope before implementation. | `aniwhere-work-planning`, `GIT_CONVENTIONS.md` |
+| 커밋, commit, push, PR handoff, 브랜치 마무리 | Before committing or pushing, verify `GIT_CONVENTIONS.md` and write the commit subject/body in Korean after the `type(scope):` prefix. Do not create English commit descriptions. | `GIT_CONVENTIONS.md`, `caveman-commit` when requested |
 | PR, merge, 리뷰, CodeRabbit, description, "PR step" | Run PR preflight and provide PR URL/title/body handoff if direct creation fails. | `aniwhere-pr-preflight`, `GIT_CONVENTIONS.md`, `.github/PULL_REQUEST_TEMPLATE.md` |
 | skill, hook, guard, 세션 유지, 자연어 trigger | Treat as workflow maintenance. Keep rules durable and repo-tracked. | `aniwhere-skill-workflow`, `docs/agent-hooks.md`, `docs/agent-skills.md` |
 
