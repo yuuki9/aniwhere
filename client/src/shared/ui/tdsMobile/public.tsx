@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import type {
   ButtonHTMLAttributes,
+  ChangeEvent,
   CSSProperties,
   HTMLAttributes,
   InputHTMLAttributes,
@@ -9,7 +10,7 @@ import type {
   ReactNode,
   Ref,
 } from 'react'
-import { useEffect, useState } from 'react'
+import { Children, cloneElement, isValidElement, useEffect, useState } from 'react'
 
 type PublicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   display?: 'inline' | 'block' | 'full'
@@ -33,6 +34,19 @@ type PublicBadgeProps = HTMLAttributes<HTMLSpanElement> & {
   color?: 'blue' | 'teal' | 'green' | 'red' | 'yellow' | 'elephant'
   size: 'xsmall' | 'small' | 'medium' | 'large'
   variant: 'fill' | 'weak'
+}
+
+type PublicSegmentedControlProps = HTMLAttributes<HTMLDivElement> & {
+  alignment?: 'fixed' | 'fluid'
+  defaultValue?: string
+  onChange?: (value: string) => void
+  size?: 'small' | 'large'
+  value?: string
+}
+
+type PublicSegmentedControlItemProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'type' | 'value'> & {
+  size?: 'small' | 'large'
+  value: string
 }
 
 type PublicAssetLottieProps = HTMLAttributes<HTMLSpanElement> & {
@@ -168,6 +182,82 @@ export function Button({
     </button>
   )
 }
+
+function SegmentedControlRoot({
+  children,
+  className,
+  defaultValue,
+  onChange,
+  size = 'small',
+  value,
+  ...props
+}: PublicSegmentedControlProps) {
+  const [internalValue, setInternalValue] = useState(defaultValue)
+  const selectedValue = value ?? internalValue
+
+  return (
+    <div
+      className={['ait-segmented-control', className].filter(Boolean).join(' ')}
+      data-size={size}
+      role="radiogroup"
+      {...props}
+    >
+      {Children.map(children, (child) => {
+        if (!isValidElement<PublicSegmentedControlItemProps>(child)) {
+          return child
+        }
+
+        return cloneElement(child, {
+          checked: child.props.value === selectedValue,
+          name: child.props.name ?? props.id,
+          onChange: (event: ChangeEvent<HTMLInputElement>) => {
+            if (value == null) {
+              setInternalValue(child.props.value)
+            }
+            onChange?.(child.props.value)
+            child.props.onChange?.(event)
+          },
+          size: child.props.size ?? size,
+        })
+      })}
+    </div>
+  )
+}
+
+function SegmentedControlItem({
+  children,
+  className,
+  checked,
+  disabled,
+  onChange,
+  size = 'small',
+  value,
+  ...props
+}: PublicSegmentedControlItemProps) {
+  return (
+    <label
+      className={['ait-segmented-control-item', className].filter(Boolean).join(' ')}
+      data-checked={checked ? 'true' : undefined}
+      data-size={size}
+    >
+      <input
+        aria-checked={checked}
+        checked={checked}
+        disabled={disabled}
+        role="radio"
+        type="radio"
+        value={value}
+        onChange={onChange}
+        {...props}
+      />
+      <span>{children}</span>
+    </label>
+  )
+}
+
+export const SegmentedControl = Object.assign(SegmentedControlRoot, {
+  Item: SegmentedControlItem,
+})
 
 type PublicResultProps = HTMLAttributes<HTMLDivElement> & {
   figure?: ReactNode
