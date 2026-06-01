@@ -734,6 +734,21 @@ Official docs checked in the current session:
 | `/admin/reviews`, `/admin/users`, `/admin/points`, `/admin/account` layout | Product-approved / TDS-informed | The new branch pages reuse the app-owned admin route shell with `AppTopNavigation`, compact section panels, horizontal chips, action buttons, and TDS Toast feedback. They avoid `alert()`/`confirm()`, do not add direct `@toss/tds-mobile` imports, and keep unsupported server endpoints out of the UI. |
 | Runtime verification | Needs sandbox | Local source tests and browser screenshots can check the route layout, but Apps in Toss native navigation, safe area, and device font behavior still need sandbox/device confirmation. |
 
+### 2026-06-01 User Profile Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss MCP unavailable in this Codex session; `ax` CLI was also unavailable on PATH, so the same official web fallback set from the admin branch audit applies.
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/my` general account route | Product-approved / API-required | The logged-in user profile is a normal user surface, separate from `/admin/account`. `/my` uses existing Swagger-backed `GET /api/v1/users/me`, `GET /api/v1/users/me/favorite-shops`, and `GET /api/v1/users/me/reviews`; it does not require an admin role and does not display raw access or refresh tokens. |
+| `/home` profile entry | Product-approved / Local preview | Home now exposes a compact `내 정보` entry for signed-in sessions and local dev preview. The admin entry remains governed by the existing admin/dev check, so a general user profile card is not tied to admin authorization. |
+| Runtime verification | Needs sandbox | Source tests and local build can verify routing/API/UI contracts. Apps in Toss login/session handoff and native navigation should still be checked in sandbox. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

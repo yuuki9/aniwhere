@@ -15,6 +15,7 @@ import {
   ExplorePage,
   HomePage,
   IntroPage,
+  MyPage,
   PostDetailPage,
   SearchPage,
   ShopRouteRedirect,
@@ -44,6 +45,10 @@ export const router = createBrowserRouter([
       {
         path: 'home',
         element: routeElement(<HomePage />),
+      },
+      {
+        path: 'my',
+        element: routeElement(<MyPage />),
       },
       {
         path: 'shops',

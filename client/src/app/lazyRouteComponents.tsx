@@ -31,6 +31,7 @@ export const CommunityPage = lazy(() => import('../pages/CommunityPage').then((m
 export const ExplorePage = lazy(() => import('../pages/ExplorePage').then((module) => ({ default: module.ExplorePage })))
 export const HomePage = lazy(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })))
 export const IntroPage = lazy(() => import('../pages/IntroPage').then((module) => ({ default: module.IntroPage })))
+export const MyPage = lazy(() => import('../pages/MyPage').then((module) => ({ default: module.MyPage })))
 export const PostDetailPage = lazy(() => import('../pages/PostDetailPage').then((module) => ({ default: module.PostDetailPage })))
 export const SearchPage = lazy(() => import('../pages/SearchPage').then((module) => ({ default: module.SearchPage })))
 export const ShopRouteRedirect = lazy(() => import('./ShopRouteRedirect').then((module) => ({ default: module.ShopRouteRedirect })))
