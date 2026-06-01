@@ -27,13 +27,6 @@ export default defineConfig({
   navigationBar: {
     withBackButton: true,
     withHomeButton: false,
-    initialAccessoryButton: {
-      id: 'my-profile',
-      title: '내 정보',
-      icon: {
-        name: 'icon-person-mono',
-      },
-    },
   },
   outdir: 'dist',
   webViewProps: {

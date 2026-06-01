@@ -836,6 +836,11 @@ p {
 .ait-navigation-profile-icon {
   width: 24px;
   height: 24px;
+  color: currentcolor;
+}
+
+.ait-navigation-profile-icon path {
+  stroke: currentcolor;
 }
 
 .intro-navigation {
@@ -1702,6 +1707,81 @@ p {
   background: var(--ait-color-gray-100);
   color: var(--ait-color-text-secondary);
   font-size: var(--ait-font-size-body-md);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.home-profile-entry-section {
+  display: block;
+  padding: var(--ait-space-0);
+}
+
+.home-profile-entry-card {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  gap: var(--ait-space-4);
+  padding: var(--ait-space-4);
+  border: 1px solid var(--ait-color-border);
+  border-radius: var(--ait-radius-md);
+  background: var(--ait-color-gray-50);
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-profile-entry-card:active {
+  transform: translateY(1px);
+}
+
+.home-profile-entry-icon {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-blue-50);
+  color: var(--ait-color-brand);
+}
+
+.home-profile-entry-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.home-profile-entry-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ait-space-1);
+}
+
+.home-profile-entry-copy strong {
+  color: var(--ait-color-text-primary);
+  font-size: var(--ait-font-size-body-md);
+  font-weight: 800;
+  line-height: var(--ait-line-height-tight);
+}
+
+.home-profile-entry-copy small {
+  overflow: hidden;
+  color: var(--ait-color-text-secondary);
+  font-size: var(--ait-font-size-body-sm);
+  line-height: var(--ait-line-height-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-profile-entry-arrow {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: var(--ait-color-text-tertiary);
+  font-size: 24px;
   font-weight: 800;
   line-height: 1;
 }

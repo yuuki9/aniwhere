@@ -38,21 +38,26 @@ test('Apps in Toss dev server keeps the local loopback host until LAN sandbox se
   assert.match(vite, /host:\s*'127\.0\.0\.1'/)
 })
 
-test('Apps in Toss native navigation exposes the my profile accessory button', () => {
+test('Apps in Toss native navigation exposes the my profile accessory button outside intro', () => {
   const granite = graniteConfigSource()
   const app = appSource()
 
-  assert.match(granite, /initialAccessoryButton:\s*\{/)
-  assert.match(granite, /id:\s*'my-profile'/)
-  assert.match(granite, /title:\s*'내 정보'/)
-  assert.match(granite, /name:\s*'icon-person-mono'/)
+  assert.doesNotMatch(granite, /initialAccessoryButton:\s*\{/)
+  assert.match(app, /import \{ partner, tdsEvent \} from '@apps-in-toss\/web-framework'/)
+  assert.match(app, /MY_PROFILE_ACCESSORY_BUTTON_ID = 'profile-magnifier'/)
+  assert.match(app, /name: 'icon-profile-magnifier-mono'/)
+  assert.match(app, /partner\.addAccessoryButton\(MY_PROFILE_ACCESSORY_BUTTON\)/)
+  assert.match(app, /partner\.removeAccessoryButton\(\)/)
+  assert.match(app, /PROFILE_ACCESSORY_BLOCKED_PATHS/)
+  assert.match(app, /new Set\(\['\/', '\/intro'\]\)/)
+  assert.match(app, /router\.subscribe/)
   assert.match(app, /tdsEvent\.addEventListener\('navigationAccessoryEvent'/)
   assert.match(app, /if \(id === MY_PROFILE_ACCESSORY_BUTTON_ID\)/)
   assert.match(app, /router\.navigate\('\/my'\)/)
 })
-
 test('local app navigation mirrors the native my profile accessory entry', () => {
   const source = appTopNavigationSource()
+  const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
   assert.match(source, /function ProfileIcon\(\)/)
   assert.match(source, /aria-current=\{isProfileEntryCurrent \? 'page' : undefined\}/)
@@ -60,6 +65,7 @@ test('local app navigation mirrors the native my profile accessory entry', () =>
   assert.match(source, /navigate\('\/my'\)/)
   assert.match(source, /ait-navigation-profile-button/)
   assert.match(source, /location\.pathname === '\/my'/)
+  assert.match(styles, /\.ait-navigation-profile-icon path\s*\{[\s\S]*stroke:\s*currentcolor;/)
 })
 
 test('Vite exposes an opt-in public bundle analyzer report', () => {
