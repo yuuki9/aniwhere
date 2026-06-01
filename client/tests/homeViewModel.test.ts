@@ -139,7 +139,7 @@ test('HomePage imports CTA banner images and routes enabled CTA cards', () => {
   assert.match(styles, /\.home-cta-banner-disabled/)
 })
 
-test('HomePage shows the admin entry only for server admin roles', () => {
+test('HomePage shows the admin entry for server admin roles and local dev preview', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const authSession = fs.readFileSync(new URL('../src/shared/lib/authSession.ts', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
@@ -149,7 +149,7 @@ test('HomePage shows the admin entry only for server admin roles', () => {
   assert.match(source, /className="home-admin-entry-card"/)
   assert.match(source, /to="\/admin"/)
   assert.doesNotMatch(source, /to="\/admin\/shops"/)
-  assert.match(source, /const canEnterAdmin = useMemo\(\(\) => isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
+  assert.match(source, /const canEnterAdmin = useMemo\(\(\) => import\.meta\.env\.DEV \|\| isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
   assert.match(source, /\{canEnterAdmin \? <HomeAdminEntry \/> : null\}/)
   assert.ok(source.indexOf('{canEnterAdmin ? <HomeAdminEntry /> : null}') < source.indexOf('<HomeSearchEntry'))
   assert.match(authSession, /export function isAdminRole/)

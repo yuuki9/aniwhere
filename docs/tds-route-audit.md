@@ -72,6 +72,23 @@ Official docs checked:
 | Bottom CTA | Partial / Needs follow-up | Official BottomCTA is the documented bottom call-to-action primitive. Current intro uses official `Button` inside an app-owned bottom action area to preserve the approved single-viewport rhythm. Before PR, classify this as `Product-approved` or migrate to `BottomCTA.Single` with visual verification. |
 | Runtime verification | Needs sandbox | Local browser and build verification do not prove Apps in Toss common navigation, safe area, large-text scaling, or runtime font behavior. |
 
+## Current Intro/My Profile Emoji Audit
+
+Official docs checked with Apps in Toss MCP on 2026-06-01:
+
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+- TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
+- ListRow image/reference: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/ListRowLegacy/list-row-legacy/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/intro` random profile setup | Product-approved / TDS-informed | First nickname setup now samples a random 10-item Toss emoji rail from an app allowlist, selects the first sampled item by default, and keeps that sheet state stable until the user closes or restarts setup. The sheet remains the official `BottomSheet` + `TextField` flow already approved for onboarding. |
+| `/my` profile edit sheet | Product-approved / TDS-informed | Profile editing combines nickname and emoji in one bottom-sheet-like surface. The current saved emoji is pinned to the first random page; additional pages are generated from the same allowlist when opened. Nickname changes still run the nickname availability API before `PATCH /api/v1/users/me/nickname`. |
+| Emoji image source | Product-approved / Needs runtime check | Emoji images use Toss static emoji filenames from an app allowlist to avoid arbitrary broken URLs. Local build and browser checks can prove DOM wiring, but exact CDN image availability should be sampled again before launch. |
+| Toast feedback | TDS-informed | Toast copy is short and completion-oriented, matching the checked Toast feedback purpose. The current implementation remains app-owned CSS rather than the TDS `useToast` hook because the page already uses a local profile surface and no new facade API was added in this change. |
+| Runtime verification | Needs sandbox | Local browser does not prove Apps in Toss safe area, native navigation accessory behavior, or iOS/Android toast positioning. |
+
 ## Current Home Audit
 
 Official docs checked with Apps in Toss MCP on 2026-05-17:
@@ -748,6 +765,38 @@ Official docs checked in the current session:
 | `/my` general account route | Product-approved / API-required | The logged-in user profile is a normal user surface, separate from `/admin/account`. `/my` uses existing Swagger-backed `GET /api/v1/users/me`, `GET /api/v1/users/me/favorite-shops`, and `GET /api/v1/users/me/reviews`; it does not require an admin role and does not display raw access or refresh tokens. |
 | `/home` profile entry | Product-approved / Local preview | Home now exposes `내 정보` as a compact floating action for signed-in sessions and local dev preview instead of a primary content card. The admin entry remains governed by the existing admin/dev check, so a general user profile entry is not tied to admin authorization or the main discovery CTA stack. |
 | Runtime verification | Needs sandbox | Source tests and local build can verify routing/API/UI contracts. Apps in Toss login/session handoff and native navigation should still be checked in sandbox. |
+
+### 2026-06-01 Native Profile Navigation Accessory Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss NavigationBar: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/UI/NavigationBar.md
+- TDS Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Apps in Toss native navigation accessory | TDS-required / Product-approved | `granite.config.ts` now registers a single `navigationBar.initialAccessoryButton` with `id: my-profile`, `title: 내 정보`, and a monotone person icon so Apps in Toss shows the profile entry in the supported accessory slot to the left of the 더보기 button. `App.tsx` listens for `navigationAccessoryEvent` and routes the button to `/my`. |
+| Local preview navigation accessory | Product-approved / Local preview | The previous `/home` floating profile action was removed to avoid duplicate entry points. The app-owned `AppTopNavigation` now mirrors the native accessory with a compact icon button on the trailing side for local/browser preview routes and hides that self-link on `/my`. |
+| Runtime verification | Needs sandbox | Source tests and local browser preview can verify the local route entry. The native accessory button icon, placement, and event callback still need Apps in Toss sandbox/device confirmation. |
+
+### 2026-06-01 User Profile Row Layout Follow-up
+
+Official docs and references checked in the current session:
+
+- Deus profile reference provided by Toss: https://deus.toss.im/projects/10482/pages/Hn4N2Ap3@1
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- TDS Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/frame/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/my` profile composition | Product-approved / TDS-informed | The route follows the Toss reference profile rhythm with a centered avatar, simple key/value rows, and gray section dividers. Placeholder personal fields that are not present in Swagger, such as English name, birth date, phone, email, home, and company information, are removed rather than displayed as fake empty data. The footer note, status row, and role row are also removed to keep the page focused on editable profile and activity. |
+| Swagger-backed user fields | API-required | `GET /api/v1/users/me` currently exposes `id`, `userKey`, `nickname`, `emojiIconFilename`, `status`, `role`, `lastLoginAt`, and `createdAt`, but `/my` intentionally hides `id`, `userKey`, `status`, and `role`. Visible profile rows use only `nickname`, `lastLoginAt`, and `createdAt`; `emojiIconFilename` drives the avatar image. Swagger defines `status` as a plain string without enum values, so it is documented only and not shown in the UI. |
+| Swagger-backed user actions | API-required / Product-approved | The profile edit sheet uses the actual User APIs requested for this route: `GET /api/v1/users/nickname/availability` plus `PATCH /api/v1/users/me/nickname` for nickname editing, and the same nickname PATCH payload for avatar `emojiIconFilename` changes. The lower profile area uses `GET /api/v1/users/me/favorite-shops` for saved shops and `GET /api/v1/users/me/reviews?sort=NEWEST` for the user's recent reviews. Favorite shops and reviews initially show three rows and expand with a `더보기` button. |
+| Runtime verification | Needs sandbox | Local source tests and browser preview can verify the layout. Apps in Toss login/session handoff, native safe area, and real profile values still need sandbox/device confirmation. |
 
 ## PR Evidence Format
 

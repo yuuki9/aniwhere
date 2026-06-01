@@ -123,14 +123,6 @@ function HomeAdminEntry() {
   )
 }
 
-function HomeProfileFloatingAction() {
-  return (
-    <Link className="home-profile-floating-action" aria-label="내 정보" to="/my">
-      <span aria-hidden="true">내</span>
-    </Link>
-  )
-}
-
 function HomePendingCard({ title, description }: { title: string; description: string }) {
   return (
     <article className="home-pending-card">
@@ -222,7 +214,6 @@ export function HomePage() {
   const location = useLocation()
   const [welcomeProfile, setWelcomeProfile] = useState(() => readWelcomeProfile(location.state))
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
-  const canOpenProfile = useMemo(() => import.meta.env.DEV || readAuthSession() != null, [])
   const canEnterAdmin = useMemo(() => import.meta.env.DEV || isAdminRole(readAuthSession()?.role), [])
   const worksQuery = useQuery({
     queryKey: ['works', 'home-preview'],
@@ -254,7 +245,6 @@ export function HomePage() {
         position="top"
         onClose={() => setWelcomeProfile(null)}
       />
-      {canOpenProfile ? <HomeProfileFloatingAction /> : null}
       {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />

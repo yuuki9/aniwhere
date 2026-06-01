@@ -8,6 +8,14 @@ import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
 import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
 import type { AuthSession } from '../shared/lib/authSession'
+import {
+  createRandomProfileEmojiSet,
+  getProfileEmojiOption,
+  getProfileEmojiSymbol,
+  PROFILE_EMOJI_INTRO_COUNT,
+  PROFILE_EMOJI_OPTIONS,
+  type ProfileEmojiOption,
+} from '../shared/lib/profileEmojiOptions'
 import { Asset, BottomSheet, Button, TextField } from '@aniwhere/tds-mobile'
 
 type IntroFeatureIconType = 'curation' | 'map' | 'review'
@@ -77,98 +85,8 @@ type EntryRouteState =
   }
 
 const NICKNAME_REQUIRED_MESSAGE = '닉네임을 한 글자 이상 입력해 주세요.'
-const DEFAULT_PROFILE_EMOJI_ID = 'alien'
 const PROFILE_EMOJI_FRAME = { width: 58, height: 58, radius: 29 }
 const PROFILE_EMOJI_RAIL_FRAME = { width: 34, height: 34, radius: 17 }
-
-const profileEmojiOptions = [
-  {
-    id: 'fire',
-    label: '파란 불꽃',
-    emojiIconFilename: 'u1F525.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F525.png',
-    symbol: '🔥',
-    tone: '#ffe3e3',
-  },
-  {
-    id: 'skull',
-    label: '해골',
-    emojiIconFilename: 'u1F480.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F480.png',
-    symbol: '💀',
-    tone: '#e9eef5',
-  },
-  {
-    id: 'alien',
-    label: '초록 외계인',
-    emojiIconFilename: 'u1F47D.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F47D.png',
-    symbol: '👽',
-    tone: '#d9f7be',
-  },
-  {
-    id: 'bomb',
-    label: '폭탄',
-    emojiIconFilename: 'u1F4A3.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F4A3.png',
-    symbol: '💣',
-    tone: '#e8eaef',
-  },
-  {
-    id: 'seedling',
-    label: '새싹',
-    emojiIconFilename: 'u1F331.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F331.png',
-    symbol: '🌱',
-    tone: '#dff8e8',
-  },
-  {
-    id: 'sunglasses',
-    label: '선글라스 얼굴',
-    emojiIconFilename: 'u1F60E.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F60E.png',
-    symbol: '😎',
-    tone: '#fff0b8',
-  },
-  {
-    id: 'sparkles',
-    label: '반짝이',
-    emojiIconFilename: 'u2728.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u2728.png',
-    symbol: '✨',
-    tone: '#fff4bf',
-  },
-  {
-    id: 'rocket',
-    label: '로켓',
-    emojiIconFilename: 'u1F680.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F680.png',
-    symbol: '🚀',
-    tone: '#e6f0ff',
-  },
-  {
-    id: 'game',
-    label: '게임 패드',
-    emojiIconFilename: 'u1F3AE.png',
-    src: 'https://static.toss.im/2d-emojis/png/4x/u1F3AE.png',
-    symbol: '🎮',
-    tone: '#eadfff',
-  },
-] as const
-
-type ProfileEmojiOption = (typeof profileEmojiOptions)[number]
-
-function getProfileEmojiOption(id: string) {
-  return (
-    profileEmojiOptions.find((option) => option.id === id) ??
-    profileEmojiOptions.find((option) => option.id === DEFAULT_PROFILE_EMOJI_ID) ??
-    profileEmojiOptions[0]
-  )
-}
-
-function getProfileEmojiSymbol(emojiIconFilename: string | null | undefined) {
-  return profileEmojiOptions.find((option) => option.emojiIconFilename === emojiIconFilename)?.symbol
-}
 
 type NicknameOnboardingSheetProps = {
   error: string | null
@@ -178,6 +96,7 @@ type NicknameOnboardingSheetProps = {
   onClose: () => void
   onEmojiChange: (id: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  emojiOptions: readonly ProfileEmojiOption[]
   open: boolean
   selectedEmoji: ProfileEmojiOption
   touched: boolean
@@ -191,6 +110,7 @@ function NicknameOnboardingSheet({
   onClose,
   onEmojiChange,
   onSubmit,
+  emojiOptions,
   open,
   selectedEmoji,
   touched,
@@ -224,7 +144,7 @@ function NicknameOnboardingSheet({
       <form className="intro-nickname-card" id="intro-nickname-form" onSubmit={onSubmit}>
         <div className="intro-profile-emoji-panel" aria-label="프로필 이모지 선택">
           <div className="intro-profile-emoji-options" role="radiogroup" aria-label="프로필 이모지">
-            {profileEmojiOptions.map((option) => {
+            {emojiOptions.map((option) => {
               const isSelected = option.id === selectedEmoji.id
 
               return (
@@ -286,7 +206,12 @@ export function IntroPage() {
   const [nicknameInput, setNicknameInput] = useState('')
   const [nicknameTouched, setNicknameTouched] = useState(false)
   const [nicknameError, setNicknameError] = useState<string | null>(null)
-  const [selectedProfileEmojiId, setSelectedProfileEmojiId] = useState(DEFAULT_PROFILE_EMOJI_ID)
+  const [profileEmojiSet, setProfileEmojiSet] = useState<ProfileEmojiOption[]>(() =>
+    createRandomProfileEmojiSet(PROFILE_EMOJI_INTRO_COUNT),
+  )
+  const [selectedProfileEmojiId, setSelectedProfileEmojiId] = useState(
+    () => profileEmojiSet[0]?.id ?? PROFILE_EMOJI_OPTIONS[0].id,
+  )
   const selectedProfileEmoji = getProfileEmojiOption(selectedProfileEmojiId)
   const isNicknameSheetOpen = pendingNicknameSession != null || isMockNicknameOnboardingOpen
 
@@ -297,6 +222,15 @@ export function IntroPage() {
       document.body.classList.remove('intro-route-body')
     }
   }, [])
+
+  const openNicknameOnboardingSheet = (initialNickname: string) => {
+    const emojiSet = createRandomProfileEmojiSet(PROFILE_EMOJI_INTRO_COUNT)
+    setProfileEmojiSet(emojiSet)
+    setSelectedProfileEmojiId(emojiSet[0]?.id ?? PROFILE_EMOJI_OPTIONS[0].id)
+    setNicknameInput(initialNickname)
+    setNicknameTouched(false)
+    setNicknameError(null)
+  }
 
   const handleStart = async () => {
     if (isEntryAttemptInFlightRef.current) {
@@ -311,11 +245,9 @@ export function IntroPage() {
       const entry = await startServiceEntry()
       const result = await completeServiceEntry(entry)
       if (result.mode === 'needsNickname') {
+        openNicknameOnboardingSheet(result.user.nickname ?? '')
         setPendingNicknameSession(result.session)
         setIsMockNicknameOnboardingOpen(false)
-        setNicknameInput(result.user.nickname ?? '')
-        setNicknameTouched(false)
-        setNicknameError(null)
         return
       }
       navigate('/home', {
@@ -343,11 +275,8 @@ export function IntroPage() {
     }
 
     setPendingNicknameSession(null)
+    openNicknameOnboardingSheet('')
     setIsMockNicknameOnboardingOpen(true)
-    setNicknameInput('')
-    setNicknameTouched(false)
-    setNicknameError(null)
-    setSelectedProfileEmojiId(DEFAULT_PROFILE_EMOJI_ID)
     setEntryError(null)
   }
 
@@ -357,7 +286,6 @@ export function IntroPage() {
     setNicknameInput('')
     setNicknameTouched(false)
     setNicknameError(null)
-    setSelectedProfileEmojiId(DEFAULT_PROFILE_EMOJI_ID)
   }
 
   const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -478,6 +406,7 @@ export function IntroPage() {
         onChange={handleNicknameChange}
         onClose={handleNicknameSheetClose}
         onEmojiChange={setSelectedProfileEmojiId}
+        emojiOptions={profileEmojiSet}
         onSubmit={handleNicknameSubmit}
         open={isNicknameSheetOpen}
         selectedEmoji={selectedProfileEmoji}
