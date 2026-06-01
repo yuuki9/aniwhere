@@ -1687,76 +1687,40 @@ p {
   line-height: 1;
 }
 
-.home-profile-entry-section {
-  display: block;
-  padding: var(--ait-space-0);
-}
-
-.home-profile-entry-card {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 28px;
-  align-items: center;
-  gap: var(--ait-space-3);
-  min-height: 68px;
-  padding: var(--ait-space-4);
-  border: 1px solid var(--ait-color-border);
-  border-radius: var(--ait-radius-md);
-  background: var(--ait-color-gray-0);
-  color: inherit;
-  text-decoration: none;
-}
-
-.home-profile-entry-card:active {
-  transform: translateY(1px);
-}
-
-.home-profile-entry-icon,
-.home-profile-entry-arrow {
+.home-profile-floating-action {
   display: inline-flex;
+  position: fixed;
+  z-index: 20;
+  top: max(76px, calc(env(safe-area-inset-top) + 68px));
+  right: max(16px, calc((100vw - 480px) / 2 + 16px));
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
   border-radius: var(--ait-radius-full);
-}
-
-.home-profile-entry-icon {
-  width: 40px;
-  height: 40px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.14);
   background: var(--ait-color-blue-50);
   color: var(--ait-color-brand);
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.home-profile-floating-action span {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(49, 130, 246, 0.18);
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-gray-0);
   font-size: var(--ait-font-size-body-sm);
   font-weight: 900;
 }
 
-.home-profile-entry-copy {
-  display: grid;
-  min-width: 0;
-  gap: var(--ait-space-1);
-}
-
-.home-profile-entry-copy strong {
-  color: var(--ait-color-text-primary);
-  font-size: var(--ait-font-size-body-md);
-  font-weight: 800;
-  line-height: var(--ait-line-height-tight);
-}
-
-.home-profile-entry-copy small {
-  overflow: hidden;
-  color: var(--ait-color-text-secondary);
-  font-size: var(--ait-font-size-body-sm);
-  line-height: var(--ait-line-height-body);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-profile-entry-arrow {
-  width: 28px;
-  height: 28px;
-  background: var(--ait-color-gray-100);
-  color: var(--ait-color-text-secondary);
-  font-size: var(--ait-font-size-body-lg);
-  font-weight: 800;
-  line-height: 1;
+.home-profile-floating-action:active {
+  transform: translateY(1px);
 }
 
 .my-profile-shell {

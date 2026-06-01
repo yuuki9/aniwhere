@@ -746,7 +746,7 @@ Official docs checked in the current session:
 | Area | Current classification | Notes |
 | --- | --- | --- |
 | `/my` general account route | Product-approved / API-required | The logged-in user profile is a normal user surface, separate from `/admin/account`. `/my` uses existing Swagger-backed `GET /api/v1/users/me`, `GET /api/v1/users/me/favorite-shops`, and `GET /api/v1/users/me/reviews`; it does not require an admin role and does not display raw access or refresh tokens. |
-| `/home` profile entry | Product-approved / Local preview | Home now exposes a compact `내 정보` entry for signed-in sessions and local dev preview. The admin entry remains governed by the existing admin/dev check, so a general user profile card is not tied to admin authorization. |
+| `/home` profile entry | Product-approved / Local preview | Home now exposes `내 정보` as a compact floating action for signed-in sessions and local dev preview instead of a primary content card. The admin entry remains governed by the existing admin/dev check, so a general user profile entry is not tied to admin authorization or the main discovery CTA stack. |
 | Runtime verification | Needs sandbox | Source tests and local build can verify routing/API/UI contracts. Apps in Toss login/session handoff and native navigation should still be checked in sandbox. |
 
 ## PR Evidence Format

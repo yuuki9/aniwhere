@@ -21,13 +21,14 @@ test('general users can open their profile from home without admin role', () => 
 
   assert.match(router, /path:\s*'my'[\s\S]*routeElement\(<MyPage \/>/)
   assert.match(lazyRoutes, /export const MyPage = lazy/)
-  assert.match(home, /HomeProfileEntry/)
+  assert.match(home, /HomeProfileFloatingAction/)
   assert.match(home, /to="\/my"/)
-  assert.doesNotMatch(home, /isAdminRole\(readAuthSession\(\)\?\.role\)[\s\S]{0,240}<HomeProfileEntry/)
+  assert.doesNotMatch(home, /isAdminRole\(readAuthSession\(\)\?\.role\)[\s\S]{0,240}<HomeProfileFloatingAction/)
   assert.match(mainLayout, /location\.pathname === '\/my'/)
   assert.match(mainLayout, /hasRouteOwnedNavigation/)
-  assert.match(styles, /\.home-profile-entry-section/)
-  assert.match(styles, /\.home-profile-entry-card/)
+  assert.match(styles, /\.home-profile-floating-action/)
+  assert.match(styles, /position:\s*fixed/)
+  assert.doesNotMatch(styles, /\.home-profile-entry-card/)
 })
 
 test('my page uses current user swagger endpoints and hides raw session tokens', () => {

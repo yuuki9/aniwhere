@@ -123,22 +123,11 @@ function HomeAdminEntry() {
   )
 }
 
-function HomeProfileEntry() {
+function HomeProfileFloatingAction() {
   return (
-    <section className="home-profile-entry-section" aria-label="내 정보">
-      <Link className="home-profile-entry-card" to="/my">
-        <span className="home-profile-entry-icon" aria-hidden="true">
-          내
-        </span>
-        <span className="home-profile-entry-copy">
-          <strong>내 정보</strong>
-          <small>프로필, 관심 매장, 내가 쓴 리뷰를 확인해요.</small>
-        </span>
-        <span className="home-profile-entry-arrow" aria-hidden="true">
-          ›
-        </span>
-      </Link>
-    </section>
+    <Link className="home-profile-floating-action" aria-label="내 정보" to="/my">
+      <span aria-hidden="true">내</span>
+    </Link>
   )
 }
 
@@ -265,7 +254,7 @@ export function HomePage() {
         position="top"
         onClose={() => setWelcomeProfile(null)}
       />
-      {canOpenProfile ? <HomeProfileEntry /> : null}
+      {canOpenProfile ? <HomeProfileFloatingAction /> : null}
       {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />
