@@ -751,6 +751,21 @@ Official docs checked in the current session:
 | `/admin/reviews`, `/admin/users`, `/admin/points`, `/admin/account` layout | Product-approved / TDS-informed | The new branch pages reuse the app-owned admin route shell with `AppTopNavigation`, compact section panels, horizontal chips, action buttons, and TDS Toast feedback. They avoid `alert()`/`confirm()`, do not add direct `@toss/tds-mobile` imports, and keep unsupported server endpoints out of the UI. |
 | Runtime verification | Needs sandbox | Local source tests and browser screenshots can check the route layout, but Apps in Toss native navigation, safe area, and device font behavior still need sandbox/device confirmation. |
 
+### 2026-06-01 Admin Home White Menu Follow-up
+
+Official docs checked in the current session:
+
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/admin` all-white home surface | Product-approved / Regression fix | The admin index now removes the old `admin-home-head`, section title, branch-card, and `admin-hub-grid` treatment. The route keeps the app-owned `AppTopNavigation` and uses a white 480px mobile shell with a white menu list so it no longer inherits the older mixed dashboard/card background. |
+| `/admin` menu scope | Product-approved / API-required | The visible entry list is limited to the three managed surfaces requested for the current operation flow: `매장 관리`, `사용자 권한 변경`, and `신고된 리뷰 관리`. `포인트 지급` and `계정 정보` remain routed elsewhere but are no longer promoted on the admin home menu. |
+| `/admin` home-style CTA list | Product-approved / TDS-informed | The menu reuses the existing `home-cta-banner-list` / `home-cta-banner` rhythm instead of a custom hub grid. Admin-specific classes only supply compact text, right chevron, and white-card overrides; no new direct TDS imports were added. |
+| Runtime verification | Needs sandbox | Source tests and local browser inspection verify the structure and colors. Apps in Toss native safe area and device font behavior should still be checked on sandbox/device. |
+
 ### 2026-06-01 User Profile Follow-up
 
 Official docs checked in the current session:

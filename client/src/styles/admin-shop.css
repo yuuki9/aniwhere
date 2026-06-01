@@ -1,7 +1,6 @@
 /* Admin route styles extracted from App.css. */
 
 .admin-panel,
-.admin-hub-card,
 .admin-summary-card {
   background: var(--ait-color-gray-0);
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -30,45 +29,55 @@
   font-size: 1.15rem;
 }
 
-.admin-home-head {
-  display: grid;
-  gap: var(--ait-space-2);
-  padding: var(--ait-space-6) 0 var(--ait-space-4);
-}
-
 .admin-home-shell.admin-shop-crud-shell {
   width: min(480px, 100%);
   padding: 0 var(--ait-space-5) var(--ait-space-8);
+  background: var(--ait-color-gray-0);
 }
 
-.admin-home-head h1 {
-  margin: 0;
+.admin-home-menu-list {
+  margin-top: var(--ait-space-4);
+  background: var(--ait-color-gray-0);
+}
+
+.admin-home-menu-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 82px;
+  aspect-ratio: auto;
+  gap: var(--ait-space-6);
+  padding: 17px 16px;
+  background: var(--ait-color-gray-0);
+  border-radius: var(--ait-radius-md);
+}
+
+.admin-home-menu-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ait-space-2);
+}
+
+.admin-home-menu-copy strong {
   color: var(--ait-color-gray-900);
-  font-size: var(--ait-font-size-display-sm);
+  font-size: var(--ait-font-size-body-lg);
+  font-weight: 800;
   line-height: var(--ait-line-height-title);
 }
 
-.admin-home-head p {
-  margin: 0;
-  color: var(--ait-color-text-tertiary);
-  font-size: var(--ait-font-size-body-md);
-}
-
-.admin-branch-section {
-  display: grid;
-  gap: var(--ait-space-4);
-}
-
-.admin-branch-section + .admin-branch-section {
-  margin-top: var(--ait-space-7);
-}
-
-.admin-branch-section-title {
-  margin: 0;
+.admin-home-menu-copy small {
   color: var(--ait-color-text-tertiary);
   font-size: var(--ait-font-size-body-sm);
-  font-weight: 900;
   line-height: var(--ait-line-height-body);
+  overflow-wrap: anywhere;
+}
+
+.admin-home-menu-arrow {
+  flex: 0 0 auto;
+  color: var(--ait-color-text-tertiary);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .admin-action-row {
@@ -78,88 +87,10 @@
 }
 
 .admin-summary-grid,
-.admin-hub-grid,
 .admin-points-grid {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.admin-hub-grid {
-  gap: var(--ait-space-7);
-  grid-template-columns: 1fr;
-}
-
-.admin-hub-card {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: start;
-  gap: var(--ait-space-3);
-  min-height: 0;
-  padding: 16px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.admin-hub-card-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--ait-radius-2xl);
-  background: var(--admin-shop-brand-bg);
-  color: var(--ait-color-brand-pressed);
-  font-size: var(--ait-font-size-body-md);
-  font-weight: 900;
-}
-
-.admin-hub-card-copy {
-  display: grid;
-  min-width: 0;
-  gap: var(--ait-space-2);
-}
-
-.admin-hub-card strong {
-  color: var(--ait-color-gray-900);
-  font-size: var(--ait-font-size-body-lg);
-  line-height: var(--ait-line-height-title);
-}
-
-.admin-hub-card small {
-  color: var(--ait-color-text-tertiary);
-  font-size: var(--ait-font-size-body-sm);
-  line-height: var(--ait-line-height-body);
-  overflow-wrap: anywhere;
-}
-
-.admin-hub-card-status {
-  width: fit-content;
-  padding: 6px 10px;
-  border-radius: var(--ait-radius-full);
-  background: rgba(29, 78, 216, 0.08);
-  color: var(--ait-color-brand-pressed);
-  font-size: var(--ait-font-size-caption);
-  font-weight: 800;
-}
-
-.admin-hub-card-disabled {
-  background: var(--ait-color-gray-50);
-  color: var(--ait-color-text-tertiary);
-}
-
-.admin-branch-card-primary {
-  border-color: var(--admin-shop-brand-border-strong);
-  background: var(--admin-shop-brand-bg);
-}
-
-.admin-branch-card-primary .admin-hub-card-icon {
-  background: var(--ait-color-brand);
-  color: var(--ait-color-gray-0);
-}
-
-.admin-branch-card-pending {
-  background: var(--ait-color-gray-50);
 }
 
 .admin-branch-page-shell.admin-shop-crud-shell {
@@ -358,11 +289,6 @@
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.admin-hub-card-disabled .admin-hub-card-status {
-  background: rgba(100, 116, 139, 0.1);
-  color: var(--ait-color-text-tertiary);
 }
 
 .admin-summary-card {
@@ -1787,16 +1713,9 @@
 
 @media (max-width: 1024px) {
   .admin-summary-grid,
-  .admin-hub-grid,
   .admin-points-grid,
   .admin-workspace {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (min-width: 720px) {
-  .admin-hub-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
