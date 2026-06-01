@@ -50,6 +50,26 @@
   padding: 17px 16px;
   background: var(--ait-color-gray-0);
   border-radius: var(--ait-radius-md);
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-home-menu-card:any-link,
+.admin-home-menu-card:hover,
+.admin-home-menu-card:focus,
+.admin-home-menu-card:active,
+.admin-home-menu-card:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-home-menu-card:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.admin-home-menu-card * {
+  text-decoration: none;
 }
 
 .admin-home-menu-copy {
