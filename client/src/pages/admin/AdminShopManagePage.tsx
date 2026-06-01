@@ -162,6 +162,10 @@ export function AdminShopManagePage() {
       />
 
       <section className="admin-shop-crud-layout">
+        <header className="admin-manage-page-header">
+          <h1>매장 관리</h1>
+        </header>
+
         <section className="admin-shop-manage-summary" aria-label="매장 관리 요약">
           <div>
             <span>등록 매장</span>

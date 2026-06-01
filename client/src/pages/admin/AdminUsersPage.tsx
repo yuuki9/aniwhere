@@ -5,6 +5,7 @@ import { BottomSheet, SegmentedControl, Toast } from '@aniwhere/tds-mobile'
 import { getUserDetail, listUsers, updateUserRole } from '../../shared/api/users'
 import type { UserAppRole, UserSummary } from '../../shared/api/types'
 import { formatDateTime } from '../../shared/lib/format'
+import { emojiFromFilename, profileEmojiUrl } from '../../shared/lib/profileEmojiOptions'
 import { AppTopNavigation } from '../../shared/ui/AppTopNavigation'
 
 const USER_TOAST_VISIBLE_MS = 3000
@@ -94,9 +95,6 @@ export function AdminUsersPage() {
     [appliedKeyword, roleFilter, users],
   )
 
-  const pageAdminCount = users.filter((user) => normalizeUserRole(user.role) === 'ADMIN').length
-  const pageUserCount = users.filter((user) => normalizeUserRole(user.role) === 'USER').length
-  const totalUserCount = usersQuery.data?.totalElements ?? 0
   const totalPages = usersQuery.data?.totalPages ?? 0
   const canGoPrevious = currentPage > 0 && !usersQuery.isFetching
   const canGoNext = !!usersQuery.data && !usersQuery.data.last && !usersQuery.isFetching
@@ -161,9 +159,9 @@ export function AdminUsersPage() {
       />
 
       <section className="admin-shop-crud-layout admin-user-manage-layout">
-        <p className="admin-user-summary-line">
-          전체 {totalUserCount}명 · 현재 페이지 관리자 {pageAdminCount}명 · 사용자 {pageUserCount}명
-        </p>
+        <header className="admin-manage-page-header">
+          <h1>사용자 관리</h1>
+        </header>
 
         <section className="admin-shop-manage-tools" aria-label="사용자 검색과 필터">
           <form
@@ -220,6 +218,8 @@ export function AdminUsersPage() {
               const rowDetailUser = selectedUserId === user.id ? selectedUser ?? user : user
               const isSelected = selectedUserId === user.id
               const detailId = `admin-user-detail-${user.id}`
+              const emojiUrl = profileEmojiUrl(user.emojiIconFilename)
+              const emojiFallback = emojiFromFilename(user.emojiIconFilename) ?? userDisplayName(user).slice(0, 1)
 
               return (
                 <article
@@ -234,7 +234,13 @@ export function AdminUsersPage() {
                     type="button"
                     onClick={() => selectUser(user.id)}
                   >
-                    <span className="admin-user-board-prefix">{roleLabel(user.role).slice(0, 1)}</span>
+                    <span className="admin-user-board-prefix">
+                      {emojiUrl != null ? (
+                        <img alt="" aria-hidden="true" src={emojiUrl} />
+                      ) : (
+                        <span>{emojiFallback}</span>
+                      )}
+                    </span>
                     <span className="admin-user-board-title">
                       <strong>{userDisplayName(user)}</strong>
                     </span>
