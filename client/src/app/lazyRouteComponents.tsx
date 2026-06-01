@@ -6,6 +6,18 @@ export const AdminAccessGate = lazy(() =>
 export const AdminHomePage = lazy(() =>
   import('../pages/admin/AdminHomePage').then((module) => ({ default: module.AdminHomePage }))
 )
+export const AdminReviewModerationPage = lazy(() =>
+  import('../pages/admin/AdminReviewModerationPage').then((module) => ({ default: module.AdminReviewModerationPage }))
+)
+export const AdminUsersPage = lazy(() =>
+  import('../pages/admin/AdminUsersPage').then((module) => ({ default: module.AdminUsersPage }))
+)
+export const AdminPointsPage = lazy(() =>
+  import('../pages/admin/AdminPointsPage').then((module) => ({ default: module.AdminPointsPage }))
+)
+export const AdminAccountPage = lazy(() =>
+  import('../pages/admin/AdminAccountPage').then((module) => ({ default: module.AdminAccountPage }))
+)
 export const AdminShopManagePage = lazy(() =>
   import('../pages/admin/AdminShopManagePage').then((module) => ({ default: module.AdminShopManagePage }))
 )

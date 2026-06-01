@@ -3,10 +3,14 @@ import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { MainLayout } from '../shared/ui/MainLayout'
 import {
   AdminAccessGate,
+  AdminAccountPage,
   AdminHomePage,
+  AdminPointsPage,
+  AdminReviewModerationPage,
   AdminShopLocationPage,
   AdminShopManagePage,
   AdminShopsPage,
+  AdminUsersPage,
   CommunityPage,
   ExplorePage,
   HomePage,
@@ -98,6 +102,22 @@ export const router = createBrowserRouter([
       {
         path: 'shops/location',
         element: routeElement(<AdminShopLocationPage />),
+      },
+      {
+        path: 'reviews',
+        element: routeElement(<AdminReviewModerationPage />),
+      },
+      {
+        path: 'users',
+        element: routeElement(<AdminUsersPage />),
+      },
+      {
+        path: 'points',
+        element: routeElement(<AdminPointsPage />),
+      },
+      {
+        path: 'account',
+        element: routeElement(<AdminAccountPage />),
       },
     ],
   },

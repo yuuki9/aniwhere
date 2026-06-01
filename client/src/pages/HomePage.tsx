@@ -214,7 +214,7 @@ export function HomePage() {
   const location = useLocation()
   const [welcomeProfile, setWelcomeProfile] = useState(() => readWelcomeProfile(location.state))
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
-  const canEnterAdmin = useMemo(() => isAdminRole(readAuthSession()?.role), [])
+  const canEnterAdmin = useMemo(() => import.meta.env.DEV || isAdminRole(readAuthSession()?.role), [])
   const worksQuery = useQuery({
     queryKey: ['works', 'home-preview'],
     queryFn: getWorks,

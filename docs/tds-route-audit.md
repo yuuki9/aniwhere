@@ -714,6 +714,26 @@ Official docs checked in the current session:
 | `/admin` home layout | Product-approved / TDS-informed | The admin hub keeps the existing app-owned route shell and `AppTopNavigation`, but the first viewport now uses a 375px-friendly single-column card stack with stable side padding, compact icon/title/status/copy grouping, and a two-column enhancement only above 720px. The change fixes the previously cramped `/admin` entry without adding new `Ait*` imports or expanding admin scope. |
 | Runtime verification | Needs sandbox | Source tests and local browser inspection can verify layout structure, but Apps in Toss native safe area and device font behavior should still be checked on real devices. |
 
+### 2026-06-01 Admin Branch Hub Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss MCP unavailable in this Codex session; `ax` CLI was also unavailable on PATH, so official web fallback was used.
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/admin` branch-point hierarchy | Product-approved / TDS-informed | `/admin` is treated as an operational branch point, not a metrics dashboard. The screen now separates the active `바로 처리` branch from `다음 연결` planned branches so admins can enter the currently usable shop-management flow without scanning inactive cards. |
+| `/admin` Swagger-backed branches | Product-approved / API-required | Review verification, user/role management, point grants, and account info now link to real admin branch pages. Review status uses `PATCH /api/v1/admin/shops/{shopId}/reviews/{reviewId}/status`; user roles use `PATCH /api/v1/admin/users/{userId}/role`; account info uses `GET /api/v1/users/me` and `GET /api/v1/users/me/reviews`; points keep the existing `VITE_ADMIN_POINT_ENDPOINT`/local `SERVER_QUEUE` boundary because no fixed Swagger point-grant endpoint exists in the checked backend controllers. |
+| Local `/admin` preview entry | Product-approved / Local-only | Local dev builds now expose the home admin entry and allow `/admin` through `AdminAccessGate` when `import.meta.env.DEV` is true. Production/public builds still require an admin role from the persisted auth session, so the local WebView preview path does not weaken deployed access control. |
+| `/admin` card density | Product-approved / TDS-informed | Official Top/ListRow/Typography/Button docs informed the compact title, section labels, touch rows, and status/action emphasis. Cards remain app-owned because the route uses a custom branch-card pattern, but spacing and token usage stay aligned with the 375px admin baseline. |
+| `/admin/reviews`, `/admin/users`, `/admin/points`, `/admin/account` layout | Product-approved / TDS-informed | The new branch pages reuse the app-owned admin route shell with `AppTopNavigation`, compact section panels, horizontal chips, action buttons, and TDS Toast feedback. They avoid `alert()`/`confirm()`, do not add direct `@toss/tds-mobile` imports, and keep unsupported server endpoints out of the UI. |
+| Runtime verification | Needs sandbox | Local source tests and browser screenshots can check the route layout, but Apps in Toss native navigation, safe area, and device font behavior still need sandbox/device confirmation. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:

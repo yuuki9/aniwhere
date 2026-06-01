@@ -5,34 +5,46 @@ const adminHomeCards = [
   {
     description: '등록된 매장을 검수하고 새 매장을 등록해요.',
     href: '/admin/shops',
-    icon: '店',
-    status: '사용 가능',
+    icon: '샵',
+    status: '바로 처리',
     title: '매장 관리',
   },
+]
+
+const pendingAdminCards = [
   {
-    description: '매장 리뷰 상태 변경 API가 연결되면 검수 흐름을 붙일 예정이에요.',
-    href: null,
-    icon: '후',
-    status: '준비 중',
+    description: '방문 리뷰를 확인하고 상태 변경 흐름을 연결해요.',
+    href: '/admin/reviews',
+    icon: '리',
+    status: '다음 연결',
     title: '리뷰 검수',
   },
   {
-    description: '사용자 조회와 운영 권한 관리 API가 연결되면 확장해요.',
-    href: null,
-    icon: '유',
-    status: '준비 중',
-    title: '사용자 관리',
+    description: '사용자 목록과 운영 권한 변경 업무를 모아요.',
+    href: '/admin/users',
+    icon: '권',
+    status: '다음 연결',
+    title: '사용자/권한',
   },
   {
-    description: '사용자 프로필과 운영자 계정 정보를 확인하는 진입점으로 둘 예정이에요.',
-    href: null,
+    description: '검수 완료 보상과 수동 지급 대기열을 관리해요.',
+    href: '/admin/points',
+    icon: '포',
+    status: '다음 연결',
+    title: '포인트 지급',
+  },
+  {
+    description: '현재 운영자 프로필과 접속 상태를 확인해요.',
+    href: '/admin/account',
     icon: '계',
-    status: '준비 중',
+    status: '다음 연결',
     title: '계정 정보',
   },
 ]
 
-function AdminHubCardContent({ card }: { card: (typeof adminHomeCards)[number] }) {
+type AdminHomeCard = (typeof adminHomeCards)[number] | (typeof pendingAdminCards)[number]
+
+function AdminHubCardContent({ card }: { card: AdminHomeCard }) {
   return (
     <>
       <span className="admin-hub-card-icon" aria-hidden="true">
@@ -54,22 +66,38 @@ export function AdminHomePage() {
 
       <section className="admin-home-head">
         <span className="eyebrow">ADMIN</span>
-        <h1>관리자 메뉴</h1>
-        <p>운영 도구는 이 화면에서 확장해요.</p>
+        <h1>운영 분기점</h1>
+        <p>오늘 처리할 업무를 선택해주세요.</p>
       </section>
 
-      <section className="admin-hub-grid" aria-label="관리자 메뉴">
-        {adminHomeCards.map((card) =>
-          card.href ? (
-            <Link className="admin-hub-card" key={card.title} to={card.href}>
+      <section className="admin-branch-section" aria-labelledby="admin-primary-branch-title">
+        <h2 className="admin-branch-section-title" id="admin-primary-branch-title">
+          바로 처리
+        </h2>
+        <section className="admin-hub-grid" aria-label="바로 처리할 관리자 업무">
+          {adminHomeCards.map((card) => (
+            <Link className="admin-hub-card admin-branch-card-primary" key={card.title} to={card.href}>
               <AdminHubCardContent card={card} />
             </Link>
-          ) : (
-            <article className="admin-hub-card admin-hub-card-disabled" key={card.title} aria-disabled="true">
+          ))}
+        </section>
+      </section>
+
+      <section className="admin-branch-section" aria-labelledby="admin-pending-branch-title">
+        <h2 className="admin-branch-section-title" id="admin-pending-branch-title">
+          다음 연결
+        </h2>
+        <section className="admin-hub-grid" aria-label="연결된 관리자 업무">
+          {pendingAdminCards.map((card) => (
+            <Link
+              className="admin-hub-card admin-branch-card-pending"
+              key={card.title}
+              to={card.href}
+            >
               <AdminHubCardContent card={card} />
-            </article>
-          ),
-        )}
+            </Link>
+          ))}
+        </section>
       </section>
     </main>
   )
