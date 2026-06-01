@@ -821,10 +821,16 @@ p {
 
 .ait-navigation-profile-button {
   color: var(--ait-color-gray-600);
+  background: var(--ait-color-gray-50);
 }
 
 .ait-navigation-profile-button:active {
   transform: translateY(1px);
+}
+
+.ait-navigation-profile-button[aria-current='page'] {
+  color: var(--ait-color-brand);
+  background: var(--ait-color-blue-50);
 }
 
 .ait-navigation-profile-icon {
@@ -1813,6 +1819,10 @@ p {
   margin: 0;
 }
 
+.my-profile-info-list > .my-profile-info-row + .my-profile-info-row {
+  border-top: 1px solid var(--ait-color-gray-50);
+}
+
 .my-profile-info-row {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
@@ -1850,6 +1860,7 @@ p {
   width: 100%;
   box-sizing: border-box;
   border: 0;
+  border-bottom: 1px solid var(--ait-color-gray-50);
   background: transparent;
   font: inherit;
   text-align: left;
@@ -1949,10 +1960,28 @@ p {
   padding: var(--ait-space-2) var(--ait-space-5);
   color: inherit;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .my-profile-list-row:active {
   background: var(--ait-color-gray-50);
+}
+
+.my-profile-list-row:any-link,
+.my-profile-list-row:hover,
+.my-profile-list-row:focus,
+.my-profile-list-row:active,
+.my-profile-list-row:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+.my-profile-list-row:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.my-profile-list-row * {
+  text-decoration: none;
 }
 
 .my-profile-list-copy {

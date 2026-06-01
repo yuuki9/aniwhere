@@ -56,7 +56,7 @@ export function AppTopNavigation({
   const navigate = useNavigate()
   const location = useLocation()
   const shouldUseTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
-  const shouldShowProfileEntry = location.pathname !== '/my'
+  const isProfileEntryCurrent = location.pathname === '/my'
 
   if (shouldUseTossNavigation && !renderInToss) {
     return null
@@ -84,16 +84,19 @@ export function AppTopNavigation({
 
       <div className="ait-navigation-side ait-navigation-side-trailing">
         {trailing}
-        {shouldShowProfileEntry ? (
-          <button
-            aria-label="내 정보"
-            className="ait-navigation-icon-button ait-navigation-profile-button"
-            type="button"
-            onClick={() => navigate('/my')}
-          >
-            <ProfileIcon />
-          </button>
-        ) : null}
+        <button
+          aria-current={isProfileEntryCurrent ? 'page' : undefined}
+          aria-label={isProfileEntryCurrent ? '현재 내 정보' : '내 정보'}
+          className="ait-navigation-icon-button ait-navigation-profile-button"
+          type="button"
+          onClick={() => {
+            if (!isProfileEntryCurrent) {
+              navigate('/my')
+            }
+          }}
+        >
+          <ProfileIcon />
+        </button>
       </div>
     </header>
   )

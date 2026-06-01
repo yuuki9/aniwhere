@@ -289,8 +289,20 @@ function FavoriteShopRow({ shop }: { shop: Shop }) {
 }
 
 function MyReviewRow({ review }: { review: ShopReview }) {
+  const reviewSearchParams = new URLSearchParams({
+    shopId: String(review.shopId),
+    sheet: 'expanded',
+    tab: 'review',
+    focus: 'review',
+    reviewId: String(review.id),
+  })
+
   return (
-    <Link className="my-profile-list-row" to={`/shops/${review.shopId}`}>
+    <Link
+      className="my-profile-list-row"
+      state={{ returnTo: '/my' }}
+      to={{ pathname: '/explore', search: `?${reviewSearchParams.toString()}` }}
+    >
       <span className="my-profile-list-copy">
         <strong>{review.rating.toFixed(1)}점 리뷰</strong>
         <small>{review.content}</small>
@@ -449,7 +461,7 @@ export function MyPage() {
           items={buildProfileInfo(profile)}
         />
         <ProfileListSection
-          title="관심 매장"
+          title="내 관심 매장"
           count={favoriteShops.length}
           emptyText="저장한 관심 매장이 없어요."
           isLoading={favoriteShopsQuery.isLoading}

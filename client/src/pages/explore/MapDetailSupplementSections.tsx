@@ -626,6 +626,7 @@ export function MapDetailSupplementSections({
           .filter(Boolean)
           .join(' ')}
         id="map-place-review"
+        tabIndex={-1}
       >
         <div className="map-place-review-head">
           <Result
@@ -667,7 +668,7 @@ export function MapDetailSupplementSections({
               )
 
               return (
-                <article className="map-place-review-item" key={review.id}>
+                <article className="map-place-review-item" data-review-id={review.id} key={review.id} tabIndex={-1}>
                   <div className="map-place-review-item-head">
                     {authorEmojiUrl != null ? (
                       <img className="map-place-review-avatar" src={authorEmojiUrl} alt="" aria-hidden="true" />

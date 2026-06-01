@@ -55,10 +55,11 @@ test('local app navigation mirrors the native my profile accessory entry', () =>
   const source = appTopNavigationSource()
 
   assert.match(source, /function ProfileIcon\(\)/)
-  assert.match(source, /aria-label="내 정보"/)
+  assert.match(source, /aria-current=\{isProfileEntryCurrent \? 'page' : undefined\}/)
+  assert.match(source, /aria-label=\{isProfileEntryCurrent \? '현재 내 정보' : '내 정보'\}/)
   assert.match(source, /navigate\('\/my'\)/)
   assert.match(source, /ait-navigation-profile-button/)
-  assert.match(source, /location\.pathname !== '\/my'/)
+  assert.match(source, /location\.pathname === '\/my'/)
 })
 
 test('Vite exposes an opt-in public bundle analyzer report', () => {

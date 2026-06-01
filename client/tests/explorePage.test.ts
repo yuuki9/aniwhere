@@ -603,6 +603,24 @@ test('Explore expanded detail state is encoded in history for native back foldin
   assert.doesNotMatch(source, /setSheetMode/)
 })
 
+test('Explore detail can open the review tab from profile review deep links', () => {
+  const source = explorePageSource()
+  const supplementSource = mapDetailSupplementSectionsSource()
+
+  assert.match(source, /function parseDetailTab\(value: string \| null\): MapDetailTab \| null/)
+  assert.match(source, /const detailTabParam = parseDetailTab\(searchParams\.get\('tab'\)\)/)
+  assert.match(source, /const detailFocusParam = searchParams\.get\('focus'\)/)
+  assert.match(source, /const detailReviewFocusId = Number\(searchParams\.get\('reviewId'\) \?\? ''\) \|\| null/)
+  assert.match(source, /const shouldFocusRouteReview = detailFocusParam === 'review'/)
+  assert.match(source, /useState<MapDetailTab>\(\(\) => detailTabParam \?\? 'info'\)/)
+  assert.match(source, /setDetailTab\(detailTabParam\)/)
+  assert.match(source, /target\.scrollIntoView\(\{ block: 'start', behavior: 'smooth' \}\)/)
+  assert.match(source, /target\.focus\(\{ preventScroll: true \}\)/)
+  assert.match(source, /next\.delete\('reviewId'\)/)
+  assert.match(supplementSource, /id="map-place-review"[\s\S]*tabIndex=\{-1\}/)
+  assert.match(supplementSource, /data-review-id=\{review\.id\}/)
+})
+
 test('ExplorePage extracts the expanded detail supplement sections into a focused component', () => {
   const source = explorePageSource()
   const supplementSource = mapDetailSupplementSectionsSource()
