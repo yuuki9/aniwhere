@@ -2,7 +2,9 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { isAdminRole, readAuthSession } from '../../shared/lib/authSession'
 
 export function AdminAccessGate() {
-  if (!isAdminRole(readAuthSession()?.role)) {
+  const canEnterAdmin = import.meta.env.DEV || isAdminRole(readAuthSession()?.role)
+
+  if (!canEnterAdmin) {
     return <Navigate replace to="/home" />
   }
 

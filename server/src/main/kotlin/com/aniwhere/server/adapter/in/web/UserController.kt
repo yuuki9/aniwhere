@@ -8,6 +8,7 @@ import com.aniwhere.server.domain.favorite.port.`in`.UserFavoriteUseCase
 import com.aniwhere.server.domain.shop.model.Shop
 import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
 import com.aniwhere.server.domain.shopreview.port.`in`.ShopReviewUseCase
+import com.aniwhere.server.domain.user.model.UserAppRole
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.`in`.UserUseCase
 import io.swagger.v3.oas.annotations.Operation
@@ -75,8 +76,11 @@ class UserController(
 
     @Operation(summary = "회원 목록 조회 (관리자)")
     @GetMapping
-    fun listUsers(@ParameterObject @PageableDefault(size = 20) pageable: Pageable) =
-        ApiResponse.ok(userUseCase.listUsers(pageable))
+    fun listUsers(
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) role: UserAppRole?,
+        @ParameterObject @PageableDefault(size = 20) pageable: Pageable,
+    ) = ApiResponse.ok(userUseCase.listUsers(keyword, role, pageable))
 
     @Operation(summary = "회원 상세 조회 (관리자)")
     @GetMapping("/{id}")

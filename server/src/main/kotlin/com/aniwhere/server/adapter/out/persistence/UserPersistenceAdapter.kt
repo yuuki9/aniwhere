@@ -4,6 +4,7 @@ import com.aniwhere.server.adapter.out.persistence.entity.UserEntity
 import com.aniwhere.server.adapter.out.persistence.repository.AdminRepository
 import com.aniwhere.server.adapter.out.persistence.repository.UserRepository
 import com.aniwhere.server.common.exception.EntityNotFoundException
+import com.aniwhere.server.domain.user.model.UserAppRole
 import com.aniwhere.server.domain.user.model.UserSummary
 import com.aniwhere.server.domain.user.port.out.UserPersistencePort
 import org.springframework.data.domain.Page
@@ -17,7 +18,21 @@ class UserPersistenceAdapter(
     private val userRepo: UserRepository,
     private val adminRepo: AdminRepository,
 ) : UserPersistencePort {
-    override fun listUsers(pageable: Pageable): Page<UserSummary> = userRepo.findAll(pageable).map { it.toSummary() }
+    override fun listUsers(keyword: String?, role: UserAppRole?, pageable: Pageable): Page<UserSummary> {
+        val keywordRole = when (keyword?.uppercase()) {
+            "ADMIN", "ROLE_ADMIN" -> UserAppRole.ADMIN.name
+            "USER", "ROLE_USER" -> UserAppRole.USER.name
+            else -> null
+        }.takeIf { role == null }
+        val usersPage = userRepo.searchUsers(keyword, keywordRole, role?.name, pageable)
+        val userIds = usersPage.content.mapNotNull { it.id }
+        val adminUserIds = adminRepo.findAllByUser_IdIn(userIds).mapNotNull { it.user.id }.toSet()
+
+        return usersPage.map { user ->
+            val userId = user.id ?: error("User id must not be null")
+            user.toSummary(isAdmin = adminUserIds.contains(userId))
+        }
+    }
 
     override fun findUser(userId: Long): UserSummary? = userRepo.findByIdOrNull(userId)?.toSummary()
 
@@ -36,9 +51,9 @@ class UserPersistenceAdapter(
         return userRepo.save(user).toSummary()
     }
 
-    private fun UserEntity.toSummary(): UserSummary {
+    private fun UserEntity.toSummary(isAdmin: Boolean? = null): UserSummary {
         val userId = id ?: error("User id must not be null")
-        val role = if (adminRepo.existsByUser_Id(userId)) "ROLE_ADMIN" else "ROLE_USER"
+        val role = if (isAdmin ?: adminRepo.existsByUser_Id(userId)) "ROLE_ADMIN" else "ROLE_USER"
         return UserSummary(
             id = userId,
             userKey = userKey,

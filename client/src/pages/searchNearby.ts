@@ -31,6 +31,7 @@ function isValidRadiusKm(value: number) {
 
 export function buildNearbyExploreHref(location: UserLocation, radiusKm = NEARBY_RADIUS_KM) {
   const params = new URLSearchParams()
+  params.set('view', 'map')
   params.set('nearby', '1')
   params.set('lat', String(location.latitude))
   params.set('lng', String(location.longitude))

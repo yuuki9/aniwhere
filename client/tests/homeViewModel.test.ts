@@ -64,6 +64,7 @@ test('HomePage uses user-facing sections without live region attributes', () => 
   assert.doesNotMatch(source, /AitTop/)
   assert.match(source, /SHOP_SEARCH_PLACEHOLDER/)
   assert.match(source, /HomeSearchEntry/)
+  assert.match(source, /HomeProfileEntry/)
   assert.match(source, /HomeCtaBannerList/)
   assert.match(source, /home-cta-banner/)
   assert.doesNotMatch(source, /id="home-cta-title"/)
@@ -123,6 +124,19 @@ test('HomePage keeps the shared map search entry visible with its icon', () => {
   assert.match(styles, /\.home-search-entry\s*\{[\s\S]*min-height:\s*52px;/)
 })
 
+test('HomePage exposes a visible my profile entry below the native navigation', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+  const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+
+  assert.match(source, /function HomeProfileEntry\(\)/)
+  assert.match(source, /className="home-profile-entry-card"/)
+  assert.match(source, /to="\/my"/)
+  assert.match(source, /프로필, 관심 매장, 내 리뷰를 확인해요/)
+  assert.ok(source.indexOf('<HomeProfileEntry />') < source.indexOf('<HomeSearchEntry'))
+  assert.match(styles, /\.home-profile-entry-card\s*\{[\s\S]*min-height: 64px;/)
+  assert.match(styles, /\.home-profile-entry-icon svg\s*\{[\s\S]*stroke:\s*currentcolor;/)
+})
+
 test('HomePage imports CTA banner images and routes enabled CTA cards', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
@@ -139,7 +153,7 @@ test('HomePage imports CTA banner images and routes enabled CTA cards', () => {
   assert.match(styles, /\.home-cta-banner-disabled/)
 })
 
-test('HomePage shows the admin entry only for server admin roles', () => {
+test('HomePage shows the admin entry for server admin roles and local dev preview', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const authSession = fs.readFileSync(new URL('../src/shared/lib/authSession.ts', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
@@ -149,7 +163,7 @@ test('HomePage shows the admin entry only for server admin roles', () => {
   assert.match(source, /className="home-admin-entry-card"/)
   assert.match(source, /to="\/admin"/)
   assert.doesNotMatch(source, /to="\/admin\/shops"/)
-  assert.match(source, /const canEnterAdmin = useMemo\(\(\) => isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
+  assert.match(source, /const canEnterAdmin = useMemo\(\(\) => import\.meta\.env\.DEV \|\| isAdminRole\(readAuthSession\(\)\?\.role\), \[\]\)/)
   assert.match(source, /\{canEnterAdmin \? <HomeAdminEntry \/> : null\}/)
   assert.ok(source.indexOf('{canEnterAdmin ? <HomeAdminEntry /> : null}') < source.indexOf('<HomeSearchEntry'))
   assert.match(authSession, /export function isAdminRole/)

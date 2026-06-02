@@ -13,7 +13,7 @@ test('buildNearbyExploreHref passes current coordinates to explore without inven
     longitude: 126.978,
   })
 
-  assert.equal(href, `/explore?nearby=1&lat=37.5665&lng=126.978&radiusKm=${NEARBY_RADIUS_KM}`)
+  assert.equal(href, `/explore?view=map&nearby=1&lat=37.5665&lng=126.978&radiusKm=${NEARBY_RADIUS_KM}`)
 })
 
 test('readNearbyExploreParams returns a valid nearby request from query params', () => {

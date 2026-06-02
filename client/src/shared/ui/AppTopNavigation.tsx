@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import aniwhereIcon from '../../assets/aniwhere_icon.png'
 import { isAppsInTossRuntime } from '../lib/auth'
 
@@ -29,6 +29,21 @@ function BackIcon() {
   )
 }
 
+function ProfileIcon() {
+  return (
+    <svg aria-hidden="true" className="ait-navigation-profile-icon" viewBox="0 0 24 24">
+      <path
+        d="M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm-7 7.1c.78-3.52 3.52-5.7 7-5.7s6.22 2.18 7 5.7"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.1"
+      />
+    </svg>
+  )
+}
+
 export function AppTopNavigation({
   title = 'Aniwhere',
   showBack = false,
@@ -39,7 +54,9 @@ export function AppTopNavigation({
   className,
 }: AppTopNavigationProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const shouldUseTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
+  const isProfileEntryCurrent = location.pathname === '/my'
 
   if (shouldUseTossNavigation && !renderInToss) {
     return null
@@ -65,7 +82,22 @@ export function AppTopNavigation({
         <span>{title}</span>
       </div>
 
-      <div className="ait-navigation-side ait-navigation-side-trailing">{trailing}</div>
+      <div className="ait-navigation-side ait-navigation-side-trailing">
+        {trailing}
+        <button
+          aria-current={isProfileEntryCurrent ? 'page' : undefined}
+          aria-label={isProfileEntryCurrent ? '현재 내 정보' : '내 정보'}
+          className="ait-navigation-icon-button ait-navigation-profile-button"
+          type="button"
+          onClick={() => {
+            if (!isProfileEntryCurrent) {
+              navigate('/my')
+            }
+          }}
+        >
+          <ProfileIcon />
+        </button>
+      </div>
     </header>
   )
 }

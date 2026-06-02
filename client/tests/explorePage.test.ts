@@ -140,6 +140,10 @@ test('Explore location button uses a distinct target icon and transient fallback
   assert.match(overlayControlsSource, /<circle cx="12" cy="12" r="5"/)
   assert.match(source, /function getLocationErrorMessage\(error: unknown\)/)
   assert.match(source, /showLocationError\(getLocationErrorMessage\(error\)\)/)
+  assert.match(source, /viewParam === 'list' \? 'list' : 'map'/)
+  assert.match(source, /nearbyRequest \? 'ready' : 'idle'/)
+  assert.match(source, /const \[focusMode, setFocusMode\] = useState<FocusMode>\(nearbyRequest \? 'user'/)
+  assert.match(overlayControlsSource, /map-location-fab \$\{locationState === 'ready' \? 'map-location-fab-active' : ''\}/)
   assert.match(source, /window\.setTimeout\(\(\) => \{[\s\S]*?setLocationError\(null\)/)
   assert.match(source, /className="map-location-error-toast"/)
   assert.doesNotMatch(source, /map-inline-error map-inline-error-overlay">\{locationError\}/)
@@ -601,6 +605,24 @@ test('Explore expanded detail state is encoded in history for native back foldin
   assert.match(source, /next\.delete\('sheet'\)/)
   assert.match(source, /if \(selectedShopId != null && sheetParam !== 'expanded'\) \{[\s\S]*?pushSearchParams\(next\)/)
   assert.doesNotMatch(source, /setSheetMode/)
+})
+
+test('Explore detail can open the review tab from profile review deep links', () => {
+  const source = explorePageSource()
+  const supplementSource = mapDetailSupplementSectionsSource()
+
+  assert.match(source, /function parseDetailTab\(value: string \| null\): MapDetailTab \| null/)
+  assert.match(source, /const detailTabParam = parseDetailTab\(searchParams\.get\('tab'\)\)/)
+  assert.match(source, /const detailFocusParam = searchParams\.get\('focus'\)/)
+  assert.match(source, /const detailReviewFocusId = Number\(searchParams\.get\('reviewId'\) \?\? ''\) \|\| null/)
+  assert.match(source, /const shouldFocusRouteReview = detailFocusParam === 'review'/)
+  assert.match(source, /useState<MapDetailTab>\(\(\) => detailTabParam \?\? 'info'\)/)
+  assert.match(source, /setDetailTab\(detailTabParam\)/)
+  assert.match(source, /target\.scrollIntoView\(\{ block: 'start', behavior: 'smooth' \}\)/)
+  assert.match(source, /target\.focus\(\{ preventScroll: true \}\)/)
+  assert.match(source, /next\.delete\('reviewId'\)/)
+  assert.match(supplementSource, /id="map-place-review"[\s\S]*tabIndex=\{-1\}/)
+  assert.match(supplementSource, /data-review-id=\{review\.id\}/)
 })
 
 test('ExplorePage extracts the expanded detail supplement sections into a focused component', () => {

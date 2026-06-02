@@ -105,6 +105,14 @@ type DetailMediaItem = {
   reviewPhotoIndex?: number
 }
 
+function parseDetailTab(value: string | null): MapDetailTab | null {
+  if (value === 'info' || value === 'review' || value === 'photos' || value === 'works') {
+    return value
+  }
+
+  return null
+}
+
 function getLocationErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : ''
   const lowerMessage = message.toLowerCase()
@@ -262,13 +270,18 @@ export function ExplorePage() {
   const selectedShopId = Number(searchParams.get('shopId') ?? '') || null
   const sheetParam = searchParams.get('sheet')
   const viewParam = searchParams.get('view')
+  const detailTabParam = parseDetailTab(searchParams.get('tab'))
+  const detailFocusParam = searchParams.get('focus')
+  const detailReviewFocusId = Number(searchParams.get('reviewId') ?? '') || null
+  const shouldFocusRouteReview = detailFocusParam === 'review'
   const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
   const routeViewMode: ViewMode =
-    viewParam === 'list' ? 'list' : viewParam === 'map' ? 'map' : nearbyRequest ? 'list' : 'map'
+    viewParam === 'list' ? 'list' : 'map'
   const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword')?.trim() ?? ''
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
+  const hasPerformedRouteReviewFocusRef = useRef(false)
   const sheetMode: SheetMode =
     selectedShopId && sheetParam === 'review' ? 'review' : selectedShopId && sheetParam === 'expanded' ? 'expanded' : 'peek'
   const [selectionOrigin, setSelectionOrigin] = useState<SelectionOrigin>(selectedShopId ? 'map' : null)
@@ -284,7 +297,7 @@ export function ExplorePage() {
   const [mapAreaSearchCenter, setMapAreaSearchCenter] = useState<MapViewport['center'] | null>(null)
   const [hasPendingMapSearch, setHasPendingMapSearch] = useState(false)
   const [isDetailHeaderCollapsed, setIsDetailHeaderCollapsed] = useState(false)
-  const [detailTab, setDetailTab] = useState<MapDetailTab>('info')
+  const [detailTab, setDetailTab] = useState<MapDetailTab>(() => detailTabParam ?? 'info')
   const [detailPhotoViewerState, setDetailPhotoViewerState] = useState<MapPhotoViewerState | null>(null)
   const [editingReview, setEditingReview] = useState<ShopReview | null>(null)
   const [peekDragOffset, setPeekDragOffset] = useState(0)
@@ -335,6 +348,9 @@ export function ExplorePage() {
 
     next.delete('shopId')
     next.delete('sheet')
+    next.delete('tab')
+    next.delete('focus')
+    next.delete('reviewId')
     next.set('view', routeViewMode)
 
     return `${location.pathname}?${next.toString()}`
@@ -627,6 +643,14 @@ export function ExplorePage() {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
+
+  useEffect(() => {
+    if (selectedShopId == null || sheetMode !== 'expanded' || detailTabParam == null) {
+      return
+    }
+
+    setDetailTab(detailTabParam)
+  }, [detailTabParam, selectedShopId, sheetMode])
 
   useEffect(() => {
     if (
@@ -1204,6 +1228,54 @@ export function ExplorePage() {
   const detailPreviewMediaItems = detailMediaItems.slice(0, 4)
   const detailPhotoCount = detailMediaItems.length
   const activeDetailTab = detailTab === 'photos' && detailPhotoCount <= 0 ? 'info' : detailTab
+
+  useEffect(() => {
+    hasPerformedRouteReviewFocusRef.current = false
+  }, [selectedShopId])
+
+  useEffect(() => {
+    if (
+      selectedShopId == null ||
+      sheetMode !== 'expanded' ||
+      activeDetailTab !== 'review' ||
+      !shouldFocusRouteReview ||
+      hasPerformedRouteReviewFocusRef.current
+    ) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(
+      () => {
+        const reviewSection =
+          detailScrollRef.current?.querySelector<HTMLElement>('#map-place-review') ??
+          document.getElementById('map-place-review')
+        const focusedReview =
+          detailReviewFocusId != null
+            ? detailScrollRef.current?.querySelector<HTMLElement>(`[data-review-id="${detailReviewFocusId}"]`)
+            : null
+        const target = focusedReview ?? reviewSection
+
+        if (target == null) {
+          return
+        }
+
+        target.scrollIntoView({ block: 'start', behavior: 'smooth' })
+        target.focus({ preventScroll: true })
+        hasPerformedRouteReviewFocusRef.current = true
+      },
+      reviewListQuery.isFetching ? 80 : 0,
+    )
+
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    activeDetailTab,
+    detailReviewFocusId,
+    reviewListQuery.isFetching,
+    selectedShopId,
+    sheetMode,
+    shouldFocusRouteReview,
+  ])
+
   const naverDirectionTarget = detailShop
     ? {
         latitude: detailShop.py,

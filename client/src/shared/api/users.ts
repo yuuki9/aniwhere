@@ -9,6 +9,11 @@ import type {
   UserSummary,
 } from './types'
 
+type UserListParams = PagingParams & {
+  keyword?: string
+  role?: string
+}
+
 export function getMyProfile(authToken?: string | null) {
   return request<UserSummary>('/api/v1/users/me', { authToken })
 }
@@ -17,11 +22,13 @@ export function listMyFavoriteShops(authToken?: string | null) {
   return request<Shop[]>('/api/v1/users/me/favorite-shops', { authToken })
 }
 
-export function listUsers(params: PagingParams = {}, authToken?: string | null) {
+export function listUsers(params: UserListParams = {}, authToken?: string | null) {
   const query = toQueryString({
     page: params.page ?? 0,
     size: params.size ?? 20,
     sort: params.sort,
+    keyword: params.keyword,
+    role: params.role,
   })
 
   return request<PageResponse<UserSummary>>(`/api/v1/users${query}`, { authToken })

@@ -7,6 +7,8 @@ const lazyRouteComponentsSource = () => fs.readFileSync(new URL('../src/app/lazy
 const routerSource = () => fs.readFileSync(new URL('../src/app/router.tsx', import.meta.url), 'utf8')
 const viteConfigSource = () => fs.readFileSync(new URL('../vite.config.ts', import.meta.url), 'utf8')
 const graniteConfigSource = () => fs.readFileSync(new URL('../granite.config.ts', import.meta.url), 'utf8')
+const appSource = () => fs.readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
+const appTopNavigationSource = () => fs.readFileSync(new URL('../src/shared/ui/AppTopNavigation.tsx', import.meta.url), 'utf8')
 const packageSource = () => fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
 const exploreSearchCssSource = () => fs.readFileSync(new URL('../src/styles/explore-search.css', import.meta.url), 'utf8')
 
@@ -34,6 +36,36 @@ test('Apps in Toss dev server keeps the local loopback host until LAN sandbox se
   assert.doesNotMatch(granite, /networkInterfaces/)
   assert.doesNotMatch(granite, /vite --host 0\.0\.0\.0/)
   assert.match(vite, /host:\s*'127\.0\.0\.1'/)
+})
+
+test('Apps in Toss native navigation exposes the my profile accessory button outside intro', () => {
+  const granite = graniteConfigSource()
+  const app = appSource()
+
+  assert.doesNotMatch(granite, /initialAccessoryButton:\s*\{/)
+  assert.match(app, /import \{ partner, tdsEvent \} from '@apps-in-toss\/web-framework'/)
+  assert.match(app, /MY_PROFILE_ACCESSORY_BUTTON_ID = 'profile-magnifier'/)
+  assert.match(app, /name: 'icon-profile-magnifier-mono'/)
+  assert.match(app, /partner\.addAccessoryButton\(MY_PROFILE_ACCESSORY_BUTTON\)/)
+  assert.match(app, /partner\.removeAccessoryButton\(\)/)
+  assert.match(app, /PROFILE_ACCESSORY_BLOCKED_PATHS/)
+  assert.match(app, /new Set\(\['\/', '\/intro'\]\)/)
+  assert.match(app, /router\.subscribe/)
+  assert.match(app, /tdsEvent\.addEventListener\('navigationAccessoryEvent'/)
+  assert.match(app, /if \(id === MY_PROFILE_ACCESSORY_BUTTON_ID\)/)
+  assert.match(app, /router\.navigate\('\/my'\)/)
+})
+test('local app navigation mirrors the native my profile accessory entry', () => {
+  const source = appTopNavigationSource()
+  const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+
+  assert.match(source, /function ProfileIcon\(\)/)
+  assert.match(source, /aria-current=\{isProfileEntryCurrent \? 'page' : undefined\}/)
+  assert.match(source, /aria-label=\{isProfileEntryCurrent \? '현재 내 정보' : '내 정보'\}/)
+  assert.match(source, /navigate\('\/my'\)/)
+  assert.match(source, /ait-navigation-profile-button/)
+  assert.match(source, /location\.pathname === '\/my'/)
+  assert.match(styles, /\.ait-navigation-profile-icon path\s*\{[\s\S]*stroke:\s*currentcolor;/)
 })
 
 test('Vite exposes an opt-in public bundle analyzer report', () => {

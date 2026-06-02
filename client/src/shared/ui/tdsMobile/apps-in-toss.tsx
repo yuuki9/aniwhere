@@ -10,6 +10,7 @@ export {
   Rating,
   Result,
   SearchField,
+  SegmentedControl,
   TextField,
   Toast,
   Top,

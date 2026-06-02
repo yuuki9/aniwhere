@@ -72,6 +72,23 @@ Official docs checked:
 | Bottom CTA | Partial / Needs follow-up | Official BottomCTA is the documented bottom call-to-action primitive. Current intro uses official `Button` inside an app-owned bottom action area to preserve the approved single-viewport rhythm. Before PR, classify this as `Product-approved` or migrate to `BottomCTA.Single` with visual verification. |
 | Runtime verification | Needs sandbox | Local browser and build verification do not prove Apps in Toss common navigation, safe area, large-text scaling, or runtime font behavior. |
 
+## Current Intro/My Profile Emoji Audit
+
+Official docs checked with Apps in Toss MCP on 2026-06-01:
+
+- BottomSheet: https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/
+- Toast: https://tossmini-docs.toss.im/tds-mobile/components/toast/
+- TextField: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-field/
+- ListRow image/reference: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/ListRowLegacy/list-row-legacy/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/intro` random profile setup | Product-approved / TDS-informed | First nickname setup now samples a random 10-item Toss emoji rail from an app allowlist, selects the first sampled item by default, and keeps that sheet state stable until the user closes or restarts setup. The sheet remains the official `BottomSheet` + `TextField` flow already approved for onboarding. |
+| `/my` profile edit sheet | Product-approved / TDS-informed | Profile editing combines nickname and emoji in one bottom-sheet-like surface. The current saved emoji is pinned to the first random page; additional pages are generated from the same allowlist when opened. Nickname changes still run the nickname availability API before `PATCH /api/v1/users/me/nickname`. |
+| Emoji image source | Product-approved / Needs runtime check | Emoji images use Toss static emoji filenames from an app allowlist to avoid arbitrary broken URLs. Local build and browser checks can prove DOM wiring, but exact CDN image availability should be sampled again before launch. |
+| Toast feedback | TDS-informed | Toast copy is short and completion-oriented, matching the checked Toast feedback purpose. The current implementation remains app-owned CSS rather than the TDS `useToast` hook because the page already uses a local profile surface and no new facade API was added in this change. |
+| Runtime verification | Needs sandbox | Local browser does not prove Apps in Toss safe area, native navigation accessory behavior, or iOS/Android toast positioning. |
+
 ## Current Home Audit
 
 Official docs checked with Apps in Toss MCP on 2026-05-17:
@@ -713,6 +730,108 @@ Official docs checked in the current session:
 | `/explore` favorite POI/list state | Product-approved / API-required | Authenticated explore now loads `GET /api/v1/users/me/favorite-shops` whenever an auth token is present, not only when the favorite quick chip is active. The resulting favorite id set is passed to the list sheet and map marker layer. List cards render a compact red heart icon beside the saved shop name, while map POIs render a red heart before the shop label only; facet/category/work-type chip text is not changed, so the favorite signal stays separate from filtering taxonomy. |
 | `/admin` home layout | Product-approved / TDS-informed | The admin hub keeps the existing app-owned route shell and `AppTopNavigation`, but the first viewport now uses a 375px-friendly single-column card stack with stable side padding, compact icon/title/status/copy grouping, and a two-column enhancement only above 720px. The change fixes the previously cramped `/admin` entry without adding new `Ait*` imports or expanding admin scope. |
 | Runtime verification | Needs sandbox | Source tests and local browser inspection can verify layout structure, but Apps in Toss native safe area and device font behavior should still be checked on real devices. |
+
+### 2026-06-01 Admin Branch Hub Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss MCP unavailable in this Codex session; `ax` CLI was also unavailable on PATH, so official web fallback was used.
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- TDS Board Row: https://tossmini-docs.toss.im/tds-mobile/components/board-row/
+- TDS Segmented Control: https://tossmini-docs.toss.im/tds-mobile/components/segmented-control/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/admin` branch-point hierarchy | Product-approved / TDS-informed | `/admin` is treated as an operational branch point, not a metrics dashboard. The screen now separates the active `바로 처리` branch from `다음 연결` planned branches so admins can enter the currently usable shop-management flow without scanning inactive cards. |
+| `/admin` Swagger-backed branches | Product-approved / API-required | Review verification, user/role management, point grants, and account info now link to real admin branch pages. Review status uses `PATCH /api/v1/admin/shops/{shopId}/reviews/{reviewId}/status`; user roles use `PATCH /api/v1/admin/users/{userId}/role`; account info uses `GET /api/v1/users/me` and `GET /api/v1/users/me/reviews`; points keep the existing `VITE_ADMIN_POINT_ENDPOINT`/local `SERVER_QUEUE` boundary because no fixed Swagger point-grant endpoint exists in the checked backend controllers. |
+| `/admin/users` user management | Product-approved / API-required / TDS-informed | The user-management page now keeps the `/admin/shops` search/list backbone but removes shop-management-heavy affordances. It uses compact summary text, a nickname/userKey search field, minimal role chips, and app-owned expandable user rows so the detail appears where the user clicked. Row titles show nickname and role only; `userKey` is shown only inside the opened detail. Role changes move from the constrained opened row into a TDS `BottomSheet` with `SegmentedControl`, so the current role is visible as a single-choice state and row expansion does not require an inner list scroll. It uses Swagger-backed `GET /api/v1/users`, `GET /api/v1/users/{id}`, and `PATCH /api/v1/admin/users/{userId}/role`. Swagger exposes user `status` as a string field but no status mutation endpoint, so status is shown in detail but not editable. Local dummy/preview users were removed; the page now renders only API-provided users. |
+| `/admin/shops`, `/admin/users` native-nav fallback title | Product-approved / TDS-informed | Apps in Toss native navigation may hide the route title, so both management list pages now render an in-page `h1` above the management controls. `/admin/users` removes the total-count helper from the first viewport, and user rows use the Swagger `emojiIconFilename` with the shared Toss emoji image helper instead of role initials. Pagination for both list pages is promoted to a fixed bottom CTA zone with safe-area padding so previous/next controls remain reachable on real devices. |
+| Local `/admin` preview entry | Product-approved / Local-only | Local dev builds now expose the home admin entry and allow `/admin` through `AdminAccessGate` when `import.meta.env.DEV` is true. Production/public builds still require an admin role from the persisted auth session, so the local WebView preview path does not weaken deployed access control. |
+| `/admin` card density | Product-approved / TDS-informed | Official Top/ListRow/Typography/Button docs informed the compact title, section labels, touch rows, and status/action emphasis. Cards remain app-owned because the route uses a custom branch-card pattern, but spacing and token usage stay aligned with the 375px admin baseline. |
+| `/admin/reviews`, `/admin/users`, `/admin/points`, `/admin/account` layout | Product-approved / TDS-informed | The new branch pages reuse the app-owned admin route shell with `AppTopNavigation`, compact section panels, horizontal chips, action buttons, and TDS Toast feedback. They avoid `alert()`/`confirm()`, do not add direct `@toss/tds-mobile` imports, and keep unsupported server endpoints out of the UI. |
+| Runtime verification | Needs sandbox | Local source tests and browser screenshots can check the route layout, but Apps in Toss native navigation, safe area, and device font behavior still need sandbox/device confirmation. |
+
+### 2026-06-01 Admin Home White Menu Follow-up
+
+Official docs checked in the current session:
+
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/admin` all-white home surface | Product-approved / Regression fix | The admin index now removes the old `admin-home-head`, section title, branch-card, and `admin-hub-grid` treatment. The route keeps the app-owned `AppTopNavigation` and uses a white 480px mobile shell with a white menu list so it no longer inherits the older mixed dashboard/card background. |
+| `/admin` menu scope | Product-approved / API-required | The visible entry list is limited to the three managed surfaces requested for the current operation flow: `매장 관리`, `사용자 관리`, and `리뷰 관리`. `포인트 지급` and `계정 정보` remain routed elsewhere but are no longer promoted on the admin home menu. |
+| `/admin` home-style CTA list | Product-approved / TDS-informed | The menu reuses the existing `home-cta-banner-list` / `home-cta-banner` rhythm instead of a custom hub grid. Admin-specific classes only supply compact text, right chevron, and white-card overrides; no new direct TDS imports were added. |
+| Runtime verification | Needs sandbox | Source tests and local browser inspection verify the structure and colors. Apps in Toss native safe area and device font behavior should still be checked on sandbox/device. |
+
+### 2026-06-01 User Profile Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss MCP unavailable in this Codex session; `ax` CLI was also unavailable on PATH, so the same official web fallback set from the admin branch audit applies.
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/my` general account route | Product-approved / API-required | The logged-in user profile is a normal user surface, separate from `/admin/account`. `/my` uses existing Swagger-backed `GET /api/v1/users/me`, `GET /api/v1/users/me/favorite-shops`, and `GET /api/v1/users/me/reviews`; it does not require an admin role and does not display raw access or refresh tokens. |
+| `/home` profile entry | Product-approved / Local preview | Home now exposes `내 정보` as a compact floating action for signed-in sessions and local dev preview instead of a primary content card. The admin entry remains governed by the existing admin/dev check, so a general user profile entry is not tied to admin authorization or the main discovery CTA stack. |
+| Runtime verification | Needs sandbox | Source tests and local build can verify routing/API/UI contracts. Apps in Toss login/session handoff and native navigation should still be checked in sandbox. |
+
+### 2026-06-01 Native Profile Navigation Accessory Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss NavigationBar: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/UI/NavigationBar.md
+- TDS Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Apps in Toss native navigation accessory | TDS-required / Product-approved | `granite.config.ts` now registers a single `navigationBar.initialAccessoryButton` with `id: my-profile`, `title: 내 정보`, and a monotone person icon so Apps in Toss shows the profile entry in the supported accessory slot to the left of the 더보기 button. `App.tsx` listens for `navigationAccessoryEvent` and routes the button to `/my`. |
+| Local preview navigation accessory | Product-approved / Local preview | The previous `/home` floating profile action was removed to avoid duplicate entry points. The app-owned `AppTopNavigation` now mirrors the native accessory with a compact icon button on the trailing side for local/browser preview routes and hides that self-link on `/my`. |
+| Runtime verification | Needs sandbox | Source tests and local browser preview can verify the local route entry. The native accessory button icon, placement, and event callback still need Apps in Toss sandbox/device confirmation. |
+
+### 2026-06-01 User Profile Row Layout Follow-up
+
+Official docs and references checked in the current session:
+
+- Deus profile reference provided by Toss: https://deus.toss.im/projects/10482/pages/Hn4N2Ap3@1
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS ListRow components: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-components/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- TDS Asset: https://tossmini-docs.toss.im/tds-mobile/components/Asset/frame/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/my` profile composition | Product-approved / TDS-informed | The route follows the Toss reference profile rhythm with a centered avatar, simple key/value rows, and gray section dividers. Placeholder personal fields that are not present in Swagger, such as English name, birth date, phone, email, home, and company information, are removed rather than displayed as fake empty data. The footer note, status row, and role row are also removed to keep the page focused on editable profile and activity. |
+| Swagger-backed user fields | API-required | `GET /api/v1/users/me` currently exposes `id`, `userKey`, `nickname`, `emojiIconFilename`, `status`, `role`, `lastLoginAt`, and `createdAt`, but `/my` intentionally hides `id`, `userKey`, `status`, and `role`. Visible profile rows use only `nickname`, `lastLoginAt`, and `createdAt`; `emojiIconFilename` drives the avatar image. Swagger defines `status` as a plain string without enum values, so it is documented only and not shown in the UI. |
+| Swagger-backed user actions | API-required / Product-approved | The profile edit sheet uses the actual User APIs requested for this route: `GET /api/v1/users/nickname/availability` plus `PATCH /api/v1/users/me/nickname` for nickname editing, and the same nickname PATCH payload for avatar `emojiIconFilename` changes. The lower profile area uses `GET /api/v1/users/me/favorite-shops` for saved shops and `GET /api/v1/users/me/reviews?sort=NEWEST` for the user's recent reviews. Favorite shops and reviews initially show three rows and expand with a `더보기` button. |
+| Runtime verification | Needs sandbox | Local source tests and browser preview can verify the layout. Apps in Toss login/session handoff, native safe area, and real profile values still need sandbox/device confirmation. |
+
+### 2026-06-01 User Profile Activity Follow-up
+
+Official docs checked in the current session:
+
+- TDS Top: https://tossmini-docs.toss.im/tds-mobile/components/top/
+- TDS Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- Apps in Toss NavigationBar: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/UI/NavigationBar.md
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/my` profile rows | Product-approved / TDS-informed | The nickname action row now gets the same divider rhythm as the 가입일 and 최근 로그인 rows so the first editable row does not look lighter than static account metadata. |
+| `/my` activity lists | Product-approved / Regression fix | The saved-shop section label changed to `내 관심 매장`. Activity rows keep the app-owned ListRow-style layout but explicitly remove link underline/visited residue and mobile tap highlight so a touch state does not remain visually active after the finger leaves. |
+| `/my` review deep link | Product-approved / API-required | User review rows now open `/explore?shopId=:id&sheet=expanded&tab=review&focus=review&reviewId=:reviewId`. Explore accepts the review tab query, loads the review tab as active, and scrolls/focuses the matching review row when it is present. |
+| Local profile nav entry | Product-approved / Local preview | The local app-owned top navigation keeps the person icon visible even on `/my` and marks it with `aria-current="page"` so the profile entry remains visually identifiable in browser preview while Apps in Toss continues to use the native accessory button. |
 
 ## PR Evidence Format
 
