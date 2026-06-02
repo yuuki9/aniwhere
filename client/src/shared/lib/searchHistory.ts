@@ -1,7 +1,46 @@
 const SEARCH_HISTORY_KEY = 'aniwhere-recent-searches'
 const MAX_HISTORY = 5
 
-export function readRecentSearches() {
+export type RecentSearchKind = 'shop' | 'work'
+
+export type RecentSearchEntry = {
+  keyword: string
+  kind?: RecentSearchKind
+}
+
+function normalizeRecentSearchEntry(item: unknown): RecentSearchEntry | null {
+  if (typeof item === 'string') {
+    const keyword = item.trim()
+
+    return keyword ? { keyword } : null
+  }
+
+  if (item == null || typeof item !== 'object') {
+    return null
+  }
+
+  const { keyword, kind } = item as { keyword?: unknown; kind?: unknown }
+  if (typeof keyword !== 'string') {
+    return null
+  }
+
+  const trimmed = keyword.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  if (kind === 'shop' || kind === 'work') {
+    return { keyword: trimmed, kind }
+  }
+
+  return { keyword: trimmed }
+}
+
+function recentSearchEntryKey(entry: RecentSearchEntry) {
+  return `${entry.kind ?? 'keyword'}:${entry.keyword}`
+}
+
+function readStoredRecentSearchEntries() {
   if (typeof window === 'undefined') {
     return []
   }
@@ -17,49 +56,85 @@ export function readRecentSearches() {
       return []
     }
 
-    return parsed.filter((item): item is string => typeof item === 'string').slice(0, MAX_HISTORY)
+    return parsed
+      .map(normalizeRecentSearchEntry)
+      .filter((item): item is RecentSearchEntry => item != null)
+      .slice(0, MAX_HISTORY)
   } catch {
     return []
   }
 }
 
+function writeRecentSearchEntries(entries: RecentSearchEntry[], fallback: RecentSearchEntry[]) {
+  try {
+    window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(entries))
+  } catch {
+    return fallback
+  }
+
+  return entries
+}
+
+export function readRecentSearches() {
+  return readRecentSearchEntries().map((item) => item.keyword)
+}
+
+export function readRecentSearchEntries() {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  return readStoredRecentSearchEntries()
+}
+
 export function pushRecentSearch(keyword: string) {
+  return pushRecentSearchEntry(keyword).map((item) => item.keyword)
+}
+
+export function pushRecentSearchEntry(keyword: string, kind?: RecentSearchKind) {
   const trimmed = keyword.trim()
   if (!trimmed || typeof window === 'undefined') {
     return []
   }
 
-  const next = [trimmed, ...readRecentSearches().filter((item) => item !== trimmed)].slice(0, MAX_HISTORY)
+  const nextEntry: RecentSearchEntry = kind ? { keyword: trimmed, kind } : { keyword: trimmed }
+  const current = readRecentSearchEntries()
+  const next = [nextEntry, ...current.filter((item) => recentSearchEntryKey(item) !== recentSearchEntryKey(nextEntry))]
+    .slice(0, MAX_HISTORY)
 
-  try {
-    window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next))
-  } catch {
-    return next
-  }
-
-  return next
+  return writeRecentSearchEntries(next, next)
 }
 
 export function removeRecentSearch(keyword: string) {
   const trimmed = keyword.trim()
-  const current = readRecentSearches()
+  const current = readRecentSearchEntries()
   if (!trimmed || typeof window === 'undefined') {
+    return current.map((item) => item.keyword)
+  }
+
+  const next = current.filter((item) => item.keyword !== trimmed)
+
+  return writeRecentSearchEntries(next, current).map((item) => item.keyword)
+}
+
+export function removeRecentSearchEntry(entry: RecentSearchEntry) {
+  const current = readRecentSearchEntries()
+  if (typeof window === 'undefined') {
     return current
   }
 
-  const next = current.filter((item) => item !== trimmed)
+  const entryKey = recentSearchEntryKey(entry)
+  const next = current.filter((item) => recentSearchEntryKey(item) !== entryKey)
 
-  try {
-    window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next))
-  } catch {
-    return current
-  }
-
-  return next
+  return writeRecentSearchEntries(next, current)
 }
 
 export function clearRecentSearches() {
-  const current = readRecentSearches()
+  return clearRecentSearchEntries().map((item) => item.keyword)
+}
+
+export function clearRecentSearchEntries() {
+  const current = readRecentSearchEntries()
   if (typeof window === 'undefined') {
     return current
   }

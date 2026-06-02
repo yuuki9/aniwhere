@@ -57,6 +57,20 @@ export type ShopImage = {
 
 export type WorkType = 'ANIMATION' | 'GAME'
 
+export type SearchAutocompleteScope = 'shop' | 'work'
+export type SearchAutocompleteKind = 'SHOP' | 'WORK'
+
+export type SearchAutocompleteItem = {
+  label: string
+  kind: SearchAutocompleteKind
+  shopId: number | null
+  workId: number | null
+}
+
+export type SearchAutocompleteResponse = {
+  items: SearchAutocompleteItem[]
+}
+
 export type WorkSummary = {
   id: number
   name: string

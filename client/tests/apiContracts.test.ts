@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const source = (path: string) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 const apiTypesSource = () => source('../src/shared/api/types.ts')
 const shopsApiSource = () => source('../src/shared/api/shops.ts')
+const searchApiSource = () => (fs.existsSync(new URL('../src/shared/api/search.ts', import.meta.url)) ? source('../src/shared/api/search.ts') : '')
 const worksApiSource = () => source('../src/shared/api/works.ts')
 const shopReviewsApiSource = () => source('../src/shared/api/shopReviews.ts')
 const authApiSource = () => source('../src/shared/api/auth.ts')
@@ -47,12 +48,20 @@ test('client API types expose the current Swagger response models', () => {
   assert.match(types, /export type NicknameAvailabilityResult = \{/)
   assert.match(types, /export type UpdateNicknamePayload = \{[\s\S]*emojiIconFilename\?: string \| null/)
   assert.match(types, /export type UpdateUserRolePayload = \{/)
+  assert.match(types, /export type SearchAutocompleteScope = 'shop' \| 'work'/)
+  assert.match(types, /export type SearchAutocompleteKind = 'SHOP' \| 'WORK'/)
+  assert.match(types, /export type SearchAutocompleteItem = \{/)
+  assert.match(types, /label: string/)
+  assert.match(types, /shopId: number \| null/)
+  assert.match(types, /workId: number \| null/)
+  assert.match(types, /export type SearchAutocompleteResponse = \{/)
   assert.doesNotMatch(types, /export type Post = \{/)
   assert.doesNotMatch(types, /export type Comment = \{/)
 })
 
-test('client API functions cover Swagger paths added for facets, favorites, auth, users, and shop reviews', () => {
+test('client API functions cover Swagger paths added for facets, favorites, auth, users, search, and shop reviews', () => {
   const shops = shopsApiSource()
+  const search = searchApiSource()
   const works = worksApiSource()
   const shopReviews = shopReviewsApiSource()
   const auth = authApiSource()
@@ -75,6 +84,12 @@ test('client API functions cover Swagger paths added for facets, favorites, auth
   assert.match(shops, /method:\s*'POST'/)
   assert.match(shops, /export function removeFavoriteShop/)
   assert.match(shops, /method:\s*'DELETE'/)
+
+  assert.match(search, /export function getSearchAutocomplete/)
+  assert.match(search, /q:\s*params\.q/)
+  assert.match(search, /scope:\s*params\.scope/)
+  assert.match(search, /limit:\s*params\.limit/)
+  assert.match(search, /request<SearchAutocompleteResponse>\(`\/api\/v1\/search\/autocomplete\$\{query\}`\)/)
 
   assert.match(works, /export function addFavoriteWork/)
   assert.match(works, /type:\s*params\.type/)
@@ -142,6 +157,8 @@ test('backend API contract notes keep shop facets aligned with deployed Swagger'
   assert.match(contract, /GET \/api\/v1\/users\/me\/favorite-shops` returns the authenticated user's favorite `Shop\[\]`/)
   assert.match(contract, /PATCH \/api\/v1\/users\/me\/nickname` accepts optional `emojiIconFilename`/)
   assert.match(contract, /UserSummary` includes optional `emojiIconFilename`/)
+  assert.match(contract, /GET \/api\/v1\/search\/autocomplete` accepts required `q` and `scope=shop\|work`/)
+  assert.match(contract, /SearchAutocompleteItem` returns `label`, `kind=SHOP\|WORK`, and optional `shopId` or `workId`/)
   assert.match(contract, /does not expose `keyword`, selected filter IDs, `status`, `type`, or map bounds/)
 })
 
