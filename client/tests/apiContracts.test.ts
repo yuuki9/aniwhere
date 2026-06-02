@@ -158,6 +158,7 @@ test('backend API contract notes keep shop facets aligned with deployed Swagger'
   assert.match(contract, /PATCH \/api\/v1\/users\/me\/nickname` accepts optional `emojiIconFilename`/)
   assert.match(contract, /UserSummary` includes optional `emojiIconFilename`/)
   assert.match(contract, /GET \/api\/v1\/search\/autocomplete` accepts required `q` and `scope=shop\|work`/)
+  assert.match(contract, /plus optional `limit` defaulting to 8 and capped by the server/)
   assert.match(contract, /SearchAutocompleteItem` returns `label`, `kind=SHOP\|WORK`, and optional `shopId` or `workId`/)
   assert.match(contract, /does not expose `keyword`, selected filter IDs, `status`, `type`, or map bounds/)
 })

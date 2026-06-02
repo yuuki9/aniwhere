@@ -134,12 +134,25 @@ test('search history stores autocomplete result kinds while reading legacy keywo
       { keyword: 'No Game No Life', kind: 'work' },
       { keyword: 'legacy keyword' },
     ])
+    assert.deepEqual(readRecentSearchEntries(), [
+      { keyword: 'No Game No Life', kind: 'work' },
+      { keyword: 'legacy keyword' },
+    ])
     assert.deepEqual(pushRecentSearchEntry('Animate Hongdae', 'shop'), [
       { keyword: 'Animate Hongdae', kind: 'shop' },
       { keyword: 'No Game No Life', kind: 'work' },
       { keyword: 'legacy keyword' },
     ])
+    assert.deepEqual(readRecentSearchEntries(), [
+      { keyword: 'Animate Hongdae', kind: 'shop' },
+      { keyword: 'No Game No Life', kind: 'work' },
+      { keyword: 'legacy keyword' },
+    ])
     assert.deepEqual(removeRecentSearchEntry({ keyword: 'No Game No Life', kind: 'work' }), [
+      { keyword: 'Animate Hongdae', kind: 'shop' },
+      { keyword: 'legacy keyword' },
+    ])
+    assert.deepEqual(readRecentSearchEntries(), [
       { keyword: 'Animate Hongdae', kind: 'shop' },
       { keyword: 'legacy keyword' },
     ])
