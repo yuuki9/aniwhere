@@ -99,7 +99,7 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
             s.name
         )
         FROM ShopEntity s
-        WHERE s.name LIKE CONCAT('%', :pattern, '%')
+        WHERE s.name LIKE CONCAT('%', :pattern, '%') ESCAPE '\'
         ORDER BY s.name ASC
         """,
     )
@@ -454,9 +454,9 @@ interface WorkRepository : JpaRepository<WorkEntity, Int> {
     @Query(
         """
         SELECT w FROM WorkEntity w
-        WHERE w.name LIKE CONCAT('%', :pattern, '%')
+        WHERE w.name LIKE CONCAT('%', :pattern, '%') ESCAPE '\'
            OR (TYPE(w) = AnimationWorkEntity
-               AND TREAT(w AS AnimationWorkEntity).koreanTitle LIKE CONCAT('%', :pattern, '%'))
+               AND TREAT(w AS AnimationWorkEntity).koreanTitle LIKE CONCAT('%', :pattern, '%') ESCAPE '\')
         ORDER BY
             CASE WHEN TYPE(w) = AnimationWorkEntity THEN TREAT(w AS AnimationWorkEntity).popularity ELSE NULL END DESC NULLS LAST,
             w.name ASC

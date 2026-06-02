@@ -31,6 +31,15 @@ class SearchAutocompleteServiceTest {
     }
 
     @Test
+    fun `autocomplete shop - escapes wildcards once before port`() {
+        every { port.suggestShops("100\\%", 8) } returns emptyList()
+
+        service.autocomplete("100%", SearchAutocompleteScope.SHOP, limit = 8)
+
+        verify(exactly = 1) { port.suggestShops("100\\%", 8) }
+    }
+
+    @Test
     fun `autocomplete work - delegates to port`() {
         val expected = listOf(
             SearchAutocompleteItem(label = "원피스", kind = SearchAutocompleteKind.WORK, workId = 2),
