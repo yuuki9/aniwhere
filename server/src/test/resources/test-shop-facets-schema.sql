@@ -24,6 +24,20 @@ CREATE TABLE works_game (
     CONSTRAINT fk_works_game_work FOREIGN KEY (work_id) REFERENCES works(id)
 );
 
+CREATE TABLE works_animation (
+    work_id INT PRIMARY KEY,
+    anilist_id BIGINT,
+    title_romaji VARCHAR(512),
+    title_english VARCHAR(512),
+    title_native VARCHAR(512),
+    korean_title VARCHAR(512),
+    genres VARCHAR(10000),
+    tmdb_logo_url VARCHAR(1024),
+    popularity INT,
+    anilist_synced_at TIMESTAMP,
+    CONSTRAINT fk_works_animation_work FOREIGN KEY (work_id) REFERENCES works(id)
+);
+
 CREATE TABLE shops (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,

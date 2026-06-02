@@ -28,6 +28,7 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.GET, "/api/v1/regions/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/works/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/shop-images/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/review-images/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
