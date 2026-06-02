@@ -94,6 +94,19 @@ interface ShopRepository : JpaRepository<ShopEntity, Long> {
 
     @Query(
         """
+        SELECT new com.aniwhere.server.adapter.out.persistence.repository.ShopNameSuggestRow(
+            s.id,
+            s.name
+        )
+        FROM ShopEntity s
+        WHERE s.name LIKE CONCAT('%', :pattern, '%')
+        ORDER BY s.name ASC
+        """,
+    )
+    fun suggestShopNames(pattern: String, pageable: Pageable): List<ShopNameSuggestRow>
+
+    @Query(
+        """
         SELECT new com.aniwhere.server.adapter.out.persistence.repository.RegionFacetCountRow(
             r.id,
             r.name,
@@ -385,6 +398,11 @@ data class StatusFacetCountRow(
     val count: Long,
 )
 
+data class ShopNameSuggestRow(
+    val id: Long,
+    val name: String,
+)
+
 interface RegionRepository : JpaRepository<RegionEntity, Short> {
     @Query(
         """
@@ -432,4 +450,17 @@ interface GameWorkRepository : JpaRepository<GameWorkEntity, Int> {
     fun findAllOrderByNameAsc(): List<GameWorkEntity>
 }
 
-interface WorkRepository : JpaRepository<WorkEntity, Int>
+interface WorkRepository : JpaRepository<WorkEntity, Int> {
+    @Query(
+        """
+        SELECT w FROM WorkEntity w
+        WHERE w.name LIKE CONCAT('%', :pattern, '%')
+           OR (TYPE(w) = AnimationWorkEntity
+               AND TREAT(w AS AnimationWorkEntity).koreanTitle LIKE CONCAT('%', :pattern, '%'))
+        ORDER BY
+            CASE WHEN TYPE(w) = AnimationWorkEntity THEN TREAT(w AS AnimationWorkEntity).popularity ELSE NULL END DESC NULLS LAST,
+            w.name ASC
+        """,
+    )
+    fun suggestWorks(pattern: String, pageable: Pageable): List<WorkEntity>
+}
