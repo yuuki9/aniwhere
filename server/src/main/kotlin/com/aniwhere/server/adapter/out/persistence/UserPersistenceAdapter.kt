@@ -23,8 +23,15 @@ class UserPersistenceAdapter(
             "ADMIN", "ROLE_ADMIN" -> UserAppRole.ADMIN.name
             "USER", "ROLE_USER" -> UserAppRole.USER.name
             else -> null
+        }.takeIf { role == null }
+        val usersPage = userRepo.searchUsers(keyword, keywordRole, role?.name, pageable)
+        val userIds = usersPage.content.mapNotNull { it.id }
+        val adminUserIds = adminRepo.findAllByUser_IdIn(userIds).mapNotNull { it.user.id }.toSet()
+
+        return usersPage.map { user ->
+            val userId = user.id ?: error("User id must not be null")
+            user.toSummary(isAdmin = adminUserIds.contains(userId))
         }
-        return userRepo.searchUsers(keyword, keywordRole, role?.name, pageable).map { it.toSummary() }
     }
 
     override fun findUser(userId: Long): UserSummary? = userRepo.findByIdOrNull(userId)?.toSummary()
@@ -44,9 +51,9 @@ class UserPersistenceAdapter(
         return userRepo.save(user).toSummary()
     }
 
-    private fun UserEntity.toSummary(): UserSummary {
+    private fun UserEntity.toSummary(isAdmin: Boolean? = null): UserSummary {
         val userId = id ?: error("User id must not be null")
-        val role = if (adminRepo.existsByUser_Id(userId)) "ROLE_ADMIN" else "ROLE_USER"
+        val role = if (isAdmin ?: adminRepo.existsByUser_Id(userId)) "ROLE_ADMIN" else "ROLE_USER"
         return UserSummary(
             id = userId,
             userKey = userKey,

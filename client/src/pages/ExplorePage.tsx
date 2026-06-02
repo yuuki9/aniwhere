@@ -276,7 +276,7 @@ export function ExplorePage() {
   const shouldFocusRouteReview = detailFocusParam === 'review'
   const nearbyRequest = useMemo(() => readNearbyExploreParams(searchParams), [searchParams])
   const routeViewMode: ViewMode =
-    viewParam === 'list' ? 'list' : viewParam === 'map' ? 'map' : nearbyRequest ? 'list' : 'map'
+    viewParam === 'list' ? 'list' : 'map'
   const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword')?.trim() ?? ''
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')

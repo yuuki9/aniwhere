@@ -49,17 +49,6 @@ function userNoticeName(user: UserSummary) {
   return user.nickname?.trim() || '사용자'
 }
 
-function userMatchesKeyword(user: UserSummary, keyword: string) {
-  if (!keyword) {
-    return true
-  }
-
-  const normalizedKeyword = keyword.toLowerCase()
-  return [user.nickname, String(user.userKey), user.status, user.role]
-    .filter(Boolean)
-    .some((value) => value!.toLowerCase().includes(normalizedKeyword))
-}
-
 export function AdminUsersPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -93,16 +82,10 @@ export function AdminUsersPage() {
   const selectedUser = userDetailQuery.data ?? selectedListUser
   const roleSheetUser = users.find((user) => user.id === roleSheetUserId) ?? null
 
-  const visibleUsers = useMemo(
-    () =>
-      users.filter((user) => {
-        const matchesRole = roleFilter === 'ALL' || normalizeUserRole(user.role) === roleFilter
-        return matchesRole && userMatchesKeyword(user, appliedKeyword)
-      }),
-    [appliedKeyword, roleFilter, users],
-  )
+  const visibleUsers = users
 
   const totalPages = usersQuery.data?.totalPages ?? 0
+  const totalElements = usersQuery.data?.totalElements ?? 0
   const canGoPrevious = currentPage > 0 && !usersQuery.isFetching
   const canGoNext = !!usersQuery.data && !usersQuery.data.last && !usersQuery.isFetching
   const resultLabel = appliedKeyword || roleFilter !== 'ALL' ? '검색 결과' : '전체 목록'
@@ -208,7 +191,7 @@ export function AdminUsersPage() {
         <section className="admin-shop-manage-list-shell" aria-label="사용자 목록">
           <div className="admin-shop-manage-list-head">
             <span>
-              {resultLabel} {visibleUsers.length}명
+              {resultLabel} {totalElements}명
             </span>
           </div>
 
