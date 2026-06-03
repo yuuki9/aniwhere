@@ -36,6 +36,8 @@ When the backend contract changes:
 - Current deployed work type facets checked from `GET /api/v1/shops/facets`: `ANIMATION` (`애니메이션`), `GAME` (`게임`).
 - The deployed Swagger contract for `GET /api/v1/shops/facets` does not expose `keyword`, selected filter IDs, `status`, `type`, or map bounds. Use `GET /api/v1/shops` for result filtering.
 - `GET /api/v1/shops` accepts `sort=NEWEST|REVIEW_COUNT_DESC|FAVORITE_COUNT_DESC`.
+- `GET /api/v1/search/autocomplete` accepts required `q` and `scope=shop|work`, plus optional `limit` defaulting to 8 and capped by the server.
+- `SearchAutocompleteItem` returns `label`, `kind=SHOP|WORK`, and optional `shopId` or `workId`.
 - `GET /api/v1/shops/nearby` accepts required `lat` and `lng` query params and returns `Shop[]` for the server-defined 1km nearby search.
 - `GET /api/v1/shops` keeps compatibility for both `category` (name filter) and `categoryIds[]` (ID filter); when both are present, both filters are applied.
 - `ShopRequest` sends `categoryIds` and `workIds` arrays for create/update.

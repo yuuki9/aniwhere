@@ -1,11 +1,16 @@
 import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { getSearchAutocomplete } from '../shared/api/search'
+import type { SearchAutocompleteItem, SearchAutocompleteScope } from '../shared/api/types'
 import { requestCurrentLocation } from '../shared/lib/location'
 import {
-  clearRecentSearches,
-  pushRecentSearch,
-  readRecentSearches,
-  removeRecentSearch,
+  clearRecentSearchEntries,
+  pushRecentSearchEntry,
+  readRecentSearchEntries,
+  removeRecentSearchEntry,
+  type RecentSearchEntry,
+  type RecentSearchKind,
 } from '../shared/lib/searchHistory'
 import {
   countShopFilters,
@@ -20,7 +25,8 @@ import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
 import { buildNearbyExploreHref } from './searchNearby'
 
-type SearchScope = 'shop' | 'work'
+type SearchScope = SearchAutocompleteScope
+type SearchAutocompleteSuggestion = SearchAutocompleteItem & { scope: SearchScope }
 
 function readSafeReturnTo(value: string | null) {
   return value?.startsWith('/') && !value.startsWith('//') ? value : null
@@ -51,6 +57,10 @@ function buildExploreSearchHref({
   return `/explore?${next.toString()}`
 }
 
+function getRecentSearchKindLabel(kind: RecentSearchKind) {
+  return kind === 'work' ? '작품' : '매장'
+}
+
 export function SearchPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -59,13 +69,32 @@ export function SearchPage() {
   const selectedFilters = useMemo(() => parseShopFilters(searchParams), [searchParams])
   const safeReturnTo = readSafeReturnTo(searchParams.get('returnTo'))
   const [keyword, setKeyword] = useState(currentKeyword)
-  const [recentSearches, setRecentSearches] = useState(() => readRecentSearches())
+  const [recentSearches, setRecentSearches] = useState(() => readRecentSearchEntries())
   const [nearbyState, setNearbyState] = useState<'idle' | 'loading' | 'error'>('idle')
   const [nearbyError, setNearbyError] = useState<string | null>(null)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
   const appliedFilterCount = countShopFilters(selectedFilters)
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
+  const compactKeyword = keyword.trim()
+  const autocompleteScopes = currentSearchScope === 'work' ? ['work', 'shop'] : ['shop', 'work']
+  const autocompleteQuery = useQuery<SearchAutocompleteSuggestion[]>({
+    queryKey: ['search-autocomplete', currentSearchScope, compactKeyword],
+    queryFn: async () => {
+      const results = await Promise.all(
+        autocompleteScopes.map((scope) => getSearchAutocomplete({ q: compactKeyword, scope, limit: 5 })),
+      )
+
+      return results.flatMap(({ items }, index) => {
+        const scope = autocompleteScopes[index]
+
+        return items.map((item) => ({ ...item, scope }))
+      })
+    },
+    enabled: compactKeyword.length > 0,
+    staleTime: 30_000,
+  })
+  const autocompleteSuggestions = autocompleteQuery.data ?? []
 
   useEffect(() => {
     setKeyword(currentKeyword)
@@ -75,14 +104,14 @@ export function SearchPage() {
     setIsFilterSheetOpen(false)
   }, [])
 
-  const submitSearchToExplore = (nextKeyword: string) => {
+  const submitSearchToExplore = (nextKeyword: string, nextScope = currentSearchScope, recentKind?: RecentSearchKind) => {
     const trimmed = nextKeyword.trim()
 
     if (trimmed) {
-      setRecentSearches(pushRecentSearch(trimmed))
+      setRecentSearches(pushRecentSearchEntry(trimmed, recentKind))
     }
 
-    navigate(buildExploreSearchHref({ keyword: trimmed, scope: currentSearchScope, selectedFilters }), { replace: true })
+    navigate(buildExploreSearchHref({ keyword: trimmed, scope: nextScope, selectedFilters }), { replace: true })
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -112,12 +141,12 @@ export function SearchPage() {
     navigate(buildExploreSearchHref({ keyword, scope: currentSearchScope, selectedFilters: nextFilters }), { replace: true })
   }
 
-  const removeRecentSearchItem = (item: string) => {
-    setRecentSearches(removeRecentSearch(item))
+  const removeRecentSearchItem = (item: RecentSearchEntry) => {
+    setRecentSearches(removeRecentSearchEntry(item))
   }
 
   const clearAllRecentSearches = () => {
-    setRecentSearches(clearRecentSearches())
+    setRecentSearches(clearRecentSearchEntries())
   }
 
   const handleNearbySearch = async () => {
@@ -194,6 +223,25 @@ export function SearchPage() {
 
           <section className="map-results-list-panel" aria-label="검색">
             <div className="map-results-sheet-list search-route-precontent">
+              {autocompleteSuggestions.length > 0 ? (
+                <section className="search-autocomplete-panel" aria-label="검색어 자동완성">
+                  <ul className="search-autocomplete-list">
+                    {autocompleteSuggestions.map((item) => (
+                      <li key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}`}>
+                        <button
+                          className="search-autocomplete-item"
+                          type="button"
+                          onClick={() => submitSearchToExplore(item.label, item.scope, item.kind === 'WORK' ? 'work' : 'shop')}
+                        >
+                          <strong>{item.label}</strong>
+                          <span className="search-autocomplete-kind">{item.kind === 'WORK' ? '작품' : '매장'}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
               <section className="search-history-section">
                 <div className="search-history-head">
                   <strong>최근 검색어</strong>
@@ -207,18 +255,19 @@ export function SearchPage() {
                 {recentSearches.length > 0 ? (
                   <div className="search-history-chip-list">
                     {recentSearches.map((item) => (
-                      <span className="search-history-chip" key={item}>
+                      <span className="search-history-chip" key={`${item.kind ?? 'keyword'}-${item.keyword}`}>
                         <button
                           className="search-history-chip-label"
                           type="button"
-                          onClick={() => submitSearchToExplore(item)}
+                          onClick={() => submitSearchToExplore(item.keyword, item.kind ?? currentSearchScope)}
                         >
-                          <span>{item}</span>
+                          {item.kind ? <span className="search-history-chip-kind">{getRecentSearchKindLabel(item.kind)}</span> : null}
+                          <span className="search-history-chip-text">{item.keyword}</span>
                         </button>
                         <button
                           className="search-history-chip-remove applied-filter-chip-close"
                           type="button"
-                          aria-label={`${item} 삭제`}
+                          aria-label={`${item.keyword} 삭제`}
                           onClick={() => removeRecentSearchItem(item)}
                         >
                           x

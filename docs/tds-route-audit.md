@@ -844,6 +844,23 @@ Every route-level TDS PR must include:
 - Commands run.
 - `Needs sandbox` items that cannot be proven locally.
 
+### 2026-06-03 Search Autocomplete Follow-up
+
+Official docs checked in the current session with Apps in Toss MCP:
+
+- TDS SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- Backend Swagger JSON: https://api.aniwhere.link/v3/api-docs
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/search` autocomplete API sync | API-required / Product-approved | `e0130df` added `GET /api/v1/search/autocomplete`; the client now has typed `SearchAutocomplete*` models and a request function for required `q`, `scope=shop\|work`, and optional `limit`. |
+| `/search` suggestion panel | Product-approved / TDS-informed | The route keeps the approved app-owned `MapSearchFieldForm` shell and adds a compact ListRow-like suggestion list below the search bar when the server returns matches. Default search queries both shop and work autocomplete scopes, ordered by the active route scope; selecting a work suggestion submits the same search flow with `scope=work` so Explore uses `workKeyword`. Suggestion rows use button semantics and no direct `@toss/tds-mobile` imports were added. |
+| `/search` recent search chips | Product-approved / TDS-informed | Autocomplete-selected recent searches now preserve whether the user chose a shop or work suggestion. Recent chips show a small app-owned `매장`/`작품` badge before the keyword, aligned with TDS Badge guidance for quick status recognition, while manually submitted keyword searches remain untagged. The search input itself stays plain to avoid making the badge look editable on narrow mobile widths. |
+| Runtime verification | Needs sandbox | Source tests and local build can verify API/UI wiring, but Apps in Toss keyboard behavior and native safe area still need sandbox/device confirmation. |
+
 ### 2026-05-31 Explore/Admin Taxonomy And Review Emoji Follow-up
 
 Official docs checked in the current session:

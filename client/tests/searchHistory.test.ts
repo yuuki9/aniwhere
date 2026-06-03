@@ -3,8 +3,11 @@ import assert from 'node:assert/strict'
 import {
   clearRecentSearches,
   pushRecentSearch,
+  pushRecentSearchEntry,
   readRecentSearches,
+  readRecentSearchEntries,
   removeRecentSearch,
+  removeRecentSearchEntry,
 } from '../src/shared/lib/searchHistory.ts'
 
 test('search history keeps five recent terms and moves duplicates to the front', () => {
@@ -99,6 +102,61 @@ test('search history preserves current list when storage writes fail', () => {
 
     assert.deepEqual(removeRecentSearch('굿즈'), ['카페', '굿즈', '피규어'])
     assert.deepEqual(clearRecentSearches(), ['카페', '굿즈', '피규어'])
+  } finally {
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: previousWindow,
+    })
+  }
+})
+
+test('search history stores autocomplete result kinds while reading legacy keyword strings', () => {
+  const store = new Map<string, string>()
+  const previousWindow = globalThis.window
+
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          store.set(key, value)
+        },
+      },
+    },
+  })
+
+  try {
+    store.set('aniwhere-recent-searches', JSON.stringify(['legacy keyword']))
+
+    assert.deepEqual(readRecentSearchEntries(), [{ keyword: 'legacy keyword' }])
+    assert.deepEqual(pushRecentSearchEntry('No Game No Life', 'work'), [
+      { keyword: 'No Game No Life', kind: 'work' },
+      { keyword: 'legacy keyword' },
+    ])
+    assert.deepEqual(readRecentSearchEntries(), [
+      { keyword: 'No Game No Life', kind: 'work' },
+      { keyword: 'legacy keyword' },
+    ])
+    assert.deepEqual(pushRecentSearchEntry('Animate Hongdae', 'shop'), [
+      { keyword: 'Animate Hongdae', kind: 'shop' },
+      { keyword: 'No Game No Life', kind: 'work' },
+      { keyword: 'legacy keyword' },
+    ])
+    assert.deepEqual(readRecentSearchEntries(), [
+      { keyword: 'Animate Hongdae', kind: 'shop' },
+      { keyword: 'No Game No Life', kind: 'work' },
+      { keyword: 'legacy keyword' },
+    ])
+    assert.deepEqual(removeRecentSearchEntry({ keyword: 'No Game No Life', kind: 'work' }), [
+      { keyword: 'Animate Hongdae', kind: 'shop' },
+      { keyword: 'legacy keyword' },
+    ])
+    assert.deepEqual(readRecentSearchEntries(), [
+      { keyword: 'Animate Hongdae', kind: 'shop' },
+      { keyword: 'legacy keyword' },
+    ])
+    assert.deepEqual(readRecentSearches(), ['Animate Hongdae', 'legacy keyword'])
   } finally {
     Object.defineProperty(globalThis, 'window', {
       configurable: true,
