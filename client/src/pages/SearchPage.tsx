@@ -1,8 +1,9 @@
 import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Asset } from '@aniwhere/tds-mobile'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getSearchAutocomplete } from '../shared/api/search'
-import type { SearchAutocompleteItem, SearchAutocompleteScope } from '../shared/api/types'
+import type { SearchAutocompleteItem, SearchAutocompleteKind, SearchAutocompleteScope } from '../shared/api/types'
 import { requestCurrentLocation } from '../shared/lib/location'
 import {
   clearRecentSearchEntries,
@@ -26,7 +27,12 @@ import searchLocationGuideUrl from '../assets/search-location-guide.webp'
 import { buildNearbyExploreHref } from './searchNearby'
 
 type SearchScope = SearchAutocompleteScope
+type SearchAutocompleteIconKind = SearchAutocompleteKind | 'RECENT'
 type SearchAutocompleteSuggestion = SearchAutocompleteItem & { scope: SearchScope }
+type SearchAutocompleteGroup = {
+  kind: SearchAutocompleteKind
+  items: SearchAutocompleteSuggestion[]
+}
 
 function readSafeReturnTo(value: string | null) {
   return value?.startsWith('/') && !value.startsWith('//') ? value : null
@@ -61,6 +67,32 @@ function getRecentSearchKindLabel(kind: RecentSearchKind) {
   return kind === 'work' ? '작품' : '매장'
 }
 
+function getAutocompleteGroupTitle(kind: SearchAutocompleteKind) {
+  return kind === 'WORK' ? '작품명' : '매장명'
+}
+
+function getAutocompleteIconName(kind: SearchAutocompleteIconKind) {
+  if (kind === 'RECENT') {
+    return 'icon-clock-mono'
+  }
+
+  return kind === 'WORK' ? 'icon-book-opened-mono' : 'icon-store-roof-mono'
+}
+
+function getAutocompleteIconSize(kind: SearchAutocompleteIconKind) {
+  return kind === 'WORK' ? 18 : 20
+}
+
+function SearchAutocompleteLeadingIcon({ kind }: { kind: SearchAutocompleteIconKind }) {
+  const iconSize = getAutocompleteIconSize(kind)
+
+  return (
+    <span className={`search-autocomplete-leading-icon search-autocomplete-leading-icon-${kind.toLowerCase()}`} aria-hidden="true">
+      <Asset.Icon name={getAutocompleteIconName(kind)} color="currentColor" frameShape={{ width: iconSize, height: iconSize }} />
+    </span>
+  )
+}
+
 export function SearchPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -77,24 +109,40 @@ export function SearchPage() {
   const appliedFilterCount = countShopFilters(selectedFilters)
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
   const compactKeyword = keyword.trim()
+  const normalizedCompactKeyword = compactKeyword.toLocaleLowerCase()
+  const isComposingSearch = compactKeyword.length > 0
   const autocompleteScopes = currentSearchScope === 'work' ? ['work', 'shop'] : ['shop', 'work']
   const autocompleteQuery = useQuery<SearchAutocompleteSuggestion[]>({
     queryKey: ['search-autocomplete', currentSearchScope, compactKeyword],
     queryFn: async () => {
-      const results = await Promise.all(
+      const results = await Promise.allSettled(
         autocompleteScopes.map((scope) => getSearchAutocomplete({ q: compactKeyword, scope, limit: 5 })),
       )
 
-      return results.flatMap(({ items }, index) => {
+      return results.flatMap((result, index) => {
+        if (result.status !== 'fulfilled') {
+          return []
+        }
+
         const scope = autocompleteScopes[index]
 
-        return items.map((item) => ({ ...item, scope }))
+        return result.value.items.map((item) => ({ ...item, scope }))
       })
     },
     enabled: compactKeyword.length > 0,
     staleTime: 30_000,
   })
   const autocompleteSuggestions = autocompleteQuery.data ?? []
+  const autocompleteGroupKinds: SearchAutocompleteKind[] = currentSearchScope === 'work' ? ['WORK', 'SHOP'] : ['SHOP', 'WORK']
+  const autocompleteGroups: SearchAutocompleteGroup[] = autocompleteGroupKinds
+    .map((kind) => ({
+      kind,
+      items: autocompleteSuggestions.filter((item) => item.kind === kind),
+    }))
+    .filter((group) => group.items.length > 0)
+  const relatedRecentSearches = recentSearches
+    .filter((item) => item.keyword.trim().toLocaleLowerCase().includes(normalizedCompactKeyword))
+    .slice(0, 3)
 
   useEffect(() => {
     setKeyword(currentKeyword)
@@ -104,14 +152,14 @@ export function SearchPage() {
     setIsFilterSheetOpen(false)
   }, [])
 
-  const submitSearchToExplore = (nextKeyword: string, nextScope = currentSearchScope, recentKind?: RecentSearchKind) => {
+  const submitSearchToExplore = (nextKeyword: string, nextScope: SearchScope = 'shop', recentKind?: RecentSearchKind) => {
     const trimmed = nextKeyword.trim()
 
     if (trimmed) {
       setRecentSearches(pushRecentSearchEntry(trimmed, recentKind))
     }
 
-    navigate(buildExploreSearchHref({ keyword: trimmed, scope: nextScope, selectedFilters }), { replace: true })
+    navigate(buildExploreSearchHref({ keyword: trimmed, scope: nextScope, selectedFilters }))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -223,87 +271,119 @@ export function SearchPage() {
 
           <section className="map-results-list-panel" aria-label="검색">
             <div className="map-results-sheet-list search-route-precontent">
-              {autocompleteSuggestions.length > 0 ? (
+              {isComposingSearch ? (
                 <section className="search-autocomplete-panel" aria-label="검색어 자동완성">
-                  <ul className="search-autocomplete-list">
-                    {autocompleteSuggestions.map((item) => (
-                      <li key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}`}>
-                        <button
-                          className="search-autocomplete-item"
-                          type="button"
-                          onClick={() => submitSearchToExplore(item.label, item.scope, item.kind === 'WORK' ? 'work' : 'shop')}
-                        >
-                          <strong>{item.label}</strong>
-                          <span className="search-autocomplete-kind">{item.kind === 'WORK' ? '작품' : '매장'}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-
-              <section className="search-history-section">
-                <div className="search-history-head">
-                  <strong>최근 검색어</strong>
-                  {recentSearches.length > 0 ? (
-                    <button className="search-history-clear-all" type="button" onClick={clearAllRecentSearches}>
-                      전체 삭제
-                    </button>
+                  {relatedRecentSearches.length > 0 ? (
+                    <section className="search-autocomplete-history" aria-label="관련 최근 검색어">
+                      <strong className="search-autocomplete-group-title">최근 검색어</strong>
+                      <ul className="search-autocomplete-list">
+                        {relatedRecentSearches.map((item) => (
+                          <li key={`${item.kind ?? 'keyword'}-${item.keyword}`}>
+                            <button
+                              className="search-autocomplete-history-item"
+                              type="button"
+                              onClick={() => submitSearchToExplore(item.keyword, item.kind ?? 'shop', item.kind)}
+                            >
+                              <span className="search-autocomplete-item-main">
+                                <SearchAutocompleteLeadingIcon kind="RECENT" />
+                                <span className="search-autocomplete-label">{item.keyword}</span>
+                              </span>
+                              {item.kind ? <span className="search-history-chip-kind">{getRecentSearchKindLabel(item.kind)}</span> : null}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
                   ) : null}
-                </div>
 
-                {recentSearches.length > 0 ? (
-                  <div className="search-history-chip-list">
-                    {recentSearches.map((item) => (
-                      <span className="search-history-chip" key={`${item.kind ?? 'keyword'}-${item.keyword}`}>
-                        <button
-                          className="search-history-chip-label"
-                          type="button"
-                          onClick={() => submitSearchToExplore(item.keyword, item.kind ?? currentSearchScope)}
-                        >
-                          {item.kind ? <span className="search-history-chip-kind">{getRecentSearchKindLabel(item.kind)}</span> : null}
-                          <span className="search-history-chip-text">{item.keyword}</span>
+                  {autocompleteGroups.map((group) => (
+                    <section className="search-autocomplete-group" key={group.kind} aria-label={getAutocompleteGroupTitle(group.kind)}>
+                      <strong className="search-autocomplete-group-title">{getAutocompleteGroupTitle(group.kind)}</strong>
+                      <ul className="search-autocomplete-list">
+                        {group.items.map((item) => (
+                          <li key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}`}>
+                            <button
+                              className="search-autocomplete-item"
+                              type="button"
+                              onClick={() => submitSearchToExplore(item.label, item.scope, item.kind === 'WORK' ? 'work' : 'shop')}
+                            >
+                              <span className="search-autocomplete-item-main">
+                                <SearchAutocompleteLeadingIcon kind={item.kind} />
+                                <strong className="search-autocomplete-label">{item.label}</strong>
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ))}
+                </section>
+              ) : (
+                <>
+                  <section className="search-history-section">
+                    <div className="search-history-head">
+                      <strong>최근 검색어</strong>
+                      {recentSearches.length > 0 ? (
+                        <button className="search-history-clear-all" type="button" onClick={clearAllRecentSearches}>
+                          전체 삭제
                         </button>
-                        <button
-                          className="search-history-chip-remove applied-filter-chip-close"
-                          type="button"
-                          aria-label={`${item.keyword} 삭제`}
-                          onClick={() => removeRecentSearchItem(item)}
-                        >
-                          x
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="search-history-empty">
-                    <strong>최근 검색 기록이 없습니다.</strong>
-                    <small>매장, 지역, 작품 이름으로 찾을 수 있어요.</small>
-                  </div>
-                )}
-              </section>
+                      ) : null}
+                    </div>
 
-              <section className="search-location-card" aria-labelledby="search-location-title">
-                <div className="search-location-visual" aria-hidden="true">
-                  <img className="search-location-image" src={searchLocationGuideUrl} alt="" />
-                </div>
-                <div className="search-location-copy">
-                  <strong id="search-location-title">
-                    현위치에서 가까운 매장을
-                    <br />
-                    찾아볼까요?
-                  </strong>
-                </div>
-                <button
-                  className="search-location-button"
-                  disabled={nearbyState === 'loading'}
-                  type="button"
-                  onClick={handleNearbySearch}
-                >
-                  {nearbyState === 'loading' ? '위치 확인 중' : '가까운 매장 찾기'}
-                </button>
-                {nearbyError ? <small className="search-location-error">{nearbyError}</small> : null}
-              </section>
+                    {recentSearches.length > 0 ? (
+                      <div className="search-history-chip-list">
+                        {recentSearches.map((item) => (
+                          <span className="search-history-chip" key={`${item.kind ?? 'keyword'}-${item.keyword}`}>
+                            <button
+                              className="search-history-chip-label"
+                              type="button"
+                              onClick={() => submitSearchToExplore(item.keyword, item.kind ?? 'shop', item.kind)}
+                            >
+                              {item.kind ? <span className="search-history-chip-kind">{getRecentSearchKindLabel(item.kind)}</span> : null}
+                              <span className="search-history-chip-text">{item.keyword}</span>
+                            </button>
+                            <button
+                              className="search-history-chip-remove applied-filter-chip-close"
+                              type="button"
+                              aria-label={`${item.keyword} 삭제`}
+                              onClick={() => removeRecentSearchItem(item)}
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="search-history-empty">
+                        <strong>최근 검색 기록이 없습니다.</strong>
+                        <small>매장, 지역, 작품 이름으로 찾을 수 있어요.</small>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="search-location-card" aria-labelledby="search-location-title">
+                    <div className="search-location-visual" aria-hidden="true">
+                      <img className="search-location-image" src={searchLocationGuideUrl} alt="" />
+                    </div>
+                    <div className="search-location-copy">
+                      <strong id="search-location-title">
+                        현위치에서 가까운 매장을
+                        <br />
+                        찾아볼까요?
+                      </strong>
+                    </div>
+                    <button
+                      className="search-location-button"
+                      disabled={nearbyState === 'loading'}
+                      type="button"
+                      onClick={handleNearbySearch}
+                    >
+                      {nearbyState === 'loading' ? '위치 확인 중' : '가까운 매장 찾기'}
+                    </button>
+                    {nearbyError ? <small className="search-location-error">{nearbyError}</small> : null}
+                  </section>
+                </>
+              )}
             </div>
           </section>
         </div>

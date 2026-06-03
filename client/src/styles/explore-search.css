@@ -4075,6 +4075,27 @@
   background: var(--ait-color-gray-0);
 }
 
+.search-autocomplete-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-autocomplete-history {
+  border-bottom: 1px solid var(--ait-color-border);
+}
+
+.search-autocomplete-group + .search-autocomplete-group {
+  border-top: 8px solid var(--ait-color-gray-50);
+}
+
+.search-autocomplete-group-title {
+  padding: var(--ait-space-4) var(--ait-space-6) 0;
+  color: var(--ait-color-text-secondary);
+  font-size: var(--ait-font-size-caption);
+  font-weight: 800;
+  line-height: var(--ait-line-height-body);
+}
+
 .search-autocomplete-list {
   display: flex;
   flex-direction: column;
@@ -4090,8 +4111,8 @@
 .search-autocomplete-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--ait-space-5);
+  justify-content: flex-start;
+  gap: var(--ait-space-3);
   width: 100%;
   min-height: 52px;
   padding: 0 var(--ait-space-6);
@@ -4103,23 +4124,55 @@
   cursor: pointer;
 }
 
-.search-autocomplete-item strong {
+.search-autocomplete-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ait-space-3);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--ait-space-6);
+  border: 0;
+  background: transparent;
+  color: var(--ait-color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-autocomplete-item-main {
+  display: inline-flex;
+  align-items: center;
   min-width: 0;
+  gap: var(--ait-space-3);
+}
+
+.search-autocomplete-leading-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ait-radius-full);
+  background: var(--ait-color-gray-100);
+  color: var(--ait-color-text-secondary);
+}
+
+.search-autocomplete-leading-icon .ait-asset-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-autocomplete-label {
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   font-size: var(--ait-font-size-body-md);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.search-autocomplete-kind {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border-radius: var(--ait-radius-full);
-  background: var(--ait-color-gray-100);
-  color: var(--ait-color-text-secondary);
-  font-size: var(--ait-font-size-caption);
-  font-weight: 800;
 }
 
 .search-history-chip-list {
