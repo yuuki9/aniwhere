@@ -1,3 +1,5 @@
+-- Canonical DDL: aniwhere-sql-ddl/analytics/01_popularity_events.sql
+-- Existing DB migration: aniwhere-sql-ddl/migration/2026-06-03_popularity_events.sql
 CREATE TABLE IF NOT EXISTS popularity_events (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
