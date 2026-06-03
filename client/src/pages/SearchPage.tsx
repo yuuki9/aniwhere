@@ -115,14 +115,18 @@ export function SearchPage() {
   const autocompleteQuery = useQuery<SearchAutocompleteSuggestion[]>({
     queryKey: ['search-autocomplete', currentSearchScope, compactKeyword],
     queryFn: async () => {
-      const results = await Promise.all(
+      const results = await Promise.allSettled(
         autocompleteScopes.map((scope) => getSearchAutocomplete({ q: compactKeyword, scope, limit: 5 })),
       )
 
-      return results.flatMap(({ items }, index) => {
+      return results.flatMap((result, index) => {
+        if (result.status !== 'fulfilled') {
+          return []
+        }
+
         const scope = autocompleteScopes[index]
 
-        return items.map((item) => ({ ...item, scope }))
+        return result.value.items.map((item) => ({ ...item, scope }))
       })
     },
     enabled: compactKeyword.length > 0,
@@ -333,7 +337,7 @@ export function SearchPage() {
                             <button
                               className="search-history-chip-label"
                               type="button"
-                              onClick={() => submitSearchToExplore(item.keyword, item.kind ?? 'shop')}
+                              onClick={() => submitSearchToExplore(item.keyword, item.kind ?? 'shop', item.kind)}
                             >
                               {item.kind ? <span className="search-history-chip-kind">{getRecentSearchKindLabel(item.kind)}</span> : null}
                               <span className="search-history-chip-text">{item.keyword}</span>
