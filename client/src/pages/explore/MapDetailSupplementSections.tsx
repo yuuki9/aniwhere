@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Menu, Modal, Rating, Result } from '@aniwhere/tds-mobile'
+import { Asset, Button, Menu, Modal, Rating, Result } from '@aniwhere/tds-mobile'
 import type { PageResponse, Shop, ShopReview } from '../../shared/api/types'
 import type { MapDetailTab } from './MapDetailSummaryCard'
 
@@ -642,9 +642,7 @@ export function MapDetailSupplementSections({
             description="리뷰를 남기면, 검토 후 포인트를 지급해드려요!"
             button={
               <Result.Button type="button" onClick={onStartReview}>
-                <span className="map-place-review-coin-icon" aria-hidden="true">
-                  ₩
-                </span>
+                <Asset.Icon className="map-place-review-coin-icon" name="icon-point-circle-yellow" frameShape={{ width: 22, height: 22 }} />
                 리뷰 남기기
               </Result.Button>
             }
