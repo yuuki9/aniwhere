@@ -443,6 +443,14 @@ interface AnimationWorkRepository : JpaRepository<AnimationWorkEntity, Int> {
         """,
     )
     fun findAllOrderByPopularityDesc(): List<AnimationWorkEntity>
+
+    @Query(
+        """
+        SELECT a FROM AnimationWorkEntity a
+        ORDER BY a.popularity DESC NULLS LAST, a.name ASC
+        """,
+    )
+    fun findAllOrderByPopularityDesc(pageable: Pageable): List<AnimationWorkEntity>
 }
 
 interface GameWorkRepository : JpaRepository<GameWorkEntity, Int> {

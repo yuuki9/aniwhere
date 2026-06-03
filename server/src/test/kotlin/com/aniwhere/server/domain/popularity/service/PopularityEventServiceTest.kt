@@ -1,6 +1,7 @@
 package com.aniwhere.server.domain.popularity.service
 
 import com.aniwhere.server.common.exception.BadRequestException
+import com.aniwhere.server.domain.popularity.model.PopularityDiscoverySource
 import com.aniwhere.server.domain.popularity.model.PopularityEventType
 import com.aniwhere.server.domain.popularity.model.PopularitySearchScope
 import com.aniwhere.server.domain.popularity.model.RecordPopularityEventCommand
@@ -93,5 +94,36 @@ class PopularityEventServiceTest {
         )
 
         verify { port.saveEvent(any()) }
+    }
+
+    @Test
+    fun `recordEvent - discovery explore rejects both workId and workKeyword`() {
+        assertThrows(BadRequestException::class.java) {
+            service.recordEvent(
+                RecordPopularityEventCommand(
+                    userId = 1L,
+                    type = PopularityEventType.DISCOVERY_WORK_EXPLORE_ENTERED,
+                    occurredAt = LocalDateTime.now(),
+                    workId = 1,
+                    workKeyword = "원피스",
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `recordEvent - discovery click rejects multiple targets`() {
+        assertThrows(BadRequestException::class.java) {
+            service.recordEvent(
+                RecordPopularityEventCommand(
+                    userId = 1L,
+                    type = PopularityEventType.DISCOVERY_RESULT_CLICKED,
+                    occurredAt = LocalDateTime.now(),
+                    source = PopularityDiscoverySource.SEARCH,
+                    shopId = 3L,
+                    workId = 1,
+                ),
+            )
+        }
     }
 }

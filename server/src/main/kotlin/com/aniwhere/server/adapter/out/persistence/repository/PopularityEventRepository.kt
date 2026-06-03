@@ -62,6 +62,14 @@ interface PopularityEventRepository : JpaRepository<PopularityEventEntity, Long>
         since: LocalDateTime,
     ): Boolean
 
+    fun existsByUserIdAndEventTypeAndWorkKeywordNormalizedAndSourceAndCreatedAtGreaterThanEqual(
+        userId: Long,
+        eventType: String,
+        workKeywordNormalized: String,
+        source: String,
+        since: LocalDateTime,
+    ): Boolean
+
     @Query(
         value = """
         SELECT e.shop_id AS shopId, NULL AS workId, NULL AS keyword,

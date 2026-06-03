@@ -81,8 +81,12 @@ class PopularityPersistenceAdapter(
                     )
                 else -> {
                     val normalized = PopularityKeywordNormalizer.normalize(command.workKeyword) ?: return false
-                    eventRepo.existsByUserIdAndEventTypeAndWorkKeywordNormalizedAndCreatedAtGreaterThanEqual(
-                        command.userId, type, normalized, since,
+                    eventRepo.existsByUserIdAndEventTypeAndWorkKeywordNormalizedAndSourceAndCreatedAtGreaterThanEqual(
+                        command.userId,
+                        type,
+                        normalized,
+                        command.source!!.name.lowercase(),
+                        since,
                     )
                 }
             }
@@ -146,8 +150,7 @@ class PopularityPersistenceAdapter(
     }
 
     override fun findTopWorksByPopularity(limit: Int): List<PopularityStaticWorkRow> {
-        return animationWorkRepo.findAllOrderByPopularityDesc()
-            .take(limit)
+        return animationWorkRepo.findAllOrderByPopularityDesc(PageRequest.of(0, limit))
             .map { work ->
                 PopularityStaticWorkRow(
                     workId = requireNotNull(work.id),

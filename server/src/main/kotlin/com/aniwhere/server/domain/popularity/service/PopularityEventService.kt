@@ -54,8 +54,10 @@ class PopularityEventService(
             PopularityEventType.DISCOVERY_WORK_EXPLORE_ENTERED -> {
                 val hasWorkId = command.workId != null
                 val hasWorkKeyword = !command.workKeyword.isNullOrBlank()
-                if (!hasWorkId && !hasWorkKeyword) {
-                    throw BadRequestException("workId or workKeyword is required for DISCOVERY_WORK_EXPLORE_ENTERED")
+                if (hasWorkId == hasWorkKeyword) {
+                    throw BadRequestException(
+                        "exactly one of workId or workKeyword is required for DISCOVERY_WORK_EXPLORE_ENTERED",
+                    )
                 }
                 command.workId?.let { requireWork(it) }
                 command.workKeyword?.let { requireKeywordLength(it) }
@@ -65,9 +67,10 @@ class PopularityEventService(
                 val hasShop = command.shopId != null
                 val hasWork = command.workId != null
                 val hasWorkKeyword = !command.workKeyword.isNullOrBlank()
-                if (!hasShop && !hasWork && !hasWorkKeyword) {
+                val targetCount = listOf(hasShop, hasWork, hasWorkKeyword).count { it }
+                if (targetCount != 1) {
                     throw BadRequestException(
-                        "shopId, workId, or workKeyword is required for DISCOVERY_RESULT_CLICKED",
+                        "exactly one of shopId, workId, or workKeyword is required for DISCOVERY_RESULT_CLICKED",
                     )
                 }
                 command.shopId?.let { requireShop(it) }

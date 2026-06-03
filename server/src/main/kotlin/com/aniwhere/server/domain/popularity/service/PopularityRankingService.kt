@@ -28,8 +28,8 @@ class PopularityRankingService(
     override fun shopRankings(window: PopularityWindow, limit: Int): ShopRankingResponse {
         val resolvedLimit = limit.coerceIn(MIN_LIMIT, MAX_SHOP_LIMIT)
         val since = windowStart(window)
-        val sampleSufficient = port.countEventsSince(since) >= SAMPLE_SUFFICIENT_THRESHOLD
         val eventRows = port.aggregateShopScores(since, resolvedLimit)
+        val sampleSufficient = isSampleSufficient(eventRows)
         val merged = mergeShopRows(eventRows, port.findTopShopsByStaticSignals(resolvedLimit), sampleSufficient, resolvedLimit)
         val labels = port.findShopLabels(merged.mapNotNull { it.shopId })
         val items = merged.mapIndexed { index, row ->
@@ -47,8 +47,8 @@ class PopularityRankingService(
     override fun workRankings(window: PopularityWindow, limit: Int): WorkRankingResponse {
         val resolvedLimit = limit.coerceIn(MIN_LIMIT, MAX_WORK_LIMIT)
         val since = windowStart(window)
-        val sampleSufficient = port.countEventsSince(since) >= SAMPLE_SUFFICIENT_THRESHOLD
         val eventRows = port.aggregateWorkScores(since, resolvedLimit)
+        val sampleSufficient = isSampleSufficient(eventRows)
         val merged = mergeWorkRows(eventRows, port.findTopWorksByPopularity(resolvedLimit), sampleSufficient, resolvedLimit)
         val labels = port.findWorkLabels(merged.mapNotNull { it.workId })
         val items = merged.mapIndexed { index, row ->
@@ -66,8 +66,8 @@ class PopularityRankingService(
     override fun keywordRankings(window: PopularityWindow, limit: Int): KeywordRankingResponse {
         val resolvedLimit = limit.coerceIn(MIN_LIMIT, MAX_KEYWORD_LIMIT)
         val since = windowStart(window)
-        val sampleSufficient = port.countEventsSince(since) >= SAMPLE_SUFFICIENT_THRESHOLD
         val rows = port.aggregateKeywordScores(since, resolvedLimit)
+        val sampleSufficient = isSampleSufficient(rows)
         val items = rows.mapIndexed { index, row ->
             KeywordRankingItem(
                 rank = index + 1,
@@ -82,11 +82,12 @@ class PopularityRankingService(
     override fun mixedEntityRankings(window: PopularityWindow, limit: Int): MixedEntityRankingResponse {
         val resolvedLimit = limit.coerceIn(MIN_LIMIT, MAX_MIXED_LIMIT)
         val since = windowStart(window)
-        val sampleSufficient = port.countEventsSince(since) >= SAMPLE_SUFFICIENT_THRESHOLD
         val shopRows = port.aggregateShopScores(since, resolvedLimit)
         val workRows = port.aggregateWorkScores(since, resolvedLimit)
-        val mergedShops = mergeShopRows(shopRows, port.findTopShopsByStaticSignals(resolvedLimit), sampleSufficient, resolvedLimit)
-        val mergedWorks = mergeWorkRows(workRows, port.findTopWorksByPopularity(resolvedLimit), sampleSufficient, resolvedLimit)
+        val shopSampleSufficient = isSampleSufficient(shopRows)
+        val workSampleSufficient = isSampleSufficient(workRows)
+        val mergedShops = mergeShopRows(shopRows, port.findTopShopsByStaticSignals(resolvedLimit), shopSampleSufficient, resolvedLimit)
+        val mergedWorks = mergeWorkRows(workRows, port.findTopWorksByPopularity(resolvedLimit), workSampleSufficient, resolvedLimit)
 
         val shopLabels = port.findShopLabels(mergedShops.mapNotNull { it.shopId })
         val workLabels = port.findWorkLabels(mergedWorks.mapNotNull { it.workId })
@@ -123,10 +124,13 @@ class PopularityRankingService(
 
         return MixedEntityRankingResponse(
             window = window.toApiValue(),
-            sampleSufficient = sampleSufficient,
+            sampleSufficient = shopSampleSufficient && workSampleSufficient,
             items = combined,
         )
     }
+
+    private fun isSampleSufficient(rows: List<PopularityEntityScoreRow>): Boolean =
+        rows.sumOf { it.eventCount } >= SAMPLE_SUFFICIENT_THRESHOLD
 
     private fun mergeShopRows(
         eventRows: List<PopularityEntityScoreRow>,

@@ -19,9 +19,8 @@ class PopularityRankingServiceTest {
 
     @Test
     fun `shopRankings - returns event driven ranking when sample sufficient`() {
-        every { port.countEventsSince(any()) } returns 100L
         every { port.aggregateShopScores(any(), 10) } returns listOf(
-            PopularityEntityScoreRow(shopId = 3L, score = 9.0, eventCount = 3),
+            PopularityEntityScoreRow(shopId = 3L, score = 9.0, eventCount = 50),
         )
         every { port.findShopLabels(listOf(3L)) } returns mapOf(3L to "테스트 매장")
         every { port.findTopShopsByStaticSignals(any()) } returns emptyList()
@@ -38,7 +37,6 @@ class PopularityRankingServiceTest {
 
     @Test
     fun `keywordRankings - marks sample insufficient below threshold`() {
-        every { port.countEventsSince(any()) } returns 10L
         every { port.aggregateKeywordScores(any(), 10) } returns listOf(
             PopularityEntityScoreRow(keyword = "원피스", score = 2.0, eventCount = 1),
         )
@@ -51,12 +49,11 @@ class PopularityRankingServiceTest {
 
     @Test
     fun `mixedEntityRankings - merges shop and work by score`() {
-        every { port.countEventsSince(any()) } returns 100L
         every { port.aggregateShopScores(any(), 5) } returns listOf(
-            PopularityEntityScoreRow(shopId = 1L, score = 5.0, eventCount = 2),
+            PopularityEntityScoreRow(shopId = 1L, score = 5.0, eventCount = 50),
         )
         every { port.aggregateWorkScores(any(), 5) } returns listOf(
-            PopularityEntityScoreRow(workId = 9, score = 8.0, eventCount = 2),
+            PopularityEntityScoreRow(workId = 9, score = 8.0, eventCount = 50),
         )
         every { port.findShopLabels(listOf(1L)) } returns mapOf(1L to "매장A")
         every { port.findWorkLabels(listOf(9)) } returns mapOf(9 to "작품B")
@@ -73,7 +70,6 @@ class PopularityRankingServiceTest {
 
     @Test
     fun `shopRankings - blends static shops when sample insufficient`() {
-        every { port.countEventsSince(any()) } returns 1L
         every { port.aggregateShopScores(any(), 5) } returns emptyList()
         every { port.findTopShopsByStaticSignals(5) } returns listOf(
             PopularityStaticShopRow(shopId = 7L, label = "정적 매장", reviewCount = 10, favoriteCount = 4),
