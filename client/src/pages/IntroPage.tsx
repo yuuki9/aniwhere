@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import introFeatureCurationIcon from '../assets/icons/intro-feature-curation.webp'
 import introFeatureMapIcon from '../assets/icons/intro-feature-map.webp'
@@ -6,7 +6,7 @@ import introFeatureReviewIcon from '../assets/icons/intro-feature-review.webp'
 import aniwhereIcon from '../assets/aniwhere_icon.png'
 import introStoreGuide from '../assets/intro-store-guide.webp'
 import { isAppsInTossRuntime, startServiceEntry, TOSS_LOGIN_UNAVAILABLE_MESSAGE } from '../shared/lib/auth'
-import { completeServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
+import { completeServiceEntry, resumeStoredServiceEntry, saveAniwhereNickname } from '../shared/lib/authEntryFlow'
 import type { AuthSession } from '../shared/lib/authSession'
 import {
   createRandomProfileEmojiSet,
@@ -198,6 +198,7 @@ function NicknameOnboardingSheet({
 export function IntroPage() {
   const navigate = useNavigate()
   const isEntryAttemptInFlightRef = useRef(false)
+  const [isResumingStoredSession, setIsResumingStoredSession] = useState(true)
   const [isEntering, setIsEntering] = useState(false)
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
@@ -223,14 +224,50 @@ export function IntroPage() {
     }
   }, [])
 
-  const openNicknameOnboardingSheet = (initialNickname: string) => {
+  const openNicknameOnboardingSheet = useCallback((initialNickname: string) => {
     const emojiSet = createRandomProfileEmojiSet(PROFILE_EMOJI_INTRO_COUNT)
     setProfileEmojiSet(emojiSet)
     setSelectedProfileEmojiId(emojiSet[0]?.id ?? PROFILE_EMOJI_OPTIONS[0].id)
     setNicknameInput(initialNickname)
     setNicknameTouched(false)
     setNicknameError(null)
-  }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    resumeStoredServiceEntry()
+      .then((result) => {
+        if (cancelled) {
+          return
+        }
+
+        if (result == null) {
+          setIsResumingStoredSession(false)
+          return
+        }
+
+        if (result.mode === 'needsNickname') {
+          openNicknameOnboardingSheet(result.user.nickname ?? '')
+          setPendingNicknameSession(result.session)
+          setIsMockNicknameOnboardingOpen(false)
+          setIsResumingStoredSession(false)
+          return
+        }
+
+        navigate('/home', { replace: true })
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('[aniwhere:intro] stored session resume failed', error)
+          setIsResumingStoredSession(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [navigate, openNicknameOnboardingSheet])
 
   const handleStart = async () => {
     if (isEntryAttemptInFlightRef.current) {
@@ -382,17 +419,17 @@ export function IntroPage() {
           <Button
             color="primary"
             display="block"
-            disabled={isEntering || isNicknameSheetOpen}
+            disabled={isResumingStoredSession || isEntering || isNicknameSheetOpen}
             onClick={handleStart}
             size="xlarge"
             variant="fill"
           >
-            {isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
+            {isResumingStoredSession ? '로그인 확인 중이에요' : isEntering ? '로그인 중이에요' : '로그인하고 입장하기'}
           </Button>
           {!isNicknameSheetOpen ? (
             <button
               className="intro-login-skip-button"
-              disabled={isEntering}
+              disabled={isResumingStoredSession || isEntering}
               type="button"
               onClick={handleMockNicknameStart}
             >

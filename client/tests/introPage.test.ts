@@ -226,7 +226,7 @@ test('IntroPage offers a nickname setup mock entry while Toss login is blocked',
 
   assert.match(source, /닉네임 설정하고 입장/)
   assert.match(source, /const handleMockNicknameStart = \(\) => \{\s*if \(isEntryAttemptInFlightRef\.current \|\| isEntering\)/)
-  assert.match(source, /className="intro-login-skip-button"[\s\S]*disabled=\{isEntering\}/)
+  assert.match(source, /className="intro-login-skip-button"[\s\S]*disabled=\{isResumingStoredSession \|\| isEntering\}/)
   assert.match(source, /setIsMockNicknameOnboardingOpen\(true\)/)
   assert.match(source, /open=\{isNicknameSheetOpen\}/)
   assert.match(source, /pendingNicknameSession == null && isMockNicknameOnboardingOpen/)

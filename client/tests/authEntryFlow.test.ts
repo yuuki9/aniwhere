@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createServer, type ViteDevServer } from 'vite'
-import type { LoginResult, NicknameAvailabilityResult, UserSummary } from '../src/shared/api/types'
+import type { LoginResult, NicknameAvailabilityResult, RefreshResult, UserSummary } from '../src/shared/api/types'
 import type { EntryFlowResult } from '../src/shared/lib/auth'
+import type { AuthSession } from '../src/shared/lib/authSession'
 
 let viteServer: ViteDevServer | undefined
 
@@ -26,6 +27,14 @@ const loadAuthEntryFlow = async () => {
         saveSession: (session: unknown) => void
       },
     ) => Promise<{ mode: 'ready' | 'needsNickname' }>
+    resumeStoredServiceEntry: (deps: {
+      now: () => number
+      readSession: () => AuthSession | null
+      refresh: (payload: { refreshToken: string }) => Promise<RefreshResult>
+      getProfile: (accessToken: string) => Promise<UserSummary>
+      saveSession: (session: AuthSession) => void
+      clearSession: () => void
+    }) => Promise<{ mode: 'ready' | 'needsNickname'; session: AuthSession; user: UserSummary } | null>
     saveAniwhereNickname: (
       nickname: string,
       accessToken: string,
@@ -64,6 +73,14 @@ const userWithNickname: UserSummary = {
   role: 'ROLE_USER',
   lastLoginAt: null,
   createdAt: '2026-05-24T00:00:00',
+}
+
+const storedSession: AuthSession = {
+  accessToken: 'stored-access-token',
+  refreshToken: 'stored-refresh-token',
+  accessTokenExpiresAt: 1_900_000_000,
+  role: 'ROLE_USER',
+  user: userWithNickname,
 }
 
 test('completeServiceEntry passes Toss authorization code to the server and opens home for named users', async () => {
@@ -106,6 +123,84 @@ test('completeServiceEntry asks for an Aniwhere nickname when the server marks a
   )
 
   assert.equal(result.mode, 'needsNickname')
+})
+
+test('resumeStoredServiceEntry opens home from a fresh named local session without refreshing', async () => {
+  const { resumeStoredServiceEntry } = await loadAuthEntryFlow()
+  let refreshCalled = false
+  let profileCalled = false
+
+  const result = await resumeStoredServiceEntry({
+    now: () => 1_800_000_000_000,
+    readSession: () => storedSession,
+    refresh: async () => {
+      refreshCalled = true
+      return { accessToken: 'new-access', refreshToken: 'new-refresh', expiresIn: 1_900_000_000 }
+    },
+    getProfile: async () => {
+      profileCalled = true
+      return userWithNickname
+    },
+    saveSession: () => undefined,
+    clearSession: () => undefined,
+  })
+
+  assert.equal(result?.mode, 'ready')
+  assert.equal(result?.session.accessToken, 'stored-access-token')
+  assert.equal(refreshCalled, false)
+  assert.equal(profileCalled, false)
+})
+
+test('resumeStoredServiceEntry refreshes an expired access token and stores the refreshed profile', async () => {
+  const { resumeStoredServiceEntry } = await loadAuthEntryFlow()
+  const calls: unknown[] = []
+
+  const result = await resumeStoredServiceEntry({
+    now: () => 1_900_000_000_000,
+    readSession: () => ({ ...storedSession, accessTokenExpiresAt: 1_800_000_000 }),
+    refresh: async (payload) => {
+      calls.push({ refresh: payload })
+      return { accessToken: 'refreshed-access', refreshToken: 'refreshed-refresh', expiresIn: 1_900_000_900 }
+    },
+    getProfile: async (accessToken) => {
+      calls.push({ profile: accessToken })
+      return { ...userWithNickname, role: 'ROLE_ADMIN' }
+    },
+    saveSession: (session) => {
+      calls.push({ session })
+    },
+    clearSession: () => {
+      calls.push({ clear: true })
+    },
+  })
+
+  assert.equal(result?.mode, 'ready')
+  assert.deepEqual(calls[0], { refresh: { refreshToken: 'stored-refresh-token' } })
+  assert.deepEqual(calls[1], { profile: 'refreshed-access' })
+  assert.match(JSON.stringify(calls[2]), /refreshed-refresh/)
+  assert.match(JSON.stringify(calls[2]), /ROLE_ADMIN/)
+  assert.equal(calls.length, 3)
+})
+
+test('resumeStoredServiceEntry clears storage and falls back to Toss login when refresh fails', async () => {
+  const { resumeStoredServiceEntry } = await loadAuthEntryFlow()
+  let cleared = false
+
+  const result = await resumeStoredServiceEntry({
+    now: () => 1_900_000_000_000,
+    readSession: () => ({ ...storedSession, accessTokenExpiresAt: 1_800_000_000 }),
+    refresh: async () => {
+      throw new Error('Invalid refresh token')
+    },
+    getProfile: async () => userWithNickname,
+    saveSession: () => undefined,
+    clearSession: () => {
+      cleared = true
+    },
+  })
+
+  assert.equal(result, null)
+  assert.equal(cleared, true)
 })
 
 test('saveAniwhereNickname trims, checks availability, updates the profile, and stores the user', async () => {
