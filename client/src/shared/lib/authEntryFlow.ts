@@ -155,16 +155,26 @@ export async function resumeStoredServiceEntry(
       return await loadProfileIntoSession(storedSession, deps)
     } catch (error) {
       console.error('[aniwhere:auth-entry] stored profile fetch failed', { error: toSafeErrorSummary(error) })
+      return classifySession(storedSession, storedSession.user)
     }
   }
 
+  let refreshedSession: AuthSession
   try {
-    const refreshedSession = await refreshStoredSession(storedSession, deps)
-    return await loadProfileIntoSession(refreshedSession, deps)
+    refreshedSession = await refreshStoredSession(storedSession, deps)
   } catch (error) {
     console.error('[aniwhere:auth-entry] stored session refresh failed', { error: toSafeErrorSummary(error) })
     deps.clearSession()
     return null
+  }
+
+  deps.saveSession(refreshedSession)
+
+  try {
+    return await loadProfileIntoSession(refreshedSession, deps)
+  } catch (error) {
+    console.error('[aniwhere:auth-entry] stored profile sync failed', { error: toSafeErrorSummary(error) })
+    return classifySession(refreshedSession, refreshedSession.user)
   }
 }
 

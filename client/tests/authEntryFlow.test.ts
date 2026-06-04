@@ -176,9 +176,69 @@ test('resumeStoredServiceEntry refreshes an expired access token and stores the 
 
   assert.equal(result?.mode, 'ready')
   assert.deepEqual(calls[0], { refresh: { refreshToken: 'stored-refresh-token' } })
-  assert.deepEqual(calls[1], { profile: 'refreshed-access' })
-  assert.match(JSON.stringify(calls[2]), /refreshed-refresh/)
-  assert.match(JSON.stringify(calls[2]), /ROLE_ADMIN/)
+  assert.match(JSON.stringify(calls[1]), /refreshed-refresh/)
+  assert.deepEqual(calls[2], { profile: 'refreshed-access' })
+  assert.match(JSON.stringify(calls[3]), /refreshed-refresh/)
+  assert.match(JSON.stringify(calls[3]), /ROLE_ADMIN/)
+  assert.equal(calls.length, 4)
+})
+
+test('resumeStoredServiceEntry keeps a fresh stored session when profile sync fails', async () => {
+  const { resumeStoredServiceEntry } = await loadAuthEntryFlow()
+  const unnamedSession = { ...storedSession, user: { ...userWithNickname, nickname: null } }
+  let refreshCalled = false
+  let cleared = false
+
+  const result = await resumeStoredServiceEntry({
+    now: () => 1_800_000_000_000,
+    readSession: () => unnamedSession,
+    refresh: async () => {
+      refreshCalled = true
+      return { accessToken: 'new-access', refreshToken: 'new-refresh', expiresIn: 1_900_000_000 }
+    },
+    getProfile: async () => {
+      throw new Error('Temporary profile failure')
+    },
+    saveSession: () => undefined,
+    clearSession: () => {
+      cleared = true
+    },
+  })
+
+  assert.equal(result?.mode, 'needsNickname')
+  assert.equal(result?.session.accessToken, 'stored-access-token')
+  assert.equal(refreshCalled, false)
+  assert.equal(cleared, false)
+})
+
+test('resumeStoredServiceEntry keeps a refreshed session when profile sync fails after refresh', async () => {
+  const { resumeStoredServiceEntry } = await loadAuthEntryFlow()
+  const calls: unknown[] = []
+
+  const result = await resumeStoredServiceEntry({
+    now: () => 1_900_000_000_000,
+    readSession: () => ({ ...storedSession, accessTokenExpiresAt: 1_800_000_000 }),
+    refresh: async () => {
+      calls.push({ refresh: true })
+      return { accessToken: 'refreshed-access', refreshToken: 'refreshed-refresh', expiresIn: 1_900_000_900 }
+    },
+    getProfile: async () => {
+      calls.push({ profile: true })
+      throw new Error('Temporary profile failure')
+    },
+    saveSession: (session) => {
+      calls.push({ session })
+    },
+    clearSession: () => {
+      calls.push({ clear: true })
+    },
+  })
+
+  assert.equal(result?.mode, 'ready')
+  assert.equal(result?.session.accessToken, 'refreshed-access')
+  assert.deepEqual(calls[0], { refresh: true })
+  assert.match(JSON.stringify(calls[1]), /refreshed-refresh/)
+  assert.deepEqual(calls[2], { profile: true })
   assert.equal(calls.length, 3)
 })
 
