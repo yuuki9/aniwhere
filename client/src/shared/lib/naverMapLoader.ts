@@ -3,6 +3,7 @@ const NAVER_MAP_SCRIPT_ID = 'aniwhere-naver-map-sdk'
 const NAVER_MAP_READY_RETRY_LIMIT = 20
 const NAVER_MAP_READY_RETRY_DELAY_MS = 50
 const NAVER_MAP_WATCHDOG_TIMEOUT_MS = 10000
+const DEFAULT_NAVER_MAP_NCP_KEY_ID = 'x25tulixqr'
 
 type NaverMapNamespace = typeof naver.maps
 type PartialNaverMapNamespace = Partial<NaverMapNamespace>
@@ -17,6 +18,7 @@ declare global {
 }
 
 let naverMapLoadPromise: Promise<NaverMapNamespace> | null = null
+let hasWarnedDefaultKeyId = false
 
 function isUsableNaverMaps(maps: PartialNaverMapNamespace | null | undefined): maps is NaverMapNamespace {
   if (!maps) {
@@ -50,7 +52,14 @@ export function loadNaverMaps() {
     return naverMapLoadPromise
   }
 
-  const keyId = import.meta.env.VITE_NAVER_MAP_NCP_KEY_ID?.trim()
+  const envKeyId = import.meta.env.VITE_NAVER_MAP_NCP_KEY_ID?.trim()
+  const usesDefaultKeyId = !envKeyId
+  const keyId = envKeyId || DEFAULT_NAVER_MAP_NCP_KEY_ID
+
+  if (usesDefaultKeyId && !hasWarnedDefaultKeyId) {
+    hasWarnedDefaultKeyId = true
+    console.warn('[aniwhere:naver-map] VITE_NAVER_MAP_NCP_KEY_ID is empty. Using default public key id.')
+  }
 
   if (!keyId) {
     return Promise.reject(new Error('네이버 지도 키가 설정되지 않았습니다.'))

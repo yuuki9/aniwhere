@@ -123,27 +123,6 @@ function HomeAdminEntry() {
   )
 }
 
-function HomeProfileEntry() {
-  return (
-    <section className="home-profile-entry-section" aria-label="내 정보">
-      <Link className="home-profile-entry-card" to="/my">
-        <span className="home-profile-entry-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm-7 7.1c.78-3.52 3.52-5.7 7-5.7s6.22 2.18 7 5.7" />
-          </svg>
-        </span>
-        <span className="home-profile-entry-copy">
-          <strong>내 정보</strong>
-          <small>프로필, 관심 매장, 내 리뷰를 확인해요</small>
-        </span>
-        <span className="home-profile-entry-arrow" aria-hidden="true">
-          ›
-        </span>
-      </Link>
-    </section>
-  )
-}
-
 function HomePendingCard({ title, description }: { title: string; description: string }) {
   return (
     <article className="home-pending-card">
@@ -267,7 +246,6 @@ export function HomePage() {
         onClose={() => setWelcomeProfile(null)}
       />
       {canEnterAdmin ? <HomeAdminEntry /> : null}
-      <HomeProfileEntry />
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />
       <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />

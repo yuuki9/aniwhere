@@ -833,6 +833,23 @@ Official docs checked in the current session:
 | `/my` review deep link | Product-approved / API-required | User review rows now open `/explore?shopId=:id&sheet=expanded&tab=review&focus=review&reviewId=:reviewId`. Explore accepts the review tab query, loads the review tab as active, and scrolls/focuses the matching review row when it is present. |
 | Local profile nav entry | Product-approved / Local preview | The local app-owned top navigation keeps the person icon visible even on `/my` and marks it with `aria-current="page"` so the profile entry remains visually identifiable in browser preview while Apps in Toss continues to use the native accessory button. |
 
+### 2026-06-04 Intro Back Stack And Home Profile Entry Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss MCP was not available in this Codex session, and `ax` CLI was not on PATH. Official web fallback was used.
+- Apps in Toss NavigationBar: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/UI/NavigationBar.html
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Icon Button: https://tossmini-docs.toss.im/tds-mobile/components/icon-button/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/intro` entry navigation | Regression fixed / Product-approved | Intro login and nickname-completion entry now navigate to `/home` with `replace: true`, so browser/native back does not return users to onboarding after they have entered the service. This preserves the existing CTA UI and changes only history semantics. |
+| `/intro` stored auth resume | Product-approved / API-required | On app re-entry, Intro checks the stored Aniwhere session before calling Apps in Toss `appLogin()`. A fresh named access-token session replaces into `/home`; an expired access token calls Swagger-backed `POST /api/v1/auth/refresh`, reloads `/api/v1/users/me`, and only falls back to Toss login when no usable token remains. |
+| `/home` profile entry | Regression fixed / Product-approved | The `/home` profile card was removed because profile access is now owned by the Apps in Toss native accessory button and the mirrored local top-navigation icon. This avoids duplicate `/my` entry points while preserving the existing native navigation contract. |
+| AIT map key diagnostic | Regression fixed / Needs sandbox | The Naver Maps Client ID is a public browser key, not a server secret. Because `.env.local` is ignored by `*.local`, builds from another developer machine could omit `VITE_NAVER_MAP_NCP_KEY_ID`. `naverMapLoader` now keeps `x25tulixqr` as the committed default and still lets an explicit env override it. Real Apps in Toss sandbox should confirm Naver accepts the registered `aniwhere.private-apps.tossmini.com` and `aniwhere.apps.tossmini.com` origins. |
+| Runtime verification | Needs sandbox | Local build can verify source and bundle wiring, but native back-stack behavior, accessory placement, and Naver Maps API authorization must be confirmed in Apps in Toss sandbox/device with the real deployed origin. |
+
 ## PR Evidence Format
 
 Every route-level TDS PR must include:
