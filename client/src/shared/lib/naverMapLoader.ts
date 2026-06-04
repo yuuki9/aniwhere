@@ -3,6 +3,7 @@ const NAVER_MAP_SCRIPT_ID = 'aniwhere-naver-map-sdk'
 const NAVER_MAP_READY_RETRY_LIMIT = 20
 const NAVER_MAP_READY_RETRY_DELAY_MS = 50
 const NAVER_MAP_WATCHDOG_TIMEOUT_MS = 10000
+const DEFAULT_NAVER_MAP_NCP_KEY_ID = 'x25tulixqr'
 
 type NaverMapNamespace = typeof naver.maps
 type PartialNaverMapNamespace = Partial<NaverMapNamespace>
@@ -50,7 +51,7 @@ export function loadNaverMaps() {
     return naverMapLoadPromise
   }
 
-  const keyId = import.meta.env.VITE_NAVER_MAP_NCP_KEY_ID?.trim()
+  const keyId = import.meta.env.VITE_NAVER_MAP_NCP_KEY_ID?.trim() || DEFAULT_NAVER_MAP_NCP_KEY_ID
 
   if (!keyId) {
     return Promise.reject(new Error('네이버 지도 키가 설정되지 않았습니다.'))

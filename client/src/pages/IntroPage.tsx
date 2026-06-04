@@ -251,6 +251,7 @@ export function IntroPage() {
         return
       }
       navigate('/home', {
+        replace: true,
         state: {
           entryMode: 'toss',
           welcomeEmoji: getProfileEmojiSymbol(result.user.emojiIconFilename),
@@ -304,6 +305,7 @@ export function IntroPage() {
 
     if (isMockNicknameFlow) {
       navigate('/home', {
+        replace: true,
         state: {
           entryMode: 'mock',
           welcomeEmoji: selectedProfileEmoji.symbol,
@@ -320,6 +322,7 @@ export function IntroPage() {
     try {
       const user = await saveAniwhereNickname(nickname, pendingNicknameSession.accessToken, selectedProfileEmoji.emojiIconFilename)
       navigate('/home', {
+        replace: true,
         state: {
           entryMode: 'toss',
           welcomeEmoji: selectedProfileEmoji.symbol,
