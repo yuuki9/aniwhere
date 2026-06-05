@@ -90,6 +90,41 @@ export async function request<T>(path: string, init?: ApiRequestInit): Promise<T
   return payload.data as T
 }
 
+export async function requestNoContent(path: string, init?: ApiRequestInit): Promise<void> {
+  const { authToken, ...requestInit } = init ?? {}
+  const headers = new Headers(init?.headers)
+  const resolvedAuthToken = authToken === undefined ? getStoredAccessToken() : authToken
+
+  if (init?.body != null && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+  const authorization = toAuthorizationHeaderValue(resolvedAuthToken)
+  if (authorization && !headers.has('Authorization')) {
+    headers.set('Authorization', authorization)
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...requestInit,
+    headers: {
+      ...Object.fromEntries(headers),
+    },
+  })
+
+  if (response.ok) {
+    return
+  }
+
+  let message = '요청 처리에 실패했습니다.'
+  try {
+    const payload = (await response.json()) as ApiResponse<unknown>
+    message = payload.message ?? message
+  } catch {
+    // Some no-content endpoints may return an empty error body.
+  }
+
+  throw new Error(message)
+}
+
 export async function requestForm<T>(path: string, body: FormData, init?: ApiRequestInit): Promise<T> {
   const { authToken, ...requestInit } = init ?? {}
   const headers = new Headers(init?.headers)

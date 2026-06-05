@@ -3,6 +3,7 @@ import { openURL } from '@apps-in-toss/web-framework'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { askMapAssistant } from '../shared/api/llm'
+import { recordPopularityEventSafely } from '../shared/api/popularity'
 import { addFavoriteShop, getNearbyShops, getShop, getShopFacets, getShops, removeFavoriteShop } from '../shared/api/shops'
 import { getWorks } from '../shared/api/works'
 import { listMyFavoriteShops } from '../shared/api/users'
@@ -104,6 +105,9 @@ type DetailMediaItem = {
   reviewImages?: PhotoViewerItem[]
   reviewPhotoIndex?: number
 }
+
+const EXPLORE_LIST_ENTRY_PARAM = 'entry'
+const EXPLORE_INITIAL_LIST_ENTRY_VALUE = 'list'
 
 function parseDetailTab(value: string | null): MapDetailTab | null {
   if (value === 'info' || value === 'review' || value === 'photos' || value === 'works') {
@@ -326,6 +330,7 @@ export function ExplorePage() {
   const listVisibleCountRef = useRef(PAGE_SIZE)
   const pendingListRestoreRef = useRef(false)
   const previousSelectedShopIdRef = useRef<number | null>(selectedShopId)
+  const lastPopularityWorkExploreKeyRef = useRef<string | null>(null)
   const peekPointerIdRef = useRef<number | null>(null)
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
@@ -342,7 +347,12 @@ export function ExplorePage() {
   )
   const isMapAreaNearbySearchActive = mapAreaSearchCenter != null && !favoriteQuickChipActive
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
-  const safeRouteReturnTo = isSafeExploreReturnTo(routeState?.returnTo)
+  const isInitialListEntry =
+    routeViewMode === 'list' && searchParams.get(EXPLORE_LIST_ENTRY_PARAM) === EXPLORE_INITIAL_LIST_ENTRY_VALUE
+  const safeStateReturnTo = isSafeExploreReturnTo(routeState?.returnTo)
+  const safeQueryReturnTo = isInitialListEntry ? isSafeExploreReturnTo(searchParams.get('returnTo') ?? undefined) : null
+  const safeRouteReturnTo = safeStateReturnTo ?? safeQueryReturnTo
+  const popularityResultClickSource = currentKeyword && !isInitialListEntry ? 'SEARCH' : 'EXPLORE'
   const searchReturnTo = useMemo(() => {
     const next = new URLSearchParams(searchParams)
 
@@ -375,7 +385,9 @@ export function ExplorePage() {
       ...selectedSearchParams,
       ...(currentKeyword
         ? currentSearchScope === 'work'
-          ? { workKeyword: currentKeyword }
+          ? selectedSearchParams.workIds != null && selectedSearchParams.workIds.length > 0
+            ? {}
+            : { workKeyword: currentKeyword }
           : { keyword: currentKeyword }
         : {}),
     }),
@@ -685,6 +697,24 @@ export function ExplorePage() {
     activeShopsQueryIsSuccess,
   ])
 
+  useEffect(() => {
+    if (currentSearchScope !== 'work' || !currentKeyword) {
+      return
+    }
+
+    const matchedWorkId = selectedFilters.workId
+    const eventKey = matchedWorkId != null ? `work:${matchedWorkId}` : `keyword:${currentKeyword.toLocaleLowerCase()}`
+    if (lastPopularityWorkExploreKeyRef.current === eventKey) {
+      return
+    }
+
+    lastPopularityWorkExploreKeyRef.current = eventKey
+    recordPopularityEventSafely({
+      type: 'DISCOVERY_WORK_EXPLORE_ENTERED',
+      ...(matchedWorkId != null ? { workId: matchedWorkId } : { workKeyword: currentKeyword }),
+    })
+  }, [currentKeyword, currentSearchScope, selectedFilters.workId])
+
   const assistantMutation = useMutation({
     mutationFn: async (question: string) =>
       askMapAssistant({
@@ -856,6 +886,7 @@ export function ExplorePage() {
     const next = new URLSearchParams(searchParams)
 
     next.set('view', nextViewMode)
+    next.delete(EXPLORE_LIST_ENTRY_PARAM)
     replaceSearchParams(next)
   }
 
@@ -909,6 +940,12 @@ export function ExplorePage() {
     origin: Exclude<SelectionOrigin, null>,
     nextSheetMode: SheetMode = 'peek',
   ) => {
+    recordPopularityEventSafely({
+      type: 'DISCOVERY_RESULT_CLICKED',
+      shopId,
+      source: popularityResultClickSource,
+    })
+
     const next = new URLSearchParams(searchParams)
     next.set('shopId', String(shopId))
     next.delete('view')

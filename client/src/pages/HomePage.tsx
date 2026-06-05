@@ -1,18 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
 import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.png'
 import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
-import { getWorks } from '../shared/api/works'
 import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
 import { SHOP_SEARCH_PLACEHOLDER } from '../shared/lib/searchCopy'
 import { Toast } from '@aniwhere/tds-mobile'
 import {
   buildHomeCtaCards,
-  buildHomeWorkPreviewItems,
   type HomeCtaCard,
-  type HomeWorkPreviewItem,
 } from './homeViewModel'
 
 const HOME_CTA_IMAGES: Record<HomeCtaCard['id'], string> = {
@@ -132,69 +128,6 @@ function HomePendingCard({ title, description }: { title: string; description: s
   )
 }
 
-function buildHomeWorkSearchHref(workName: string) {
-  const params = new URLSearchParams()
-  params.set('view', 'list')
-  params.set('scope', 'work')
-  params.set('keyword', workName)
-
-  return `/explore?${params.toString()}`
-}
-
-function HomeWorkPosterCard({ work }: { work: HomeWorkPreviewItem }) {
-  return (
-    <Link
-      aria-label={`${work.name} 취급 매장 보기`}
-      className="home-work-poster-card"
-      to={buildHomeWorkSearchHref(work.name)}
-    >
-      <span className="home-work-poster-art">
-        {work.coverUrl ? (
-          <img alt="" aria-hidden="true" src={work.coverUrl} />
-        ) : (
-          <span className="home-work-poster-empty" aria-hidden="true">
-            {work.name.slice(0, 1)}
-          </span>
-        )}
-        <span className="home-work-poster-badge">{work.badgeLabel}</span>
-        <span className="home-work-poster-rank" data-rank-length={String(work.rank).length} aria-hidden="true">
-          {work.rank}
-        </span>
-      </span>
-      <strong className="home-work-poster-title">{work.name}</strong>
-      {work.subtitle ? <small className="home-work-poster-subtitle">{work.subtitle}</small> : null}
-    </Link>
-  )
-}
-
-function HomeIssueSection({ works, isLoading, isError }: {
-  works: HomeWorkPreviewItem[]
-  isLoading: boolean
-  isError: boolean
-}) {
-  return (
-    <section aria-labelledby="home-issues-title" className="home-issue-section" id="home-issues">
-      <div className="home-section-head">
-        <h2 id="home-issues-title">인기 작품 TOP 20</h2>
-      </div>
-      {isLoading ? <HomePendingCard title="작품을 불러오는 중이에요" description="잠시만 기다려 주세요." /> : null}
-      {isError ? <HomePendingCard title="작품을 불러오지 못했어요" description="검색으로 매장을 계속 찾을 수 있어요." /> : null}
-      {!isLoading && !isError && works.length === 0 ? (
-        <HomePendingCard title="연결된 작품이 아직 없어요" description="확인된 작품부터 보여드릴게요." />
-      ) : null}
-      {works.length > 0 ? (
-        <div className="home-work-poster-rail">
-          <div className="home-work-poster-carousel" aria-label="작품 포스터 가로 스크롤">
-            {works.map((work) => (
-              <HomeWorkPosterCard key={work.id} work={work} />
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </section>
-  )
-}
-
 function HomeReviewPreviewSection() {
   return (
     <section aria-labelledby="home-review-preview-title" className="home-review-preview-section">
@@ -215,15 +148,6 @@ export function HomePage() {
   const [welcomeProfile, setWelcomeProfile] = useState(() => readWelcomeProfile(location.state))
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
   const canEnterAdmin = useMemo(() => import.meta.env.DEV || isAdminRole(readAuthSession()?.role), [])
-  const worksQuery = useQuery({
-    queryKey: ['works', 'home-preview'],
-    queryFn: getWorks,
-    staleTime: 1000 * 60 * 10,
-  })
-  const workItems = useMemo(
-    () => buildHomeWorkPreviewItems(worksQuery.data ?? []),
-    [worksQuery.data],
-  )
 
   useEffect(() => {
     if (welcomeProfile == null) {
@@ -248,7 +172,6 @@ export function HomePage() {
       {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       <HomeCtaBannerList cards={ctaCards} />
-      <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />
       <HomeReviewPreviewSection />
     </main>
   )

@@ -1,7 +1,9 @@
 import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Asset } from '@aniwhere/tds-mobile'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { recordPopularityEventSafely } from '../shared/api/popularity'
+import { getMixedEntityRankings } from '../shared/api/rankings'
 import { getSearchAutocomplete } from '../shared/api/search'
 import type { SearchAutocompleteItem, SearchAutocompleteKind, SearchAutocompleteScope } from '../shared/api/types'
 import { requestCurrentLocation } from '../shared/lib/location'
@@ -24,6 +26,15 @@ import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { MapSearchFieldForm } from '../shared/ui/MapSearchFieldShell'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
+import {
+  buildTrendPreviewItems,
+  buildTrendExploreHref,
+  formatTrendActivity,
+  formatTrendActivityAria,
+  formatTrendKindLabel,
+  normalizeMixedEntityRankingItem,
+  type TrendRankingItem,
+} from './trendRankingViewModel'
 import { buildNearbyExploreHref } from './searchNearby'
 
 type SearchScope = SearchAutocompleteScope
@@ -34,6 +45,10 @@ type SearchAutocompleteGroup = {
   items: SearchAutocompleteSuggestion[]
 }
 
+function toPopularityScope(scope: SearchScope) {
+  return scope === 'work' ? 'WORK' : 'SHOP'
+}
+
 function readSafeReturnTo(value: string | null) {
   return value?.startsWith('/') && !value.startsWith('//') ? value : null
 }
@@ -42,10 +57,12 @@ function buildExploreSearchHref({
   keyword,
   scope,
   selectedFilters,
+  workId,
 }: {
   keyword: string
   scope: SearchScope
   selectedFilters: ShopFilters
+  workId?: number | null
 }) {
   const trimmed = keyword.trim()
   const next = writeShopFilters(new URLSearchParams(), selectedFilters)
@@ -54,6 +71,9 @@ function buildExploreSearchHref({
 
   if (scope === 'work') {
     next.set('scope', 'work')
+    if (workId != null) {
+      next.set('workId', String(workId))
+    }
   }
 
   if (trimmed) {
@@ -93,6 +113,82 @@ function SearchAutocompleteLeadingIcon({ kind }: { kind: SearchAutocompleteIconK
   )
 }
 
+function SearchTrendRow({ item }: { item: TrendRankingItem }) {
+  const activityLabel = formatTrendActivity(item)
+  const activityAriaLabel = formatTrendActivityAria(item)
+
+  return (
+    <Link
+      aria-label={`${item.label} 관련 매장 검색 결과 보기`}
+      className="trend-ranking-row"
+      to={buildTrendExploreHref(item, { returnTo: '/search' })}
+    >
+      <span className="trend-ranking-rank" aria-hidden="true">
+        {item.rank}
+      </span>
+      <span className="trend-ranking-main">
+        <strong>{item.label}</strong>
+        <span className="trend-ranking-summary">
+          <span>{formatTrendKindLabel(item.kind)}</span>
+        </span>
+      </span>
+      {activityLabel != null ? (
+        <span className="trend-ranking-metric" aria-label={activityAriaLabel ?? undefined}>
+          <span className="trend-ranking-metric-value" key={`${item.rank}-${item.eventCount}-${item.score}`}>
+            {activityLabel}
+          </span>
+        </span>
+      ) : null}
+    </Link>
+  )
+}
+
+function SearchTrendSection({
+  items,
+  isError,
+  isLoading,
+}: {
+  items: TrendRankingItem[]
+  isError: boolean
+  isLoading: boolean
+}) {
+  return (
+    <section className="search-trend-section" aria-labelledby="search-trends-title">
+      <div className="search-history-head">
+        <strong id="search-trends-title">지금 뜨는 검색</strong>
+        <Link className="search-history-clear-all" to="/trends">
+          전체보기
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <div className="search-history-empty">
+          <strong>랭킹을 불러오는 중이에요.</strong>
+        </div>
+      ) : null}
+      {isError ? (
+        <div className="search-history-empty">
+          <strong>랭킹을 불러오지 못했어요.</strong>
+        </div>
+      ) : null}
+      {!isLoading && !isError && items.length === 0 ? (
+        <div className="search-history-empty">
+          <strong>아직 충분한 검색 데이터가 없어요.</strong>
+        </div>
+      ) : null}
+      {!isLoading && !isError && items.length > 0 ? (
+        <div className="trend-ranking-card" aria-label="지금 뜨는 검색 Top5">
+          <div className="trend-ranking-list">
+            {items.map((item) => (
+              <SearchTrendRow key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 export function SearchPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -108,10 +204,22 @@ export function SearchPage() {
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null)
   const appliedFilterCount = countShopFilters(selectedFilters)
   const usesTossNavigation = useMemo(() => isAppsInTossRuntime(), [])
+  const trendRankingQuery = useQuery({
+    queryKey: ['rankings', 'search-entities', '7d', 5],
+    queryFn: () => getMixedEntityRankings({ window: '7d', limit: 5 }),
+    staleTime: 30_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+  })
+  const trendItems = useMemo(
+    () => buildTrendPreviewItems((trendRankingQuery.data?.items ?? []).map(normalizeMixedEntityRankingItem), 5),
+    [trendRankingQuery.data?.items],
+  )
   const compactKeyword = keyword.trim()
   const normalizedCompactKeyword = compactKeyword.toLocaleLowerCase()
   const isComposingSearch = compactKeyword.length > 0
-  const autocompleteScopes = currentSearchScope === 'work' ? ['work', 'shop'] : ['shop', 'work']
+  const autocompleteScopes: SearchScope[] = currentSearchScope === 'work' ? ['work', 'shop'] : ['shop', 'work']
   const autocompleteQuery = useQuery<SearchAutocompleteSuggestion[]>({
     queryKey: ['search-autocomplete', currentSearchScope, compactKeyword],
     queryFn: async () => {
@@ -152,14 +260,35 @@ export function SearchPage() {
     setIsFilterSheetOpen(false)
   }, [])
 
-  const submitSearchToExplore = (nextKeyword: string, nextScope: SearchScope = 'shop', recentKind?: RecentSearchKind) => {
+  const submitSearchToExplore = (
+    nextKeyword: string,
+    nextScope: SearchScope = 'shop',
+    recentKind?: RecentSearchKind,
+    selectedSuggestion?: SearchAutocompleteSuggestion,
+  ) => {
     const trimmed = nextKeyword.trim()
 
     if (trimmed) {
       setRecentSearches(pushRecentSearchEntry(trimmed, recentKind))
     }
 
-    navigate(buildExploreSearchHref({ keyword: trimmed, scope: nextScope, selectedFilters }))
+    if (trimmed && selectedSuggestion == null) {
+      recordPopularityEventSafely({
+        type: 'SEARCH_KEYWORD_SUBMITTED',
+        keyword: trimmed,
+        scope: toPopularityScope(nextScope),
+      })
+    }
+
+    if (selectedSuggestion?.shopId != null || selectedSuggestion?.workId != null) {
+      recordPopularityEventSafely({
+        type: 'SEARCH_AUTOCOMPLETE_SELECTED',
+        ...(selectedSuggestion.shopId != null ? { shopId: selectedSuggestion.shopId } : {}),
+        ...(selectedSuggestion.workId != null ? { workId: selectedSuggestion.workId } : {}),
+      })
+    }
+
+    navigate(buildExploreSearchHref({ keyword: trimmed, scope: nextScope, selectedFilters, workId: selectedSuggestion?.workId }))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -305,7 +434,9 @@ export function SearchPage() {
                             <button
                               className="search-autocomplete-item"
                               type="button"
-                              onClick={() => submitSearchToExplore(item.label, item.scope, item.kind === 'WORK' ? 'work' : 'shop')}
+                              onClick={() =>
+                                submitSearchToExplore(item.label, item.scope, item.kind === 'WORK' ? 'work' : 'shop', item)
+                              }
                             >
                               <span className="search-autocomplete-item-main">
                                 <SearchAutocompleteLeadingIcon kind={item.kind} />
@@ -320,17 +451,14 @@ export function SearchPage() {
                 </section>
               ) : (
                 <>
-                  <section className="search-history-section">
-                    <div className="search-history-head">
-                      <strong>최근 검색어</strong>
-                      {recentSearches.length > 0 ? (
+                  {recentSearches.length > 0 ? (
+                    <section className="search-history-section">
+                      <div className="search-history-head">
+                        <strong>최근 검색어</strong>
                         <button className="search-history-clear-all" type="button" onClick={clearAllRecentSearches}>
                           전체 삭제
                         </button>
-                      ) : null}
-                    </div>
-
-                    {recentSearches.length > 0 ? (
+                      </div>
                       <div className="search-history-chip-list">
                         {recentSearches.map((item) => (
                           <span className="search-history-chip" key={`${item.kind ?? 'keyword'}-${item.keyword}`}>
@@ -353,13 +481,10 @@ export function SearchPage() {
                           </span>
                         ))}
                       </div>
-                    ) : (
-                      <div className="search-history-empty">
-                        <strong>최근 검색 기록이 없습니다.</strong>
-                        <small>매장, 지역, 작품 이름으로 찾을 수 있어요.</small>
-                      </div>
-                    )}
-                  </section>
+                    </section>
+                  ) : null}
+
+                  <SearchTrendSection items={trendItems} isError={trendRankingQuery.isError} isLoading={trendRankingQuery.isLoading} />
 
                   <section className="search-location-card" aria-labelledby="search-location-title">
                     <div className="search-location-visual" aria-hidden="true">
