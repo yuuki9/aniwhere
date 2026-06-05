@@ -107,17 +107,43 @@ Official docs checked with Apps in Toss MCP on 2026-05-17:
 | --- | --- | --- |
 | Route role | Product-approved | `/home` is the discovery hub after entry, so it keeps a dense mobile storefront rhythm instead of a strict form/list screen. |
 | TDS import boundary | Passed | Home uses the shared API/view-model boundary and app-owned CSS tokens; no direct `@toss/tds-mobile` imports were introduced outside the local facade strategy. |
-| Typography | Product-approved | Section titles and poster labels use `--ait-*` typography tokens with tighter sizing than the intro hero. The `인기 작품 TOP 20` title stays short and matches the current `popularity`-ordered work API without implying real-time trend data. |
+| Typography | Product-approved | Home section titles use `--ait-*` typography tokens with tighter sizing than the intro hero. The former work-poster title was removed with the poster carousel. |
 | Search entry | Product-approved | Official `SearchField` is the reference primitive, but home keeps a button-like search entry to route into `/search` without opening an inline input on the discovery page. |
 | Quick menu | Product-approved / Needs server role follow-up | The shortcut set keeps public actions visible by default: map exploration and community reviews. `매장 관리` is hidden unless an admin session is already unlocked; future Toss login role sync should replace the temporary admin-session visibility check. |
-| Work poster carousel | Product-approved | Official `Asset` and `Badge` docs informed the poster media and internal badge shape, but the carousel is app-owned because TDS does not define a horizontal work-discovery rail. It calls `GET /api/v1/works`, renders the first 20 items from the returned popularity order to limit home image cost, hides duplicate genre metadata, uses poster art with contained rank numerals, shows about 2.5 cards at 375px, and links to `/search?scope=work&keyword=:workName&returnTo=/home` so the search route calls the shop search API with `workKeyword`. |
-| Home section vertical rhythm | Product-approved / TDS-informed | Official SearchField, ListRow, Typography, and Button docs were checked for the touched primitives. The search entry to CTA banner visual gap is about 16px, so the work and review section top padding was reduced from `--ait-space-3` to `--ait-space-1` to keep the CTA → work rail and work rail → review rhythm proportional without changing card sizes or route structure. |
+| Work poster carousel | Regression fix | The former poster carousel has been removed from home to avoid copyrighted poster/cover dependence and to keep the discovery hub focused on search entry, CTA banners, and review preview. |
+| Home section vertical rhythm | Product-approved / TDS-informed | Official SearchField, ListRow, Typography, and Button docs were checked for the touched primitives. After moving ranking recommendations to `/search`, home keeps the search entry, CTA banner stack, and review preview without adding another dense module under the CTA stack. |
 | Work shop count | Needs backend follow-up | The server work catalog currently exposes work metadata, not per-work shop counts. Home therefore uses `취급 매장 보기` inside the poster instead of an invented `n개 매장` count. |
 | More affordance | Product-approved | No separate more affordance is shown because the current destination would be the generic Explore list, not a work-ranking page. A future `/works` route can reintroduce more as a work-specific action. |
 | Recent reviews | Partial / Needs backend follow-up | The section is labeled `최근 방문 후기` and uses `GET /api/v1/posts` as the available recent-post API. If the server later separates review-only posts, replace this query with that endpoint. |
 | Empty/error cards | Product-approved | Loading, empty, and error copy avoids `제보` wording on home and keeps the section neutral. |
-| Explore return | Product-approved | Work poster links pass route state so the Explore list back action can return to `/home` instead of dropping to the base `/explore` screen. |
+| Explore return | Product-approved | Search/trend links pass route state so the Explore list back action can return to the source route instead of dropping to the base `/explore` screen. |
 | Runtime verification | Needs sandbox | Local build/lint/test verification does not prove Apps in Toss safe area, webview navigation, or Toss runtime font scaling. |
+
+## Current Home Native Back Follow-up
+
+Official docs checked on 2026-06-05 with web fallback because Apps in Toss MCP was not available in this session:
+
+- NavigationBar: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/UI/NavigationBar.html
+- Back event: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/%EC%9D%B4%EB%B2%A4%ED%8A%B8%20%EC%A0%9C%EC%96%B4/back-event.html
+- Non-game launch checklist: https://developers-apps-in-toss.toss.im/checklist/app-nongame.html
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` native back expectation | Product-approved / Needs sandbox | `/home` is the authenticated root after auto-login, so the native navigation back button should close the mini app instead of sending the user back to intro or an invisible login path. The app now listens to `graniteEvent.backEvent`: `/home` calls `closeView()`, while other routes preserve one-step back navigation. |
+| Browser history fallback | Product-approved / Needs sandbox | A capture-phase `popstate` fallback closes the app only when the previous route state was already `/home`, covering runtimes that express native back through browser history. Local browser cannot prove native close behavior; confirm in Apps in Toss sandbox on device. |
+
+## Current Explore List Entry Routing Follow-up
+
+Official docs checked on 2026-06-05:
+
+- Back event: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/%EC%9D%B4%EB%B2%A4%ED%8A%B8%20%EC%A0%9C%EC%96%B4/back-event.html
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Initial `/explore?view=list` entry | Product-approved | Home CTA and trend-ranking links now mark direct list entry with `entry=list` plus `returnTo`. The Explore top back action returns to that source route instead of switching to map, because the user did not choose list from the map surface. |
+| Map-to-list view switch | Product-approved | Internal view switching clears the direct-entry marker. After the user explicitly switches from map to list, the list back action can still return to map, preserving the existing mode-toggle mental model. |
+| Runtime verification | Needs sandbox | Local browser can verify URL/routing behavior, but native back parity should be rechecked in Apps in Toss sandbox after upload. |
 
 ## Current Full Route Import Audit
 
@@ -249,7 +275,7 @@ Official docs reused from the current Search/Explore audit because the touched p
 | --- | --- | --- |
 | Shared search field shell | Product-approved | `/search` and `/explore` now share `MapSearchFieldShell` so the route-entry button and editable form keep the same `search-screen-bar map-search-field` structure. This preserves the approved Aniwhere map/list search rhythm while using official SearchField as the behavior reference. |
 | `/search` route shell | Regression fixed / Product-approved | `/search` no longer owns a separate `search-screen search-screen-v2` surface. It now uses the same `map-page-shell`, `map-page-list-mode`, `map-list-view-top`, and `map-results-list-panel` shell as `/explore?view=list`; only the inner input form and pre-search content differ by route purpose. The search-entry state intentionally omits `search-result-head` so the screen does not imply results before a query is submitted. |
-| Routed keyword display | Product-approved / Regression fixed | `/explore?view=list&keyword=:keyword` now displays the routed keyword in the top search field. Home work poster links and recent-history selections therefore arrive in the list route with visible context instead of falling back to placeholder copy. |
+| Routed keyword display | Product-approved / Regression fixed | `/explore?view=list&keyword=:keyword` now displays the routed keyword in the top search field. Search trend links and recent-history selections therefore arrive in the list route with visible context instead of falling back to placeholder copy. |
 | Recent search chips | Product-approved | Recent searches are app-owned removable chips with an adjacent `전체 삭제` action. TDS docs do not expose a dedicated chip primitive in this facade, so the UI uses TDS-compatible tokens and Button-like hit targets. |
 
 ### 2026-05-30 Explore Peek/Nearby Follow-up
@@ -860,6 +886,38 @@ Every route-level TDS PR must include:
 - Screenshot viewport used, normally 375px wide.
 - Commands run.
 - `Needs sandbox` items that cannot be proven locally.
+
+### 2026-06-05 Trend Ranking Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss MCP was not available in this Codex session, and `ax` CLI was not on PATH. Official web fallback was used.
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` trend module | Product-approved / Regression fix | The old `인기 작품 TOP 20` poster carousel was removed from home. The compact trend ranking was also removed from the home CTA stack after UX review because it reads as a search suggestion surface, not a home destination card. |
+| `/search` trend module | Product-approved / TDS-informed / API-required | `지금 뜨는 검색` Top5 now appears only on the Search Focus initial state and reads `GET /api/v1/rankings/search/entities?window=7d&limit=5`. It uses app-owned ListRow-like markup with tokenized typography, borders, and touch feedback because the design needs ranking/meta composition rather than a strict single TDS primitive. |
+| Home image policy | Product-approved / Regression fix | Home trend ranking no longer reads or renders work `coverUrl`, external anime poster URLs, `coverImage`, or `bannerImage`. Existing home CTA banner images remain because they are service-owned entry artwork and not work posters. |
+| `/trends` route | Product-approved / TDS-informed / API-required | `/trends` provides a Top20 list from the real Rankings API. Tabs map to supported endpoints: mixed entities, works, shops, and search keywords. |
+| Data source | API-required | Mock trend ranking data was removed. The UI now uses the deployed Rankings API fields that actually exist: `rank`, `kind`, `label`/`keyword`, `score`, `eventCount`, `window`, and `sampleSufficient`. Related store counts, category summaries, and rank movement are not rendered until the backend exposes them. |
+| Runtime verification | Needs sandbox | Local build/browser checks can verify layout and routing, but Apps in Toss native safe area, font behavior, and real device tap feedback still need sandbox/device confirmation. |
+
+### 2026-06-05 Trend Ranking Visual Tune
+
+Official docs checked in the current session:
+
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- Toss Securities reference: https://www.tossinvest.com/?focusedProductCode=A000660
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Ranking board tone | Product-approved / TDS-informed | Trend ranking uses a plain title, fixed right-side metric column, and ListRow-like rows. Decorative emoji/helper copy and unsupported rank-change treatment were removed so the module reads more like a Toss-style ranking board than a campaign card. |
+| Metric motion | Product-approved / Needs sandbox | The right-side activity metric uses a small roll animation on value remount only, with `prefers-reduced-motion` support. Future polling or invalidation can remount the value without animating the full row. |
 
 ### 2026-06-03 Search Autocomplete Follow-up
 
