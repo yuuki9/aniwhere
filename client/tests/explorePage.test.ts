@@ -190,6 +190,8 @@ test('ExplorePage extracts the list results sheet into a focused component', () 
   assert.match(resultsSheetSource, /if \(!visible\) \{\s*return null\s*\}/)
   assert.match(resultsSheetSource, /<section[\s\S]*className="map-results-list-panel"[\s\S]*aria-label="검색 결과"/)
   assert.match(resultsSheetSource, /className="search-result-head"/)
+  assert.match(resultsSheetSource, /\{appliedFilters \? <div className="map-results-sheet-top">\{appliedFilters\}<\/div> : null\}[\s\S]*?<div className="search-result-head">/)
+  assert.doesNotMatch(resultsSheetSource, /<div className="search-result-head">[\s\S]*?\{appliedFilters \? <div className="map-results-sheet-top">\{appliedFilters\}<\/div> : null\}/)
   assert.match(resultsSheetSource, /<strong>매장목록<\/strong>/)
   assert.match(resultsSheetSource, /<small>\{totalShops\}곳<\/small>/)
   assert.doesNotMatch(resultsSheetSource, /aria-labelledby="map-results-list-title"/)
@@ -697,6 +699,23 @@ test('ExplorePage sends selected filters to the shop API instead of local-only c
   assert.doesNotMatch(source, /next\.append\('sort', 'reviewCount,desc'\)/)
 })
 
+test('ExplorePage skips work popularity recording for trend-ranking entries', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /const isTrendRankingEntry = searchParams\.get\('rankingEntry'\) === 'trend'/)
+  assert.match(source, /currentSearchScope !== 'work' \|\| !currentKeyword \|\| isTrendRankingEntry/)
+  assert.match(source, /\[currentKeyword, currentSearchScope, isTrendRankingEntry, selectedFilters\.workId\]/)
+})
+
+test('Explore search entry does not carry applied facets into the Search route', () => {
+  const source = explorePageSource()
+
+  assert.match(source, /const searchHref = useMemo\(\(\) => \{[\s\S]*const next = new URLSearchParams\(\)/)
+  assert.doesNotMatch(source, /const searchHref = useMemo\(\(\) => \{[\s\S]*writeShopFilters\(new URLSearchParams\(\), selectedFilters\)/)
+  assert.match(source, /next\.set\('returnTo', searchReturnTo\)/)
+  assert.match(source, /onSearchClick=\{\(\) => navigate\(searchHref\)\}/)
+})
+
 test('ExplorePage keeps the map mounted while filter chips refetch shop results', () => {
   const source = explorePageSource()
 
@@ -740,7 +759,7 @@ test('ExplorePage shows removable applied filters without opening the filter she
   assert.match(source, /appliedFilters=\{renderAppliedFilterChips\(\)\}/)
   assert.match(resultsSheetSource, /appliedFilters: ReactNode/)
   assert.match(resultsSheetSource, /aria-label="검색 결과"/)
-  assert.match(resultsSheetSource, /<div className="search-result-head">[\s\S]*<div className="map-results-sheet-top">[\s\S]*\{appliedFilters\}/)
+  assert.match(resultsSheetSource, /<div className="map-results-sheet-top">[\s\S]*\{appliedFilters\}[\s\S]*<div className="search-result-head">/)
   assert.doesNotMatch(source, /<div className="map-list-view-top">[\s\S]{0,420}\{renderAppliedFilterChips\(\)\}/)
   assert.doesNotMatch(resultsSheetSource, /map-results-sheet-title/)
   assert.doesNotMatch(resultsSheetSource, /\{topSearch\}/)
@@ -754,7 +773,7 @@ test('ExplorePage shows removable applied filters without opening the filter she
   assert.ok(cssRuleBodies(styles, '.map-applied-filter-chips').some((rule) => /padding-top:\s*0;/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.applied-filter-chip').some((rule) => /min-height:\s*38px;/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.map-chip-status').some((rule) => /min-height:\s*38px;/.test(rule)))
-  assert.ok(cssRuleBodies(styles, '.map-results-sheet-top .applied-filter-chip-rail').some((rule) => /margin-top:\s*calc\(var\(--ait-space-2\) \* -1\);/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-results-sheet-top .applied-filter-chip-rail').some((rule) => /margin-top:\s*0;/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.map-explore-top .applied-filter-chip-rail').some((rule) => /pointer-events:\s*auto;/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.map-explore-top-hidden .applied-filter-chip-rail').some((rule) => /pointer-events:\s*none;/.test(rule)))
   assert.doesNotMatch(styles, /--ait-color-brand-weak/)
@@ -834,7 +853,10 @@ test('Explore full list view reserves space around the map toggle button', () =>
 
   assert.ok(listViewRules.some((rule) => /--map-control-bottom:\s*max\(80px,\s*calc\(env\(safe-area-inset-bottom\) \+ 72px\)\);/.test(rule)))
   assert.ok(panelRules.some((rule) => /overflow:\s*hidden;/.test(rule)))
+  assert.ok(panelRules.some((rule) => /padding:\s*var\(--ait-space-4\) 12px max\(20px,\s*calc\(env\(safe-area-inset-bottom\) \+ 16px\)\);/.test(rule)))
   assert.ok(panelRules.some((rule) => /border-radius:\s*0;/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-results-list-panel .search-result-head').some((rule) => /padding-bottom:\s*var\(--ait-space-6\);/.test(rule)))
+  assert.ok(cssRuleBodies(styles, '.map-results-list-panel .search-result-head').some((rule) => /border-bottom:\s*1px solid var\(--ait-color-border\);/.test(rule)))
   assert.match(overlayControls, /className="map-list-fab-label"/)
   assert.match(overlayControls, /isListSheetOpen \? ['"]지도보기['"] : ['"]목록보기['"]/)
   assert.ok(floatingButtonRules.some((rule) => /left:\s*50%;/.test(rule)))

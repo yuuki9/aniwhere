@@ -110,8 +110,8 @@ Official docs checked with Apps in Toss MCP on 2026-05-17:
 | Typography | Product-approved | Home section titles use `--ait-*` typography tokens with tighter sizing than the intro hero. The former work-poster title was removed with the poster carousel. |
 | Search entry | Product-approved | Official `SearchField` is the reference primitive, but home keeps a button-like search entry to route into `/search` without opening an inline input on the discovery page. |
 | Quick menu | Product-approved / Needs server role follow-up | The shortcut set keeps public actions visible by default: map exploration and community reviews. `매장 관리` is hidden unless an admin session is already unlocked; future Toss login role sync should replace the temporary admin-session visibility check. |
-| Work poster carousel | Regression fix | The former poster carousel has been removed from home to avoid copyrighted poster/cover dependence and to keep the discovery hub focused on search entry, CTA banners, and review preview. |
-| Home section vertical rhythm | Product-approved / TDS-informed | Official SearchField, ListRow, Typography, and Button docs were checked for the touched primitives. After moving ranking recommendations to `/search`, home keeps the search entry, CTA banner stack, and review preview without adding another dense module under the CTA stack. |
+| Work poster carousel | Regression fix | The former poster carousel has been removed from home to avoid copyrighted poster/cover dependence and to keep the discovery hub focused on search entry, CTA banners, and one lightweight recommendation rail. |
+| Home section vertical rhythm | Product-approved / TDS-informed | Official SearchField, ListRow, ListHeader, Badge, Typography, and Button docs were checked for the touched primitives. Home now keeps the search entry, a compact Rankings API Top5 auto chip rail, and CTA banner stack. The rail does not link to `/trends`; `/trends` remains a dormant full-board route. |
 | Work shop count | Needs backend follow-up | The server work catalog currently exposes work metadata, not per-work shop counts. Home therefore uses `취급 매장 보기` inside the poster instead of an invented `n개 매장` count. |
 | More affordance | Product-approved | No separate more affordance is shown because the current destination would be the generic Explore list, not a work-ranking page. A future `/works` route can reintroduce more as a work-specific action. |
 | Recent reviews | Partial / Needs backend follow-up | The section is labeled `최근 방문 후기` and uses `GET /api/v1/posts` as the available recent-post API. If the server later separates review-only posts, replace this query with that endpoint. |
@@ -899,10 +899,11 @@ Official docs checked in the current session:
 
 | Area | Current classification | Notes |
 | --- | --- | --- |
-| `/home` trend module | Product-approved / Regression fix | The old `인기 작품 TOP 20` poster carousel was removed from home. The compact trend ranking was also removed from the home CTA stack after UX review because it reads as a search suggestion surface, not a home destination card. |
-| `/search` trend module | Product-approved / TDS-informed / API-required | `지금 뜨는 검색` Top5 now appears only on the Search Focus initial state and reads `GET /api/v1/rankings/search/entities?window=7d&limit=5`. It uses app-owned ListRow-like markup with tokenized typography, borders, and touch feedback because the design needs ranking/meta composition rather than a strict single TDS primitive. |
+| `/home` trend module | Product-approved / TDS-informed / API-required | The old `인기 작품 TOP 20` poster carousel remains removed. Home now owns a compact auto chip rail from `GET /api/v1/rankings/search/entities?window=7d&limit=5`, using rank, label, and a kind chip only. The deployed keyword-only ranking endpoint currently returns an empty item list, so Home uses the populated mixed-entity endpoint. Loading, error, and empty states hide the rail so home does not add placeholder noise. |
+| `/search` trend module | Product-approved / Regression fix | The ranking preview was removed from Search Focus. `/search` now stays focused on input, recent searches, autocomplete, filters, and nearby discovery, while `/home` owns the ranking entry point and `/trends` owns the full board. |
 | Home image policy | Product-approved / Regression fix | Home trend ranking no longer reads or renders work `coverUrl`, external anime poster URLs, `coverImage`, or `bannerImage`. Existing home CTA banner images remain because they are service-owned entry artwork and not work posters. |
-| `/trends` route | Product-approved / TDS-informed / API-required | `/trends` provides a Top20 list from the real Rankings API. Tabs map to supported endpoints: mixed entities, works, shops, and search keywords. |
+| `/home` review preview | API-required / Product-approved | Swagger does not expose a global latest-review feed. Home therefore removes the recent-review preview entirely instead of using signed-in user reviews to fill the page. User-owned recent reviews remain scoped to `/my`. |
+| `/trends` route | Product-approved / TDS-informed / API-required | `/trends` provides the full `지금 뜨는 애니웨어` Top20 ranking board from the real Rankings API. Tabs map to supported endpoints: mixed entities, works, shops, and search keywords. The header shows only the verified `7일 기준` period and does not invent update timestamps. |
 | Data source | API-required | Mock trend ranking data was removed. The UI now uses the deployed Rankings API fields that actually exist: `rank`, `kind`, `label`/`keyword`, `score`, `eventCount`, `window`, and `sampleSufficient`. Related store counts, category summaries, and rank movement are not rendered until the backend exposes them. |
 | Runtime verification | Needs sandbox | Local build/browser checks can verify layout and routing, but Apps in Toss native safe area, font behavior, and real device tap feedback still need sandbox/device confirmation. |
 
@@ -959,3 +960,36 @@ Official docs checked in the current session:
 | `/admin/shops` taxonomy selector rhythm | Product-approved / TDS-informed | The work-type selector keeps narrowing the work search results rather than becoming a persisted `ShopRequest` field, because the current write contract still sends `workIds` and `categoryIds`. Its visible title is now `작품유형` instead of `작품유형 필터`, and it reuses the same rounded selection-chip pattern as category selection. |
 | `/explore` taxonomy display | Product-approved / API-required | `Shop.works` still lacks `type` in the deployed Swagger, so Explore enriches shop summaries from the `GET /api/v1/works` catalog by work id and also accepts a future optional `Shop.works[].type`. List cards and the detail title chips show compact `작품유형: 애니메이션/게임` chips after category chips; the information tab renames `취급 정보` to `카테고리` and adds a separate `작품유형` row. |
 | Runtime verification | Needs sandbox | Source tests prove the API/type wiring and source-level UI contracts. Real Apps in Toss WebView should still confirm chip wrapping and list-card density at 375px after server deployment. |
+
+### 2026-06-07 Home Auto Chip Rail Revision
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- Apps in Toss Storage: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/저장소/Storage.md
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` auto chip rail | Product-approved / TDS-informed / API-required | Home replaces the large ranking board preview with an auto-scrolling Top5 chip rail directly below the search entry. Each chip uses only verified ranking API fields: rank, label, and kind. The rail duplicates the visual track for continuous motion, pauses on hover/focus, respects reduced-motion, links to Explore with `returnTo=/home`, and does not expose `/trends` as a continuation. |
+| Trend entry routing | Product-approved / API-required | Trend links include `rankingEntry=trend` so Explore can avoid recording a second popularity event from ranking clicks. Home chip rail and Search autocomplete navigate like search suggestions: Work chips pass `scope=work&keyword=:label`, Shop chips pass `scope=shop&keyword=:label`, and neither path writes `workId`, `shopId`, or `sheet=expanded` into the URL. Those IDs are reserved for event payloads only, because `workId` is a shop facet filter and would light the filter badge. Client popularity event recording is disabled while deployed `POST /api/v1/popularity/events` returns `403`. |
+| `/search` facet handoff | Regression fix / Product-approved | Search submit, recent-search taps, autocomplete taps, and Explore's search entry now start a fresh Search/Explore search without stale facet params. Filter params are sent only when the user explicitly applies the Search filter sheet; previous Explore state is preserved only inside `returnTo`. |
+| `/home` recent viewed shops | Product-approved / TDS-informed / Needs sandbox | Home adds a bottom compact ListRow-like `recent viewed` section fed by Apps in Toss native `Storage`. It stores only shops whose Explore detail sheet was expanded, shows at most three rows, hides loading/error/empty states, and does not use photos, fake counts, popularity labels, or browser `localStorage`. |
+| `/home` recent reviews | API-required / Product-approved | The recent-review preview was removed because Swagger does not expose a global latest-review feed. User-owned recent reviews remain available from `/my`; Home does not fetch `GET /api/v1/users/me/reviews` just to fill empty space. |
+| `/home1` mock route | Product-approved / Cleanup | The temporary `/home1` mockup route, page, tests, and CSS were removed after the Home direction was folded back into `/home`. |
+| Runtime verification | Needs sandbox | Local tests/build/browser can verify 375px layout and route behavior; Apps in Toss safe-area/font/tap feedback still needs sandbox/device confirmation. |
+
+### 2026-06-07 Explore Result Header Spacing Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- TDS SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore` full-list filter/header order | Product-approved / TDS-informed | The full-list result surface now places applied filter chips above the `매장목록 n곳` heading so selected conditions read as search state before the result summary. The list panel also adds tokenized top padding to keep the heading from sitting too close to the search bar when no chips are present, and uses a weak tokenized bottom divider under the heading to separate the result summary from the card list without adding another heavy surface. |
+| Runtime verification | Needs sandbox | Source tests and build can verify the DOM/CSS contract; Apps in Toss safe-area and native font rhythm still need device confirmation. |

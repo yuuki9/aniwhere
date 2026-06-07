@@ -499,7 +499,7 @@
 }
 
 .map-results-sheet-top .applied-filter-chip-rail {
-  margin-top: calc(var(--ait-space-2) * -1);
+  margin-top: 0;
 }
 
 .map-location-fab {
@@ -1367,7 +1367,7 @@
   gap: var(--ait-space-6);
   min-height: 0;
   overflow: hidden;
-  padding: 0 12px max(20px, calc(env(safe-area-inset-bottom) + 16px));
+  padding: var(--ait-space-4) 12px max(20px, calc(env(safe-area-inset-bottom) + 16px));
   border: 0;
   border-radius: 0;
   background: var(--ait-color-surface-raised);
@@ -1389,7 +1389,9 @@
 
 .map-results-list-panel .search-result-head {
   margin-bottom: 0;
+  padding-bottom: var(--ait-space-6);
   padding-inline: var(--ait-space-1);
+  border-bottom: 1px solid var(--ait-color-border);
 }
 
 .map-results-sheet-list.search-route-precontent {
@@ -4550,7 +4552,7 @@
 
   .map-results-list-panel {
     gap: var(--ait-space-5);
-    padding: 0 12px max(18px, calc(env(safe-area-inset-bottom) + 14px));
+    padding: var(--ait-space-4) 12px max(18px, calc(env(safe-area-inset-bottom) + 14px));
   }
 
   .map-sheet-sticky-header {

@@ -146,12 +146,12 @@ export function MapResultsSheet({
 
   return (
     <section className="map-results-list-panel" aria-label="검색 결과">
+      {appliedFilters ? <div className="map-results-sheet-top">{appliedFilters}</div> : null}
+
       <div className="search-result-head">
         <strong>매장목록</strong>
         <small>{totalShops}곳</small>
       </div>
-
-      {appliedFilters ? <div className="map-results-sheet-top">{appliedFilters}</div> : null}
 
       {visibleShops.length === 0 && !isLoading ? (
         <div className="map-list-empty">
