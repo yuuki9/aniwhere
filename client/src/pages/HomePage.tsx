@@ -138,7 +138,6 @@ function HomeTrendChipRail({ items }: { items: TrendRankingItem[] }) {
           </div>
         </div>
       )}
-      <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" />
     </section>
   )
 }
@@ -323,6 +322,7 @@ export function HomePage() {
       {trendItems.length > 0 ? <HomeTrendChipRail items={trendItems} /> : null}
       <HomeCtaBannerList cards={ctaCards} />
       {recentViewedShops.length > 0 ? <HomeRecentViewedSection shops={recentViewedShops} /> : null}
+      <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" />
     </main>
   )
 }

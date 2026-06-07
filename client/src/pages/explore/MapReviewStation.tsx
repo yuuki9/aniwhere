@@ -69,6 +69,7 @@ function MapReviewStationForm({
   const [localError, setLocalError] = useState<string | null>(null)
   const allowNavigationRef = useRef(false)
   const normalizedContent = content.trim()
+  const isContentTooShort = normalizedContent.length > 0 && normalizedContent.length < MIN_REVIEW_CONTENT_LENGTH
   const visibleExistingReviewImages = existingReviewImages.filter(
     (image, index) => !hiddenExistingImageIds.has(getExistingReviewImageId(image, index)),
   )
@@ -261,8 +262,12 @@ function MapReviewStationForm({
               value={content}
               onChange={(event) => handleContentChange(event.target.value)}
             />
-            <span className="map-review-content-counter">
-              {content.length}/{MAX_REVIEW_CONTENT_LENGTH}
+            <span
+              className={`map-review-content-counter ${isContentTooShort ? 'map-review-content-counter-warning' : ''}`}
+              aria-live="polite"
+            >
+              {isContentTooShort ? `최소 ${MIN_REVIEW_CONTENT_LENGTH}자 · ` : ''}
+              {content.length}/{MAX_REVIEW_CONTENT_LENGTH}자
             </span>
           </div>
         </label>

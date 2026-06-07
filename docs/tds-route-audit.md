@@ -1025,3 +1025,15 @@ Official docs checked with Apps in Toss MCP in the current session:
 | `/home` recent viewed shops | Product-approved / TDS-informed | The section label is now `최근 둘러본 매장이에요`. Rows use a compact one-line ListRow-like rhythm: favorite heart state, shop name, and relative viewed date. Region and category copy were removed from the visible row to avoid a two-line admin-list feel and unsupported taxonomy emphasis. |
 | `/home` ranking preview | Product-approved / TDS-informed / API-required | The auto chip rail remains the default first impression, but a small `순위 보기` control lets users switch the same Top5 data into a compact ranking list. The list uses only verified ranking API fields: rank, label, and kind, then can collapse back to the auto rail. |
 | Runtime verification | Needs sandbox | Source tests and local build can verify layout and routing; Apps in Toss safe-area, font rhythm, and touch behavior still need device confirmation. |
+
+### 2026-06-08 Home Ad And Review TextArea Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS TextArea: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-area/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` banner ad placement | Regression fix / Product-approved | The home banner ad moved out of the trend preview and now renders as the last main content item so it behaves as the true bottom ad slot. |
+| `/explore` review textarea | Regression fix / TDS-informed | Review content under 10 trimmed characters now marks the counter as `최소 10자 · n/800자` in red. The textarea font size is fixed at 16px to avoid iOS/WebView focus zoom residue while keeping the existing fixed-height TextArea layout. |
+| Runtime verification | Needs sandbox | Source tests, lint, and build can verify code contracts. The input zoom residue and ad placement still need real device confirmation. |

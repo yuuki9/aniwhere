@@ -185,6 +185,7 @@ test('HomePage attaches a Toss banner ad only after the CTA banner stack', () =>
   assert.match(source, /import \{ TossBannerAd \} from '\.\.\/shared\/ui\/TossBannerAd'/)
   assert.match(source, /<TossBannerAd className="home-ad-banner" placement="home-bottom-cta" \/>/)
   assert.ok(source.indexOf('<HomeCtaBannerList') < source.indexOf('<HomeRecentViewedSection'))
+  assert.ok(source.indexOf('<HomeRecentViewedSection') < source.lastIndexOf('<TossBannerAd'))
   assert.match(adSource, /TossAds\.attachBanner/)
   assert.match(adConfigSource, /VITE_TOSS_AD_BANNER_GROUP_ID/)
   assert.match(adConfigSource, /VITE_TOSS_AD_USE_TEST_IDS/)
