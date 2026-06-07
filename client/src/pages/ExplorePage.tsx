@@ -46,11 +46,18 @@ import {
 import { isAppsInTossRuntime } from '../shared/lib/auth'
 import { getStoredAccessToken, readAuthSession } from '../shared/lib/authSession'
 import { pushRecentViewedShop } from '../shared/lib/recentViewedShops'
+import {
+  isReviewRewardedAdPromptEnabled,
+  maybeShowShopViewInterstitial,
+  preloadTossFullScreenAd,
+  showReviewRewardedAd,
+} from '../shared/lib/tossAds'
 import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
-import { Toast } from '@aniwhere/tds-mobile'
+import { TossBannerAd } from '../shared/ui/TossBannerAd'
+import { Button, Modal, Toast } from '@aniwhere/tds-mobile'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
 import { MapDetailMediaSection, type MapDetailMediaItem } from './explore/MapDetailMediaSection'
@@ -313,6 +320,11 @@ export function ExplorePage() {
   const [favoriteShopIdOverrides, setFavoriteShopIdOverrides] = useState<Map<number, boolean>>(() => new Map())
   const [favoriteQuickChipActive, setFavoriteQuickChipActive] = useState(false)
   const [favoriteToast, setFavoriteToast] = useState<string | null>(null)
+  const [reviewRewardPromptOpen, setReviewRewardPromptOpen] = useState(false)
+  const [reviewRewardAdStatus, setReviewRewardAdStatus] = useState<'idle' | 'loading' | 'earned' | 'unavailable'>(
+    'idle',
+  )
+  const [isMapBannerVisible, setIsMapBannerVisible] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantInput, setAssistantInput] = useState('')
   const [assistantMessages, setAssistantMessages] = useState<MapAssistantMessage[]>([
@@ -333,6 +345,7 @@ export function ExplorePage() {
   const pendingListRestoreRef = useRef(false)
   const previousSelectedShopIdRef = useRef<number | null>(selectedShopId)
   const lastPopularityWorkExploreKeyRef = useRef<string | null>(null)
+  const lastInterstitialShopIdRef = useRef<number | null>(null)
   const peekPointerIdRef = useRef<number | null>(null)
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
@@ -659,11 +672,20 @@ export function ExplorePage() {
   })
 
   useEffect(() => {
+    void preloadTossFullScreenAd('interstitial')
+  }, [])
+
+  useEffect(() => {
     if (detailShop == null || sheetMode !== 'expanded') {
+      lastInterstitialShopIdRef.current = null
       return
     }
 
     void pushRecentViewedShop(detailShop)
+    if (lastInterstitialShopIdRef.current !== detailShop.id) {
+      lastInterstitialShopIdRef.current = detailShop.id
+      void maybeShowShopViewInterstitial(detailShop.id)
+    }
   }, [detailShop, sheetMode])
 
   useEffect(() => {
@@ -795,6 +817,11 @@ export function ExplorePage() {
       setFavoriteToast('리뷰를 등록했어요.')
       setEditingReview(null)
       setDetailTab('review')
+      if (isReviewRewardedAdPromptEnabled()) {
+        setReviewRewardAdStatus('idle')
+        setReviewRewardPromptOpen(true)
+        void preloadTossFullScreenAd('rewarded')
+      }
       const next = new URLSearchParams(searchParams)
       next.set('shopId', String(variables.shopId))
       next.set('sheet', 'expanded')
@@ -945,6 +972,10 @@ export function ExplorePage() {
     setFocusRequestId((current) => current + 1)
   }, [])
 
+  const handleMapBannerVisibleChange = useCallback((visible: boolean) => {
+    setIsMapBannerVisible(visible)
+  }, [])
+
   const handleSelectShop = (
     shopId: number,
     origin: Exclude<SelectionOrigin, null>,
@@ -1014,6 +1045,25 @@ export function ExplorePage() {
   const openEditReviewStation = (review: ShopReview) => openReviewStation(review)
   const openReportReviewNotice = () => {
     setFavoriteToast('리뷰 신고 기능은 준비 중이에요.')
+  }
+
+  const handleReviewRewardAd = async () => {
+    setReviewRewardAdStatus('loading')
+    const result = await showReviewRewardedAd()
+
+    if (result.status === 'EARNED') {
+      setReviewRewardAdStatus('earned')
+      setFavoriteToast('광고 시청이 완료됐어요. 추가 보상 지급은 서버 연결 후 반영돼요.')
+      return
+    }
+
+    if (result.status === 'DISMISSED') {
+      setReviewRewardAdStatus('idle')
+      return
+    }
+
+    setReviewRewardAdStatus('unavailable')
+    setFavoriteToast('광고를 불러오지 못했어요. 리뷰는 정상 등록됐어요.')
   }
 
   const restoreListView = () => {
@@ -1738,6 +1788,29 @@ export function ExplorePage() {
         text={favoriteToast ?? ''}
         onClose={() => setFavoriteToast(null)}
       />
+      <Modal open={reviewRewardPromptOpen} onOpenChange={(open) => setReviewRewardPromptOpen(open)}>
+        <Modal.Overlay onClick={() => setReviewRewardPromptOpen(false)} />
+        <Modal.Content className="map-review-leave-modal" aria-labelledby="map-review-reward-title" aria-modal="true">
+          <div className="map-review-leave-copy">
+            <strong id="map-review-reward-title">추가 보상을 받을까요?</strong>
+            <p>광고 시청 완료 이벤트만 준비되어 있어요. 실제 지급은 서버 연결 후 반영돼요.</p>
+          </div>
+          <div className="map-review-leave-actions">
+            <Button color="dark" display="block" variant="weak" onClick={() => setReviewRewardPromptOpen(false)}>
+              나중에
+            </Button>
+            <Button
+              color="primary"
+              display="block"
+              loading={reviewRewardAdStatus === 'loading'}
+              disabled={reviewRewardAdStatus === 'loading' || reviewRewardAdStatus === 'unavailable'}
+              onClick={handleReviewRewardAd}
+            >
+              {reviewRewardAdStatus === 'earned' ? '시청 완료' : '광고 보기'}
+            </Button>
+          </div>
+        </Modal.Content>
+      </Modal>
       <section className="map-page">
         <div
           className={[
@@ -1750,6 +1823,7 @@ export function ExplorePage() {
             sheetMode === 'expanded' ? 'map-surface-sheet-expanded' : '',
             sheetMode === 'review' ? 'map-surface-sheet-review' : '',
             isListSheetOpen ? 'map-surface-list-open' : '',
+            isMapBannerVisible ? 'map-surface-map-ad-visible' : '',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -1832,6 +1906,14 @@ export function ExplorePage() {
             onListClick={handleListFabClick}
             onLocationClick={handleRequestLocation}
           />
+
+          {detailShop == null && !isListSheetOpen && sheetMode !== 'expanded' && sheetMode !== 'review' ? (
+            <TossBannerAd
+              className="map-ad-banner-floating"
+              placement="explore-map-bottom-cta"
+              onVisibleChange={handleMapBannerVisibleChange}
+            />
+          ) : null}
 
           <MapAssistantPanel
             visible={isMapAssistantEnabled && !isListSheetOpen && sheetMode !== 'expanded' && sheetMode !== 'review'}

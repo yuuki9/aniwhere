@@ -1,5 +1,6 @@
 import type { ReactNode, RefObject, UIEvent } from 'react'
 import type { Shop } from '../../shared/api/types'
+import { TossBannerAd } from '../../shared/ui/TossBannerAd'
 
 type MapResultShop = Shop & {
   distanceLabel?: string | null
@@ -209,6 +210,7 @@ export function MapResultsSheet({
           </div>
         ) : null}
       </div>
+      <TossBannerAd className="map-results-ad-banner" placement="explore-list-bottom-cta" />
     </section>
   )
 }

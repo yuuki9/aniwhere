@@ -132,6 +132,24 @@ Official docs checked on 2026-06-05 with web fallback because Apps in Toss MCP w
 | `/home` native back expectation | Product-approved / Needs sandbox | `/home` is the authenticated root after auto-login, so the native navigation back button should close the mini app instead of sending the user back to intro or an invisible login path. The app now listens to `graniteEvent.backEvent`: `/home` calls `closeView()`, while other routes preserve one-step back navigation. |
 | Browser history fallback | Product-approved / Needs sandbox | A capture-phase `popstate` fallback closes the app only when the previous route state was already `/home`, covering runtimes that express native back through browser history. Local browser cannot prove native close behavior; confirm in Apps in Toss sandbox on device. |
 
+## Current Home/Explore Ads Follow-up
+
+Official docs checked with Apps in Toss MCP on 2026-06-07:
+
+- In-app ads intro: https://developers-apps-in-toss.toss.im/ads/intro.html
+- Banner ad WebView: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/광고/BannerAd.md
+- Integrated full-screen ads: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/광고/IntegratedAd.md
+- Rewarded ad event: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/광고/LoadAdMobRewardedAdEvent.md
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` bottom CTA banner | Product-approved / SDK-required | Banner ad is attached after the CTA banner stack with the official `TossAds.attachBanner` path through `@apps-in-toss/web-bridge`. The wrapper only reserves a 100% width / 96px slot and does not alter SDK ad copy, CTA, label, or click behavior. |
+| `/explore?view=list` bottom banner | Product-approved / SDK-required | The result sheet can render a bottom banner after the scrollable result list. The ad is outside individual result cards so it is not disguised as a shop recommendation. |
+| `/explore?view=map` bottom banner | Product-approved / SDK-required | The map banner appears only when no shop peek/expanded/review sheet is open, avoiding overlap with shop actions. Map floating controls move up only when the banner actually renders. |
+| Interstitial after shop views | Product-approved / Needs sandbox | Frontend counts unique expanded shop-detail views with Apps in Toss Storage and attempts an interstitial after each 5-view milestone. Load/show failure is ignored so browsing is never blocked. Sandbox must verify actual load/show/dismiss behavior. |
+| Rewarded review ad | Product-approved / Backend-required | The frontend is prepared behind `VITE_ENABLE_REVIEW_REWARDED_AD=true`, but it does not grant points. Real compensation requires a server idempotency ledger/API keyed by user, review, and ad reward event metadata. |
+| Runtime verification | Needs sandbox | Local browser cannot prove Toss Ads support flags, banner rendering, full-screen lifecycle, ad impression, or reward-earned events. Use official test ad IDs in Apps in Toss sandbox before enabling real group IDs. |
+
 ## Current Explore List Entry Routing Follow-up
 
 Official docs checked on 2026-06-05:

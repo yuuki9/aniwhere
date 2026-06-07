@@ -8,6 +8,7 @@ import { getMixedEntityRankings } from '../shared/api/rankings'
 import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
 import { readRecentViewedShops, type RecentViewedShop } from '../shared/lib/recentViewedShops'
 import { SHOP_SEARCH_PLACEHOLDER } from '../shared/lib/searchCopy'
+import { TossBannerAd } from '../shared/ui/TossBannerAd'
 import { Toast } from '@aniwhere/tds-mobile'
 import {
   buildRecentViewedShopHref,
@@ -104,6 +105,7 @@ function HomeTrendChipRail({ items }: { items: TrendRankingItem[] }) {
           ))}
         </div>
       </div>
+      <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" />
     </section>
   )
 }

@@ -108,3 +108,12 @@
 - `/search` may show and edit existing facet state, but a submitted keyword/autocomplete/recent search starts a fresh Explore search without carrying stale facets. Facets are carried only when the user explicitly applies them from the Search filter sheet.
 - Explore's search entry also starts Search without carrying current Explore facet params. The previous Explore state stays only inside `returnTo`.
 - Client popularity event recording remains disabled while deployed `POST /api/v1/popularity/events` returns `403` for the current public client path. Re-enable only after the backend access policy is confirmed.
+
+## 2026-06-07 Apps In Toss Ads Frontend Integration
+
+- Banner ads may be attached to the bottom CTA/supporting areas of `/home`, `/explore?view=list`, and `/explore?view=map`.
+- Banner containers must use the official Apps in Toss `TossAds.attachBanner` path, keep the SDK-provided ad label/title/CTA unchanged, and use a 100% width / 96px slot. Do not disguise ads as curation cards or service recommendations.
+- Interstitial ads may be attempted after every 5 unique expanded shop-detail views. The ad must never block shop selection, search, map movement, review writing, login, or navigation if load/show fails.
+- Review rewarded ads are frontend-prepared only. The review submit flow may show a feature-flagged "watch ad for additional reward" prompt after a new review is created, but the frontend must not grant points by itself.
+- Backend follow-up required before enabling real rewarded compensation: create a review reward ledger or idempotent API keyed by user, review, ad group/request metadata, and reward event so duplicate grants cannot happen after retries, refreshes, or repeated `userEarnedReward` events.
+- Use official test ad group IDs during development. Real console ad group IDs must be supplied through environment config before release.

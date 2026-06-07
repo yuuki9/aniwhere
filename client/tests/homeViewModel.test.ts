@@ -170,6 +170,20 @@ test('HomePage shows an auto ranking chip rail directly under search without a t
   assert.doesNotMatch(source, /Ait[A-Z]/)
 })
 
+test('HomePage attaches a Toss banner ad only after the CTA banner stack', () => {
+  const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
+  const adSource = fs.readFileSync(new URL('../src/shared/ui/TossBannerAd.tsx', import.meta.url), 'utf8')
+  const adConfigSource = fs.readFileSync(new URL('../src/shared/lib/tossAds.ts', import.meta.url), 'utf8')
+
+  assert.match(source, /import \{ TossBannerAd \} from '\.\.\/shared\/ui\/TossBannerAd'/)
+  assert.match(source, /<TossBannerAd className="home-ad-banner" placement="home-bottom-cta" \/>/)
+  assert.ok(source.indexOf('<HomeCtaBannerList') < source.indexOf('<HomeRecentViewedSection'))
+  assert.match(adSource, /TossAds\.attachBanner/)
+  assert.match(adConfigSource, /VITE_TOSS_AD_BANNER_GROUP_ID/)
+  assert.match(adConfigSource, /ait-ad-test-banner-id/)
+  assert.doesNotMatch(source, /TossAds\.attachBanner/)
+})
+
 test('HomePage renders recent viewed shops from Apps in Toss Storage only when data exists', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const recentViewedShops = fs.readFileSync(new URL('../src/shared/lib/recentViewedShops.ts', import.meta.url), 'utf8')

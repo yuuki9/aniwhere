@@ -41,6 +41,11 @@
   --map-overlay-bottom: calc(100dvh - var(--map-list-sheet-top) + var(--ait-space-6));
 }
 
+.map-surface-app-v2.map-surface-map-ad-visible {
+  --map-control-bottom: 206px;
+  --map-overlay-bottom: 226px;
+}
+
 .map-surface-sheet-expanded .map-zoom-control,
 .map-surface-sheet-expanded .map-location-fab,
 .map-surface-sheet-review .map-zoom-control,
@@ -1371,6 +1376,19 @@
   border: 0;
   border-radius: 0;
   background: var(--ait-color-surface-raised);
+}
+
+.map-results-ad-banner {
+  flex: 0 0 auto;
+}
+
+.map-ad-banner-floating {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
+  z-index: 1055;
+  pointer-events: auto;
 }
 
 .map-list-view .map-list-fab {
