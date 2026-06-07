@@ -681,12 +681,12 @@ export function ExplorePage() {
       return
     }
 
-    void pushRecentViewedShop(detailShop)
+    void pushRecentViewedShop(detailShop, undefined, { isFavorite: isFavoriteDetailShop })
     if (lastInterstitialShopIdRef.current !== detailShop.id) {
       lastInterstitialShopIdRef.current = detailShop.id
       void maybeShowShopViewInterstitial(detailShop.id)
     }
-  }, [detailShop, sheetMode])
+  }, [detailShop, isFavoriteDetailShop, sheetMode])
 
   useEffect(() => {
     if (selectedShopId == null || sheetMode !== 'expanded' || detailTabParam == null) {

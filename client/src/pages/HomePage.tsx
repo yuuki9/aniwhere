@@ -87,26 +87,101 @@ function HomeTrendChip({ item }: { item: TrendRankingItem }) {
   )
 }
 
+function HomeTrendRankRow({ item }: { item: TrendRankingItem }) {
+  return (
+    <Link className="home-trend-rank-row" to={buildTrendExploreHref(item, { returnTo: '/home' })}>
+      <span className="home-trend-rank-number">{item.rank}</span>
+      <span className="home-trend-rank-label">{item.label}</span>
+      <span className="home-trend-rank-kind">{formatTrendKindLabel(item.kind)}</span>
+    </Link>
+  )
+}
+
 function HomeTrendChipRail({ items }: { items: TrendRankingItem[] }) {
+  const [viewMode, setViewMode] = useState<'rail' | 'list'>('rail')
+
   return (
     <section className="home-trend-section" aria-label="추천 검색어">
-      <div className="home-trend-chip-rail">
-        <div className="home-trend-chip-track">
-          {items.map((item) => (
-            <HomeTrendChip key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
-          ))}
+      {viewMode === 'rail' ? (
+        <div className="home-trend-rail-row">
+          <div className="home-trend-chip-rail">
+            <div className="home-trend-chip-track">
+              {items.map((item) => (
+                <HomeTrendChip key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
+              ))}
+            </div>
+            <div className="home-trend-chip-track" aria-hidden="true">
+              {items.map((item) => (
+                <HomeTrendChip
+                  key={`ghost-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`}
+                  item={item}
+                />
+              ))}
+            </div>
+          </div>
+          <button className="home-trend-toggle-button" type="button" onClick={() => setViewMode('list')}>
+            순위 보기
+          </button>
         </div>
-        <div className="home-trend-chip-track" aria-hidden="true">
-          {items.map((item) => (
-            <HomeTrendChip
-              key={`ghost-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`}
-              item={item}
-            />
-          ))}
+      ) : (
+        <div className="home-trend-rank-panel">
+          <div className="home-trend-rank-head">
+            <span>인기 검색어</span>
+            <button className="home-trend-toggle-button" type="button" onClick={() => setViewMode('rail')}>
+              접기
+            </button>
+          </div>
+          <div className="home-trend-rank-list">
+            {items.map((item) => (
+              <HomeTrendRankRow key={`rank-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" />
     </section>
+  )
+}
+
+function formatRecentViewedAt(viewedAt: string) {
+  const viewedTime = new Date(viewedAt).getTime()
+  if (!Number.isFinite(viewedTime)) {
+    return '최근 봄'
+  }
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const viewedDate = new Date(viewedTime)
+  const viewedDay = new Date(viewedDate.getFullYear(), viewedDate.getMonth(), viewedDate.getDate()).getTime()
+  const dayDiff = Math.max(0, Math.floor((today - viewedDay) / 86_400_000))
+
+  if (dayDiff === 0) {
+    return '오늘 봄'
+  }
+
+  if (dayDiff === 1) {
+    return '어제 봄'
+  }
+
+  if (dayDiff < 30) {
+    return `${dayDiff}일 전 봄`
+  }
+
+  return `${viewedDate.getFullYear().toString().slice(2)}.${String(viewedDate.getMonth() + 1).padStart(2, '0')}.${String(
+    viewedDate.getDate(),
+  ).padStart(2, '0')} 봄`
+}
+
+function HomeRecentViewedHeartIcon({ isFavorite }: { isFavorite: boolean }) {
+  return (
+    <svg
+      className="home-recent-viewed-heart"
+      data-favorite={isFavorite ? 'true' : 'false'}
+      aria-label={isFavorite ? '찜한 매장' : '찜하지 않은 매장'}
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 20s-7-4.4-9.2-8.2C1.2 9 2.1 5.5 5.3 4.5c1.8-.6 3.7.1 4.8 1.5L12 8.2 13.9 6c1.1-1.4 3-2.1 4.8-1.5 3.2 1 4.1 4.5 2.5 7.3C19 15.6 12 20 12 20Z" />
+    </svg>
   )
 }
 
@@ -158,18 +233,14 @@ function HomeRecentViewedSection({ shops }: { shops: RecentViewedShop[] }) {
   return (
     <section className="home-recent-viewed-section" aria-labelledby="home-recent-viewed-title">
       <div className="home-section-head">
-        <h2 id="home-recent-viewed-title">최근 본 곳</h2>
+        <h2 id="home-recent-viewed-title">다시 볼 곳</h2>
       </div>
       <div className="home-recent-viewed-list">
         {shops.map((shop) => (
           <Link className="home-recent-viewed-row" key={shop.id} to={buildRecentViewedShopHref(shop.id)}>
-            <span className="home-recent-viewed-copy">
-              <strong>{shop.name}</strong>
-              <small>{shop.regionName ?? shop.address}</small>
-            </span>
-            {shop.categories.length > 0 ? (
-              <span className="home-recent-viewed-chip">{shop.categories[0]}</span>
-            ) : null}
+            <HomeRecentViewedHeartIcon isFavorite={shop.isFavorite} />
+            <span className="home-recent-viewed-name">{shop.name}</span>
+            <span className="home-recent-viewed-date">{formatRecentViewedAt(shop.viewedAt)}</span>
           </Link>
         ))}
       </div>

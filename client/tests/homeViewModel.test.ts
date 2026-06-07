@@ -1,4 +1,4 @@
-import test from 'node:test'
+﻿import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import * as homeViewModel from '../src/pages/homeViewModel.ts'
@@ -62,15 +62,15 @@ test('recent viewed shops use Apps in Toss Storage semantics and keep newest uni
       store.set(key, value)
     },
   }
-  const shop = (id, name, category = '굿즈') => ({
+  const shop = (id, name, category = 'Goods') => ({
     id,
     name,
-    address: `서울 ${id}`,
+    address: `Seoul ${id}`,
     px: 0,
     py: 0,
     floor: null,
     regionId: null,
-    regionName: '서울',
+    regionName: 'Seoul',
     status: 'ACTIVE',
     visitTip: null,
     categories: [{ id: 1, name: category }],
@@ -86,15 +86,17 @@ test('recent viewed shops use Apps in Toss Storage semantics and keep newest uni
   })
 
   await pushRecentViewedShop(shop(1, 'A'), storage)
-  await pushRecentViewedShop(shop(2, 'B', '피규어'), storage)
-  await pushRecentViewedShop(shop(1, 'A updated', '서점'), storage)
+  await pushRecentViewedShop(shop(2, 'B', 'Figure'), storage)
+  await pushRecentViewedShop(shop(1, 'A updated', 'Goods'), storage)
 
   const items = await readRecentViewedShops(storage)
 
   assert.deepEqual(items.map((item) => item.id), [1, 2])
   assert.equal(items[0].name, 'A updated')
-  assert.equal(items[0].categories[0], '서점')
-  assert.equal(toRecentViewedShop(shop(3, 'C')).regionName, '서울')
+  assert.equal(typeof items[0].viewedAt, 'string')
+  assert.equal(items[0].isFavorite, false)
+  assert.equal(items[0].categories[0], 'Goods')
+  assert.equal(toRecentViewedShop(shop(3, 'C')).regionName, 'Seoul')
 })
 
 test('recent viewed shops hide invalid or unavailable storage data', async () => {
@@ -155,6 +157,11 @@ test('HomePage shows an auto ranking chip rail directly under search without a t
   assert.match(source, /className="home-trend-chip-rank"/)
   assert.match(source, /className="home-trend-chip-label"/)
   assert.match(source, /className="home-trend-chip-kind"/)
+  assert.match(source, /className="home-trend-toggle-button"/)
+  assert.match(source, /setViewMode\('list'\)/)
+  assert.match(source, /setViewMode\('rail'\)/)
+  assert.match(source, /function HomeTrendRankRow/)
+  assert.match(source, /className="home-trend-rank-list"/)
   assert.match(source, /to=\{buildTrendExploreHref\(item, \{ returnTo: '\/home' \}\)\}/)
   assert.match(source, /trendItems\.length > 0 \? <HomeTrendChipRail items=\{trendItems\} \/> : null/)
   assert.ok(source.indexOf('<HomeSearchEntry') < source.indexOf('<HomeTrendChipRail'))
@@ -198,7 +205,9 @@ test('HomePage renders recent viewed shops from Apps in Toss Storage only when d
   assert.match(recentViewedShops, /import\('@apps-in-toss\/web-framework'\)/)
   assert.match(recentViewedShops, /module\.Storage/)
   assert.match(recentViewedShops, /aniwhere-recent-viewed-shops/)
-  assert.match(explore, /pushRecentViewedShop\(detailShop\)/)
+  assert.match(recentViewedShops, /viewedAt: new Date\(\)\.toISOString\(\)/)
+  assert.match(recentViewedShops, /isFavorite: options\.isFavorite === true/)
+  assert.match(explore, /pushRecentViewedShop\(detailShop, undefined, \{ isFavorite: isFavoriteDetailShop \}\)/)
   assert.match(explore, /detailShop == null \|\| sheetMode !== 'expanded'/)
   assert.doesNotMatch(source, /window\.localStorage|localStorage/)
   assert.doesNotMatch(recentViewedShops, /window\.localStorage|localStorage/)
@@ -210,12 +219,18 @@ test('Home recent viewed shops keep a compact tokenized ListRow rhythm without i
 
   assert.match(styles, /\.home-recent-viewed-section\s*\{[\s\S]*display:\s*grid;/)
   assert.match(styles, /\.home-recent-viewed-list\s*\{[\s\S]*border-top:\s*1px solid var\(--ait-color-border\);/)
-  assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/)
-  assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*min-height:\s*58px;/)
+  assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*grid-template-columns:\s*20px minmax\(0, 1fr\) auto;/)
+  assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*min-height:\s*48px;/)
   assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*border-bottom:\s*1px solid var\(--ait-color-border\);/)
-  assert.match(styles, /\.home-recent-viewed-chip\s*\{[\s\S]*background:\s*var\(--ait-color-gray-100\);/)
+  assert.match(source, /HomeRecentViewedHeartIcon/)
+  assert.match(source, /formatRecentViewedAt\(shop\.viewedAt\)/)
+  assert.match(source, /다시 볼 곳/)
+  assert.match(styles, /\.home-recent-viewed-heart\[data-favorite='true'\]\s*\{[\s\S]*fill: currentcolor;/)
+  assert.match(styles, /\.home-recent-viewed-name\s*\{[\s\S]*white-space:\s*nowrap;/)
+  assert.match(styles, /\.home-recent-viewed-date\s*\{[\s\S]*white-space:\s*nowrap;/)
   assert.doesNotMatch(source, /<img className="home-recent|coverUrl|coverImage|bannerImage/)
-  assert.doesNotMatch(source, /인기|핫플|\d+개 매장/)
+  assert.doesNotMatch(source, /home-recent-viewed-chip/)
+  assert.doesNotMatch(source, /핫플|\d+개 매장/)
   assert.doesNotMatch(styles, /\.home-recent-viewed-card/)
 })
 
@@ -224,6 +239,7 @@ test('Home ranking chip rail uses horizontal tokenized chips', () => {
 
   assert.match(styles, /\.home-trend-section\s*\{[\s\S]*display:\s*grid;/)
   assert.match(styles, /\.home-trend-section\s*\{[\s\S]*margin-top:\s*calc\(var\(--ait-space-2\) \* -1\);/)
+  assert.match(styles, /\.home-trend-rail-row\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/)
   assert.match(styles, /\.home-trend-chip-rail\s*\{[\s\S]*display:\s*flex;/)
   assert.match(styles, /\.home-trend-chip-rail\s*\{[\s\S]*overflow:\s*hidden;/)
   assert.match(styles, /\.home-trend-chip-track\s*\{[\s\S]*animation:\s*home-trend-chip-scroll 24s linear infinite;/)
@@ -236,6 +252,9 @@ test('Home ranking chip rail uses horizontal tokenized chips', () => {
   assert.match(styles, /\.home-trend-chip-rank\s*\{[\s\S]*font-size:\s*var\(--ait-font-size-caption\);/)
   assert.match(styles, /\.home-trend-chip-label\s*\{[\s\S]*font-size:\s*var\(--ait-font-size-body-sm\);/)
   assert.match(styles, /\.home-trend-chip-kind\s*\{[\s\S]*background:\s*var\(--ait-color-gray-100\);/)
+  assert.match(styles, /\.home-trend-rank-list\s*\{[\s\S]*display:\s*grid;/)
+  assert.match(styles, /\.home-trend-rank-row\s*\{[\s\S]*grid-template-columns:\s*24px minmax\(0, 1fr\) auto;/)
+  assert.match(styles, /\.home-trend-rank-row\s*\{[\s\S]*min-height:\s*38px;/)
   assert.doesNotMatch(styles, /\.search-trend-section/)
   assert.doesNotMatch(styles, /\.home-trend-section \.trend-ranking-row/)
 })

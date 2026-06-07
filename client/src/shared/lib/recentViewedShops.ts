@@ -7,11 +7,17 @@ export type RecentViewedShop = {
   regionName: string | null
   categories: string[]
   updatedAt: string | null
+  viewedAt: string
+  isFavorite: boolean
 }
 
 export type RecentViewedShopStorage = {
   getItem(key: string): Promise<string | null>
   setItem(key: string, value: string): Promise<void>
+}
+
+export type RecentViewedShopOptions = {
+  isFavorite?: boolean
 }
 
 const RECENT_VIEWED_SHOPS_STORAGE_KEY = 'aniwhere-recent-viewed-shops'
@@ -43,7 +49,9 @@ function isRecentViewedShop(value: unknown): value is RecentViewedShop {
     item.name.trim() !== '' &&
     typeof item.address === 'string' &&
     Array.isArray(item.categories) &&
-    item.categories.every((category) => typeof category === 'string')
+    item.categories.every((category) => typeof category === 'string') &&
+    (item.viewedAt == null || typeof item.viewedAt === 'string') &&
+    (item.isFavorite == null || typeof item.isFavorite === 'boolean')
   )
 }
 
@@ -58,7 +66,14 @@ function parseRecentViewedShops(raw: string | null) {
       return []
     }
 
-    return parsed.filter(isRecentViewedShop).slice(0, RECENT_VIEWED_SHOPS_LIMIT)
+    return parsed
+      .filter(isRecentViewedShop)
+      .map((item) => ({
+        ...item,
+        viewedAt: item.viewedAt ?? item.updatedAt ?? new Date().toISOString(),
+        isFavorite: item.isFavorite === true,
+      }))
+      .slice(0, RECENT_VIEWED_SHOPS_LIMIT)
   } catch {
     return []
   }
@@ -72,6 +87,8 @@ export function toRecentViewedShop(shop: Shop): RecentViewedShop {
     regionName: shop.regionName ?? null,
     categories: shop.categories.map((category) => category.name).filter((name) => name.trim() !== '').slice(0, 2),
     updatedAt: shop.updatedAt ?? null,
+    viewedAt: new Date().toISOString(),
+    isFavorite: false,
   }
 }
 
@@ -88,14 +105,21 @@ export async function readRecentViewedShops(storage?: RecentViewedShopStorage) {
   }
 }
 
-export async function pushRecentViewedShop(shop: Shop, storage?: RecentViewedShopStorage) {
+export async function pushRecentViewedShop(
+  shop: Shop,
+  storage?: RecentViewedShopStorage,
+  options: RecentViewedShopOptions = {},
+) {
   const resolvedStorage = await resolveRecentViewedShopStorage(storage)
   if (resolvedStorage == null) {
     return
   }
 
   try {
-    const nextShop = toRecentViewedShop(shop)
+    const nextShop = {
+      ...toRecentViewedShop(shop),
+      isFavorite: options.isFavorite === true,
+    }
     const current = await readRecentViewedShops(resolvedStorage)
     const next = [nextShop, ...current.filter((item) => item.id !== nextShop.id)].slice(0, RECENT_VIEWED_SHOPS_LIMIT)
 

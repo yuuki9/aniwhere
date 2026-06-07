@@ -1011,3 +1011,17 @@ Official docs checked with Apps in Toss MCP in the current session:
 | --- | --- | --- |
 | `/explore` full-list filter/header order | Product-approved / TDS-informed | The full-list result surface now places applied filter chips above the `매장목록 n곳` heading so selected conditions read as search state before the result summary. The list panel also adds tokenized top padding to keep the heading from sitting too close to the search bar when no chips are present, and uses a weak tokenized bottom divider under the heading to separate the result summary from the card list without adding another heavy surface. |
 | Runtime verification | Needs sandbox | Source tests and build can verify the DOM/CSS contract; Apps in Toss safe-area and native font rhythm still need device confirmation. |
+
+### 2026-06-07 Home Recent Viewed And Ranking Toggle Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` recent viewed shops | Product-approved / TDS-informed | The section label is now `다시 볼 곳`. Rows use a compact one-line ListRow-like rhythm: favorite heart state, shop name, and relative viewed date. Region and category copy were removed from the visible row to avoid a two-line admin-list feel and unsupported taxonomy emphasis. |
+| `/home` ranking preview | Product-approved / TDS-informed / API-required | The auto chip rail remains the default first impression, but a small `순위 보기` control lets users switch the same Top5 data into a compact ranking list. The list uses only verified ranking API fields: rank, label, and kind, then can collapse back to the auto rail. |
+| Runtime verification | Needs sandbox | Source tests and local build can verify layout and routing; Apps in Toss safe-area, font rhythm, and touch behavior still need device confirmation. |
