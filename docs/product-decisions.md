@@ -66,6 +66,45 @@
 - 섹션 제목만으로 의미가 전달되면 `p`, `small`, 보조 `span` 설명을 추가하지 않습니다.
 - 데이터 기준, 갱신 주기, 실시간성 문구는 실제 API 갱신/집계 동작이 구현되고 검증된 경우에만 표시합니다.
 - 필요한 맥락은 row의 핵심 정보, 탭, 상세 화면, 빈 상태 문구로 해결하고 홈 첫 화면에는 설명을 최소화합니다.
-- 검색어/작품/매장 신호 기반 랭킹은 홈 CTA 아래가 아니라 Search Focus의 추천 검색 영역에 우선 배치합니다.
+- 검색어/작품/매장 신호 기반 랭킹은 `/home`의 보조 모듈로 Top5만 배치하고, Search Focus에서는 제거합니다.
 - 랭킹 API의 `eventCount`는 윈도우 내 누적 이벤트 수이지 순위 증감이 아니므로 `▲/▼` 표현에 사용하지 않습니다.
-- 랭킹/자동완성처럼 이미 매칭된 작품은 `keyword`만 넘기지 않고 `workId`를 함께 전달해 검색 필터와 popularity 집계가 정확한 작품 ID 기준으로 동작하게 합니다.
+- 랭킹/자동완성처럼 이미 매칭된 항목도 Explore URL에는 `keyword`와 `scope`만 전달합니다. `workId`/`shopId`는 필터 또는 상세 시트 상태로 해석되므로 검색 진입 URL에 넣지 않습니다.
+
+## 2026-06-07 Home Ranking Board Placement
+
+- `/home` can show one compact Rankings API Top5 module as the discovery hub's supporting module.
+- Superseded by the Home Auto Chip Rail Revision below.
+- `/search` should not own the ranking board entry point. Search Focus stays centered on input, recent searches, autocomplete, filters, and nearby discovery.
+- `/trends` is the full ranking board surface with Top20 and tabs for all supported ranking endpoints.
+- Do not show fake rank movement, update timestamps, photos, store counts, `인기`, `핫`, or `급상승` unless the API exposes and verifies those fields.
+- `/home` may show `내 최근 리뷰` only for signed-in users via `GET /api/v1/users/me/reviews`; do not invent a global latest-review feed until Swagger exposes one.
+
+## 2026-06-07 Home Auto Chip Rail Revision
+
+- This revision supersedes older same-day Home ranking board placement notes.
+- `/home` uses one compact Rankings API Top5 auto-scrolling chip rail directly under the search entry.
+- The rail uses `GET /api/v1/rankings/search/entities?window=7d&limit=5` and shows only rank, label, and a small kind chip from the API kind. It does not link to `/trends`.
+- `/search` should not own the ranking board entry point. Search Focus stays centered on input, recent searches, autocomplete, filters, and nearby discovery.
+- `/trends` may remain as a dormant route while the ranking board idea is being evaluated, but `/home` should not depend on it as the primary continuation.
+- Do not show fake rank movement, update timestamps, photos, store counts, hot labels, or urgent labels unless the API exposes and verifies those fields.
+- `/home` does not show a recent-review preview until Swagger exposes a global latest-review feed. User-owned reviews remain a `/my` activity concern.
+
+## 2026-06-07 Home Recent Viewed Shops
+
+- `/home` may use an Apps in Toss native `Storage`-backed recent-viewed shop section as the bottom continuation module.
+- This is not a review/feed module and does not require a new Swagger feed because it stores only shops the current device already opened in Explore detail.
+- Use `@apps-in-toss/web-framework` `Storage`, not browser `localStorage`, for Apps in Toss runtime persistence. If storage read/write fails or there are no viewed shops, hide the section.
+- Store only compact display snapshots: shop id, name, address or region, category labels, and update timestamp. Do not store photos, fake counts, popularity labels, or rank movement.
+- A shop is considered viewed when its Explore detail sheet is expanded, not when the map peek sheet is briefly opened.
+- Runtime persistence still needs Apps in Toss sandbox/device verification before being marked passed.
+
+## 2026-06-07 Trend Entry And Search Facet Scope
+
+- Home and Trends ranking entries add `rankingEntry=trend` when linking into Explore.
+- Explore must not record `DISCOVERY_WORK_EXPLORE_ENTERED` for `rankingEntry=trend`; otherwise ranking clicks feed back into the same ranking signal.
+- Ranking and autocomplete entries navigate like search suggestions: pass `keyword` plus a scope hint only.
+- Work entries pass `scope=work&keyword=:label`; they must not pass `workId` because `workId` is a shop facet filter and lights the filter badge.
+- Shop entries pass `scope=shop&keyword=:label`; they must not pass `shopId` or `sheet=expanded` from the ranking chip because the Home rail is a search entry, not a detail deep link.
+- `/search` may show and edit existing facet state, but a submitted keyword/autocomplete/recent search starts a fresh Explore search without carrying stale facets. Facets are carried only when the user explicitly applies them from the Search filter sheet.
+- Explore's search entry also starts Search without carrying current Explore facet params. The previous Explore state stays only inside `returnTo`.
+- Client popularity event recording remains disabled while deployed `POST /api/v1/popularity/events` returns `403` for the current public client path. Re-enable only after the backend access policy is confirmed.

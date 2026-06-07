@@ -93,12 +93,12 @@ type BuildTrendExploreHrefOptions = {
 export function buildTrendExploreHref(item: TrendRankingItem, options: BuildTrendExploreHrefOptions = {}) {
   const params = new URLSearchParams()
   params.set('view', 'list')
+  params.set('rankingEntry', 'trend')
 
   if (item.kind === 'WORK') {
     params.set('scope', 'work')
-    if (item.workId != null) {
-      params.set('workId', String(item.workId))
-    }
+  } else if (item.kind === 'SHOP') {
+    params.set('scope', 'shop')
   }
 
   params.set('keyword', item.label)

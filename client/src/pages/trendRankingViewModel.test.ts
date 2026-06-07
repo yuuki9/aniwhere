@@ -6,8 +6,9 @@ import {
   formatTrendKindLabel,
   normalizeKeywordRankingItem,
   normalizeMixedEntityRankingItem,
+  normalizeShopRankingItem,
   type TrendRankingItem,
-} from './trendRankingViewModel'
+} from './trendRankingViewModel.ts'
 
 const mixedItem = normalizeMixedEntityRankingItem({
   rank: 1,
@@ -35,6 +36,14 @@ const sourceItems: TrendRankingItem[] = [
   { ...mixedItem, rank: 6, label: '원신' },
 ]
 
+const shopItem = normalizeShopRankingItem({
+  rank: 3,
+  shopId: 11,
+  label: 'Ani Shop',
+  score: 5,
+  eventCount: 2,
+})
+
 if (buildTrendPreviewItems(sourceItems).length !== 5) {
   throw new Error('trend preview must expose Top5 only')
 }
@@ -51,6 +60,10 @@ if (formatTrendActivity(mixedItem) !== '3회') {
   throw new Error('event activity label mismatch')
 }
 
+if (formatTrendActivityAria(mixedItem) !== '집계 이벤트 3회') {
+  throw new Error('event activity aria label mismatch')
+}
+
 if (formatTrendActivity(keywordItem) !== null) {
   throw new Error('cold-start activity label must be hidden')
 }
@@ -61,11 +74,23 @@ if (formatTrendActivityAria(keywordItem) !== null) {
 
 if (
   buildTrendExploreHref(mixedItem) !==
-  '/explore?view=list&scope=work&workId=7&keyword=%EC%9E%A5%EC%86%A1%EC%9D%98+%ED%94%84%EB%A6%AC%EB%A0%8C'
+  '/explore?view=list&rankingEntry=trend&scope=work&keyword=%EC%9E%A5%EC%86%A1%EC%9D%98+%ED%94%84%EB%A6%AC%EB%A0%8C'
 ) {
   throw new Error('work trend row must navigate to work keyword explore results')
 }
 
-if (buildTrendExploreHref(keywordItem) !== '/explore?view=list&keyword=%EA%B5%BF%EC%A6%88') {
+if (buildTrendExploreHref(mixedItem).includes('workId=')) {
+  throw new Error('work trend row must not write workId as a shop facet filter')
+}
+
+if (buildTrendExploreHref(keywordItem) !== '/explore?view=list&rankingEntry=trend&keyword=%EA%B5%BF%EC%A6%88') {
   throw new Error('keyword trend row must navigate to keyword explore results')
+}
+
+if (buildTrendExploreHref(shopItem) !== '/explore?view=list&rankingEntry=trend&scope=shop&keyword=Ani+Shop') {
+  throw new Error('shop trend row must navigate to shop keyword explore results')
+}
+
+if (/[?&](shopId|sheet)=/.test(buildTrendExploreHref(shopItem))) {
+  throw new Error('shop trend row must not open a detail sheet or write facet state')
 }

@@ -18,6 +18,18 @@ function buildInitialExploreListHref(params: Record<string, string>) {
   return `/explore?${next.toString()}`
 }
 
+export function buildRecentViewedShopHref(shopId: number) {
+  const next = new URLSearchParams({
+    view: 'list',
+    entry: EXPLORE_INITIAL_LIST_ENTRY_VALUE,
+    returnTo: '/home',
+    shopId: String(shopId),
+    sheet: 'expanded',
+  })
+
+  return `/explore?${next.toString()}`
+}
+
 export function buildHomeCtaCards(): HomeCtaCard[] {
   return [
     {

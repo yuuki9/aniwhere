@@ -1,7 +1,14 @@
 import { requestNoContent } from './client'
 import type { RecordPopularityEventPayload } from './types'
 
+const POPULARITY_EVENTS_ENABLED = false
+
 export function recordPopularityEvent(payload: RecordPopularityEventPayload) {
+  if (!POPULARITY_EVENTS_ENABLED) {
+    void payload
+    return Promise.resolve()
+  }
+
   return requestNoContent('/api/v1/popularity/events', {
     method: 'POST',
     body: JSON.stringify({
@@ -12,9 +19,5 @@ export function recordPopularityEvent(payload: RecordPopularityEventPayload) {
 }
 
 export function recordPopularityEventSafely(payload: RecordPopularityEventPayload) {
-  void recordPopularityEvent(payload).catch((error) => {
-    if (import.meta.env.DEV) {
-      console.warn('[aniwhere:popularity] record failed', error)
-    }
-  })
+  void recordPopularityEvent(payload).catch(() => {})
 }

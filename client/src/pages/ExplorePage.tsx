@@ -45,6 +45,7 @@ import {
 } from '../shared/lib/naverDirections'
 import { isAppsInTossRuntime } from '../shared/lib/auth'
 import { getStoredAccessToken, readAuthSession } from '../shared/lib/authSession'
+import { pushRecentViewedShop } from '../shared/lib/recentViewedShops'
 import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
@@ -283,6 +284,7 @@ export function ExplorePage() {
     viewParam === 'list' ? 'list' : 'map'
   const currentSearchScope = searchParams.get('scope') === 'work' ? 'work' : 'shop'
   const currentKeyword = searchParams.get('keyword')?.trim() ?? ''
+  const isTrendRankingEntry = searchParams.get('rankingEntry') === 'trend'
   const [focusMode, setFocusMode] = useState<FocusMode>(nearbyRequest ? 'user' : selectedShopId ? 'shop' : 'shops')
   const [focusRequestId, setFocusRequestId] = useState(1)
   const hasPerformedRouteReviewFocusRef = useRef(false)
@@ -366,7 +368,7 @@ export function ExplorePage() {
     return `${location.pathname}?${next.toString()}`
   }, [location.pathname, routeViewMode, searchParams])
   const searchHref = useMemo(() => {
-    const next = writeShopFilters(new URLSearchParams(), selectedFilters)
+    const next = new URLSearchParams()
 
     next.set('returnTo', searchReturnTo)
 
@@ -379,7 +381,7 @@ export function ExplorePage() {
     }
 
     return `/search?${next.toString()}`
-  }, [currentKeyword, currentSearchScope, searchReturnTo, selectedFilters])
+  }, [currentKeyword, currentSearchScope, searchReturnTo])
   const exploreSearchParams = useMemo(
     () => ({
       ...selectedSearchParams,
@@ -657,6 +659,14 @@ export function ExplorePage() {
   })
 
   useEffect(() => {
+    if (detailShop == null || sheetMode !== 'expanded') {
+      return
+    }
+
+    void pushRecentViewedShop(detailShop)
+  }, [detailShop, sheetMode])
+
+  useEffect(() => {
     if (selectedShopId == null || sheetMode !== 'expanded' || detailTabParam == null) {
       return
     }
@@ -698,7 +708,7 @@ export function ExplorePage() {
   ])
 
   useEffect(() => {
-    if (currentSearchScope !== 'work' || !currentKeyword) {
+    if (currentSearchScope !== 'work' || !currentKeyword || isTrendRankingEntry) {
       return
     }
 
@@ -713,7 +723,7 @@ export function ExplorePage() {
       type: 'DISCOVERY_WORK_EXPLORE_ENTERED',
       ...(matchedWorkId != null ? { workId: matchedWorkId } : { workKeyword: currentKeyword }),
     })
-  }, [currentKeyword, currentSearchScope, selectedFilters.workId])
+  }, [currentKeyword, currentSearchScope, isTrendRankingEntry, selectedFilters.workId])
 
   const assistantMutation = useMutation({
     mutationFn: async (question: string) =>

@@ -110,10 +110,11 @@ export function TrendsPage() {
   return (
     <main className="app-shell trends-shell">
       <section className="trends-head" aria-labelledby="trends-title">
-        <h1 id="trends-title">지금 뜨는 검색</h1>
+        <h1 id="trends-title">지금 뜨는 애니웨어</h1>
+        <span className="trends-period-chip">7일 기준</span>
       </section>
 
-      <nav className="trends-tab-list" aria-label="트렌드 랭킹 보기">
+      <nav className="trends-tab-list" aria-label="애니웨어 랭킹 보기">
         {TREND_TABS.map((tab) => (
           <button
             aria-pressed={tab.id === activeTab}
@@ -143,7 +144,7 @@ export function TrendsPage() {
         </section>
       ) : null}
       {!rankingQuery.isLoading && !rankingQuery.isError && items.length > 0 ? (
-        <section className="trends-list-card" aria-label="지금 뜨는 검색 Top20">
+        <section className="trends-list-card" aria-label="지금 뜨는 애니웨어 Top20">
           {items.map((item) => (
             <TrendDetailRow key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
           ))}
