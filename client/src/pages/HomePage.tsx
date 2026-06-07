@@ -71,18 +71,32 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
   )
 }
 
-function HomeTrendChip({ item }: { item: TrendRankingItem }) {
+function HomeTrendChip({ item, inert = false }: { item: TrendRankingItem; inert?: boolean }) {
+  const content = (
+    <>
+      <span className="home-trend-chip-rank" aria-hidden="true">
+        {item.rank}
+      </span>
+      <span className="home-trend-chip-label">{item.label}</span>
+      <span className="home-trend-chip-kind">{formatTrendKindLabel(item.kind)}</span>
+    </>
+  )
+
+  if (inert) {
+    return (
+      <span className="home-trend-chip" aria-hidden="true">
+        {content}
+      </span>
+    )
+  }
+
   return (
     <Link
       aria-label={`${item.label} 관련 매장 검색 결과 보기`}
       className="home-trend-chip"
       to={buildTrendExploreHref(item, { returnTo: '/home' })}
     >
-      <span className="home-trend-chip-rank" aria-hidden="true">
-        {item.rank}
-      </span>
-      <span className="home-trend-chip-label">{item.label}</span>
-      <span className="home-trend-chip-kind">{formatTrendKindLabel(item.kind)}</span>
+      {content}
     </Link>
   )
 }
@@ -115,6 +129,7 @@ function HomeTrendChipRail({ items }: { items: TrendRankingItem[] }) {
                 <HomeTrendChip
                   key={`ghost-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`}
                   item={item}
+                  inert
                 />
               ))}
             </div>

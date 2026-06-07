@@ -9,6 +9,7 @@ type FullScreenAdState = {
 }
 
 type ShopViewAdStorageState = {
+  totalViewCount: number
   viewedShopIds: number[]
   shownMilestones: number[]
 }
@@ -23,6 +24,7 @@ export type ReviewRewardedAdResult =
 const SHOP_VIEW_AD_STATE_KEY = 'aniwhere-ad-shop-view-state-v1'
 const SHOP_VIEW_INTERSTITIAL_THRESHOLD = 5
 const SHOP_VIEW_STATE_LIMIT = 30
+const FULL_SCREEN_AD_TIMEOUT_MS = 8_000
 const FULL_SCREEN_AD_STATES = new Map<TossAdKind, FullScreenAdState>()
 
 const TEST_AD_GROUP_IDS: Record<TossAdKind, string> = {
@@ -81,21 +83,26 @@ function getFullScreenAdState(kind: TossAdKind) {
 
 function parseShopViewAdState(raw: string | null): ShopViewAdStorageState {
   if (raw == null || raw.trim() === '') {
-    return { viewedShopIds: [], shownMilestones: [] }
+    return { totalViewCount: 0, viewedShopIds: [], shownMilestones: [] }
   }
 
   try {
     const parsed = JSON.parse(raw) as Partial<ShopViewAdStorageState>
+    const viewedShopIds = Array.isArray(parsed.viewedShopIds)
+      ? parsed.viewedShopIds.filter((id) => Number.isSafeInteger(id) && id > 0).slice(0, SHOP_VIEW_STATE_LIMIT)
+      : []
+    const shownMilestones = Array.isArray(parsed.shownMilestones)
+      ? parsed.shownMilestones.filter((count) => Number.isSafeInteger(count) && count > 0)
+      : []
+    const totalViewCount = Number.isSafeInteger(parsed.totalViewCount) && Number(parsed.totalViewCount) > 0 ? Number(parsed.totalViewCount) : 0
+
     return {
-      viewedShopIds: Array.isArray(parsed.viewedShopIds)
-        ? parsed.viewedShopIds.filter((id) => Number.isSafeInteger(id) && id > 0).slice(0, SHOP_VIEW_STATE_LIMIT)
-        : [],
-      shownMilestones: Array.isArray(parsed.shownMilestones)
-        ? parsed.shownMilestones.filter((count) => Number.isSafeInteger(count) && count > 0)
-        : [],
+      totalViewCount: Math.max(totalViewCount, viewedShopIds.length, ...shownMilestones),
+      viewedShopIds,
+      shownMilestones,
     }
   } catch {
-    return { viewedShopIds: [], shownMilestones: [] }
+    return { totalViewCount: 0, viewedShopIds: [], shownMilestones: [] }
   }
 }
 
@@ -103,7 +110,7 @@ async function readShopViewAdState() {
   try {
     return parseShopViewAdState(await Storage.getItem(SHOP_VIEW_AD_STATE_KEY))
   } catch {
-    return { viewedShopIds: [], shownMilestones: [] }
+    return { totalViewCount: 0, viewedShopIds: [], shownMilestones: [] }
   }
 }
 
@@ -162,7 +169,7 @@ export function preloadTossFullScreenAd(kind: Exclude<TossAdKind, 'banner'>) {
     window.setTimeout(() => {
       unregister()
       finish(false)
-    }, 8_000)
+    }, FULL_SCREEN_AD_TIMEOUT_MS)
   })
 
   return state.loadingPromise
@@ -176,15 +183,16 @@ export async function maybeShowShopViewInterstitial(shopId: number) {
   }
 
   const current = await readShopViewAdState()
+  const isNewShopView = !current.viewedShopIds.includes(shopId)
+  const totalViewCount = current.totalViewCount + (isNewShopView ? 1 : 0)
   const viewedShopIds = [shopId, ...current.viewedShopIds.filter((id) => id !== shopId)].slice(0, SHOP_VIEW_STATE_LIMIT)
-  const viewedCount = viewedShopIds.length
   const shouldShow =
-    viewedCount >= SHOP_VIEW_INTERSTITIAL_THRESHOLD &&
-    viewedCount % SHOP_VIEW_INTERSTITIAL_THRESHOLD === 0 &&
-    !current.shownMilestones.includes(viewedCount)
-  const shownMilestones = shouldShow ? [...current.shownMilestones, viewedCount] : current.shownMilestones
+    totalViewCount >= SHOP_VIEW_INTERSTITIAL_THRESHOLD &&
+    totalViewCount % SHOP_VIEW_INTERSTITIAL_THRESHOLD === 0 &&
+    !current.shownMilestones.includes(totalViewCount)
+  const shownMilestones = shouldShow ? [...current.shownMilestones, totalViewCount] : current.shownMilestones
 
-  await writeShopViewAdState({ viewedShopIds, shownMilestones })
+  await writeShopViewAdState({ totalViewCount, viewedShopIds, shownMilestones })
 
   if (!shouldShow) {
     void preloadTossFullScreenAd('interstitial')
@@ -235,16 +243,25 @@ export async function showReviewRewardedAd(): Promise<ReviewRewardedAdResult> {
   return new Promise<ReviewRewardedAdResult>((resolve) => {
     let didResolve = false
     let unregister: (() => void) | null = null
+    let timeoutId: number | null = null
     const finish = (result: ReviewRewardedAdResult) => {
       if (didResolve) {
         return
       }
 
       didResolve = true
+      if (timeoutId != null) {
+        window.clearTimeout(timeoutId)
+      }
       unregister?.()
       void preloadTossFullScreenAd('rewarded')
       resolve(result)
     }
+
+    timeoutId = window.setTimeout(() => {
+      unregister?.()
+      finish({ status: 'ERROR', message: '광고를 표시하지 못했어요.' })
+    }, FULL_SCREEN_AD_TIMEOUT_MS)
 
     unregister = showFullScreenAd({
       options: { adGroupId },

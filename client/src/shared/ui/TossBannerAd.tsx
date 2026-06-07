@@ -37,14 +37,26 @@ export function TossBannerAd({
             variant: 'card',
             callbacks: {
               onAdRendered: () => {
+                if (didCancel) {
+                  return
+                }
+
                 setIsCollapsed(false)
                 onVisibleChange?.(true)
               },
               onNoFill: () => {
+                if (didCancel) {
+                  return
+                }
+
                 setIsCollapsed(true)
                 onVisibleChange?.(false)
               },
               onAdFailedToRender: () => {
+                if (didCancel) {
+                  return
+                }
+
                 setIsCollapsed(true)
                 onVisibleChange?.(false)
               },
@@ -52,6 +64,10 @@ export function TossBannerAd({
           })
         },
         onInitializationFailed: () => {
+          if (didCancel) {
+            return
+          }
+
           setIsCollapsed(true)
           onVisibleChange?.(false)
         },

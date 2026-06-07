@@ -1049,7 +1049,14 @@ export function ExplorePage() {
 
   const handleReviewRewardAd = async () => {
     setReviewRewardAdStatus('loading')
-    const result = await showReviewRewardedAd()
+    let result: Awaited<ReturnType<typeof showReviewRewardedAd>>
+    try {
+      result = await showReviewRewardedAd()
+    } catch {
+      setReviewRewardAdStatus('unavailable')
+      setFavoriteToast('광고를 불러오지 못했어요. 리뷰는 정상 등록됐어요.')
+      return
+    }
 
     if (result.status === 'EARNED') {
       setReviewRewardAdStatus('earned')
