@@ -33,7 +33,7 @@ export function TossBannerAd({
           }
 
           attached = TossAds.attachBanner(adGroupId, containerRef.current, {
-            theme: 'auto',
+            theme: 'light',
             variant: 'card',
             callbacks: {
               onAdRendered: () => {

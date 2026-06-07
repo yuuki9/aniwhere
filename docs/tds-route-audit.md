@@ -1022,6 +1022,6 @@ Official docs checked with Apps in Toss MCP in the current session:
 
 | Area | Current classification | Notes |
 | --- | --- | --- |
-| `/home` recent viewed shops | Product-approved / TDS-informed | The section label is now `다시 볼 곳`. Rows use a compact one-line ListRow-like rhythm: favorite heart state, shop name, and relative viewed date. Region and category copy were removed from the visible row to avoid a two-line admin-list feel and unsupported taxonomy emphasis. |
+| `/home` recent viewed shops | Product-approved / TDS-informed | The section label is now `최근 둘러본 매장이에요`. Rows use a compact one-line ListRow-like rhythm: favorite heart state, shop name, and relative viewed date. Region and category copy were removed from the visible row to avoid a two-line admin-list feel and unsupported taxonomy emphasis. |
 | `/home` ranking preview | Product-approved / TDS-informed / API-required | The auto chip rail remains the default first impression, but a small `순위 보기` control lets users switch the same Top5 data into a compact ranking list. The list uses only verified ranking API fields: rank, label, and kind, then can collapse back to the auto rail. |
 | Runtime verification | Needs sandbox | Source tests and local build can verify layout and routing; Apps in Toss safe-area, font rhythm, and touch behavior still need device confirmation. |

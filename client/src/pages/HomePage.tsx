@@ -233,7 +233,7 @@ function HomeRecentViewedSection({ shops }: { shops: RecentViewedShop[] }) {
   return (
     <section className="home-recent-viewed-section" aria-labelledby="home-recent-viewed-title">
       <div className="home-section-head">
-        <h2 id="home-recent-viewed-title">다시 볼 곳</h2>
+        <h2 id="home-recent-viewed-title">최근 둘러본 매장이에요</h2>
       </div>
       <div className="home-recent-viewed-list">
         {shops.map((shop) => (

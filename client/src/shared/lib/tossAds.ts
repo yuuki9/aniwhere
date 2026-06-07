@@ -49,6 +49,10 @@ export function getEnvValue(key: string) {
 }
 
 export function getTossAdGroupId(kind: TossAdKind) {
+  if (getEnvValue('VITE_TOSS_AD_USE_TEST_IDS') === 'true') {
+    return TEST_AD_GROUP_IDS[kind]
+  }
+
   return getEnvValue(AD_GROUP_ENV_KEYS[kind]) ?? (import.meta.env.DEV ? TEST_AD_GROUP_IDS[kind] : DEFAULT_AD_GROUP_IDS[kind])
 }
 
