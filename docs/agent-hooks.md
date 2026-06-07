@@ -31,7 +31,7 @@ This document is the natural-language trigger layer for Aniwhere Codex sessions.
 | 버그, 흰화면, failed to fetch, console, sandbox failure, test/build fail, regression | Reproduce and diagnose before changing code. | `aniwhere-debug-loop`, relevant domain skill |
 | 작업 분리, 브랜치, PR 범위, 후속 작업, "무엇부터" | Plan branch/PR scope before implementation. | `aniwhere-work-planning`, `GIT_CONVENTIONS.md` |
 | 커밋, commit, push, PR handoff, 브랜치 마무리 | Before committing or pushing, verify `GIT_CONVENTIONS.md` and write the commit subject/body in Korean after the `type(scope):` prefix. Do not create English commit descriptions. | `GIT_CONVENTIONS.md`, `caveman-commit` when requested |
-| PR, merge, 리뷰, CodeRabbit, description, "PR step" | Run PR preflight and provide PR URL/title/body handoff if direct creation fails. | `aniwhere-pr-preflight`, `GIT_CONVENTIONS.md`, `.github/PULL_REQUEST_TEMPLATE.md` |
+| PR, merge, 리뷰, CodeRabbit, description, "PR step" | Run PR preflight and always provide PR URL/title/body. If direct creation fails, provide a copy/paste-ready handoff instead of only the error or URL. | `aniwhere-pr-preflight`, `GIT_CONVENTIONS.md`, `.github/PULL_REQUEST_TEMPLATE.md` |
 | skill, hook, guard, 세션 유지, 자연어 trigger | Treat as workflow maintenance. Keep rules durable and repo-tracked. | `aniwhere-skill-workflow`, `docs/agent-hooks.md`, `docs/agent-skills.md` |
 
 ## UI/TDS Hook Contract
@@ -62,6 +62,16 @@ Before changing SDK/runtime behavior:
 2. Confirm the feature is relevant to Aniwhere's WebView non-game app shape.
 3. Separate console values and sandbox evidence from code inspection.
 4. Mark unresolved console/mobile-device needs as `Needs console value` or `Needs sandbox`.
+
+## PR Creation Hook Contract
+
+When the user asks for PR creation, PR step, PR handoff, merge prep, CodeRabbit handoff, or description:
+
+1. Run the matching PR preflight checks before handoff.
+2. Prepare the PR title and full description in Korean with `.github/PULL_REQUEST_TEMPLATE.md`.
+3. Always provide the created PR URL or compare/creation URL, the exact PR title, and the full copy/paste-ready PR description in the final response.
+4. If `gh` or the GitHub connector fails because of auth or permissions, do not stop at the failure. Treat it as a manual handoff and still provide URL, title, and description.
+5. Do not replace the description with a summary unless the user explicitly asks for a short summary only.
 
 ## Hook Maintenance
 

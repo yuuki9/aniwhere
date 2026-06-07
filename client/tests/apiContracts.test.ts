@@ -141,6 +141,15 @@ test('client API functions cover Swagger paths added for facets, favorites, auth
   assert.doesNotMatch(client, /authToken \?\? getStoredAccessToken\(\)/)
 })
 
+test('popularity events are disabled while the deployed endpoint returns forbidden', () => {
+  const popularity = source('../src/shared/api/popularity.ts')
+
+  assert.match(popularity, /const POPULARITY_EVENTS_ENABLED = false/)
+  assert.match(popularity, /if \(!POPULARITY_EVENTS_ENABLED\) \{[\s\S]*return Promise\.resolve\(\)/)
+  assert.match(popularity, /recordPopularityEventSafely/)
+  assert.doesNotMatch(popularity, /console\.warn\('\[aniwhere:popularity\] record failed'/)
+})
+
 test('backend API contract notes keep shop facets aligned with deployed Swagger', () => {
   const contract = backendContractSource()
 

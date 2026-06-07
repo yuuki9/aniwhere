@@ -42,9 +42,9 @@ npm.cmd run build:static
 11. PR creation handoff hook:
 
    - Treat the server maintainer as the final merge authority; Codex should push and hand off a reviewable PR, not imply it owns the merge.
-   - If direct PR creation succeeds, return the PR URL, title, and a concise summary of the submitted body.
+   - If direct PR creation succeeds, return the PR URL, title, and the full submitted PR description or a copy/paste-ready equivalent.
    - If GitHub connector or `gh` authentication prevents direct PR creation, return the PR creation URL plus the exact title and full `.github/PULL_REQUEST_TEMPLATE.md`-shaped description in a copy/paste-friendly form.
-   - Do not stop with only an auth/403 explanation or only a PR creation URL.
+   - Do not stop with only an auth/403 explanation, only a PR creation URL, or only a short body summary.
 
 ## Review Patterns To Preempt
 
@@ -62,6 +62,7 @@ npm.cmd run build:static
 ## PR Body Guidance
 
 - Keep the description factual: summary, changed scope, verification, screenshots/logs when useful, and merge-after notes.
+- The final handoff must include the full PR description unless the user explicitly asks for a short summary only.
 - Keep the PR scope tied to task boundaries, not numeric thresholds.
 - Include CodeRabbit-relevant verification such as lint/build results and any intentionally accepted risk.
 - For client UI/WebView changes, include the PR-level Apps in Toss/TDS classification and any follow-up audit branch/PR.

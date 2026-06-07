@@ -17,6 +17,7 @@
 - 지도는 메인 기능이 아니라 탐색 목적에 맞는 화면에서만 강하게 사용합니다.
 - 사용자는 skill 이름을 외우지 않아도 됩니다. 자연어 요청은 `docs/agent-hooks.md`의 trigger 기준으로 Codex가 해석합니다.
 - Codex가 브랜치 작업, 커밋, push, PR handoff를 수행할 때 커밋 메시지의 변경 설명은 반드시 한글로 작성합니다.
+- PR 생성/마무리 단계에서는 생성 성공 여부와 관계없이 PR URL 또는 생성 URL, 정확한 PR title, `.github/PULL_REQUEST_TEMPLATE.md` 형식의 copy/paste-ready description을 함께 제공합니다.
 
 ## 현재 프로젝트 해석
 

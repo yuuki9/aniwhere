@@ -59,3 +59,61 @@
 3. 후기/제보 검수 플로우
 4. 포인트 원장 및 수동 지급 구조
 5. 점주/사장 기능은 후순위
+
+## 2026-06-05 사용자 UI 문구 밀도 선호
+
+- 홈, 랭킹, 리스트형 모듈에는 보조문구/helper copy를 기본으로 붙이지 않습니다.
+- 섹션 제목만으로 의미가 전달되면 `p`, `small`, 보조 `span` 설명을 추가하지 않습니다.
+- 데이터 기준, 갱신 주기, 실시간성 문구는 실제 API 갱신/집계 동작이 구현되고 검증된 경우에만 표시합니다.
+- 필요한 맥락은 row의 핵심 정보, 탭, 상세 화면, 빈 상태 문구로 해결하고 홈 첫 화면에는 설명을 최소화합니다.
+- 검색어/작품/매장 신호 기반 랭킹은 `/home`의 보조 모듈로 Top5만 배치하고, Search Focus에서는 제거합니다.
+- 랭킹 API의 `eventCount`는 윈도우 내 누적 이벤트 수이지 순위 증감이 아니므로 `▲/▼` 표현에 사용하지 않습니다.
+- 랭킹/자동완성처럼 이미 매칭된 항목도 Explore URL에는 `keyword`와 `scope`만 전달합니다. `workId`/`shopId`는 필터 또는 상세 시트 상태로 해석되므로 검색 진입 URL에 넣지 않습니다.
+
+## 2026-06-07 Home Ranking Board Placement
+
+- `/home` can show one compact Rankings API Top5 module as the discovery hub's supporting module.
+- Superseded by the Home Auto Chip Rail Revision below.
+- `/search` should not own the ranking board entry point. Search Focus stays centered on input, recent searches, autocomplete, filters, and nearby discovery.
+- `/trends` is the full ranking board surface with Top20 and tabs for all supported ranking endpoints.
+- Do not show fake rank movement, update timestamps, photos, store counts, `인기`, `핫`, or `급상승` unless the API exposes and verifies those fields.
+- `/home` may show `내 최근 리뷰` only for signed-in users via `GET /api/v1/users/me/reviews`; do not invent a global latest-review feed until Swagger exposes one.
+
+## 2026-06-07 Home Auto Chip Rail Revision
+
+- This revision supersedes older same-day Home ranking board placement notes.
+- `/home` uses one compact Rankings API Top5 auto-scrolling chip rail directly under the search entry.
+- The rail uses `GET /api/v1/rankings/search/entities?window=7d&limit=5` and shows only rank, label, and a small kind chip from the API kind. It does not link to `/trends`.
+- `/search` should not own the ranking board entry point. Search Focus stays centered on input, recent searches, autocomplete, filters, and nearby discovery.
+- `/trends` may remain as a dormant route while the ranking board idea is being evaluated, but `/home` should not depend on it as the primary continuation.
+- Do not show fake rank movement, update timestamps, photos, store counts, hot labels, or urgent labels unless the API exposes and verifies those fields.
+- `/home` does not show a recent-review preview until Swagger exposes a global latest-review feed. User-owned reviews remain a `/my` activity concern.
+
+## 2026-06-07 Home Recent Viewed Shops
+
+- `/home` may use an Apps in Toss native `Storage`-backed recent-viewed shop section as the bottom continuation module.
+- This is not a review/feed module and does not require a new Swagger feed because it stores only shops the current device already opened in Explore detail.
+- Use `@apps-in-toss/web-framework` `Storage`, not browser `localStorage`, for Apps in Toss runtime persistence. If storage read/write fails or there are no viewed shops, hide the section.
+- Store only compact display snapshots: shop id, name, address or region, category labels, and update timestamp. Do not store photos, fake counts, popularity labels, or rank movement.
+- A shop is considered viewed when its Explore detail sheet is expanded, not when the map peek sheet is briefly opened.
+- Runtime persistence still needs Apps in Toss sandbox/device verification before being marked passed.
+
+## 2026-06-07 Trend Entry And Search Facet Scope
+
+- Home and Trends ranking entries add `rankingEntry=trend` when linking into Explore.
+- Explore must not record `DISCOVERY_WORK_EXPLORE_ENTERED` for `rankingEntry=trend`; otherwise ranking clicks feed back into the same ranking signal.
+- Ranking and autocomplete entries navigate like search suggestions: pass `keyword` plus a scope hint only.
+- Work entries pass `scope=work&keyword=:label`; they must not pass `workId` because `workId` is a shop facet filter and lights the filter badge.
+- Shop entries pass `scope=shop&keyword=:label`; they must not pass `shopId` or `sheet=expanded` from the ranking chip because the Home rail is a search entry, not a detail deep link.
+- `/search` may show and edit existing facet state, but a submitted keyword/autocomplete/recent search starts a fresh Explore search without carrying stale facets. Facets are carried only when the user explicitly applies them from the Search filter sheet.
+- Explore's search entry also starts Search without carrying current Explore facet params. The previous Explore state stays only inside `returnTo`.
+- Client popularity event recording remains disabled while deployed `POST /api/v1/popularity/events` returns `403` for the current public client path. Re-enable only after the backend access policy is confirmed.
+
+## 2026-06-07 Apps In Toss Ads Frontend Integration
+
+- Banner ads may be attached to the bottom CTA/supporting areas of `/home`, `/explore?view=list`, and `/explore?view=map`.
+- Banner containers must use the official Apps in Toss `TossAds.attachBanner` path, keep the SDK-provided ad label/title/CTA unchanged, and use a 100% width / 96px slot. Do not disguise ads as curation cards or service recommendations.
+- Interstitial ads may be attempted after every 5 unique expanded shop-detail views. The ad must never block shop selection, search, map movement, review writing, login, or navigation if load/show fails.
+- Review rewarded ads are frontend-prepared only. The review submit flow may show a feature-flagged "watch ad for additional reward" prompt after a new review is created, but the frontend must not grant points by itself.
+- Backend follow-up required before enabling real rewarded compensation: create a review reward ledger or idempotent API keyed by user, review, ad group/request metadata, and reward event so duplicate grants cannot happen after retries, refreshes, or repeated `userEarnedReward` events.
+- Use official test ad group IDs during development. Real console ad group IDs must be supplied through environment config before release.

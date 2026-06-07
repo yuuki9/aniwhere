@@ -71,6 +71,75 @@ export type SearchAutocompleteResponse = {
   items: SearchAutocompleteItem[]
 }
 
+export type PopularityEventType =
+  | 'SEARCH_AUTOCOMPLETE_SELECTED'
+  | 'SEARCH_KEYWORD_SUBMITTED'
+  | 'DISCOVERY_WORK_EXPLORE_ENTERED'
+  | 'DISCOVERY_RESULT_CLICKED'
+
+export type PopularitySearchScope = 'SHOP' | 'WORK'
+
+export type PopularityDiscoverySource = 'SEARCH' | 'EXPLORE'
+
+export type RecordPopularityEventPayload = {
+  type: PopularityEventType
+  occurredAt?: string
+  shopId?: number
+  workId?: number
+  keyword?: string
+  workKeyword?: string
+  scope?: PopularitySearchScope
+  source?: PopularityDiscoverySource
+}
+
+export type PopularityWindow = '7d' | '24h'
+
+export type PopularityRankingKind = 'SHOP' | 'WORK' | 'KEYWORD'
+
+export type RankingQueryParams = {
+  window?: PopularityWindow
+  limit?: number
+}
+
+export type WorkRankingItem = {
+  rank: number
+  workId: number
+  label: string
+  score: number
+  eventCount: number
+}
+
+export type ShopRankingItem = {
+  rank: number
+  shopId: number
+  label: string
+  score: number
+  eventCount: number
+}
+
+export type KeywordRankingItem = {
+  rank: number
+  keyword: string
+  score: number
+  eventCount: number
+}
+
+export type MixedEntityRankingItem = {
+  rank: number
+  kind: PopularityRankingKind
+  shopId: number | null
+  workId: number | null
+  label: string
+  score: number
+  eventCount: number
+}
+
+export type RankingResponse<TItem> = {
+  window: string
+  sampleSufficient: boolean
+  items: TItem[]
+}
+
 export type WorkSummary = {
   id: number
   name: string

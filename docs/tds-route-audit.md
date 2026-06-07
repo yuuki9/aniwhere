@@ -107,17 +107,61 @@ Official docs checked with Apps in Toss MCP on 2026-05-17:
 | --- | --- | --- |
 | Route role | Product-approved | `/home` is the discovery hub after entry, so it keeps a dense mobile storefront rhythm instead of a strict form/list screen. |
 | TDS import boundary | Passed | Home uses the shared API/view-model boundary and app-owned CSS tokens; no direct `@toss/tds-mobile` imports were introduced outside the local facade strategy. |
-| Typography | Product-approved | Section titles and poster labels use `--ait-*` typography tokens with tighter sizing than the intro hero. The `인기 작품 TOP 20` title stays short and matches the current `popularity`-ordered work API without implying real-time trend data. |
+| Typography | Product-approved | Home section titles use `--ait-*` typography tokens with tighter sizing than the intro hero. The former work-poster title was removed with the poster carousel. |
 | Search entry | Product-approved | Official `SearchField` is the reference primitive, but home keeps a button-like search entry to route into `/search` without opening an inline input on the discovery page. |
 | Quick menu | Product-approved / Needs server role follow-up | The shortcut set keeps public actions visible by default: map exploration and community reviews. `매장 관리` is hidden unless an admin session is already unlocked; future Toss login role sync should replace the temporary admin-session visibility check. |
-| Work poster carousel | Product-approved | Official `Asset` and `Badge` docs informed the poster media and internal badge shape, but the carousel is app-owned because TDS does not define a horizontal work-discovery rail. It calls `GET /api/v1/works`, renders the first 20 items from the returned popularity order to limit home image cost, hides duplicate genre metadata, uses poster art with contained rank numerals, shows about 2.5 cards at 375px, and links to `/search?scope=work&keyword=:workName&returnTo=/home` so the search route calls the shop search API with `workKeyword`. |
-| Home section vertical rhythm | Product-approved / TDS-informed | Official SearchField, ListRow, Typography, and Button docs were checked for the touched primitives. The search entry to CTA banner visual gap is about 16px, so the work and review section top padding was reduced from `--ait-space-3` to `--ait-space-1` to keep the CTA → work rail and work rail → review rhythm proportional without changing card sizes or route structure. |
+| Work poster carousel | Regression fix | The former poster carousel has been removed from home to avoid copyrighted poster/cover dependence and to keep the discovery hub focused on search entry, CTA banners, and one lightweight recommendation rail. |
+| Home section vertical rhythm | Product-approved / TDS-informed | Official SearchField, ListRow, ListHeader, Badge, Typography, and Button docs were checked for the touched primitives. Home now keeps the search entry, a compact Rankings API Top5 auto chip rail, and CTA banner stack. The rail does not link to `/trends`; `/trends` remains a dormant full-board route. |
 | Work shop count | Needs backend follow-up | The server work catalog currently exposes work metadata, not per-work shop counts. Home therefore uses `취급 매장 보기` inside the poster instead of an invented `n개 매장` count. |
 | More affordance | Product-approved | No separate more affordance is shown because the current destination would be the generic Explore list, not a work-ranking page. A future `/works` route can reintroduce more as a work-specific action. |
 | Recent reviews | Partial / Needs backend follow-up | The section is labeled `최근 방문 후기` and uses `GET /api/v1/posts` as the available recent-post API. If the server later separates review-only posts, replace this query with that endpoint. |
 | Empty/error cards | Product-approved | Loading, empty, and error copy avoids `제보` wording on home and keeps the section neutral. |
-| Explore return | Product-approved | Work poster links pass route state so the Explore list back action can return to `/home` instead of dropping to the base `/explore` screen. |
+| Explore return | Product-approved | Search/trend links pass route state so the Explore list back action can return to the source route instead of dropping to the base `/explore` screen. |
 | Runtime verification | Needs sandbox | Local build/lint/test verification does not prove Apps in Toss safe area, webview navigation, or Toss runtime font scaling. |
+
+## Current Home Native Back Follow-up
+
+Official docs checked on 2026-06-05 with web fallback because Apps in Toss MCP was not available in this session:
+
+- NavigationBar: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/UI/NavigationBar.html
+- Back event: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/%EC%9D%B4%EB%B2%A4%ED%8A%B8%20%EC%A0%9C%EC%96%B4/back-event.html
+- Non-game launch checklist: https://developers-apps-in-toss.toss.im/checklist/app-nongame.html
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` native back expectation | Product-approved / Needs sandbox | `/home` is the authenticated root after auto-login, so the native navigation back button should close the mini app instead of sending the user back to intro or an invisible login path. The app now listens to `graniteEvent.backEvent`: `/home` calls `closeView()`, while other routes preserve one-step back navigation. |
+| Browser history fallback | Product-approved / Needs sandbox | A capture-phase `popstate` fallback closes the app only when the previous route state was already `/home`, covering runtimes that express native back through browser history. Local browser cannot prove native close behavior; confirm in Apps in Toss sandbox on device. |
+
+## Current Home/Explore Ads Follow-up
+
+Official docs checked with Apps in Toss MCP on 2026-06-07:
+
+- In-app ads intro: https://developers-apps-in-toss.toss.im/ads/intro.html
+- Banner ad WebView: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/광고/BannerAd.md
+- Integrated full-screen ads: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/광고/IntegratedAd.md
+- Rewarded ad event: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/광고/LoadAdMobRewardedAdEvent.md
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` bottom CTA banner | Product-approved / SDK-required | Banner ad is attached after the CTA banner stack with the official `TossAds.attachBanner` path through `@apps-in-toss/web-bridge`. The wrapper only reserves a 100% width / 96px slot and does not alter SDK ad copy, CTA, label, or click behavior. |
+| `/explore?view=list` bottom banner | Product-approved / SDK-required | The result sheet can render a bottom banner after the scrollable result list. The ad is outside individual result cards so it is not disguised as a shop recommendation. |
+| `/explore?view=map` bottom banner | Product-approved / SDK-required | The map banner appears only when no shop peek/expanded/review sheet is open, avoiding overlap with shop actions. Map floating controls move up only when the banner actually renders. |
+| Interstitial after shop views | Product-approved / Needs sandbox | Frontend counts unique expanded shop-detail views with Apps in Toss Storage and attempts an interstitial after each 5-view milestone. Load/show failure is ignored so browsing is never blocked. Sandbox must verify actual load/show/dismiss behavior. |
+| Rewarded review ad | Product-approved / Backend-required | The frontend is prepared behind `VITE_ENABLE_REVIEW_REWARDED_AD=true`, but it does not grant points. Real compensation requires a server idempotency ledger/API keyed by user, review, and ad reward event metadata. |
+| Runtime verification | Needs sandbox | Local browser cannot prove Toss Ads support flags, banner rendering, full-screen lifecycle, ad impression, or reward-earned events. Use official test ad IDs in Apps in Toss sandbox before enabling real group IDs. |
+
+## Current Explore List Entry Routing Follow-up
+
+Official docs checked on 2026-06-05:
+
+- Back event: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/%EC%9D%B4%EB%B2%A4%ED%8A%B8%20%EC%A0%9C%EC%96%B4/back-event.html
+- ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Initial `/explore?view=list` entry | Product-approved | Home CTA and trend-ranking links now mark direct list entry with `entry=list` plus `returnTo`. The Explore top back action returns to that source route instead of switching to map, because the user did not choose list from the map surface. |
+| Map-to-list view switch | Product-approved | Internal view switching clears the direct-entry marker. After the user explicitly switches from map to list, the list back action can still return to map, preserving the existing mode-toggle mental model. |
+| Runtime verification | Needs sandbox | Local browser can verify URL/routing behavior, but native back parity should be rechecked in Apps in Toss sandbox after upload. |
 
 ## Current Full Route Import Audit
 
@@ -249,7 +293,7 @@ Official docs reused from the current Search/Explore audit because the touched p
 | --- | --- | --- |
 | Shared search field shell | Product-approved | `/search` and `/explore` now share `MapSearchFieldShell` so the route-entry button and editable form keep the same `search-screen-bar map-search-field` structure. This preserves the approved Aniwhere map/list search rhythm while using official SearchField as the behavior reference. |
 | `/search` route shell | Regression fixed / Product-approved | `/search` no longer owns a separate `search-screen search-screen-v2` surface. It now uses the same `map-page-shell`, `map-page-list-mode`, `map-list-view-top`, and `map-results-list-panel` shell as `/explore?view=list`; only the inner input form and pre-search content differ by route purpose. The search-entry state intentionally omits `search-result-head` so the screen does not imply results before a query is submitted. |
-| Routed keyword display | Product-approved / Regression fixed | `/explore?view=list&keyword=:keyword` now displays the routed keyword in the top search field. Home work poster links and recent-history selections therefore arrive in the list route with visible context instead of falling back to placeholder copy. |
+| Routed keyword display | Product-approved / Regression fixed | `/explore?view=list&keyword=:keyword` now displays the routed keyword in the top search field. Search trend links and recent-history selections therefore arrive in the list route with visible context instead of falling back to placeholder copy. |
 | Recent search chips | Product-approved | Recent searches are app-owned removable chips with an adjacent `전체 삭제` action. TDS docs do not expose a dedicated chip primitive in this facade, so the UI uses TDS-compatible tokens and Button-like hit targets. |
 
 ### 2026-05-30 Explore Peek/Nearby Follow-up
@@ -861,6 +905,39 @@ Every route-level TDS PR must include:
 - Commands run.
 - `Needs sandbox` items that cannot be proven locally.
 
+### 2026-06-05 Trend Ranking Follow-up
+
+Official docs checked in the current session:
+
+- Apps in Toss MCP was not available in this Codex session, and `ax` CLI was not on PATH. Official web fallback was used.
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` trend module | Product-approved / TDS-informed / API-required | The old `인기 작품 TOP 20` poster carousel remains removed. Home now owns a compact auto chip rail from `GET /api/v1/rankings/search/entities?window=7d&limit=5`, using rank, label, and a kind chip only. The deployed keyword-only ranking endpoint currently returns an empty item list, so Home uses the populated mixed-entity endpoint. Loading, error, and empty states hide the rail so home does not add placeholder noise. |
+| `/search` trend module | Product-approved / Regression fix | The ranking preview was removed from Search Focus. `/search` now stays focused on input, recent searches, autocomplete, filters, and nearby discovery, while `/home` owns the ranking entry point and `/trends` owns the full board. |
+| Home image policy | Product-approved / Regression fix | Home trend ranking no longer reads or renders work `coverUrl`, external anime poster URLs, `coverImage`, or `bannerImage`. Existing home CTA banner images remain because they are service-owned entry artwork and not work posters. |
+| `/home` review preview | API-required / Product-approved | Swagger does not expose a global latest-review feed. Home therefore removes the recent-review preview entirely instead of using signed-in user reviews to fill the page. User-owned recent reviews remain scoped to `/my`. |
+| `/trends` route | Product-approved / TDS-informed / API-required | `/trends` provides the full `지금 뜨는 애니웨어` Top20 ranking board from the real Rankings API. Tabs map to supported endpoints: mixed entities, works, shops, and search keywords. The header shows only the verified `7일 기준` period and does not invent update timestamps. |
+| Data source | API-required | Mock trend ranking data was removed. The UI now uses the deployed Rankings API fields that actually exist: `rank`, `kind`, `label`/`keyword`, `score`, `eventCount`, `window`, and `sampleSufficient`. Related store counts, category summaries, and rank movement are not rendered until the backend exposes them. |
+| Runtime verification | Needs sandbox | Local build/browser checks can verify layout and routing, but Apps in Toss native safe area, font behavior, and real device tap feedback still need sandbox/device confirmation. |
+
+### 2026-06-05 Trend Ranking Visual Tune
+
+Official docs checked in the current session:
+
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- Toss Securities reference: https://www.tossinvest.com/?focusedProductCode=A000660
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| Ranking board tone | Product-approved / TDS-informed | Trend ranking uses a plain title, fixed right-side metric column, and ListRow-like rows. Decorative emoji/helper copy and unsupported rank-change treatment were removed so the module reads more like a Toss-style ranking board than a campaign card. |
+| Metric motion | Product-approved / Needs sandbox | The right-side activity metric uses a small roll animation on value remount only, with `prefers-reduced-motion` support. Future polling or invalidation can remount the value without animating the full row. |
+
 ### 2026-06-03 Search Autocomplete Follow-up
 
 Official docs checked in the current session with Apps in Toss MCP:
@@ -901,3 +978,62 @@ Official docs checked in the current session:
 | `/admin/shops` taxonomy selector rhythm | Product-approved / TDS-informed | The work-type selector keeps narrowing the work search results rather than becoming a persisted `ShopRequest` field, because the current write contract still sends `workIds` and `categoryIds`. Its visible title is now `작품유형` instead of `작품유형 필터`, and it reuses the same rounded selection-chip pattern as category selection. |
 | `/explore` taxonomy display | Product-approved / API-required | `Shop.works` still lacks `type` in the deployed Swagger, so Explore enriches shop summaries from the `GET /api/v1/works` catalog by work id and also accepts a future optional `Shop.works[].type`. List cards and the detail title chips show compact `작품유형: 애니메이션/게임` chips after category chips; the information tab renames `취급 정보` to `카테고리` and adds a separate `작품유형` row. |
 | Runtime verification | Needs sandbox | Source tests prove the API/type wiring and source-level UI contracts. Real Apps in Toss WebView should still confirm chip wrapping and list-card density at 375px after server deployment. |
+
+### 2026-06-07 Home Auto Chip Rail Revision
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- Apps in Toss Storage: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/저장소/Storage.md
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` auto chip rail | Product-approved / TDS-informed / API-required | Home replaces the large ranking board preview with an auto-scrolling Top5 chip rail directly below the search entry. Each chip uses only verified ranking API fields: rank, label, and kind. The rail duplicates the visual track for continuous motion, pauses on hover/focus, respects reduced-motion, links to Explore with `returnTo=/home`, and does not expose `/trends` as a continuation. |
+| Trend entry routing | Product-approved / API-required | Trend links include `rankingEntry=trend` so Explore can avoid recording a second popularity event from ranking clicks. Home chip rail and Search autocomplete navigate like search suggestions: Work chips pass `scope=work&keyword=:label`, Shop chips pass `scope=shop&keyword=:label`, and neither path writes `workId`, `shopId`, or `sheet=expanded` into the URL. Those IDs are reserved for event payloads only, because `workId` is a shop facet filter and would light the filter badge. Client popularity event recording is disabled while deployed `POST /api/v1/popularity/events` returns `403`. |
+| `/search` facet handoff | Regression fix / Product-approved | Search submit, recent-search taps, autocomplete taps, and Explore's search entry now start a fresh Search/Explore search without stale facet params. Filter params are sent only when the user explicitly applies the Search filter sheet; previous Explore state is preserved only inside `returnTo`. |
+| `/home` recent viewed shops | Product-approved / TDS-informed / Needs sandbox | Home adds a bottom compact ListRow-like `recent viewed` section fed by Apps in Toss native `Storage`. It stores only shops whose Explore detail sheet was expanded, shows at most three rows, hides loading/error/empty states, and does not use photos, fake counts, popularity labels, or browser `localStorage`. |
+| `/home` recent reviews | API-required / Product-approved | The recent-review preview was removed because Swagger does not expose a global latest-review feed. User-owned recent reviews remain available from `/my`; Home does not fetch `GET /api/v1/users/me/reviews` just to fill empty space. |
+| `/home1` mock route | Product-approved / Cleanup | The temporary `/home1` mockup route, page, tests, and CSS were removed after the Home direction was folded back into `/home`. |
+| Runtime verification | Needs sandbox | Local tests/build/browser can verify 375px layout and route behavior; Apps in Toss safe-area/font/tap feedback still needs sandbox/device confirmation. |
+
+### 2026-06-07 Explore Result Header Spacing Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Typography: https://tossmini-docs.toss.im/tds-mobile/foundation/typography/
+- TDS SearchField: https://tossmini-docs.toss.im/tds-mobile/components/search-field/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/explore` full-list filter/header order | Product-approved / TDS-informed | The full-list result surface now places applied filter chips above the `매장목록 n곳` heading so selected conditions read as search state before the result summary. The list panel also adds tokenized top padding to keep the heading from sitting too close to the search bar when no chips are present, and uses a weak tokenized bottom divider under the heading to separate the result summary from the card list without adding another heavy surface. |
+| Runtime verification | Needs sandbox | Source tests and build can verify the DOM/CSS contract; Apps in Toss safe-area and native font rhythm still need device confirmation. |
+
+### 2026-06-07 Home Recent Viewed And Ranking Toggle Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS ListRow overview: https://tossmini-docs.toss.im/tds-mobile/components/ListRow/list-row-overview/
+- TDS Button: https://tossmini-docs.toss.im/tds-mobile/components/button/
+- TDS Badge: https://tossmini-docs.toss.im/tds-mobile/components/badge/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` recent viewed shops | Product-approved / TDS-informed | The section label is now `최근 둘러본 매장이에요`. Rows use a compact one-line ListRow-like rhythm: favorite heart state, shop name, and relative viewed date. Region and category copy were removed from the visible row to avoid a two-line admin-list feel and unsupported taxonomy emphasis. |
+| `/home` ranking preview | Product-approved / TDS-informed / API-required | The auto chip rail remains the default first impression, but a small `순위 보기` control lets users switch the same Top5 data into a compact ranking list. The list uses only verified ranking API fields: rank, label, and kind, then can collapse back to the auto rail. |
+| Runtime verification | Needs sandbox | Source tests and local build can verify layout and routing; Apps in Toss safe-area, font rhythm, and touch behavior still need device confirmation. |
+
+### 2026-06-07 UTC Home Ad And Review TextArea Follow-up
+
+Official docs checked with Apps in Toss MCP in the current session:
+
+- TDS TextArea: https://tossmini-docs.toss.im/tds-mobile/components/TextField/text-area/
+
+| Area | Current classification | Notes |
+| --- | --- | --- |
+| `/home` banner ad placement | Regression fix / Product-approved | The home banner ad moved out of the trend preview and now renders as the last main content item so it behaves as the true bottom ad slot. |
+| `/explore` review textarea | Regression fix / TDS-informed | Review content under 10 trimmed characters now marks the counter as `최소 10자 · n/800자` in red. The textarea font size is fixed at 16px to avoid iOS/WebView focus zoom residue while keeping the existing fixed-height TextArea layout. |
+| Runtime verification | Needs sandbox | Source tests, lint, and build can verify code contracts. The input zoom residue and ad placement still need real device confirmation. |

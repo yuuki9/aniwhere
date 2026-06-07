@@ -14,7 +14,7 @@ const appCssSource = () =>
 
 const cssRuleBodies = (css: string, selector: string) => {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const matches = css.matchAll(new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\}`, 'g'))
+  const matches = css.matchAll(new RegExp(`(?:^|\\})\\s*${escaped}\\s*\\{([\\s\\S]*?)\\}`, 'g'))
 
   return Array.from(matches, (match) => match[1])
 }
@@ -36,8 +36,9 @@ test('SearchPage is an input route that sends submitted searches to the explore 
   assert.match(source, /return `\/explore\?\$\{next\.toString\(\)\}`/)
   assert.match(source, /function readSafeReturnTo/)
   assert.match(source, /submitSearchToExplore\(keyword\)/)
-  assert.match(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope, selectedFilters \}\)\)/)
-  assert.doesNotMatch(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope, selectedFilters \}\), \{ replace: true \}\)/)
+  assert.match(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope \}\)\)/)
+  assert.doesNotMatch(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope, selectedFilters, workId: selectedSuggestion\?\.workId \}\)/)
+  assert.doesNotMatch(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope, workId: selectedSuggestion\?\.workId \}\), \{ replace: true \}\)/)
   assert.match(source, /pushRecentSearchEntry\(trimmed, recentKind\)/)
   assert.doesNotMatch(source, /getShops/)
   assert.doesNotMatch(source, /search-page-results/)
@@ -152,6 +153,33 @@ test('SearchPage recent searches and nearby CTA remain the pre-search content', 
   assert.match(source, /className="search-location-image"/)
   assert.match(source, /src=\{searchLocationGuideUrl\}/)
   assert.match(source, /\{isComposingSearch \? \(/)
+  assert.doesNotMatch(source, /SearchTrendSection/)
+  assert.doesNotMatch(source, /SearchTrendRow/)
+  assert.doesNotMatch(source, /getMixedEntityRankings/)
+  assert.doesNotMatch(source, /buildTrendPreviewItems/)
+  assert.doesNotMatch(source, /normalizeMixedEntityRankingItem/)
+  assert.doesNotMatch(source, /trendRankingQuery/)
+  assert.doesNotMatch(source, /to="\/trends"/)
+})
+
+test('SearchPage clears stale facets on search submit while filter apply keeps chosen facets', () => {
+  const source = searchPageSource()
+
+  assert.match(source, /selectedFilters\?: ShopFilters/)
+  assert.match(source, /selectedFilters \? writeShopFilters\(new URLSearchParams\(\), selectedFilters\) : new URLSearchParams\(\)/)
+  assert.match(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope \}\)\)/)
+  assert.doesNotMatch(source, /next\.set\('workId', String\(workId\)\)/)
+  assert.match(source, /navigate\(buildExploreSearchHref\(\{ keyword, scope: currentSearchScope, selectedFilters: nextFilters \}\), \{ replace: true \}\)/)
+})
+
+test('SearchPage does not own the ranking board entry point', () => {
+  const source = searchPageSource()
+  const styles = appCssSource()
+
+  assert.doesNotMatch(source, /지금 뜨는 애니웨어|지금 뜨는 검색/)
+  assert.doesNotMatch(source, /trend-ranking-card/)
+  assert.doesNotMatch(source, /trend-ranking-row/)
+  assert.doesNotMatch(styles, /\.search-trend-section/)
 })
 
 test('SearchPage folds matching recent searches into the composing autocomplete panel', () => {
@@ -177,7 +205,7 @@ test('SearchPage shows server autocomplete suggestions for shops and works', () 
   assert.match(source, /import \{ getSearchAutocomplete \} from '\.\.\/shared\/api\/search'/)
   assert.match(source, /useQuery/)
   assert.match(source, /queryKey: \['search-autocomplete', currentSearchScope, compactKeyword\]/)
-  assert.match(source, /const autocompleteScopes = currentSearchScope === 'work' \? \['work', 'shop'\] : \['shop', 'work'\]/)
+  assert.match(source, /const autocompleteScopes: SearchScope\[\] = currentSearchScope === 'work' \? \['work', 'shop'\] : \['shop', 'work'\]/)
   assert.match(source, /Promise\.allSettled\([\s\S]*autocompleteScopes\.map\(\(scope\) => getSearchAutocomplete\(\{ q: compactKeyword, scope, limit: 5 \}\)\),[\s\S]*\)/)
   assert.match(source, /if \(result\.status !== 'fulfilled'\) \{[\s\S]*return \[\][\s\S]*\}/)
   assert.match(source, /result\.value\.items\.map\(\(item\) => \(\{ \.\.\.item, scope \}\)\)/)
@@ -201,7 +229,7 @@ test('SearchPage shows server autocomplete suggestions for shops and works', () 
   assert.match(source, /return kind === 'WORK' \? 18 : 20/)
   assert.doesNotMatch(source, /className="search-autocomplete-kind"/)
   assert.doesNotMatch(source, /className="search-autocomplete-helper"/)
-  assert.match(source, /onClick=\{\(\) => submitSearchToExplore\(item\.label, item\.scope, item\.kind === 'WORK' \? 'work' : 'shop'\)\}/)
+  assert.match(source, /onClick=\{\(\) =>\s*submitSearchToExplore\(item\.label, item\.scope, item\.kind === 'WORK' \? 'work' : 'shop', item\)\s*\}/)
   assert.match(source, /'작품명'/)
   assert.match(source, /'매장명'/)
   assert.doesNotMatch(source, /'작품명 검색'/)
@@ -213,10 +241,10 @@ test('SearchPage shows server autocomplete suggestions for shops and works', () 
 test('SearchPage sends clicked work suggestions through work search scope', () => {
   const source = searchPageSource()
 
-  assert.match(source, /const submitSearchToExplore = \(nextKeyword: string, nextScope: SearchScope = 'shop', recentKind\?: RecentSearchKind\) => \{/)
+  assert.match(source, /const submitSearchToExplore = \([\s\S]*nextKeyword: string,[\s\S]*nextScope: SearchScope = 'shop',[\s\S]*recentKind\?: RecentSearchKind,[\s\S]*selectedSuggestion\?: SearchAutocompleteSuggestion,[\s\S]*\) => \{/)
   assert.match(source, /submitSearchToExplore\(keyword\)/)
-  assert.match(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope, selectedFilters \}\)\)/)
-  assert.match(source, /onClick=\{\(\) => submitSearchToExplore\(item\.label, item\.scope, item\.kind === 'WORK' \? 'work' : 'shop'\)\}/)
+  assert.match(source, /navigate\(buildExploreSearchHref\(\{ keyword: trimmed, scope: nextScope \}\)\)/)
+  assert.match(source, /onClick=\{\(\) =>\s*submitSearchToExplore\(item\.label, item\.scope, item\.kind === 'WORK' \? 'work' : 'shop', item\)\s*\}/)
 })
 
 test('SearchPage autocomplete panel keeps compact ListRow-like mobile rhythm', () => {
@@ -275,7 +303,7 @@ test('SearchPage recent search and empty location copy use compact mobile text r
   assert.match(historyChipKindRule, /border-radius:\s*var\(--ait-radius-full\);/)
   assert.match(historyChipKindRule, /font-size:\s*var\(--ait-font-size-caption\);/)
   assert.match(historyChipTextRule, /text-overflow:\s*ellipsis;/)
-  assert.match(historyChipRemoveRule, /font-size:\s*12px;/)
+  assert.match(historyChipRemoveRule, /font-size:\s*var\(--ait-font-size-caption\);/)
   assert.match(precontentRule, /gap:\s*var\(--ait-space-12\);/)
   assert.match(locationCardRule, /justify-content:\s*center;/)
   assert.match(locationCardRule, /min-height:\s*340px;/)

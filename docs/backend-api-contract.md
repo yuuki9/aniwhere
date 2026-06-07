@@ -41,7 +41,7 @@ When the backend contract changes:
 - `POST /api/v1/popularity/events` records search/discovery popularity events for authenticated users. Supported `type` values: `SEARCH_AUTOCOMPLETE_SELECTED`, `SEARCH_KEYWORD_SUBMITTED`, `DISCOVERY_WORK_EXPLORE_ENTERED`, `DISCOVERY_RESULT_CLICKED`. Duplicate events from the same user/target within 5 minutes are ignored. Returns `204 No Content`.
 - `GET /api/v1/rankings/shops` and `GET /api/v1/rankings/works` return popularity rankings with `window=7d|24h` (default `7d`) and `limit`.
 - `GET /api/v1/rankings/search/keywords` returns top search keywords (default `limit=10`).
-- `GET /api/v1/rankings/search/entities` returns a mixed shop/work top list (default `limit=10`). Ranking responses include `window`, `sampleSufficient`, and `items` with `rank`, `score`, and `eventCount`.
+- `GET /api/v1/rankings/search/entities` returns a mixed shop/work/keyword top list (default `limit=10`). Ranking responses include `window`, `sampleSufficient`, and `items` with `rank`, `kind`, `score`, and `eventCount`.
 - `GET /api/v1/shops/nearby` accepts required `lat` and `lng` query params and returns `Shop[]` for the server-defined 1km nearby search.
 - `GET /api/v1/shops` keeps compatibility for both `category` (name filter) and `categoryIds[]` (ID filter); when both are present, both filters are applied.
 - `ShopRequest` sends `categoryIds` and `workIds` arrays for create/update.

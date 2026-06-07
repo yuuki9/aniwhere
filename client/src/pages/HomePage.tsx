@@ -4,16 +4,24 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-banner.png'
 import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.png'
 import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
-import { getWorks } from '../shared/api/works'
+import { getMixedEntityRankings } from '../shared/api/rankings'
 import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
+import { readRecentViewedShops, type RecentViewedShop } from '../shared/lib/recentViewedShops'
 import { SHOP_SEARCH_PLACEHOLDER } from '../shared/lib/searchCopy'
+import { TossBannerAd } from '../shared/ui/TossBannerAd'
 import { Toast } from '@aniwhere/tds-mobile'
 import {
+  buildRecentViewedShopHref,
   buildHomeCtaCards,
-  buildHomeWorkPreviewItems,
   type HomeCtaCard,
-  type HomeWorkPreviewItem,
 } from './homeViewModel'
+import {
+  buildTrendExploreHref,
+  buildTrendPreviewItems,
+  formatTrendKindLabel,
+  normalizeMixedEntityRankingItem,
+  type TrendRankingItem,
+} from './trendRankingViewModel'
 
 const HOME_CTA_IMAGES: Record<HomeCtaCard['id'], string> = {
   map: homeCtaNearbyBannerImage,
@@ -63,6 +71,134 @@ function HomeSearchEntry({ onSearch }: { onSearch: () => void }) {
   )
 }
 
+function HomeTrendChip({ item, inert = false }: { item: TrendRankingItem; inert?: boolean }) {
+  const content = (
+    <>
+      <span className="home-trend-chip-rank" aria-hidden="true">
+        {item.rank}
+      </span>
+      <span className="home-trend-chip-label">{item.label}</span>
+      <span className="home-trend-chip-kind">{formatTrendKindLabel(item.kind)}</span>
+    </>
+  )
+
+  if (inert) {
+    return (
+      <span className="home-trend-chip" aria-hidden="true">
+        {content}
+      </span>
+    )
+  }
+
+  return (
+    <Link
+      aria-label={`${item.label} 관련 매장 검색 결과 보기`}
+      className="home-trend-chip"
+      to={buildTrendExploreHref(item, { returnTo: '/home' })}
+    >
+      {content}
+    </Link>
+  )
+}
+
+function HomeTrendRankRow({ item }: { item: TrendRankingItem }) {
+  return (
+    <Link className="home-trend-rank-row" to={buildTrendExploreHref(item, { returnTo: '/home' })}>
+      <span className="home-trend-rank-number">{item.rank}</span>
+      <span className="home-trend-rank-label">{item.label}</span>
+      <span className="home-trend-rank-kind">{formatTrendKindLabel(item.kind)}</span>
+    </Link>
+  )
+}
+
+function HomeTrendChipRail({ items }: { items: TrendRankingItem[] }) {
+  const [viewMode, setViewMode] = useState<'rail' | 'list'>('rail')
+
+  return (
+    <section className="home-trend-section" aria-label="추천 검색어">
+      {viewMode === 'rail' ? (
+        <div className="home-trend-rail-row">
+          <div className="home-trend-chip-rail">
+            <div className="home-trend-chip-track">
+              {items.map((item) => (
+                <HomeTrendChip key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
+              ))}
+            </div>
+            <div className="home-trend-chip-track" aria-hidden="true">
+              {items.map((item) => (
+                <HomeTrendChip
+                  key={`ghost-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`}
+                  item={item}
+                  inert
+                />
+              ))}
+            </div>
+          </div>
+          <button className="home-trend-toggle-button" type="button" onClick={() => setViewMode('list')}>
+            순위 보기
+          </button>
+        </div>
+      ) : (
+        <div className="home-trend-rank-panel">
+          <div className="home-trend-rank-head">
+            <span>인기 검색어</span>
+            <button className="home-trend-toggle-button" type="button" onClick={() => setViewMode('rail')}>
+              접기
+            </button>
+          </div>
+          <div className="home-trend-rank-list">
+            {items.map((item) => (
+              <HomeTrendRankRow key={`rank-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function formatRecentViewedAt(viewedAt: string) {
+  const viewedTime = new Date(viewedAt).getTime()
+  if (!Number.isFinite(viewedTime)) {
+    return '최근 봄'
+  }
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const viewedDate = new Date(viewedTime)
+  const viewedDay = new Date(viewedDate.getFullYear(), viewedDate.getMonth(), viewedDate.getDate()).getTime()
+  const dayDiff = Math.max(0, Math.floor((today - viewedDay) / 86_400_000))
+
+  if (dayDiff === 0) {
+    return '오늘 봄'
+  }
+
+  if (dayDiff === 1) {
+    return '어제 봄'
+  }
+
+  if (dayDiff < 30) {
+    return `${dayDiff}일 전 봄`
+  }
+
+  return `${viewedDate.getFullYear().toString().slice(2)}.${String(viewedDate.getMonth() + 1).padStart(2, '0')}.${String(
+    viewedDate.getDate(),
+  ).padStart(2, '0')} 봄`
+}
+
+function HomeRecentViewedHeartIcon({ isFavorite }: { isFavorite: boolean }) {
+  return (
+    <svg
+      className="home-recent-viewed-heart"
+      data-favorite={isFavorite ? 'true' : 'false'}
+      aria-label={isFavorite ? '찜한 매장' : '찜하지 않은 매장'}
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 20s-7-4.4-9.2-8.2C1.2 9 2.1 5.5 5.3 4.5c1.8-.6 3.7.1 4.8 1.5L12 8.2 13.9 6c1.1-1.4 3-2.1 4.8-1.5 3.2 1 4.1 4.5 2.5 7.3C19 15.6 12 20 12 20Z" />
+    </svg>
+  )
+}
+
 function HomeCtaBannerBody({ card }: { card: HomeCtaCard }) {
   return (
     <>
@@ -107,6 +243,25 @@ function HomeCtaBannerList({ cards }: { cards: HomeCtaCard[] }) {
   )
 }
 
+function HomeRecentViewedSection({ shops }: { shops: RecentViewedShop[] }) {
+  return (
+    <section className="home-recent-viewed-section" aria-labelledby="home-recent-viewed-title">
+      <div className="home-section-head">
+        <h2 id="home-recent-viewed-title">최근 둘러본 매장이에요</h2>
+      </div>
+      <div className="home-recent-viewed-list">
+        {shops.map((shop) => (
+          <Link className="home-recent-viewed-row" key={shop.id} to={buildRecentViewedShopHref(shop.id)}>
+            <HomeRecentViewedHeartIcon isFavorite={shop.isFavorite} />
+            <span className="home-recent-viewed-name">{shop.name}</span>
+            <span className="home-recent-viewed-date">{formatRecentViewedAt(shop.viewedAt)}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function HomeAdminEntry() {
   return (
     <section className="home-admin-entry-section" aria-label="관리자 메뉴">
@@ -123,106 +278,24 @@ function HomeAdminEntry() {
   )
 }
 
-function HomePendingCard({ title, description }: { title: string; description: string }) {
-  return (
-    <article className="home-pending-card">
-      <strong>{title}</strong>
-      <small>{description}</small>
-    </article>
-  )
-}
-
-function buildHomeWorkSearchHref(workName: string) {
-  const params = new URLSearchParams()
-  params.set('view', 'list')
-  params.set('scope', 'work')
-  params.set('keyword', workName)
-
-  return `/explore?${params.toString()}`
-}
-
-function HomeWorkPosterCard({ work }: { work: HomeWorkPreviewItem }) {
-  return (
-    <Link
-      aria-label={`${work.name} 취급 매장 보기`}
-      className="home-work-poster-card"
-      to={buildHomeWorkSearchHref(work.name)}
-    >
-      <span className="home-work-poster-art">
-        {work.coverUrl ? (
-          <img alt="" aria-hidden="true" src={work.coverUrl} />
-        ) : (
-          <span className="home-work-poster-empty" aria-hidden="true">
-            {work.name.slice(0, 1)}
-          </span>
-        )}
-        <span className="home-work-poster-badge">{work.badgeLabel}</span>
-        <span className="home-work-poster-rank" data-rank-length={String(work.rank).length} aria-hidden="true">
-          {work.rank}
-        </span>
-      </span>
-      <strong className="home-work-poster-title">{work.name}</strong>
-      {work.subtitle ? <small className="home-work-poster-subtitle">{work.subtitle}</small> : null}
-    </Link>
-  )
-}
-
-function HomeIssueSection({ works, isLoading, isError }: {
-  works: HomeWorkPreviewItem[]
-  isLoading: boolean
-  isError: boolean
-}) {
-  return (
-    <section aria-labelledby="home-issues-title" className="home-issue-section" id="home-issues">
-      <div className="home-section-head">
-        <h2 id="home-issues-title">인기 작품 TOP 20</h2>
-      </div>
-      {isLoading ? <HomePendingCard title="작품을 불러오는 중이에요" description="잠시만 기다려 주세요." /> : null}
-      {isError ? <HomePendingCard title="작품을 불러오지 못했어요" description="검색으로 매장을 계속 찾을 수 있어요." /> : null}
-      {!isLoading && !isError && works.length === 0 ? (
-        <HomePendingCard title="연결된 작품이 아직 없어요" description="확인된 작품부터 보여드릴게요." />
-      ) : null}
-      {works.length > 0 ? (
-        <div className="home-work-poster-rail">
-          <div className="home-work-poster-carousel" aria-label="작품 포스터 가로 스크롤">
-            {works.map((work) => (
-              <HomeWorkPosterCard key={work.id} work={work} />
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </section>
-  )
-}
-
-function HomeReviewPreviewSection() {
-  return (
-    <section aria-labelledby="home-review-preview-title" className="home-review-preview-section">
-      <div className="home-section-head">
-        <h2 id="home-review-preview-title">방문 리뷰</h2>
-      </div>
-      <HomePendingCard
-        title="매장별 리뷰로 정리 중이에요"
-        description="리뷰는 각 매장 상세 화면의 리뷰 탭에서 확인할 수 있어요."
-      />
-    </section>
-  )
-}
-
 export function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [welcomeProfile, setWelcomeProfile] = useState(() => readWelcomeProfile(location.state))
+  const [recentViewedShops, setRecentViewedShops] = useState<RecentViewedShop[]>([])
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
   const canEnterAdmin = useMemo(() => import.meta.env.DEV || isAdminRole(readAuthSession()?.role), [])
-  const worksQuery = useQuery({
-    queryKey: ['works', 'home-preview'],
-    queryFn: getWorks,
-    staleTime: 1000 * 60 * 10,
+  const trendRankingQuery = useQuery({
+    queryKey: ['rankings', 'home-search-entities', '7d', 5],
+    queryFn: () => getMixedEntityRankings({ window: '7d', limit: 5 }),
+    staleTime: 30_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   })
-  const workItems = useMemo(
-    () => buildHomeWorkPreviewItems(worksQuery.data ?? []),
-    [worksQuery.data],
+  const trendItems = useMemo(
+    () => buildTrendPreviewItems((trendRankingQuery.data?.items ?? []).map(normalizeMixedEntityRankingItem), 5),
+    [trendRankingQuery.data?.items],
   )
 
   useEffect(() => {
@@ -232,6 +305,20 @@ export function HomePage() {
 
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
   }, [location.pathname, location.search, navigate, welcomeProfile])
+
+  useEffect(() => {
+    let ignore = false
+
+    void readRecentViewedShops().then((shops) => {
+      if (!ignore) {
+        setRecentViewedShops(shops.slice(0, 3))
+      }
+    })
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   return (
     <main className="app-shell discover-shell">
@@ -247,9 +334,10 @@ export function HomePage() {
       />
       {canEnterAdmin ? <HomeAdminEntry /> : null}
       <HomeSearchEntry onSearch={() => navigate('/search')} />
+      {trendItems.length > 0 ? <HomeTrendChipRail items={trendItems} /> : null}
       <HomeCtaBannerList cards={ctaCards} />
-      <HomeIssueSection works={workItems} isLoading={worksQuery.isLoading} isError={worksQuery.isError} />
-      <HomeReviewPreviewSection />
+      {recentViewedShops.length > 0 ? <HomeRecentViewedSection shops={recentViewedShops} /> : null}
+      <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" />
     </main>
   )
 }

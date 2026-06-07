@@ -19,6 +19,7 @@ import {
   PostDetailPage,
   SearchPage,
   ShopRouteRedirect,
+  TrendsPage,
 } from './lazyRouteComponents'
 
 function routeElement(element: ReactNode) {
@@ -61,6 +62,10 @@ export const router = createBrowserRouter([
       {
         path: 'community',
         element: routeElement(<CommunityPage />),
+      },
+      {
+        path: 'trends',
+        element: routeElement(<TrendsPage />),
       },
     ],
   },

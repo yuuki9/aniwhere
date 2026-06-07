@@ -2,6 +2,7 @@ import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, us
 import { useQuery } from '@tanstack/react-query'
 import { Asset } from '@aniwhere/tds-mobile'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { recordPopularityEventSafely } from '../shared/api/popularity'
 import { getSearchAutocomplete } from '../shared/api/search'
 import type { SearchAutocompleteItem, SearchAutocompleteKind, SearchAutocompleteScope } from '../shared/api/types'
 import { requestCurrentLocation } from '../shared/lib/location'
@@ -34,6 +35,10 @@ type SearchAutocompleteGroup = {
   items: SearchAutocompleteSuggestion[]
 }
 
+function toPopularityScope(scope: SearchScope) {
+  return scope === 'work' ? 'WORK' : 'SHOP'
+}
+
 function readSafeReturnTo(value: string | null) {
   return value?.startsWith('/') && !value.startsWith('//') ? value : null
 }
@@ -45,10 +50,10 @@ function buildExploreSearchHref({
 }: {
   keyword: string
   scope: SearchScope
-  selectedFilters: ShopFilters
+  selectedFilters?: ShopFilters
 }) {
   const trimmed = keyword.trim()
-  const next = writeShopFilters(new URLSearchParams(), selectedFilters)
+  const next = selectedFilters ? writeShopFilters(new URLSearchParams(), selectedFilters) : new URLSearchParams()
 
   next.set('view', 'list')
 
@@ -111,7 +116,7 @@ export function SearchPage() {
   const compactKeyword = keyword.trim()
   const normalizedCompactKeyword = compactKeyword.toLocaleLowerCase()
   const isComposingSearch = compactKeyword.length > 0
-  const autocompleteScopes = currentSearchScope === 'work' ? ['work', 'shop'] : ['shop', 'work']
+  const autocompleteScopes: SearchScope[] = currentSearchScope === 'work' ? ['work', 'shop'] : ['shop', 'work']
   const autocompleteQuery = useQuery<SearchAutocompleteSuggestion[]>({
     queryKey: ['search-autocomplete', currentSearchScope, compactKeyword],
     queryFn: async () => {
@@ -152,14 +157,35 @@ export function SearchPage() {
     setIsFilterSheetOpen(false)
   }, [])
 
-  const submitSearchToExplore = (nextKeyword: string, nextScope: SearchScope = 'shop', recentKind?: RecentSearchKind) => {
+  const submitSearchToExplore = (
+    nextKeyword: string,
+    nextScope: SearchScope = 'shop',
+    recentKind?: RecentSearchKind,
+    selectedSuggestion?: SearchAutocompleteSuggestion,
+  ) => {
     const trimmed = nextKeyword.trim()
 
     if (trimmed) {
       setRecentSearches(pushRecentSearchEntry(trimmed, recentKind))
     }
 
-    navigate(buildExploreSearchHref({ keyword: trimmed, scope: nextScope, selectedFilters }))
+    if (trimmed && selectedSuggestion == null) {
+      recordPopularityEventSafely({
+        type: 'SEARCH_KEYWORD_SUBMITTED',
+        keyword: trimmed,
+        scope: toPopularityScope(nextScope),
+      })
+    }
+
+    if (selectedSuggestion?.shopId != null || selectedSuggestion?.workId != null) {
+      recordPopularityEventSafely({
+        type: 'SEARCH_AUTOCOMPLETE_SELECTED',
+        ...(selectedSuggestion.shopId != null ? { shopId: selectedSuggestion.shopId } : {}),
+        ...(selectedSuggestion.workId != null ? { workId: selectedSuggestion.workId } : {}),
+      })
+    }
+
+    navigate(buildExploreSearchHref({ keyword: trimmed, scope: nextScope }))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -305,7 +331,9 @@ export function SearchPage() {
                             <button
                               className="search-autocomplete-item"
                               type="button"
-                              onClick={() => submitSearchToExplore(item.label, item.scope, item.kind === 'WORK' ? 'work' : 'shop')}
+                              onClick={() =>
+                                submitSearchToExplore(item.label, item.scope, item.kind === 'WORK' ? 'work' : 'shop', item)
+                              }
                             >
                               <span className="search-autocomplete-item-main">
                                 <SearchAutocompleteLeadingIcon kind={item.kind} />
@@ -320,17 +348,14 @@ export function SearchPage() {
                 </section>
               ) : (
                 <>
-                  <section className="search-history-section">
-                    <div className="search-history-head">
-                      <strong>최근 검색어</strong>
-                      {recentSearches.length > 0 ? (
+                  {recentSearches.length > 0 ? (
+                    <section className="search-history-section">
+                      <div className="search-history-head">
+                        <strong>최근 검색어</strong>
                         <button className="search-history-clear-all" type="button" onClick={clearAllRecentSearches}>
                           전체 삭제
                         </button>
-                      ) : null}
-                    </div>
-
-                    {recentSearches.length > 0 ? (
+                      </div>
                       <div className="search-history-chip-list">
                         {recentSearches.map((item) => (
                           <span className="search-history-chip" key={`${item.kind ?? 'keyword'}-${item.keyword}`}>
@@ -353,13 +378,8 @@ export function SearchPage() {
                           </span>
                         ))}
                       </div>
-                    ) : (
-                      <div className="search-history-empty">
-                        <strong>최근 검색 기록이 없습니다.</strong>
-                        <small>매장, 지역, 작품 이름으로 찾을 수 있어요.</small>
-                      </div>
-                    )}
-                  </section>
+                    </section>
+                  ) : null}
 
                   <section className="search-location-card" aria-labelledby="search-location-title">
                     <div className="search-location-visual" aria-hidden="true">

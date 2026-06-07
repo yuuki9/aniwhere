@@ -41,6 +41,11 @@
   --map-overlay-bottom: calc(100dvh - var(--map-list-sheet-top) + var(--ait-space-6));
 }
 
+.map-surface-app-v2.map-surface-map-ad-visible {
+  --map-control-bottom: 206px;
+  --map-overlay-bottom: 226px;
+}
+
 .map-surface-sheet-expanded .map-zoom-control,
 .map-surface-sheet-expanded .map-location-fab,
 .map-surface-sheet-review .map-zoom-control,
@@ -499,7 +504,7 @@
 }
 
 .map-results-sheet-top .applied-filter-chip-rail {
-  margin-top: calc(var(--ait-space-2) * -1);
+  margin-top: 0;
 }
 
 .map-location-fab {
@@ -1367,10 +1372,23 @@
   gap: var(--ait-space-6);
   min-height: 0;
   overflow: hidden;
-  padding: 0 12px max(20px, calc(env(safe-area-inset-bottom) + 16px));
+  padding: var(--ait-space-4) 12px max(20px, calc(env(safe-area-inset-bottom) + 16px));
   border: 0;
   border-radius: 0;
   background: var(--ait-color-surface-raised);
+}
+
+.map-results-ad-banner {
+  flex: 0 0 auto;
+}
+
+.map-ad-banner-floating {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
+  z-index: 1055;
+  pointer-events: auto;
 }
 
 .map-list-view .map-list-fab {
@@ -1389,7 +1407,9 @@
 
 .map-results-list-panel .search-result-head {
   margin-bottom: 0;
+  padding-bottom: var(--ait-space-6);
   padding-inline: var(--ait-space-1);
+  border-bottom: 1px solid var(--ait-color-border);
 }
 
 .map-results-sheet-list.search-route-precontent {
@@ -2189,7 +2209,7 @@
   background: transparent;
   color: var(--ait-color-brand-pressed);
   font: inherit;
-  font-size: var(--ait-font-size-body-md);
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.45;
   text-align: left;
@@ -2998,6 +3018,10 @@
   font-weight: 800;
   line-height: var(--ait-line-height-body);
   pointer-events: none;
+}
+
+.map-review-content-counter-warning {
+  color: var(--ait-color-red-700);
 }
 
 .map-review-file-input {
@@ -4550,7 +4574,7 @@
 
   .map-results-list-panel {
     gap: var(--ait-space-5);
-    padding: 0 12px max(18px, calc(env(safe-area-inset-bottom) + 14px));
+    padding: var(--ait-space-4) 12px max(18px, calc(env(safe-area-inset-bottom) + 14px));
   }
 
   .map-sheet-sticky-header {
