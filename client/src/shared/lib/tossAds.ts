@@ -31,6 +31,12 @@ const TEST_AD_GROUP_IDS: Record<TossAdKind, string> = {
   rewarded: 'ait-ad-test-rewarded-id',
 }
 
+const DEFAULT_AD_GROUP_IDS: Record<TossAdKind, string> = {
+  banner: 'ait.v2.live.c081b1ff483d4815',
+  interstitial: 'ait.v2.live.f9baf4bc925644c4',
+  rewarded: 'ait.v2.live.7a44e77025474da9',
+}
+
 const AD_GROUP_ENV_KEYS: Record<TossAdKind, string> = {
   banner: 'VITE_TOSS_AD_BANNER_GROUP_ID',
   interstitial: 'VITE_TOSS_AD_INTERSTITIAL_GROUP_ID',
@@ -43,7 +49,7 @@ export function getEnvValue(key: string) {
 }
 
 export function getTossAdGroupId(kind: TossAdKind) {
-  return getEnvValue(AD_GROUP_ENV_KEYS[kind]) ?? (import.meta.env.DEV ? TEST_AD_GROUP_IDS[kind] : null)
+  return getEnvValue(AD_GROUP_ENV_KEYS[kind]) ?? (import.meta.env.DEV ? TEST_AD_GROUP_IDS[kind] : DEFAULT_AD_GROUP_IDS[kind])
 }
 
 export function isSupported(check: () => boolean) {
