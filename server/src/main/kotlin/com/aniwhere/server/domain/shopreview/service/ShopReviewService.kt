@@ -6,6 +6,7 @@ import com.aniwhere.server.common.exception.ForbiddenException
 import com.aniwhere.server.domain.auth.port.out.AuthPersistencePort
 import com.aniwhere.server.domain.shop.model.ImageUploadPart
 import com.aniwhere.server.domain.shop.service.ShopImagePayloadValidator
+import com.aniwhere.server.domain.shopreview.model.RecentShopReview
 import com.aniwhere.server.domain.shopreview.model.ReviewImageKeys
 import com.aniwhere.server.domain.shopreview.model.ShopReview
 import com.aniwhere.server.domain.shopreview.model.ShopReviewSort
@@ -41,6 +42,18 @@ class ShopReviewService(
         if (!port.existsShop(shopId)) throw EntityNotFoundException("Shop not found: $shopId")
         val page = port.findVisibleByShopId(shopId, sort.toPageable(pageable))
         return enrichWithLikeState(page, viewerUserId)
+    }
+
+    override fun listRecentReviews(limit: Int, viewerUserId: Long?): List<RecentShopReview> {
+        val resolvedLimit = limit.coerceIn(
+            ShopReviewUseCase.MIN_RECENT_REVIEW_LIMIT,
+            ShopReviewUseCase.MAX_RECENT_REVIEW_LIMIT,
+        )
+        val reviews = enrichListWithLikeState(port.findRecentVisible(resolvedLimit), viewerUserId)
+        val shopNames = port.findShopNamesByIds(reviews.map { it.shopId }.distinct())
+        return reviews.map { review ->
+            RecentShopReview.from(review, shopNames[review.shopId] ?: DEFAULT_SHOP_NAME)
+        }
     }
 
     override fun listMyReviews(
@@ -235,11 +248,19 @@ class ShopReviewService(
 
     private fun enrichWithLikeState(page: Page<ShopReview>, viewerUserId: Long?): Page<ShopReview> {
         if (viewerUserId == null || page.isEmpty) return page
-        val likedIds = port.findLikedReviewIds(viewerUserId, page.content.mapNotNull { it.id })
-        val enriched = page.content.map { review ->
+        return PageImpl(
+            enrichListWithLikeState(page.content, viewerUserId),
+            page.pageable,
+            page.totalElements,
+        )
+    }
+
+    private fun enrichListWithLikeState(reviews: List<ShopReview>, viewerUserId: Long?): List<ShopReview> {
+        if (viewerUserId == null || reviews.isEmpty()) return reviews
+        val likedIds = port.findLikedReviewIds(viewerUserId, reviews.mapNotNull { it.id })
+        return reviews.map { review ->
             review.copy(likedByMe = review.id in likedIds)
         }
-        return PageImpl(enriched, page.pageable, page.totalElements)
     }
 
     private fun compensateCreateReviewFailure(original: Exception, reviewId: Long, uploadedKeys: List<String>) {
@@ -285,6 +306,7 @@ class ShopReviewService(
     }
 
     private companion object {
+        const val DEFAULT_SHOP_NAME = "매장"
         const val MAX_REVIEW_IMAGES = 5
         private val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
 

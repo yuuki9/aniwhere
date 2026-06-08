@@ -59,3 +59,37 @@ data class ShopRatingAggregate(
     val averageRating: BigDecimal?,
     val reviewCount: Int,
 )
+
+data class RecentShopReview(
+    val shopName: String,
+    val id: Long? = null,
+    val shopId: Long,
+    val authorUserId: Long,
+    val authorNickname: String,
+    val authorEmojiIconFilename: String? = null,
+    val rating: Int,
+    val content: String,
+    val images: List<ShopReviewImage> = emptyList(),
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val createdAt: LocalDateTime? = null,
+    val updatedAt: LocalDateTime? = null,
+) {
+    companion object {
+        fun from(review: ShopReview, shopName: String) = RecentShopReview(
+            shopName = shopName,
+            id = review.id,
+            shopId = review.shopId,
+            authorUserId = review.authorUserId,
+            authorNickname = review.authorNickname,
+            authorEmojiIconFilename = review.authorEmojiIconFilename,
+            rating = review.rating,
+            content = review.content,
+            images = review.images,
+            likeCount = review.likeCount,
+            likedByMe = review.likedByMe,
+            createdAt = review.createdAt,
+            updatedAt = review.updatedAt,
+        )
+    }
+}
