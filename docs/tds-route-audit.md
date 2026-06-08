@@ -133,7 +133,7 @@ Official docs checked on 2026-06-05 with web fallback because Apps in Toss MCP w
 
 ## Current Home/Explore Ads Follow-up
 
-Official docs checked with Apps in Toss MCP on 2026-06-07:
+Official docs checked with Apps in Toss MCP on 2026-06-07 and official web docs on 2026-06-08:
 
 - In-app ads intro: https://developers-apps-in-toss.toss.im/ads/intro.html
 - Banner ad WebView: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/광고/BannerAd.md
@@ -143,6 +143,8 @@ Official docs checked with Apps in Toss MCP on 2026-06-07:
 | `/home` bottom CTA banner | Product-approved / SDK-required | Banner ad is attached after the CTA banner stack with the official `TossAds.attachBanner` path through `@apps-in-toss/web-bridge`. The wrapper only reserves a 100% width / 96px slot and does not alter SDK ad copy, CTA, label, or click behavior. |
 | `/explore?view=list` bottom banner | Product-approved / SDK-required | The result sheet can render a bottom banner after the scrollable result list. The ad is outside individual result cards so it is not disguised as a shop recommendation. |
 | `/explore?view=map` bottom banner | Product-approved / SDK-required | The map banner appears only when no shop peek/expanded/review sheet is open, avoiding overlap with shop actions. Map floating controls move up only when the banner actually renders. |
+| Banner SDK lifecycle | SDK-required / Regression fix | Banner support now follows `TossAds.initialize.isSupported()` and `TossAds.attachBanner.isSupported()` directly instead of pre-blocking on Aniwhere's auth runtime helper. SDK initialization is shared as a module-level singleton so route changes or multiple banner placements do not call `TossAds.initialize` repeatedly. |
+| Banner attach preset | SDK-required / Regression fix | Footer banners attach with the documented fixed-slot preset: 100% width, 96px height, `theme: 'auto'`, `tone: 'blackAndWhite'`, and `variant: 'expanded'`. |
 | Banner ad group ID | SDK-required / Product-approved | The default `.ait` build loads `client/.env.production`, which sets `VITE_TOSS_AD_USE_LIVE_DEFAULTS=true` and `VITE_TOSS_AD_BANNER_GROUP_ID=ait.v2.live.c081b1ff483d4815`. `VITE_TOSS_AD_USE_TEST_IDS=true` forces the official test banner ID for explicit test builds. |
 | Inactive ad group IDs | Product-approved / Deferred | The console-issued interstitial ID `ait.v2.live.f9baf4bc925644c4` and rewarded ID `ait.v2.live.7a44e77025474da9` are recorded in `client/.env.production`, but no frontend route calls them under the current banner-only ad scope. |
 | Other ad formats | Product-approved / Deferred | Interstitial, rewarded, intro/loading/modal, and search-route placements are not implemented. Reconsider only after inflow, retention, and product acceptance evidence justify another experiment. |

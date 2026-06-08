@@ -1,5 +1,3 @@
-import { isAppsInTossRuntime } from './auth'
-
 type TossAdKind = 'banner'
 
 const TEST_AD_GROUP_IDS: Record<TossAdKind, string> = {
@@ -38,10 +36,6 @@ export function getTossAdGroupId(kind: TossAdKind) {
 
 export function getTossAdSupportStatus(check: () => boolean) {
   try {
-    if (!isAppsInTossRuntime()) {
-      return { reason: 'not-apps-in-toss-runtime', supported: false } as const
-    }
-
     return check()
       ? ({ supported: true } as const)
       : ({ reason: 'sdk-not-supported', supported: false } as const)
