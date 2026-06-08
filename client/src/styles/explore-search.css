@@ -42,8 +42,8 @@
 }
 
 .map-surface-app-v2.map-surface-map-ad-visible {
-  --map-control-bottom: 206px;
-  --map-overlay-bottom: 226px;
+  --map-control-bottom: max(214px, calc(env(safe-area-inset-bottom) + 206px));
+  --map-overlay-bottom: max(236px, calc(env(safe-area-inset-bottom) + 226px));
 }
 
 .map-surface-sheet-expanded .map-zoom-control,
@@ -1380,6 +1380,7 @@
 
 .map-results-ad-banner {
   flex: 0 0 auto;
+  margin-top: var(--ait-space-2);
 }
 
 .map-ad-banner-floating {
@@ -1394,7 +1395,7 @@
 .map-list-view .map-list-fab {
   left: 50%;
   right: auto;
-  bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
+  bottom: max(128px, calc(env(safe-area-inset-bottom) + 120px));
   z-index: 1080;
   transform: translateX(-50%);
 }
@@ -4510,6 +4511,10 @@
     width: auto;
     height: 42px;
     min-width: 102px;
+  }
+
+  .map-list-view .map-list-fab {
+    bottom: max(128px, calc(env(safe-area-inset-bottom) + 120px));
   }
 
   .map-bottom-sheet-peek {

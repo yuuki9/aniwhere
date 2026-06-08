@@ -237,7 +237,7 @@ test('ExplorePage wires Apps in Toss ads without granting rewards on the client'
   assert.match(adConfigSource, /userEarnedReward/)
   assert.doesNotMatch(adConfigSource, /grantPromotionReward|point|coin|\/rewards|\/points/)
   assert.match(styles, /\.toss-ad-banner-slot\s*\{[\s\S]*height:\s*96px;/)
-  assert.match(styles, /\.map-surface-app-v2\.map-surface-map-ad-visible\s*\{[\s\S]*--map-control-bottom:\s*206px;/)
+  assert.match(styles, /\.map-surface-app-v2\.map-surface-map-ad-visible\s*\{[\s\S]*--map-control-bottom:\s*max\(214px,\s*calc\(env\(safe-area-inset-bottom\) \+ 206px\)\);/)
 })
 
 test('ExplorePage extracts the peek bottom sheet into a focused component', () => {
@@ -910,7 +910,7 @@ test('Explore full list view reserves space around the map toggle button', () =>
   assert.ok(floatingButtonRules.some((rule) => /color:\s*var\(--ait-color-text-inverse\);/.test(rule)))
   assert.ok(floatingButtonRules.some((rule) => /font-size:\s*var\(--ait-font-size-body-lg\);/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.map-list-fab-map').some((rule) => /background:\s*var\(--tDarkFillButtonBackground,\s*#4e5968\);/.test(rule)))
-  assert.ok(listButtonRules.some((rule) => /bottom:\s*max\(28px,\s*calc\(env\(safe-area-inset-bottom\) \+ 20px\)\);/.test(rule)))
+  assert.ok(listButtonRules.some((rule) => /bottom:\s*max\(128px,\s*calc\(env\(safe-area-inset-bottom\) \+ 120px\)\);/.test(rule)))
   assert.ok(cssRuleBodies(styles, '.map-list-fab-label').some((rule) => /white-space:\s*nowrap;/.test(rule)))
   assert.ok(listPanelRules.some((rule) => /flex:\s*1 1 auto;/.test(rule)))
   assert.ok(listPanelRules.some((rule) => /scrollbar-gutter:\s*stable;/.test(rule)))
