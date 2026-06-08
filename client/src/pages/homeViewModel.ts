@@ -18,14 +18,20 @@ function buildInitialExploreListHref(params: Record<string, string>) {
   return `/explore?${next.toString()}`
 }
 
-export function buildRecentViewedShopHref(shopId: number) {
+export function buildRecentReviewShopHref(shopId: number, reviewId?: number | null) {
   const next = new URLSearchParams({
     view: 'list',
     entry: EXPLORE_INITIAL_LIST_ENTRY_VALUE,
     returnTo: '/home',
     shopId: String(shopId),
     sheet: 'expanded',
+    tab: 'review',
+    focus: 'review',
   })
+
+  if (reviewId != null) {
+    next.set('reviewId', String(reviewId))
+  }
 
   return `/explore?${next.toString()}`
 }

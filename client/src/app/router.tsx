@@ -11,15 +11,12 @@ import {
   AdminShopManagePage,
   AdminShopsPage,
   AdminUsersPage,
-  CommunityPage,
   ExplorePage,
   HomePage,
   IntroPage,
   MyPage,
-  PostDetailPage,
   SearchPage,
   ShopRouteRedirect,
-  TrendsPage,
 } from './lazyRouteComponents'
 
 function routeElement(element: ReactNode) {
@@ -59,14 +56,6 @@ export const router = createBrowserRouter([
         path: 'explore',
         element: routeElement(<ExplorePage />),
       },
-      {
-        path: 'community',
-        element: routeElement(<CommunityPage />),
-      },
-      {
-        path: 'trends',
-        element: routeElement(<TrendsPage />),
-      },
     ],
   },
   {
@@ -84,10 +73,6 @@ export const router = createBrowserRouter([
   {
     path: '/search',
     element: routeElement(<SearchPage />),
-  },
-  {
-    path: '/community/:postId',
-    element: routeElement(<PostDetailPage />),
   },
   {
     path: '/admin',
@@ -130,9 +115,5 @@ export const router = createBrowserRouter([
         element: routeElement(<AdminAccountPage />),
       },
     ],
-  },
-  {
-    path: '/reports/new',
-    element: <Navigate replace to="/community" />,
   },
 ])

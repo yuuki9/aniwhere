@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Asset } from '@aniwhere/tds-mobile'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { recordPopularityEventSafely } from '../shared/api/popularity'
+import { getMixedEntityRankings } from '../shared/api/rankings'
 import { getSearchAutocomplete } from '../shared/api/search'
 import type { SearchAutocompleteItem, SearchAutocompleteKind, SearchAutocompleteScope } from '../shared/api/types'
 import { requestCurrentLocation } from '../shared/lib/location'
@@ -26,6 +27,11 @@ import { MapSearchFieldForm } from '../shared/ui/MapSearchFieldShell'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import searchLocationGuideUrl from '../assets/search-location-guide.webp'
 import { buildNearbyExploreHref } from './searchNearby'
+import {
+  buildTrendPreviewItems,
+  normalizeMixedEntityRankingItem,
+} from './trendRankingViewModel'
+import { TrendRankingPanel } from './TrendRankingPanel'
 
 type SearchScope = SearchAutocompleteScope
 type SearchAutocompleteIconKind = SearchAutocompleteKind | 'RECENT'
@@ -137,7 +143,19 @@ export function SearchPage() {
     enabled: compactKeyword.length > 0,
     staleTime: 30_000,
   })
+  const trendRankingQuery = useQuery({
+    queryKey: ['rankings', 'search-mixed-entities', '7d', 10],
+    queryFn: () => getMixedEntityRankings({ window: '7d', limit: 10 }),
+    staleTime: 30_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+  })
   const autocompleteSuggestions = autocompleteQuery.data ?? []
+  const trendItems = useMemo(
+    () => buildTrendPreviewItems((trendRankingQuery.data?.items ?? []).map(normalizeMixedEntityRankingItem), 10),
+    [trendRankingQuery.data?.items],
+  )
   const autocompleteGroupKinds: SearchAutocompleteKind[] = currentSearchScope === 'work' ? ['WORK', 'SHOP'] : ['SHOP', 'WORK']
   const autocompleteGroups: SearchAutocompleteGroup[] = autocompleteGroupKinds
     .map((kind) => ({
@@ -378,6 +396,12 @@ export function SearchPage() {
                           </span>
                         ))}
                       </div>
+                    </section>
+                  ) : null}
+
+                  {trendItems.length > 0 ? (
+                    <section className="search-trend-rank-section" aria-label="인기 검색어">
+                      <TrendRankingPanel items={trendItems} returnTo="/search" />
                     </section>
                   ) : null}
 

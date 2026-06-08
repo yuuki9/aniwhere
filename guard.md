@@ -86,7 +86,7 @@
 
 ## 구현 방향
 
-- `shops`, `community(posts/comments)`를 중심으로 화면을 구성합니다.
+- `shops`, shop-scoped reviews, search/explore를 중심으로 화면을 구성합니다.
 - Swagger 스펙 변경은 프론트 타입과 API 호출 함수에 우선 반영합니다.
 - `brand.displayName`, `appName` 등 메타 정보는 실제 서비스 명칭과 일치시켜둡니다.
 - 출시 전에는 Sandbox 기반 검증과 실제 배포 설정을 다시 확인합니다.

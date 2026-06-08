@@ -301,6 +301,10 @@ export type ShopReview = {
   updatedAt: string | null
 }
 
+export type RecentShopReview = Omit<ShopReview, 'status'> & {
+  shopName: string
+}
+
 export type ShopSearchParams = {
   page?: number
   size?: number

@@ -5,13 +5,15 @@ import homeCtaFavoritesBannerImage from '../assets/images/home-cta-favorites-ban
 import homeCtaNearbyBannerImage from '../assets/images/home-cta-nearby-banner.png'
 import homeCtaReviewsBannerImage from '../assets/images/home-cta-reviews-banner.png'
 import { getMixedEntityRankings } from '../shared/api/rankings'
+import { listRecentReviews } from '../shared/api/shopReviews'
+import type { RecentShopReview } from '../shared/api/types'
 import { isAdminRole, readAuthSession } from '../shared/lib/authSession'
-import { readRecentViewedShops, type RecentViewedShop } from '../shared/lib/recentViewedShops'
+import { profileEmojiUrl } from '../shared/lib/profileEmojiOptions'
 import { SHOP_SEARCH_PLACEHOLDER } from '../shared/lib/searchCopy'
 import { TossBannerAd } from '../shared/ui/TossBannerAd'
 import { Toast } from '@aniwhere/tds-mobile'
 import {
-  buildRecentViewedShopHref,
+  buildRecentReviewShopHref,
   buildHomeCtaCards,
   type HomeCtaCard,
 } from './homeViewModel'
@@ -22,6 +24,7 @@ import {
   normalizeMixedEntityRankingItem,
   type TrendRankingItem,
 } from './trendRankingViewModel'
+import { TrendRankingPanel } from './TrendRankingPanel'
 
 const HOME_CTA_IMAGES: Record<HomeCtaCard['id'], string> = {
   map: homeCtaNearbyBannerImage,
@@ -56,6 +59,30 @@ function SearchIcon() {
     <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
       <circle cx="11" cy="11" r="6" />
       <path d="m16 16 4 4" />
+    </svg>
+  )
+}
+
+function ReviewStarIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="m12 3 2.6 5.5 6 .9-4.3 4.2 1 6-5.3-2.9-5.3 2.9 1-6-4.3-4.2 6-.9L12 3Z" />
+    </svg>
+  )
+}
+
+function HelpfulIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <path d="M7.5 20H5.2a1.7 1.7 0 0 1-1.7-1.7v-7.1c0-.9.8-1.7 1.7-1.7h2.3m0 10.5V9.5m0 10.5h8.3c.8 0 1.5-.5 1.7-1.3l1.8-6.1a1.8 1.8 0 0 0-1.7-2.3h-4.1l.6-3.1a2.4 2.4 0 0 0-.7-2.2l-.2-.2a1.1 1.1 0 0 0-1.7.2L7.5 11" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <path d="m9 5 7 7-7 7" />
     </svg>
   )
 }
@@ -101,16 +128,6 @@ function HomeTrendChip({ item, inert = false }: { item: TrendRankingItem; inert?
   )
 }
 
-function HomeTrendRankRow({ item }: { item: TrendRankingItem }) {
-  return (
-    <Link className="home-trend-rank-row" to={buildTrendExploreHref(item, { returnTo: '/home' })}>
-      <span className="home-trend-rank-number">{item.rank}</span>
-      <span className="home-trend-rank-label">{item.label}</span>
-      <span className="home-trend-rank-kind">{formatTrendKindLabel(item.kind)}</span>
-    </Link>
-  )
-}
-
 function HomeTrendChipRail({ items }: { items: TrendRankingItem[] }) {
   const [viewMode, setViewMode] = useState<'rail' | 'list'>('rail')
 
@@ -139,64 +156,53 @@ function HomeTrendChipRail({ items }: { items: TrendRankingItem[] }) {
           </button>
         </div>
       ) : (
-        <div className="home-trend-rank-panel">
-          <div className="home-trend-rank-head">
-            <span>인기 검색어</span>
+        <TrendRankingPanel
+          items={items}
+          returnTo="/home"
+          action={(
             <button className="home-trend-toggle-button" type="button" onClick={() => setViewMode('rail')}>
               접기
             </button>
-          </div>
-          <div className="home-trend-rank-list">
-            {items.map((item) => (
-              <HomeTrendRankRow key={`rank-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} />
-            ))}
-          </div>
-        </div>
+          )}
+        />
       )}
     </section>
   )
 }
 
-function formatRecentViewedAt(viewedAt: string) {
-  const viewedTime = new Date(viewedAt).getTime()
-  if (!Number.isFinite(viewedTime)) {
-    return '최근 봄'
+function formatRecentReviewDate(createdAt: string | null | undefined) {
+  if (!createdAt) {
+    return '최근 리뷰'
   }
 
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const viewedDate = new Date(viewedTime)
-  const viewedDay = new Date(viewedDate.getFullYear(), viewedDate.getMonth(), viewedDate.getDate()).getTime()
-  const dayDiff = Math.max(0, Math.floor((today - viewedDay) / 86_400_000))
-
-  if (dayDiff === 0) {
-    return '오늘 봄'
+  const createdTime = new Date(createdAt).getTime()
+  if (!Number.isFinite(createdTime)) {
+    return '최근 리뷰'
   }
 
-  if (dayDiff === 1) {
-    return '어제 봄'
+  const diffMs = Date.now() - createdTime
+  const diffDays = Math.max(0, Math.floor(diffMs / 86_400_000))
+
+  if (diffDays === 0) {
+    return '오늘'
   }
 
-  if (dayDiff < 30) {
-    return `${dayDiff}일 전 봄`
+  if (diffDays === 1) {
+    return '어제'
   }
 
-  return `${viewedDate.getFullYear().toString().slice(2)}.${String(viewedDate.getMonth() + 1).padStart(2, '0')}.${String(
-    viewedDate.getDate(),
-  ).padStart(2, '0')} 봄`
+  if (diffDays < 30) {
+    return `${diffDays}일 전`
+  }
+
+  const createdDate = new Date(createdTime)
+  return `${createdDate.getFullYear().toString().slice(2)}.${String(createdDate.getMonth() + 1).padStart(2, '0')}.${String(
+    createdDate.getDate(),
+  ).padStart(2, '0')}`
 }
 
-function HomeRecentViewedHeartIcon({ isFavorite }: { isFavorite: boolean }) {
-  return (
-    <svg
-      className="home-recent-viewed-heart"
-      data-favorite={isFavorite ? 'true' : 'false'}
-      aria-label={isFavorite ? '찜한 매장' : '찜하지 않은 매장'}
-      viewBox="0 0 24 24"
-    >
-      <path d="M12 20s-7-4.4-9.2-8.2C1.2 9 2.1 5.5 5.3 4.5c1.8-.6 3.7.1 4.8 1.5L12 8.2 13.9 6c1.1-1.4 3-2.1 4.8-1.5 3.2 1 4.1 4.5 2.5 7.3C19 15.6 12 20 12 20Z" />
-    </svg>
-  )
+function formatReviewRating(rating: number) {
+  return Number.isFinite(rating) ? rating.toFixed(1) : '리뷰'
 }
 
 function HomeCtaBannerBody({ card }: { card: HomeCtaCard }) {
@@ -243,20 +249,77 @@ function HomeCtaBannerList({ cards }: { cards: HomeCtaCard[] }) {
   )
 }
 
-function HomeRecentViewedSection({ shops }: { shops: RecentViewedShop[] }) {
+function HomeRecentReviewSection({
+  currentUserId,
+  reviews,
+}: {
+  currentUserId: number | null
+  reviews: RecentShopReview[]
+}) {
   return (
-    <section className="home-recent-viewed-section" aria-labelledby="home-recent-viewed-title">
+    <section className="home-recent-review-section" aria-labelledby="home-recent-review-title">
       <div className="home-section-head">
-        <h2 id="home-recent-viewed-title">최근 둘러본 매장이에요</h2>
+        <h2 id="home-recent-review-title">최근에 등록된 리뷰예요</h2>
       </div>
-      <div className="home-recent-viewed-list">
-        {shops.map((shop) => (
-          <Link className="home-recent-viewed-row" key={shop.id} to={buildRecentViewedShopHref(shop.id)}>
-            <HomeRecentViewedHeartIcon isFavorite={shop.isFavorite} />
-            <span className="home-recent-viewed-name">{shop.name}</span>
-            <span className="home-recent-viewed-date">{formatRecentViewedAt(shop.viewedAt)}</span>
-          </Link>
-        ))}
+      <div className="home-recent-review-rail">
+        {reviews.map((review) => {
+          const authorEmojiUrl = profileEmojiUrl(review.authorEmojiIconFilename)
+          const firstImage = [...review.images].sort((a, b) => a.sortOrder - b.sortOrder)[0]
+          const isMyReview = currentUserId != null && review.authorUserId === currentUserId
+
+          return (
+            <Link
+              className="home-recent-review-card map-place-review-item"
+              data-review-id={review.id}
+              key={review.id}
+              to={buildRecentReviewShopHref(review.shopId, review.id)}
+            >
+              <span className="home-recent-review-card-head map-place-review-item-head">
+                {authorEmojiUrl != null ? (
+                  <img className="home-recent-review-avatar map-place-review-avatar" src={authorEmojiUrl} alt="" aria-hidden="true" />
+                ) : (
+                  <span className="home-recent-review-avatar home-recent-review-avatar-fallback map-place-review-avatar" aria-hidden="true">
+                    {review.authorNickname.trim().slice(0, 1) || '?'}
+                  </span>
+                )}
+                <span className="home-recent-review-author map-place-review-author">
+                  <span className="home-recent-review-author-row">
+                    <strong>{review.authorNickname}</strong>
+                    {isMyReview ? <span className="map-place-review-owner-badge">내 리뷰</span> : null}
+                  </span>
+                  <span className="home-recent-review-author-meta">
+                    {formatRecentReviewDate(review.createdAt)}
+                    <span aria-hidden="true">·</span>
+                    <ReviewStarIcon />
+                    {formatReviewRating(review.rating)}
+                  </span>
+                </span>
+              </span>
+              <span className={['home-recent-review-body', firstImage == null ? 'home-recent-review-body-text-only' : ''].filter(Boolean).join(' ')}>
+                <span className="home-recent-review-copy map-place-review-text">{review.content}</span>
+                {firstImage != null ? (
+                  <span className="home-recent-review-image-frame map-place-review-image-frame">
+                    <img className="home-recent-review-image map-place-review-image" src={firstImage.url} alt={`${review.shopName} 리뷰 사진`} loading="lazy" />
+                  </span>
+                ) : null}
+              </span>
+              <span className="home-recent-review-foot">
+                <span className="home-recent-review-shop">
+                  {review.shopName}
+                  <ChevronRightIcon />
+                </span>
+                <span
+                  className={['home-recent-review-helpful', review.likedByMe ? 'home-recent-review-helpful-active' : '']
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  <HelpfulIcon />
+                  도움돼요
+                </span>
+              </span>
+            </Link>
+          )
+        })}
       </div>
     </section>
   )
@@ -282,21 +345,29 @@ export function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [welcomeProfile, setWelcomeProfile] = useState(() => readWelcomeProfile(location.state))
-  const [recentViewedShops, setRecentViewedShops] = useState<RecentViewedShop[]>([])
+  const currentUserId = useMemo(() => readAuthSession()?.user?.id ?? null, [])
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
   const canEnterAdmin = useMemo(() => import.meta.env.DEV || isAdminRole(readAuthSession()?.role), [])
   const trendRankingQuery = useQuery({
-    queryKey: ['rankings', 'home-search-entities', '7d', 5],
-    queryFn: () => getMixedEntityRankings({ window: '7d', limit: 5 }),
+    queryKey: ['rankings', 'home-search-entities', '7d', 10],
+    queryFn: () => getMixedEntityRankings({ window: '7d', limit: 10 }),
     staleTime: 30_000,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   })
   const trendItems = useMemo(
-    () => buildTrendPreviewItems((trendRankingQuery.data?.items ?? []).map(normalizeMixedEntityRankingItem), 5),
+    () => buildTrendPreviewItems((trendRankingQuery.data?.items ?? []).map(normalizeMixedEntityRankingItem), 10),
     [trendRankingQuery.data?.items],
   )
+  const recentReviewsQuery = useQuery({
+    queryKey: ['shop-reviews', 'recent', 5, currentUserId],
+    queryFn: () => listRecentReviews({ limit: 5 }),
+    staleTime: 30_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+  })
 
   useEffect(() => {
     if (welcomeProfile == null) {
@@ -305,20 +376,6 @@ export function HomePage() {
 
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
   }, [location.pathname, location.search, navigate, welcomeProfile])
-
-  useEffect(() => {
-    let ignore = false
-
-    void readRecentViewedShops().then((shops) => {
-      if (!ignore) {
-        setRecentViewedShops(shops.slice(0, 3))
-      }
-    })
-
-    return () => {
-      ignore = true
-    }
-  }, [])
 
   return (
     <main className="app-shell discover-shell">
@@ -336,7 +393,9 @@ export function HomePage() {
       <HomeSearchEntry onSearch={() => navigate('/search')} />
       {trendItems.length > 0 ? <HomeTrendChipRail items={trendItems} /> : null}
       <HomeCtaBannerList cards={ctaCards} />
-      {recentViewedShops.length > 0 ? <HomeRecentViewedSection shops={recentViewedShops} /> : null}
+      {(recentReviewsQuery.data?.length ?? 0) > 0 ? (
+        <HomeRecentReviewSection currentUserId={currentUserId} reviews={recentReviewsQuery.data ?? []} />
+      ) : null}
       <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" />
     </main>
   )
