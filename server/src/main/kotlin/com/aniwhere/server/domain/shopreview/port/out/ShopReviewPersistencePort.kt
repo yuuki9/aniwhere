@@ -16,6 +16,7 @@ interface ShopReviewPersistencePort {
     fun existsShop(shopId: Long): Boolean
     fun save(review: ShopReview): ShopReview
     fun findVisibleByShopId(shopId: Long, pageable: Pageable): Page<ShopReview>
+    fun findRecentVisible(limit: Int): List<ShopReview>
     fun findByAuthorUserIdExcludingDeleted(authorUserId: Long, pageable: Pageable): Page<ShopReview>
     fun findByIdAndShopId(reviewId: Long, shopId: Long): ShopReview?
     fun findVisibleByIdAndShopId(reviewId: Long, shopId: Long): ShopReview?
@@ -35,4 +36,5 @@ interface ShopReviewPersistencePort {
     fun saveReviewLike(reviewId: Long, userId: Long)
     fun deleteReviewLike(reviewId: Long, userId: Long)
     fun findLikedReviewIds(userId: Long, reviewIds: Collection<Long>): Set<Long>
+    fun findShopNamesByIds(shopIds: Collection<Long>): Map<Long, String>
 }

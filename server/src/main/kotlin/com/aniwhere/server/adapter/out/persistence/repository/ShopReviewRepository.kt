@@ -15,6 +15,11 @@ interface ShopReviewRepository : JpaRepository<ShopReviewEntity, Long> {
         pageable: Pageable,
     ): Page<ShopReviewEntity>
 
+    fun findByStatus(
+        status: ShopReviewStatusEnum,
+        pageable: Pageable,
+    ): Page<ShopReviewEntity>
+
     fun findByAuthor_IdAndStatusIn(
         authorId: Long,
         statuses: Collection<ShopReviewStatusEnum>,

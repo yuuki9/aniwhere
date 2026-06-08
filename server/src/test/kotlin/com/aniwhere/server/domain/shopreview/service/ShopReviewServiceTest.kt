@@ -277,6 +277,51 @@ class ShopReviewServiceTest {
     }
 
     @Test
+    fun `listRecentReviews - 최근 VISIBLE 리뷰를 limit만큼 조회한다`() {
+        every { port.findRecentVisible(10) } returns listOf(
+            sampleReview.copy(id = 5L, shopId = 1L),
+            sampleReview.copy(id = 4L, shopId = 2L),
+        )
+        every { port.findShopNamesByIds(listOf(1L, 2L)) } returns mapOf(
+            1L to "애니메이트 홍대",
+            2L to "굿즈샵 강남",
+        )
+
+        val reviews = service.listRecentReviews(10, null)
+
+        assertEquals(2, reviews.size)
+        assertEquals("애니메이트 홍대", reviews[0].shopName)
+        assertEquals("굿즈샵 강남", reviews[1].shopName)
+        verify { port.findRecentVisible(10) }
+    }
+
+    @Test
+    fun `listRecentReviews - limit를 허용 범위로 보정한다`() {
+        every { port.findRecentVisible(50) } returns emptyList()
+        every { port.findShopNamesByIds(emptyList()) } returns emptyMap()
+
+        service.listRecentReviews(999, null)
+
+        verify { port.findRecentVisible(50) }
+    }
+
+    @Test
+    fun `listRecentReviews - viewerUserId가 있으면 likedByMe를 채운다`() {
+        every { port.findRecentVisible(10) } returns listOf(
+            sampleReview.copy(id = 5L),
+            sampleReview.copy(id = 6L),
+        )
+        every { port.findLikedReviewIds(10L, listOf(5L, 6L)) } returns setOf(5L)
+        every { port.findShopNamesByIds(listOf(1L)) } returns mapOf(1L to "애니메이트 홍대")
+
+        val reviews = service.listRecentReviews(10, 10L)
+
+        assertEquals(true, reviews[0].likedByMe)
+        assertEquals(false, reviews[1].likedByMe)
+        assertEquals("애니메이트 홍대", reviews[0].shopName)
+    }
+
+    @Test
     fun `listMyReviews - 내 리뷰 목록을 조회하고 likedByMe를 채운다`() {
         every { port.existsUser(10L) } returns true
         every { port.findByAuthorUserIdExcludingDeleted(10L, any()) } returns PageImpl(

@@ -15,7 +15,9 @@ import com.aniwhere.server.adapter.out.persistence.entity.ShopReviewLikeEntity
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewImagePersistenceRow
 import com.aniwhere.server.domain.shopreview.port.out.ShopReviewPersistencePort
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -50,6 +52,17 @@ class ShopReviewPersistenceAdapter(
             ShopReviewStatusEnum.VISIBLE,
             pageable,
         ).map(mapper::toDomain)
+
+    override fun findRecentVisible(limit: Int): List<ShopReview> {
+        val pageable = PageRequest.of(
+            0,
+            limit,
+            Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")),
+        )
+        return reviewRepo.findByStatus(ShopReviewStatusEnum.VISIBLE, pageable)
+            .content
+            .map(mapper::toDomain)
+    }
 
     override fun findByAuthorUserIdExcludingDeleted(authorUserId: Long, pageable: Pageable): Page<ShopReview> =
         reviewRepo.findByAuthor_IdAndStatusIn(
@@ -211,6 +224,11 @@ class ShopReviewPersistenceAdapter(
     override fun findLikedReviewIds(userId: Long, reviewIds: Collection<Long>): Set<Long> {
         if (reviewIds.isEmpty()) return emptySet()
         return reviewLikeRepo.findReviewIdsByUserIdAndReviewIdIn(userId, reviewIds).toSet()
+    }
+
+    override fun findShopNamesByIds(shopIds: Collection<Long>): Map<Long, String> {
+        if (shopIds.isEmpty()) return emptyMap()
+        return shopRepo.findAllById(shopIds).associate { requireNotNull(it.id) to it.name }
     }
 
     private companion object {
