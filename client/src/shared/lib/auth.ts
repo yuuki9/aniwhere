@@ -3,6 +3,8 @@ import { toSafeErrorSummary } from './safeError'
 
 export const TOSS_LOGIN_UNAVAILABLE_MESSAGE = '토스 앱에서 로그인해 주세요.'
 
+export type AppsInTossOperationalEnvironment = 'toss' | 'sandbox'
+
 export type EntryFlowResult =
   {
     mode: 'toss'
@@ -10,13 +12,17 @@ export type EntryFlowResult =
     referrer: 'DEFAULT' | 'SANDBOX'
   }
 
-export function isAppsInTossRuntime() {
+export function getAppsInTossOperationalEnvironment(): AppsInTossOperationalEnvironment | null {
   try {
     const environment = getOperationalEnvironment()
-    return environment === 'toss' || environment === 'sandbox'
+    return environment === 'toss' || environment === 'sandbox' ? environment : null
   } catch {
-    return false
+    return null
   }
+}
+
+export function isAppsInTossRuntime() {
+  return getAppsInTossOperationalEnvironment() != null
 }
 
 export async function startServiceEntry(): Promise<EntryFlowResult> {

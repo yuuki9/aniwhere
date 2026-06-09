@@ -345,6 +345,7 @@ export function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [welcomeProfile, setWelcomeProfile] = useState(() => readWelcomeProfile(location.state))
+  const [homeAdVisible, setHomeAdVisible] = useState(false)
   const currentUserId = useMemo(() => readAuthSession()?.user?.id ?? null, [])
   const ctaCards = useMemo(() => buildHomeCtaCards(), [])
   const canEnterAdmin = useMemo(() => import.meta.env.DEV || isAdminRole(readAuthSession()?.role), [])
@@ -378,7 +379,7 @@ export function HomePage() {
   }, [location.pathname, location.search, navigate, welcomeProfile])
 
   return (
-    <main className="app-shell discover-shell">
+    <main className={['app-shell discover-shell', homeAdVisible ? 'discover-shell-ad-visible' : ''].filter(Boolean).join(' ')}>
       <Toast
         open={welcomeProfile != null}
         text={
@@ -396,7 +397,7 @@ export function HomePage() {
       {(recentReviewsQuery.data?.length ?? 0) > 0 ? (
         <HomeRecentReviewSection currentUserId={currentUserId} reviews={recentReviewsQuery.data ?? []} />
       ) : null}
-      <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" />
+      <TossBannerAd className="home-ad-banner" placement="home-bottom-cta" onVisibleChange={setHomeAdVisible} />
     </main>
   )
 }

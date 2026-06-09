@@ -42,8 +42,12 @@
 }
 
 .map-surface-app-v2.map-surface-map-ad-visible {
-  --map-control-bottom: max(214px, calc(env(safe-area-inset-bottom) + 206px));
-  --map-overlay-bottom: max(236px, calc(env(safe-area-inset-bottom) + 226px));
+  --map-control-bottom: max(188px, calc(env(safe-area-inset-bottom) + 180px));
+  --map-overlay-bottom: max(210px, calc(env(safe-area-inset-bottom) + 200px));
+}
+
+.map-surface-map-ad-visible .map-list-fab {
+  bottom: max(104px, calc(env(safe-area-inset-bottom) + 100px));
 }
 
 .map-surface-sheet-expanded .map-zoom-control,
@@ -1369,33 +1373,43 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--ait-space-6);
+  gap: var(--ait-space-3);
   min-height: 0;
   overflow: hidden;
-  padding: var(--ait-space-4) 12px max(20px, calc(env(safe-area-inset-bottom) + 16px));
+  padding: var(--ait-space-4) 12px 0;
   border: 0;
   border-radius: 0;
   background: var(--ait-color-surface-raised);
 }
 
 .map-results-ad-banner {
-  flex: 0 0 auto;
-  margin-top: var(--ait-space-2);
+  position: fixed;
+  z-index: 1055;
+  right: auto;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  max-width: none;
+  margin: 0;
+  transform: translateX(-50%);
 }
 
 .map-ad-banner-floating {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: 0;
   z-index: 1055;
+  width: 100vw;
+  max-width: none;
+  transform: translateX(-50%);
   pointer-events: auto;
 }
 
 .map-list-view .map-list-fab {
   left: 50%;
   right: auto;
-  bottom: max(128px, calc(env(safe-area-inset-bottom) + 120px));
+  bottom: max(104px, calc(env(safe-area-inset-bottom) + 100px));
   z-index: 1080;
   transform: translateX(-50%);
 }
@@ -1458,7 +1472,7 @@
 .map-list-view .map-results-sheet-list {
   flex: 1 1 auto;
   padding-right: var(--ait-space-1);
-  padding-bottom: max(104px, calc(env(safe-area-inset-bottom) + 96px));
+  padding-bottom: max(52px, calc(env(safe-area-inset-bottom) + 48px));
   scrollbar-gutter: stable;
 }
 
@@ -4514,7 +4528,7 @@
   }
 
   .map-list-view .map-list-fab {
-    bottom: max(128px, calc(env(safe-area-inset-bottom) + 120px));
+    bottom: max(104px, calc(env(safe-area-inset-bottom) + 100px));
   }
 
   .map-bottom-sheet-peek {

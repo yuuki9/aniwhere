@@ -2,11 +2,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import * as homeViewModel from '../src/pages/homeViewModel.ts'
-import {
-  pushRecentViewedShop,
-  readRecentViewedShops,
-  toRecentViewedShop,
-} from '../src/shared/lib/recentViewedShops.ts'
 
 function readPngDimensions(path: URL) {
   const buffer = fs.readFileSync(path)
@@ -24,8 +19,12 @@ function cssRuleBodies(css: string, selector: string) {
   return Array.from(matches, (match) => match[1])
 }
 
+function appCssSource() {
+  return fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+}
+
 test('homeViewModel exports home navigation builders', () => {
-  assert.deepEqual(Object.keys(homeViewModel).sort(), ['buildHomeCtaCards', 'buildRecentViewedShopHref'])
+  assert.deepEqual(Object.keys(homeViewModel).sort(), ['buildHomeCtaCards', 'buildRecentReviewShopHref'])
 })
 
 test('buildHomeCtaCards routes store CTA cards to their approved explore entries', () => {
@@ -45,63 +44,11 @@ test('buildHomeCtaCards routes store CTA cards to their approved explore entries
   assert.equal(cards.some((card) => card.href?.startsWith('/search')), false)
 })
 
-test('buildRecentViewedShopHref opens the explored shop detail from home', () => {
+test('buildRecentReviewShopHref opens the explored shop detail review tab from home', () => {
   assert.equal(
-    homeViewModel.buildRecentViewedShopHref(42),
-    '/explore?view=list&entry=list&returnTo=%2Fhome&shopId=42&sheet=expanded',
+    homeViewModel.buildRecentReviewShopHref(42, 7),
+    '/explore?view=list&entry=list&returnTo=%2Fhome&shopId=42&sheet=expanded&tab=review&focus=review&reviewId=7',
   )
-})
-
-test('recent viewed shops use Apps in Toss Storage semantics and keep newest unique shops', async () => {
-  const store = new Map()
-  const storage = {
-    async getItem(key) {
-      return store.get(key) ?? null
-    },
-    async setItem(key, value) {
-      store.set(key, value)
-    },
-  }
-  const shop = (id, name, category = 'Goods') => ({
-    id,
-    name,
-    address: `Seoul ${id}`,
-    px: 0,
-    py: 0,
-    floor: null,
-    regionId: null,
-    regionName: 'Seoul',
-    status: 'ACTIVE',
-    visitTip: null,
-    categories: [{ id: 1, name: category }],
-    works: [],
-    links: [],
-    images: [],
-    description: null,
-    averageRating: null,
-    reviewCount: 0,
-    favoriteCount: 0,
-    createdAt: '2026-06-07T00:00:00Z',
-    updatedAt: '2026-06-07T00:00:00Z',
-  })
-
-  await pushRecentViewedShop(shop(1, 'A'), storage)
-  await pushRecentViewedShop(shop(2, 'B', 'Figure'), storage)
-  await pushRecentViewedShop(shop(1, 'A updated', 'Goods'), storage)
-
-  const items = await readRecentViewedShops(storage)
-
-  assert.deepEqual(items.map((item) => item.id), [1, 2])
-  assert.equal(items[0].name, 'A updated')
-  assert.equal(typeof items[0].viewedAt, 'string')
-  assert.equal(items[0].isFavorite, false)
-  assert.equal(items[0].categories[0], 'Goods')
-  assert.equal(toRecentViewedShop(shop(3, 'C')).regionName, 'Seoul')
-})
-
-test('recent viewed shops hide invalid or unavailable storage data', async () => {
-  assert.deepEqual(await readRecentViewedShops({ getItem: async () => 'not-json', setItem: async () => {} }), [])
-  assert.deepEqual(await readRecentViewedShops({ getItem: async () => JSON.stringify([{ id: 0 }]), setItem: async () => {} }), [])
 })
 
 test('buildHomeCtaCards uses two-line curation copy without helper descriptions', () => {
@@ -147,9 +94,9 @@ test('HomePage shows an auto ranking chip rail directly under search without a t
   assert.match(source, /normalizeMixedEntityRankingItem/)
   assert.match(source, /buildTrendExploreHref/)
   assert.match(source, /formatTrendKindLabel/)
-  assert.match(source, /queryKey: \['rankings', 'home-search-entities', '7d', 5\]/)
-  assert.match(source, /queryFn: \(\) => getMixedEntityRankings\(\{ window: '7d', limit: 5 \}\)/)
-  assert.match(source, /buildTrendPreviewItems\(\(trendRankingQuery\.data\?\.items \?\? \[\]\)\.map\(normalizeMixedEntityRankingItem\), 5\)/)
+  assert.match(source, /queryKey: \['rankings', 'home-search-entities', '7d', 10\]/)
+  assert.match(source, /queryFn: \(\) => getMixedEntityRankings\(\{ window: '7d', limit: 10 \}\)/)
+  assert.match(source, /buildTrendPreviewItems\(\(trendRankingQuery\.data\?\.items \?\? \[\]\)\.map\(normalizeMixedEntityRankingItem\), 10\)/)
   assert.match(source, /function HomeTrendChipRail/)
   assert.match(source, /className="home-trend-chip-rail"/)
   assert.match(source, /className="home-trend-chip-track"/)
@@ -164,8 +111,8 @@ test('HomePage shows an auto ranking chip rail directly under search without a t
   assert.match(source, /className="home-trend-toggle-button"/)
   assert.match(source, /setViewMode\('list'\)/)
   assert.match(source, /setViewMode\('rail'\)/)
-  assert.match(source, /function HomeTrendRankRow/)
-  assert.match(source, /className="home-trend-rank-list"/)
+  assert.match(source, /<TrendRankingPanel/)
+  assert.match(source, /returnTo="\/home"/)
   assert.match(source, /to=\{buildTrendExploreHref\(item, \{ returnTo: '\/home' \}\)\}/)
   assert.match(source, /trendItems\.length > 0 \? <HomeTrendChipRail items=\{trendItems\} \/> : null/)
   assert.ok(source.indexOf('<HomeSearchEntry') < source.indexOf('<HomeTrendChipRail'))
@@ -187,57 +134,61 @@ test('HomePage attaches a Toss banner ad only after the CTA banner stack', () =>
   const adConfigSource = fs.readFileSync(new URL('../src/shared/lib/tossAds.ts', import.meta.url), 'utf8')
 
   assert.match(source, /import \{ TossBannerAd \} from '\.\.\/shared\/ui\/TossBannerAd'/)
-  assert.match(source, /<TossBannerAd className="home-ad-banner" placement="home-bottom-cta" \/>/)
-  assert.ok(source.indexOf('<HomeCtaBannerList') < source.indexOf('<HomeRecentViewedSection'))
-  assert.ok(source.indexOf('<HomeRecentViewedSection') < source.lastIndexOf('<TossBannerAd'))
+  assert.match(source, /const \[homeAdVisible, setHomeAdVisible\] = useState\(false\)/)
+  assert.match(source, /homeAdVisible \? 'discover-shell-ad-visible' : ''/)
+  assert.match(source, /<TossBannerAd className="home-ad-banner" placement="home-bottom-cta" onVisibleChange=\{setHomeAdVisible\} \/>/)
+  assert.ok(source.indexOf('<HomeCtaBannerList') < source.indexOf('<HomeRecentReviewSection'))
+  assert.ok(source.indexOf('<HomeRecentReviewSection') < source.lastIndexOf('<TossBannerAd'))
   assert.match(adSource, /TossAds\.attachBanner/)
   assert.match(adConfigSource, /VITE_TOSS_AD_BANNER_GROUP_ID/)
   assert.match(adConfigSource, /VITE_TOSS_AD_USE_TEST_IDS/)
   assert.match(adConfigSource, /ait-ad-test-banner-id/)
   assert.doesNotMatch(source, /TossAds\.attachBanner/)
+
+  const styles = appCssSource()
+  assert.match(styles, /\.discover-shell-ad-visible\s*\{[\s\S]*padding-bottom:\s*max\(112px,\s*calc\(env\(safe-area-inset-bottom\) \+ 104px\)\);/)
+  assert.match(styles, /\.home-ad-banner\s*\{[\s\S]*position:\s*fixed;[\s\S]*right:\s*0;[\s\S]*bottom:\s*0;[\s\S]*left:\s*0;[\s\S]*width:\s*100vw;/)
 })
 
-test('HomePage renders recent viewed shops from Apps in Toss Storage only when data exists', () => {
+test('Home route does not reserve an extra viewport below route navigation', () => {
+  const layoutSource = fs.readFileSync(new URL('../src/shared/ui/MainLayout.tsx', import.meta.url), 'utf8')
+  const styles = appCssSource()
+  const discoverShellRules = cssRuleBodies(styles, '.discover-shell')
+
+  assert.match(layoutSource, /const isHomeRoute = location\.pathname === '\/home'/)
+  assert.match(layoutSource, /isHomeRoute \? 'route-content-home' : ''/)
+  assert.match(styles, /\.route-content\.route-content-home\s*\{[\s\S]*padding-bottom:\s*0;/)
+  assert.equal(discoverShellRules.some((rule) => /min-height:\s*auto;/.test(rule)), true)
+  assert.equal(discoverShellRules.some((rule) => /min-height:\s*100dvh;/.test(rule)), false)
+})
+
+test('HomePage renders recent reviews from the Swagger recent reviews feed only when data exists', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
-  const recentViewedShops = fs.readFileSync(new URL('../src/shared/lib/recentViewedShops.ts', import.meta.url), 'utf8')
-  const explore = fs.readFileSync(new URL('../src/pages/ExplorePage.tsx', import.meta.url), 'utf8')
 
-  assert.match(source, /readRecentViewedShops/)
-  assert.match(source, /type RecentViewedShop/)
-  assert.match(source, /function HomeRecentViewedSection/)
-  assert.match(source, /home-recent-viewed-section/)
-  assert.match(source, /recentViewedShops\.length > 0 \? <HomeRecentViewedSection shops=\{recentViewedShops\} \/> : null/)
-  assert.match(source, /buildRecentViewedShopHref\(shop\.id\)/)
-  assert.match(recentViewedShops, /import\('@apps-in-toss\/web-framework'\)/)
-  assert.match(recentViewedShops, /module\.Storage/)
-  assert.match(recentViewedShops, /aniwhere-recent-viewed-shops/)
-  assert.match(recentViewedShops, /viewedAt: new Date\(\)\.toISOString\(\)/)
-  assert.match(recentViewedShops, /isFavorite: options\.isFavorite === true/)
-  assert.match(explore, /pushRecentViewedShop\(detailShop, undefined, \{ isFavorite: isFavoriteDetailShop \}\)/)
-  assert.match(explore, /detailShop == null \|\| sheetMode !== 'expanded'/)
-  assert.doesNotMatch(source, /window\.localStorage|localStorage/)
-  assert.doesNotMatch(recentViewedShops, /window\.localStorage|localStorage/)
+  assert.match(source, /import \{ listRecentReviews \} from '\.\.\/shared\/api\/shopReviews'/)
+  assert.match(source, /queryKey: \['shop-reviews', 'recent', 5, currentUserId\]/)
+  assert.match(source, /queryFn: \(\) => listRecentReviews\(\{ limit: 5 \}\)/)
+  assert.match(source, /function HomeRecentReviewSection/)
+  assert.match(source, /home-recent-review-section/)
+  assert.match(source, /HomeRecentReviewSection currentUserId=\{currentUserId\} reviews=\{recentReviewsQuery\.data \?\? \[\]\}/)
+  assert.match(source, /buildRecentReviewShopHref\(review\.shopId, review\.id\)/)
+  assert.doesNotMatch(source, /readRecentViewedShops|pushRecentViewedShop|recentViewedShops|window\.localStorage|localStorage/)
 })
 
-test('Home recent viewed shops keep a compact tokenized ListRow rhythm without images', () => {
+test('Home recent reviews use compact review cards with photos', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
-  assert.match(styles, /\.home-recent-viewed-section\s*\{[\s\S]*display:\s*grid;/)
-  assert.match(styles, /\.home-recent-viewed-list\s*\{[\s\S]*border-top:\s*1px solid var\(--ait-color-border\);/)
-  assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*grid-template-columns:\s*20px minmax\(0, 1fr\) auto;/)
-  assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*min-height:\s*48px;/)
-  assert.match(styles, /\.home-recent-viewed-row\s*\{[\s\S]*border-bottom:\s*1px solid var\(--ait-color-border\);/)
-  assert.match(source, /HomeRecentViewedHeartIcon/)
-  assert.match(source, /formatRecentViewedAt\(shop\.viewedAt\)/)
-  assert.match(source, /최근 둘러본 매장이에요/)
-  assert.match(styles, /\.home-recent-viewed-heart\[data-favorite='true'\]\s*\{[\s\S]*fill: currentcolor;/)
-  assert.match(styles, /\.home-recent-viewed-name\s*\{[\s\S]*white-space:\s*nowrap;/)
-  assert.match(styles, /\.home-recent-viewed-date\s*\{[\s\S]*white-space:\s*nowrap;/)
-  assert.doesNotMatch(source, /<img className="home-recent|coverUrl|coverImage|bannerImage/)
-  assert.doesNotMatch(source, /home-recent-viewed-chip/)
-  assert.doesNotMatch(source, /핫플|\d+개 매장/)
-  assert.doesNotMatch(styles, /\.home-recent-viewed-card/)
+  assert.match(source, /최근에 등록된 리뷰예요/)
+  assert.match(source, /className="home-recent-review-card map-place-review-item"/)
+  assert.match(source, /className="home-recent-review-image map-place-review-image"/)
+  assert.match(source, /className=\{\['home-recent-review-helpful', review\.likedByMe \? 'home-recent-review-helpful-active' : ''\]/)
+  assert.match(styles, /\.home-recent-review-section\s*\{[\s\S]*display:\s*grid;/)
+  assert.match(styles, /\.home-recent-review-rail\s*\{[\s\S]*grid-auto-flow:\s*column;/)
+  assert.match(styles, /\.home-recent-review-card\s*\{[\s\S]*min-height:\s*200px;/)
+  assert.match(styles, /\.home-recent-review-body\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 94px;/)
+  assert.match(styles, /\.home-recent-review-image-frame\s*\{[\s\S]*overflow:\s*hidden;/)
+  assert.doesNotMatch(source, /HomeRecentViewed|home-recent-viewed|최근 둘러본/)
 })
 
 test('Home ranking chip rail uses horizontal tokenized chips', () => {
@@ -259,18 +210,19 @@ test('Home ranking chip rail uses horizontal tokenized chips', () => {
   assert.match(styles, /\.home-trend-chip-label\s*\{[\s\S]*font-size:\s*var\(--ait-font-size-body-sm\);/)
   assert.match(styles, /\.home-trend-chip-kind\s*\{[\s\S]*background:\s*var\(--ait-color-gray-100\);/)
   assert.match(styles, /\.home-trend-rank-list\s*\{[\s\S]*display:\s*grid;/)
-  assert.match(styles, /\.home-trend-rank-row\s*\{[\s\S]*grid-template-columns:\s*24px minmax\(0, 1fr\) auto;/)
-  assert.match(styles, /\.home-trend-rank-row\s*\{[\s\S]*min-height:\s*38px;/)
+  assert.match(styles, /\.home-trend-rank-list\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/)
+  assert.match(styles, /\.home-trend-rank-row\s*\{[\s\S]*grid-template-columns:\s*22px minmax\(0, 1fr\);/)
+  assert.match(styles, /\.home-trend-rank-row\s*\{[\s\S]*min-height:\s*40px;/)
   assert.doesNotMatch(styles, /\.search-trend-section/)
   assert.doesNotMatch(styles, /\.home-trend-section \.trend-ranking-row/)
 })
 
-test('HomePage does not render a recent review preview without a global Swagger feed', () => {
+test('HomePage recent reviews do not use profile-only review preview data', () => {
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
 
   assert.doesNotMatch(source, /listMyReviews/)
-  assert.doesNotMatch(source, /ShopReview/)
+  assert.match(source, /RecentShopReview/)
   assert.doesNotMatch(source, /getStoredAccessToken/)
   assert.doesNotMatch(source, /myReviewsQuery/)
   assert.doesNotMatch(source, /HomeReviewPreviewSection/)
