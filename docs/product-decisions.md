@@ -111,7 +111,9 @@
 ## 2026-06-08 Ads Placement Scope
 
 - Current enabled ad scope is footer/fixed banner only on `/home`, `/explore?view=list`, and `/explore?view=map`.
-- The default `.ait` deployment build has `VITE_TOSS_AD_USE_LIVE_DEFAULTS=true` in `client/.env.production` and includes the console-issued banner ad group ID `ait.v2.live.c081b1ff483d4815`; set `VITE_TOSS_AD_USE_TEST_IDS=true` only for explicit development/test-ID builds.
+- The default `.ait` deployment build has `VITE_TOSS_AD_USE_LIVE_DEFAULTS=true` in `client/.env.production` and includes the console-issued banner ad group ID `ait.v2.live.c081b1ff483d4815`.
+- Apps in Toss console preview/QR builds should not require a special test-ID build. The client automatically uses the official test banner ID `ait-ad-test-banner-id` when the SDK reports `sandbox` or the page is served from the Apps in Toss private preview host `*.private-apps.tossmini.com`, even when the production env contains a live banner group ID.
+- Use `VITE_TOSS_AD_USE_TEST_IDS=true` only to force test IDs outside the console preview path, and use `VITE_TOSS_AD_USE_LIVE_IDS=true` only for an explicit live-ID pre-release check.
 - Console-issued inactive IDs are recorded for future experiments only: interstitial `ait.v2.live.f9baf4bc925644c4`, rewarded `ait.v2.live.7a44e77025474da9`.
 - Do not add interstitial, rewarded, search-route, modal, intro, loading, or other ad placements until inflow, retention, and product acceptance evidence justify another experiment.
 - Rewarded ads are out of current scope because the required Apps in Toss prepaid budget is not accepted by the API/backend owner.
