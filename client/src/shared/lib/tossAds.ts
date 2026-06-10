@@ -37,7 +37,7 @@ function getConfiguredOrDefaultAdGroupId(kind: TossAdKind) {
     return DEFAULT_AD_GROUP_IDS[kind]
   }
 
-  return DEFAULT_AD_GROUP_IDS[kind]
+  return TEST_AD_GROUP_IDS[kind]
 }
 
 export function getTossAdGroupId(kind: TossAdKind) {

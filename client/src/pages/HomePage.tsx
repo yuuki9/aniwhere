@@ -362,7 +362,7 @@ export function HomePage() {
     [trendRankingQuery.data?.items],
   )
   const recentReviewsQuery = useQuery({
-    queryKey: ['shop-reviews', 'recent', 5, currentUserId],
+    queryKey: ['shop-reviews', 'recent', 5],
     queryFn: () => listRecentReviews({ limit: 5 }),
     staleTime: 30_000,
     refetchOnMount: 'always',

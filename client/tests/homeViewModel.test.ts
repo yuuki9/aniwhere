@@ -166,7 +166,7 @@ test('HomePage renders recent reviews from the Swagger recent reviews feed only 
   const source = fs.readFileSync(new URL('../src/pages/HomePage.tsx', import.meta.url), 'utf8')
 
   assert.match(source, /import \{ listRecentReviews \} from '\.\.\/shared\/api\/shopReviews'/)
-  assert.match(source, /queryKey: \['shop-reviews', 'recent', 5, currentUserId\]/)
+  assert.match(source, /queryKey: \['shop-reviews', 'recent', 5\]/)
   assert.match(source, /queryFn: \(\) => listRecentReviews\(\{ limit: 5 \}\)/)
   assert.match(source, /function HomeRecentReviewSection/)
   assert.match(source, /home-recent-review-section/)

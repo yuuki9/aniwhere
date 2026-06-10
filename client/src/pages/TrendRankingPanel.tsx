@@ -52,7 +52,7 @@ export function TrendRankingPanel({
         {columns.map((column, columnIndex) => (
           <div className="home-trend-rank-column" key={`trend-rank-column-${columnIndex}`}>
             {column.map((item) => (
-              <TrendRankRow key={`rank-${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} returnTo={returnTo} />
+              <TrendRankRow key={`${item.kind}-${item.shopId ?? item.workId ?? item.label}-${item.rank}`} item={item} returnTo={returnTo} />
             ))}
           </div>
         ))}
