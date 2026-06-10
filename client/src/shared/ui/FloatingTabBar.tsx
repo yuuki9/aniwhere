@@ -32,25 +32,9 @@ function ExploreIcon() {
   )
 }
 
-function CommunityIcon() {
-  return (
-    <svg aria-hidden="true" className="tabbar-icon" viewBox="0 0 24 24">
-      <path
-        d="M6.5 7.5h11a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H12l-3.5 2v-2H6.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  )
-}
-
 const icons = {
   discover: <HomeIcon />,
   explore: <ExploreIcon />,
-  community: <CommunityIcon />,
 }
 
 export function FloatingTabBar() {

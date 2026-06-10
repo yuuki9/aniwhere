@@ -2,6 +2,7 @@ import { request, requestForm, toQueryString } from './client'
 import type {
   CreateShopReviewPayload,
   PageResponse,
+  RecentShopReview,
   ShopReview,
   ShopReviewListParams,
   ShopReviewStatus,
@@ -81,6 +82,14 @@ export function listMyReviews(params: ShopReviewListParams = {}, authToken?: str
   })
 
   return request<PageResponse<ShopReview>>(`/api/v1/users/me/reviews${query}`, { authToken })
+}
+
+export function listRecentReviews(params: { limit?: number } = {}) {
+  const query = toQueryString({
+    limit: params.limit ?? 10,
+  })
+
+  return request<RecentShopReview[]>(`/api/v1/reviews/recent${query}`)
 }
 
 export function deleteShopReview(shopId: number, reviewId: number, authToken?: string | null) {

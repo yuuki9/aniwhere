@@ -45,19 +45,12 @@ import {
 } from '../shared/lib/naverDirections'
 import { isAppsInTossRuntime } from '../shared/lib/auth'
 import { getStoredAccessToken, readAuthSession } from '../shared/lib/authSession'
-import { pushRecentViewedShop } from '../shared/lib/recentViewedShops'
-import {
-  isReviewRewardedAdPromptEnabled,
-  maybeShowShopViewInterstitial,
-  preloadTossFullScreenAd,
-  showReviewRewardedAd,
-} from '../shared/lib/tossAds'
 import { AppliedFilterChips } from '../shared/ui/AppliedFilterChips'
 import { SearchFilterSheet } from '../shared/ui/SearchFilterSheet'
 import { AppTopNavigation } from '../shared/ui/AppTopNavigation'
 import { type MapViewport, ShopMap } from '../shared/ui/ShopMap'
 import { TossBannerAd } from '../shared/ui/TossBannerAd'
-import { Button, Modal, Toast } from '@aniwhere/tds-mobile'
+import { Toast } from '@aniwhere/tds-mobile'
 import { MapAssistantPanel, type MapAssistantMessage } from './explore/MapAssistantPanel'
 import { MapDetailInfoCard } from './explore/MapDetailInfoCard'
 import { MapDetailMediaSection, type MapDetailMediaItem } from './explore/MapDetailMediaSection'
@@ -320,10 +313,6 @@ export function ExplorePage() {
   const [favoriteShopIdOverrides, setFavoriteShopIdOverrides] = useState<Map<number, boolean>>(() => new Map())
   const [favoriteQuickChipActive, setFavoriteQuickChipActive] = useState(false)
   const [favoriteToast, setFavoriteToast] = useState<string | null>(null)
-  const [reviewRewardPromptOpen, setReviewRewardPromptOpen] = useState(false)
-  const [reviewRewardAdStatus, setReviewRewardAdStatus] = useState<'idle' | 'loading' | 'earned' | 'unavailable'>(
-    'idle',
-  )
   const [isMapBannerVisible, setIsMapBannerVisible] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantInput, setAssistantInput] = useState('')
@@ -345,7 +334,6 @@ export function ExplorePage() {
   const pendingListRestoreRef = useRef(false)
   const previousSelectedShopIdRef = useRef<number | null>(selectedShopId)
   const lastPopularityWorkExploreKeyRef = useRef<string | null>(null)
-  const lastInterstitialShopIdRef = useRef<number | null>(null)
   const peekPointerIdRef = useRef<number | null>(null)
   const peekDragStartYRef = useRef<number | null>(null)
   const peekMovedRef = useRef(false)
@@ -672,23 +660,6 @@ export function ExplorePage() {
   })
 
   useEffect(() => {
-    void preloadTossFullScreenAd('interstitial')
-  }, [])
-
-  useEffect(() => {
-    if (detailShop == null || sheetMode !== 'expanded') {
-      lastInterstitialShopIdRef.current = null
-      return
-    }
-
-    void pushRecentViewedShop(detailShop, undefined, { isFavorite: isFavoriteDetailShop })
-    if (lastInterstitialShopIdRef.current !== detailShop.id) {
-      lastInterstitialShopIdRef.current = detailShop.id
-      void maybeShowShopViewInterstitial(detailShop.id)
-    }
-  }, [detailShop, isFavoriteDetailShop, sheetMode])
-
-  useEffect(() => {
     if (selectedShopId == null || sheetMode !== 'expanded' || detailTabParam == null) {
       return
     }
@@ -817,11 +788,6 @@ export function ExplorePage() {
       setFavoriteToast('리뷰를 등록했어요.')
       setEditingReview(null)
       setDetailTab('review')
-      if (isReviewRewardedAdPromptEnabled()) {
-        setReviewRewardAdStatus('idle')
-        setReviewRewardPromptOpen(true)
-        void preloadTossFullScreenAd('rewarded')
-      }
       const next = new URLSearchParams(searchParams)
       next.set('shopId', String(variables.shopId))
       next.set('sheet', 'expanded')
@@ -896,18 +862,19 @@ export function ExplorePage() {
   const reviewLikeMutation = useMutation({
     mutationFn: ({ shopId, reviewId, nextLiked }: { shopId: number; reviewId: number; nextLiked: boolean }) => {
       if (authToken == null) {
-        throw new Error('로그인 후 유용한 리뷰를 표시할 수 있어요.')
+        throw new Error('로그인 후 도움되는 리뷰를 표시할 수 있어요.')
       }
 
       return nextLiked ? likeShopReview(shopId, reviewId, authToken) : unlikeShopReview(shopId, reviewId, authToken)
     },
     onSuccess: async (_result, variables) => {
-      setFavoriteToast(variables.nextLiked ? '유용한 리뷰로 표시했어요.' : '유용해요를 취소했어요.')
+      setFavoriteToast(variables.nextLiked ? '도움되는 리뷰로 표시했어요.' : '도움돼요를 취소했어요.')
 
       await queryClient.invalidateQueries({ queryKey: ['shop-reviews', variables.shopId] })
+      await queryClient.invalidateQueries({ queryKey: ['shop-reviews', 'recent'] })
     },
     onError: (error) => {
-      setFavoriteToast(error instanceof Error ? error.message : '리뷰 유용해요를 처리하지 못했어요.')
+      setFavoriteToast(error instanceof Error ? error.message : '리뷰 도움돼요를 처리하지 못했어요.')
     },
   })
 
@@ -1045,32 +1012,6 @@ export function ExplorePage() {
   const openEditReviewStation = (review: ShopReview) => openReviewStation(review)
   const openReportReviewNotice = () => {
     setFavoriteToast('리뷰 신고 기능은 준비 중이에요.')
-  }
-
-  const handleReviewRewardAd = async () => {
-    setReviewRewardAdStatus('loading')
-    let result: Awaited<ReturnType<typeof showReviewRewardedAd>>
-    try {
-      result = await showReviewRewardedAd()
-    } catch {
-      setReviewRewardAdStatus('unavailable')
-      setFavoriteToast('광고를 불러오지 못했어요. 리뷰는 정상 등록됐어요.')
-      return
-    }
-
-    if (result.status === 'EARNED') {
-      setReviewRewardAdStatus('earned')
-      setFavoriteToast('광고 시청이 완료됐어요. 추가 보상 지급은 서버 연결 후 반영돼요.')
-      return
-    }
-
-    if (result.status === 'DISMISSED') {
-      setReviewRewardAdStatus('idle')
-      return
-    }
-
-    setReviewRewardAdStatus('unavailable')
-    setFavoriteToast('광고를 불러오지 못했어요. 리뷰는 정상 등록됐어요.')
   }
 
   const restoreListView = () => {
@@ -1795,29 +1736,6 @@ export function ExplorePage() {
         text={favoriteToast ?? ''}
         onClose={() => setFavoriteToast(null)}
       />
-      <Modal open={reviewRewardPromptOpen} onOpenChange={(open) => setReviewRewardPromptOpen(open)}>
-        <Modal.Overlay onClick={() => setReviewRewardPromptOpen(false)} />
-        <Modal.Content className="map-review-leave-modal" aria-labelledby="map-review-reward-title" aria-modal="true">
-          <div className="map-review-leave-copy">
-            <strong id="map-review-reward-title">추가 보상을 받을까요?</strong>
-            <p>광고 시청 완료 이벤트만 준비되어 있어요. 실제 지급은 서버 연결 후 반영돼요.</p>
-          </div>
-          <div className="map-review-leave-actions">
-            <Button color="dark" display="block" variant="weak" onClick={() => setReviewRewardPromptOpen(false)}>
-              나중에
-            </Button>
-            <Button
-              color="primary"
-              display="block"
-              loading={reviewRewardAdStatus === 'loading'}
-              disabled={reviewRewardAdStatus === 'loading' || reviewRewardAdStatus === 'unavailable'}
-              onClick={handleReviewRewardAd}
-            >
-              {reviewRewardAdStatus === 'earned' ? '시청 완료' : '광고 보기'}
-            </Button>
-          </div>
-        </Modal.Content>
-      </Modal>
       <section className="map-page">
         <div
           className={[

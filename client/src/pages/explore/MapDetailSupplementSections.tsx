@@ -719,7 +719,7 @@ export function MapDetailSupplementSections({
                       onClick={() => onToggleReviewLike?.(review, !review.likedByMe)}
                     >
                       <span aria-hidden="true">♡</span>
-                      {review.likedByMe ? '유용해요 취소' : '유용해요'}
+                      {review.likedByMe ? '도움돼요 취소' : '도움돼요'}
                     </button>
                     {review.likeCount > 0 ? (
                       <span className="map-place-review-like-count">{review.likeCount}명이 도움된다고 해요</span>
