@@ -1,56 +1,18 @@
 # Aniwhere
 
-갸챠샵, 피규어샵, 굿즈샵 같은 서브컬처 매장 정보를 모아 보여주는 서비스 프로젝트입니다.
+![Aniwhere](docs/images/aniwhere-thumbnail.png)
 
-## 구조
+**Aniwhere**는 갸챠샵, 피규어샵, 굿즈샵 같은 서브컬처 매장을 찾고, 매장 후기를 남길 수 있는 서비스입니다.
 
-- `client/`: Apps in Toss WebView 기반 프론트엔드
-- `server/`: 백엔드 작업 영역
-- `docs/`: 기획 및 참고 문서
+> 애니샵 찾고 후기도 남겨요
 
-## Frontend
+## 무엇을 할 수 있나요
 
-`client`는 다음 기준으로 작업합니다.
+- **작품·매장·지역으로 검색** — 관심 있는 애니 작품, 매장 이름, 지역으로 원하는 샵을 찾을 수 있습니다.
+- **지도에서 가까운 매장 보기** — 주변 애니샵 위치를 지도에서 확인하고, 매장 정보와 후기를 볼 수 있습니다.
+- **인기 매장·리뷰 많은 매장 둘러보기** — 많은 사람이 찾는 매장이나 후기가 쌓인 매장을 먼저 살펴볼 수 있습니다.
+- **매장 후기 남기기** — 다녀온 매장의 경험을 공유하고, 다른 팬들의 후기를 참고할 수 있습니다.
 
-- React + TypeScript + Vite
-- `@apps-in-toss/web-framework`
-- Toss 스타일의 모바일 정보 탐색 UX
-- 매장 탐색, 커뮤니티, 상세 화면 중심 구성
+## 플랫폼
 
-실행:
-
-```bash
-cd client
-npm install
-npm run dev
-```
-
-빌드:
-
-```bash
-cd client
-npm run build
-```
-
-## Backend API Contract
-
-- Swagger UI: https://api.aniwhere.link/swagger-ui/index.html
-- OpenAPI JSON: https://api.aniwhere.link/v3/api-docs
-- Frontend contract sync guide: `docs/backend-api-contract.md`
-
-Server branches merged into `main` are assumed to be automatically deployed to `https://api.aniwhere.link`; use the deployed Swagger UI above as the first reference for frontend API contract comparison.
-
-## 현재 범위
-
-- 샵 목록/상세 조회
-- 커뮤니티 게시글/댓글 조회 및 작성
-- 지도 기반 매장 탐색 UI
-- Swagger 스펙 기반 API 타입/호출 함수 정리
-
-## 브랜치 전략
-
-- 기본 브랜치: `main`
-- 작업 브랜치: `feature/*`, `fix/*`, `chore/*`
-- 기능 단위로 작업 후 `main`에 병합
-- 상세 규칙은 `GIT_CONVENTIONS.md`를 기준으로 따릅니다.
-- 다른 Codex 세션도 작업 전 `AGENTS.md`와 `GIT_CONVENTIONS.md`를 먼저 확인합니다.
+Aniwhere는 **토스 앱 안에서 실행되는 서비스**(Apps in Toss)입니다. 토스 앱 안에서 바로 애니샵을 찾고 후기를 남길 수 있습니다.
