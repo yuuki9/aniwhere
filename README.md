@@ -16,3 +16,21 @@
 ## 플랫폼
 
 Aniwhere는 **토스 앱 안에서 실행되는 서비스**(Apps in Toss)입니다. 토스 앱 안에서 바로 애니샵을 찾고 후기를 남길 수 있습니다.
+
+## 시스템 아키텍처
+
+![Aniwhere 시스템 아키텍처](docs/images/aniwhere-system-architecture.png)
+
+토스 WebView 클라이언트가 `api.aniwhere.link`로 API를 호출하고, AWS `ap-northeast-2` 리전의 VPC에서 요청을 처리합니다.
+
+| 구성 | 역할 |
+|------|------|
+| Apps in Toss WebView | 사용자 클라이언트 (지도·검색·후기 UI) |
+| Route 53 · ALB | DNS 조회 후 HTTPS(`443`)로 EC2에 트래픽 분산 |
+| EC2 × 2 | Spring Boot API 서버 (고가용성) |
+| RDS MySQL | 매장·후기 등 서비스 데이터 |
+| S3 | 이미지 저장 |
+| Toss 로그인 API | 서버 측 사용자 인증 |
+| Naver Map | 클라이언트 지도 표시 |
+
+**요청 흐름:** WebView → Route 53 → ALB → EC2 → RDS / S3 / Toss 로그인. 지도는 클라이언트에서 Naver Map API를 직접 사용합니다.
