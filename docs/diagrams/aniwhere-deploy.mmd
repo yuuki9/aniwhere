@@ -1,0 +1,9 @@
+flowchart LR
+    GH["GitHub Actions"]
+    S3D["S3 · 배포 아티팩트"]
+    EC2A["EC2 · SSH 배포"]
+    EC2B["EC2 · SSH 배포"]
+
+    GH -->|"server/**"| S3D
+    S3D --> EC2A
+    S3D --> EC2B

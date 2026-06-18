@@ -1,0 +1,41 @@
+flowchart TB
+    subgraph Clients["클라이언트"]
+        Toss["Apps in Toss WebView"]
+    end
+
+    subgraph DNS["DNS"]
+        R53["Route 53 · api.aniwhere.link"]
+    end
+
+    subgraph PublicSubnet["Public Subnet"]
+        ALB["ALB · HTTPS :443"]
+        ACM["ACM · *.aniwhere.link"]
+        EC2A["EC2 · Spring Boot API"]
+        EC2B["EC2 · Spring Boot API"]
+    end
+
+    subgraph Data["데이터 계층"]
+        RDS[("RDS MySQL")]
+        S3I["S3 · 이미지 저장소"]
+    end
+
+    subgraph External["외부 API"]
+        TossAPI["Toss 로그인 API"]
+        Map["Naver Map"]
+    end
+
+    Toss -->|"api.aniwhere.link"| R53
+    Toss --> Map
+
+    R53 -->|"DNS 조회"| ALB
+    ACM -.->|"TLS 인증서 부착"| ALB
+
+    ALB --> EC2A
+    ALB --> EC2B
+
+    EC2A --> RDS
+    EC2B --> RDS
+    EC2A --> S3I
+    EC2B --> S3I
+    EC2A --> TossAPI
+    EC2B --> TossAPI
